@@ -7,7 +7,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/brimdata/super"
+	zed "github.com/brimdata/super"
 	"github.com/brimdata/super/compiler/ast"
 	"github.com/brimdata/super/compiler/ast/dag"
 	"github.com/brimdata/super/compiler/kernel"
@@ -162,6 +162,28 @@ func (a *analyzer) semSource(source ast.Source) []dag.Op {
 	case *ast.Pass:
 		//XXX just connect parent
 		return []dag.Op{dag.PassOp}
+	case *ast.Delete:
+		if !a.source.IsLake() {
+			a.error(s, errors.New("deletions cannot be applied to non-lake entity"))
+			return []dag.Op{badOp()}
+		}
+		pool, commit, err := a.checkHead("HEAD", "")
+		if err != nil {
+			a.error(s, err)
+			return []dag.Op{badOp()}
+		}
+		poolID, commitID, err := a.lookupPoolIDs(pool, commit)
+		if err != nil {
+			a.error(s, err)
+			return []dag.Op{badOp()}
+		}
+		return []dag.Op{
+			&dag.DeleteScan{
+				Kind:   "DeleteScan",
+				ID:     poolID,
+				Commit: commitID,
+			},
+		}
 	default:
 		panic(fmt.Errorf("semantic analyzer: unknown AST source type %T", s))
 	}
@@ -268,14 +290,10 @@ func (a *analyzer) maybeStringConst(name string) (string, error) {
 }
 
 func (a *analyzer) semPoolWithName(p *ast.Pool, poolName string) dag.Op {
-	commit := p.Spec.Commit
-	if poolName == "HEAD" {
-		if a.head == nil {
-			a.error(p.Spec.Pool, errors.New("cannot scan from unknown HEAD"))
-			return badOp()
-		}
-		poolName = a.head.Pool
-		commit = a.head.Branch
+	poolName, commit, err := a.checkHead(poolName, p.Spec.Commit)
+	if err != nil {
+		a.error(p.Spec.Pool, errors.New("cannot scan from unknown HEAD"))
+		return badOp()
 	}
 	if poolName == "" {
 		meta := p.Spec.Meta
@@ -292,20 +310,10 @@ func (a *analyzer) semPoolWithName(p *ast.Pool, poolName string) dag.Op {
 			Meta: p.Spec.Meta,
 		}
 	}
-	poolID, err := a.source.PoolID(a.ctx, poolName)
+	poolID, commitID, err := a.lookupPoolIDs(poolName, commit)
 	if err != nil {
 		a.error(p.Spec.Pool, err)
 		return badOp()
-	}
-	var commitID ksuid.KSUID
-	if commit != "" {
-		if commitID, err = lakeparse.ParseID(commit); err != nil {
-			commitID, err = a.source.CommitObject(a.ctx, poolID, commit)
-			if err != nil {
-				a.error(p, err)
-				return badOp()
-			}
-		}
 	}
 	if meta := p.Spec.Meta; meta != "" {
 		if _, ok := dag.CommitMetas[meta]; ok {
@@ -343,18 +351,39 @@ func (a *analyzer) semPoolWithName(p *ast.Pool, poolName string) dag.Op {
 			return badOp()
 		}
 	}
-	if p.Delete {
-		return &dag.DeleteScan{
-			Kind:   "DeleteScan",
-			ID:     poolID,
-			Commit: commitID,
-		}
-	}
 	return &dag.PoolScan{
 		Kind:   "PoolScan",
 		ID:     poolID,
 		Commit: commitID,
 	}
+}
+
+func (a *analyzer) checkHead(pool, commit string) (string, string, error) {
+	if pool == "HEAD" {
+		if a.head == nil {
+			return "", "", errors.New("cannot scan from unknown HEAD")
+		}
+		pool = a.head.Pool
+		commit = a.head.Branch
+	}
+	return pool, commit, nil
+}
+
+func (a *analyzer) lookupPoolIDs(pool, commit string) (ksuid.KSUID, ksuid.KSUID, error) {
+	poolID, err := a.source.PoolID(a.ctx, pool)
+	if err != nil {
+		return ksuid.Nil, ksuid.Nil, err
+	}
+	var commitID ksuid.KSUID
+	if commit != "" {
+		if commitID, err = lakeparse.ParseID(commit); err != nil {
+			commitID, err = a.source.CommitObject(a.ctx, poolID, commit)
+			if err != nil {
+				return ksuid.Nil, ksuid.Nil, err
+			}
+		}
+	}
+	return poolID, commitID, nil
 }
 
 func (a *analyzer) matchPools(pattern, origPattern, patternDesc string) ([]string, error) {
@@ -418,7 +447,7 @@ func (a *analyzer) semOp(o ast.Op, seq dag.Seq) dag.Seq {
 	switch o := o.(type) {
 	case *ast.From:
 		return a.semFrom(o, seq)
-	case *ast.Pool, *ast.File, *ast.HTTP:
+	case *ast.Pool, *ast.File, *ast.HTTP, *ast.Delete:
 		return a.semOpSource(o.(ast.Source), seq)
 	case *ast.Summarize:
 		keys := a.semAssignments(o.Keys)

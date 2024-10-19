@@ -10,6 +10,6 @@ inputs:
 outputs:
   - name: stderr
     data: |
-      "doesnotexist": branch not found at line 1, column 1:
+      "doesnotexist": branch not found at line 1, column 6:
       from test@doesnotexist
-      ~~~~~~~~~~~~~~~~~~~~~~
+           ~~~~

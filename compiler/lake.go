@@ -84,23 +84,7 @@ func newDeleteJob(rctx *runtime.Context, in ast.Seq, src *data.Source, head *lak
 	if len(seq) != 1 {
 		return nil, &InvalidDeleteWhereQuery{}
 	}
-	// add trunk
-	seq.Prepend(&ast.From{
-		Kind: "from",
-		Trunks: []ast.Trunk{{
-			Kind: "Trunk",
-			Source: &ast.Pool{
-				Kind:   "Pool",
-				Delete: true,
-				Spec: ast.PoolSpec{
-					Pool: &ast.String{
-						Kind: "String",
-						Text: "HEAD",
-					},
-				},
-			},
-		}},
-	})
+	seq.Prepend(&ast.Delete{Kind: "Delete"})
 	entry, err := semantic.Analyze(rctx.Context, seq, src, head)
 	if err != nil {
 		return nil, err

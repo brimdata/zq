@@ -659,8 +659,10 @@ type (
 		Kind       string   `json:"kind" unpack:""`
 		KeywordPos int      `json:"keyword_pos"`
 		Spec       PoolSpec `json:"spec"`
-		Delete     bool     `json:"delete"`
 		EndPos     int      `json:"end_pos"`
+	}
+	Delete struct {
+		Kind string `json:"kind" unpack:""`
 	}
 )
 
@@ -676,18 +678,21 @@ type Source interface {
 	Source()
 }
 
-func (*Pool) Source() {}
-func (*File) Source() {}
-func (*HTTP) Source() {}
-func (*Pass) Source() {}
+func (*Pool) Source()   {}
+func (*File) Source()   {}
+func (*HTTP) Source()   {}
+func (*Pass) Source()   {}
+func (*Delete) Source() {}
 
 func (x *Pool) Pos() int { return x.KeywordPos }
 func (x *File) Pos() int { return x.KeywordPos }
 func (x *HTTP) Pos() int { return x.KeywordPos }
+func (*Delete) Pos() int { return 0 }
 
 func (x *Pool) End() int { return x.EndPos }
 func (x *File) End() int { return x.EndPos }
 func (x *HTTP) End() int { return x.EndPos }
+func (*Delete) End() int { return 0 }
 
 type SortExpr struct {
 	Kind  string `json:"kind" unpack:""`
@@ -794,6 +799,7 @@ func (*Load) OpAST()         {}
 func (*Assert) OpAST()       {}
 func (*Output) OpAST()       {}
 func (*Debug) OpAST()        {}
+func (*Delete) OpAST()       {}
 
 func (x *Scope) Pos() int {
 	if x.Decls != nil {
