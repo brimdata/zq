@@ -1,21 +1,7 @@
 builds:
-  - main: ./cmd/zed
-    id: zed
-    binary: zed
-    env:
-      - CGO_ENABLED=0
-    ldflags:
-      - -s -X github.com/brimdata/super/cli.version={{ .Tag }}
-    goarch:
-      - amd64
-      - arm64
-    goos:
-      - linux
-      - windows
-      - darwin
-  - main: ./cmd/zq
-    id: zq
-    binary: zq
+  - main: ./cmd/super
+    id: sup
+    binary: super
     env:
       - CGO_ENABLED=0
     ldflags:
@@ -28,7 +14,7 @@ builds:
       - windows
       - darwin
 archives:
-  - name_template: zed-{{ .Tag }}.{{ .Os }}-{{ .Arch }}
+  - name_template: super-{{ .Tag }}.{{ .Os }}-{{ .Arch }}
     format_overrides:
       - goos: windows
         format: zip
@@ -39,7 +25,7 @@ release:
   header: |
     View [change log](CHANGELOG.md#{{ replace .Tag "." "" }}).
 brews:
-  - name: zed
+  - name: super
     repository:
       owner: brimdata
       name: homebrew-tap
@@ -48,26 +34,12 @@ brews:
       email: bot@brimdata.io
     homepage: https://github.com/brimdata/super
     description: |
-      A command-line tool for creating, configuring, ingesting into, querying,
-      and orchestrating Zed data lakes.
+      SuperSQL or SuperPipe querying of common file formats
+      (CSV/JSON/Parquet/etc.) or SuperDB data lakes
     install: |
-      bin.install "zed"
-  - name: zq
-    repository:
-      owner: brimdata
-      name: homebrew-tap
-    commit_author:
-      name: brim-bot
-      email: bot@brimdata.io
-    homepage: https://github.com/brimdata/super
-    description: |
-      A command-line tool for processing data in diverse input formats,
-      providing search, analytics, and extensive transormations using the Zed
-      query language.
-    install: |
-      bin.install "zq"
+      bin.install "super"
 checksum:
-  name_template: 'zed-checksums.txt'
+  name_template: 'super-checksums.txt'
 snapshot:
   name_template: "{{ incpatch .Version }}-{{ .ShortCommit }}"
 changelog:
