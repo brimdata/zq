@@ -1,4 +1,5 @@
 script: |
+  touch a b
   super compile -C 'file a | join (file b) on c'
   echo ===
   super compile -C -dag 'file a | join (file b) on c'

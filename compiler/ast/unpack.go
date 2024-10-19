@@ -32,6 +32,7 @@ var unpacker = unpack.New(
 	FieldExpr{},
 	FormatArg{},
 	From{},
+	ExprEntity{},
 	FString{},
 	FStringExpr{},
 	FStringText{},
