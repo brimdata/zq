@@ -105,9 +105,9 @@ Operation
       }, nil
     }
   / "from" __ "(" trunks:FromLeg+ __ ")" {
-      return &ast.From{
-          Kind: "From",
-          Trunks: sliceOf[ast.Seq](trunks),
+      return &ast.Parallel{
+          Kind: "Parallel",
+          Paths: sliceOf[ast.Seq](trunks),
           Loc: loc(c),
       }, nil
     }
@@ -156,9 +156,7 @@ FromLeg
     }
 
 FromSource
-  = File
-  / Get
-  / Pool
+  = FromKeyWord _ spec:FromBody { return spec, nil }
   / PassOp
 
 ExprGuard = __ ((!"=>" Comparator) / AdditiveOperator / MultiplicativeOperator / ":" / "(" / "[" / "~")
@@ -294,7 +292,7 @@ AggAssignment
 Agg
   = !FuncGuard op:AggName __ "(" __ expr:(OverExpr / Expr)? __ ")" !(__ ".") where:WhereClause? {
       agg := &ast.Agg{
-          Kind:"Agg", 
+          Kind:"Agg",
           Name: op.(string),
           Loc: loc(c),
       }
@@ -607,46 +605,87 @@ DebugOp
     }
 
 FromOp
-  = File
-  / Get
-  / From
+  = FromKeyWord _ f:FromBody {
+      from := f.(*ast.From)
+      from.Loc = loc(c)
+      return from, nil
+  }
 
-File
-  = "file" _ path:Path format:FormatArg? sortKeys:OrderArg? {
-      return &ast.File{
-        Kind: "File",
-        Path: path.(ast.Pattern),
+FromKeyWord
+  = "from"
+  / DeprecatedFroms
+
+DeprecatedFroms = "get" / "file" / "pool"
+
+FromBody
+  = entity:FromEntity args:FromArgs {
+      from := &ast.From{
+        Kind: "From",
+        Entity: entity.(ast.FromEntity),
+      }
+      if args != nil {
+        from.Args = args.(ast.FromArgs)
+      }
+      return from, nil
+    }
+
+FromEntity
+  = url:UnquotedURL {
+      return &ast.Name{
+        Kind: "Name",
+        Text: url.(string),
+        Loc: loc(c),
+      }, nil
+    }
+  / Regexp
+  / Glob
+  / "*" !ExprGuard { return &ast.Glob{Kind: "Glob", Pattern: "*", Loc: loc(c)}, nil }
+  / e:Array {
+      return &ast.ExprEntity{
+        Kind: "ExprEntity",
+        Expr: e.(ast.Expr),
+        Loc: loc(c),
+      }, nil
+    }
+  / Name
+  / meta:PoolMeta {
+      return &ast.LakeMeta{
+        Kind: "LakeMeta",
+        Meta: nullableName(meta),
+        Loc: loc(c),
+      }, nil
+    }
+
+FromArgs
+  = commit:PoolCommit meta:PoolMeta? tap:TapArg {
+      return &ast.PoolArgs{
+        Kind: "PoolArgs",
+        Commit: nullableName(commit),
+        Meta: nullableName(meta),
+        Tap: tap.(bool),
+      }, nil
+    }
+  / meta:PoolMeta tap:TapArg {
+      return &ast.PoolArgs{
+        Kind: "PoolArgs",
+        Meta: nullableName(meta),
+        Tap: tap.(bool),
+      }, nil
+    }
+  / format:FormatArg !(_ ("method" / "header" / "body")) {
+      return &ast.FormatArg{
+        Kind: "FormatArg",
         Format: nullableName(format),
-        SortKeys: sliceOf[ast.SortExpr](sortKeys),
         Loc: loc(c),
       }, nil
-    }
-
-From
-  = "from" _ spec:PoolSpec {
-      return &ast.Pool{
-        Kind: "Pool",
-        Spec: spec.(ast.PoolSpec),
-        Loc: loc(c),
-      }, nil
-    }
-
-Pool
-  = "pool" _ spec:PoolSpec {
-      return &ast.Pool{
-        Kind: "Pool",
-        Spec: spec.(ast.PoolSpec),
-        Loc: loc(c),
-      }, nil
-    }
-
-Get
-  = "get" _ url:Path format:FormatArg? sortKeys:OrderArg? method:MethodArg? headers:HeadersArg? body:BodyArg? {
-      h := &ast.HTTP{
-        Kind: "HTTP",
-        URL: url.(ast.Pattern),
+  }
+  / format:FormatArg? method:MethodArg? headers:HeadersArg? body:BodyArg? {
+      if format == nil && method == nil && headers == nil && body == nil {
+        return nil, nil
+      }
+      h := &ast.HTTPArgs{
+        Kind: "HTTPArgs",
         Format: nullableName(format),
-        SortKeys: sliceOf[ast.SortExpr](sortKeys),
         Method: nullableName(method),
         Body: nullableName(body),
         Loc: loc(c),
@@ -657,19 +696,17 @@ Get
       return h, nil
     }
 
+FormatArg = _ "format" _ n:Name { return n, nil }
+
 MethodArg = _ "method" _ n:Name { return n, nil }
 
 HeadersArg = _ "headers" _ v:Record { return v, nil }
 
 BodyArg = _ "body" _ n:Name { return n, nil }
 
-Path
-  // XXX deprecate this
-  = [0-9a-zA-Z!@$%^&*_=<>,./?:[\]{}~+-]+ {
-      return &ast.Name{Kind: "Name", Text: string(c.text), Loc: loc(c)}, nil
-    }
-  / Name
+UnquotedURL = ("http://" / "https://") URLChar+ { return string(c.text), nil }
 
+URLChar = [0-9a-zA-Z!@$%&_=,./?:[\]~+-]
 
 //XXX this should be a timestamp
 PoolAt
@@ -678,31 +715,11 @@ PoolAt
 //XXX this should allow 0x bytes format
 KSUID = ([0-9a-zA-Z])+ { return string(c.text), nil }
 
-PoolSpec
-  = pool:PoolName commit:PoolCommit? meta:PoolMeta? tap:TapArg {
-      return ast.PoolSpec{
-        Pool: pool.(ast.Pattern),
-        Commit: nullableName(commit),
-        Meta: nullableName(meta),
-        Tap: tap.(bool),
-        Loc: loc(c),
-      }, nil
-    }
-  / meta:PoolMeta {
-      return ast.PoolSpec{Meta: meta.(*ast.Name),Loc:loc(c)}, nil
-    }
-
 PoolCommit
   = "@" n:Name { return n, nil }
 
 PoolMeta
   = ":" n:Name { return n, nil }
-
-PoolName
-  = Regexp
-  / Glob
-  / "*" !ExprGuard { return &ast.Glob{Kind: "Glob", Pattern: "*", Loc: loc(c)}, nil }
-  / Name
 
 OrderArg
   = _ "order" _ exprs:SortExprs {
@@ -716,7 +733,7 @@ SortExprs
 
 SortExpr
   = e:Expr order:(_ o:OrderSpec { return o, nil })? {
-      s := ast.SortExpr{Kind: "SortExpr", Expr: e.(ast.Expr), Loc:loc(c)}      
+      s := ast.SortExpr{Kind: "SortExpr", Expr: e.(ast.Expr), Loc:loc(c)}
       if order != nil {
         s.Order = order.(*ast.ID)
       }
@@ -732,8 +749,7 @@ TapArg
   = _ "tap" { return true, nil }
   / "" { return false, nil }
 
-FormatArg
-  = _ "format" _ n:Name { return n, nil }
+
 
 PassOp
   = "pass" !(__ "(") &EOKW {

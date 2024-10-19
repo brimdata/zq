@@ -206,20 +206,18 @@ type (
 		SortKeys order.SortKeys `json:"sort_keys"`
 	}
 	FileScan struct {
-		Kind     string         `json:"kind" unpack:""`
-		Path     string         `json:"path"`
-		Format   string         `json:"format"`
-		SortKeys order.SortKeys `json:"sort_keys"`
-		Filter   Expr           `json:"filter"`
+		Kind   string `json:"kind" unpack:""`
+		Path   string `json:"path"`
+		Format string `json:"format"`
+		Filter Expr   `json:"filter"`
 	}
 	HTTPScan struct {
-		Kind     string              `json:"kind" unpack:""`
-		URL      string              `json:"url"`
-		Format   string              `json:"format"`
-		SortKeys order.SortKeys      `json:"sort_keys"`
-		Method   string              `json:"method"`
-		Headers  map[string][]string `json:"headers"`
-		Body     string              `json:"body"`
+		Kind    string              `json:"kind" unpack:""`
+		URL     string              `json:"url"`
+		Format  string              `json:"format"`
+		Method  string              `json:"method"`
+		Headers map[string][]string `json:"headers"`
+		Body    string              `json:"body"`
 	}
 	PoolScan struct {
 		Kind   string      `json:"kind" unpack:""`

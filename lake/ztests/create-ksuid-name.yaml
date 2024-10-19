@@ -2,9 +2,9 @@
 script: |
   export SUPER_DB_LAKE=test
   super db init -q
-  super db create 2WwyVrZdEITo5WkKu1YsJC4dMjU
-  super db use 2WwyVrZdEITo5WkKu1YsJC4dMjU
-  super db query 'from 2WwyVrZdEITo5WkKu1YsJC4dMjU'
+  super db create "2WwyVrZdEITo5WkKu1YsJC4dMjU"
+  super db use "2WwyVrZdEITo5WkKu1YsJC4dMjU"
+  super db query 'from "2WwyVrZdEITo5WkKu1YsJC4dMjU"'
 
 outputs:
   - name: stdout

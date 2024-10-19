@@ -4,6 +4,6 @@ script: |
 outputs:
   - name: stderr
     data: |
-      super: "from pool" cannot be used without a lake at line 1, column 8:
+      super: "a": not such file at line 1, column 13:
       from ( pool a )
-             ~~~~~~
+                  ~

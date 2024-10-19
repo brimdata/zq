@@ -21,7 +21,11 @@ func (i *anyCompiler) NewQuery(rctx *runtime.Context, seq ast.Seq, readers []zio
 	if len(readers) != 1 {
 		return nil, fmt.Errorf("NewQuery: Zed program expected %d readers", len(readers))
 	}
-	return CompileWithSortKey(rctx, seq, readers[0], order.SortKey{})
+	job, err := NewJob(rctx, seq, data.NewSource(nil, nil), nil)
+	if err != nil {
+		return nil, err
+	}
+	return optimizeAndBuild(job, readers)
 }
 
 // XXX currently used only by group-by test, need to deprecate

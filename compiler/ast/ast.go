@@ -144,14 +144,22 @@ type Name struct {
 	Loc  `json:"loc"`
 }
 
-type Pattern interface {
+type FromEntity interface {
 	Node
-	PatternAST()
+	FromEntityAST()
 }
 
-func (*Glob) PatternAST()   {}
-func (*Regexp) PatternAST() {}
-func (*Name) PatternAST()   {}
+type ExprEntity struct {
+	Kind string `json:"kind" unpack:""`
+	Expr Expr   `json:"expr"`
+	Loc  `json:"loc"`
+}
+
+func (*Glob) FromEntityAST()       {}
+func (*Regexp) FromEntityAST()     {}
+func (*ExprEntity) FromEntityAST() {}
+func (*LakeMeta) FromEntityAST()   {}
+func (*Name) FromEntityAST()       {}
 
 type RecordExpr struct {
 	Kind  string       `json:"kind" unpack:""`
@@ -492,11 +500,6 @@ type (
 		Kind string `json:"kind" unpack:""`
 		Loc  `json:"loc"`
 	}
-	From struct {
-		Kind   string `json:"kind" unpack:""`
-		Trunks []Seq  `json:"trunks"`
-		Loc    `json:"loc"`
-	}
 	Load struct {
 		Kind    string `json:"kind" unpack:""`
 		Pool    *Name  `json:"pool"`
@@ -524,30 +527,18 @@ type (
 	}
 )
 
-// Source structure
-
 type (
-	File struct {
-		Kind     string     `json:"kind" unpack:""`
-		Path     Pattern    `json:"path"`
-		Format   *Name      `json:"format"`
-		SortKeys []SortExpr `json:"sort_keys"`
-		Loc      `json:"loc"`
+	From struct {
+		Kind   string     `json:"kind" unpack:""`
+		Entity FromEntity `json:"entity"`
+		Args   FromArgs   `json:"args"`
+		Loc    `json:"loc"`
 	}
-	HTTP struct {
-		Kind     string      `json:"kind" unpack:""`
-		URL      Pattern     `json:"url"`
-		Format   *Name       `json:"format"`
-		SortKeys []SortExpr  `json:"sort_keys"`
-		Method   *Name       `json:"method"`
-		Headers  *RecordExpr `json:"headers"`
-		Body     *Name       `json:"body"`
-		Loc      `json:"loc"`
-	}
-	Pool struct {
-		Kind string   `json:"kind" unpack:""`
-		Spec PoolSpec `json:"spec"`
-		Loc  `json:"loc"`
+	LakeMeta struct {
+		Kind    string `json:"kind" unpack:""`
+		MetaPos int    `json:"meta_pos"`
+		Meta    *Name  `json:"meta"`
+		Loc     `json:"loc"`
 	}
 	Delete struct {
 		Kind string       `json:"kind" unpack:""`
@@ -555,24 +546,37 @@ type (
 	}
 )
 
-type PoolSpec struct {
-	Pool   Pattern `json:"pool"`
-	Commit *Name   `json:"commit"`
-	Meta   *Name   `json:"meta"`
-	Tap    bool    `json:"tap"`
+type PoolArgs struct {
+	Kind   string `json:"kind" unpack:""`
+	Commit *Name  `json:"commit"`
+	Meta   *Name  `json:"meta"`
+	Tap    bool   `json:"tap"`
 	Loc    `json:"loc"`
 }
 
-type Source interface {
-	Node
-	Source()
+type FormatArg struct {
+	Kind   string `json:"kind" unpack:""`
+	Format *Name  `json:"format"`
+	Loc    `json:"loc"`
 }
 
-func (*Pool) Source()   {}
-func (*File) Source()   {}
-func (*HTTP) Source()   {}
-func (*Pass) Source()   {}
-func (*Delete) Source() {}
+type HTTPArgs struct {
+	Kind    string      `json:"kind" unpack:""`
+	Format  *Name       `json:"format"`
+	Method  *Name       `json:"method"`
+	Headers *RecordExpr `json:"headers"`
+	Body    *Name       `json:"body"`
+	Loc     `json:"loc"`
+}
+
+type FromArgs interface {
+	Node
+	FromArgs()
+}
+
+func (*PoolArgs) FromArgs()  {}
+func (*FormatArg) FromArgs() {}
+func (*HTTPArgs) FromArgs()  {}
 
 type SortExpr struct {
 	Kind  string `json:"kind" unpack:""`
@@ -615,9 +619,6 @@ func (*Cut) OpAST()          {}
 func (*Drop) OpAST()         {}
 func (*Head) OpAST()         {}
 func (*Tail) OpAST()         {}
-func (*Pool) OpAST()         {}
-func (*File) OpAST()         {}
-func (*HTTP) OpAST()         {}
 func (*Pass) OpAST()         {}
 func (*Uniq) OpAST()         {}
 func (*Summarize) OpAST()    {}

@@ -416,9 +416,9 @@ func (o *Optimizer) sortKeysOfSource(op dag.Op) (order.SortKeys, error) {
 	case *dag.DefaultScan:
 		return op.SortKeys, nil
 	case *dag.FileScan:
-		return op.SortKeys, nil
+		return nil, nil
 	case *dag.HTTPScan:
-		return op.SortKeys, nil
+		return nil, nil
 	case *dag.PoolScan:
 		return o.sortKey(op.ID)
 	case *dag.Lister:

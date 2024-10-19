@@ -1,13 +1,14 @@
 script: |
-  super compile -C "join (file test.zson) on x=x p:=a"
+  super compile -C "join (file test.jsup) on x=x p:=a"
   echo ===
-  super compile -C -dag "join (file test.zson) on x=x p:=a"
+  touch test.jsup
+  super compile -C -dag "join (file test.jsup) on x=x p:=a"
 
 outputs:
   - name: stdout
     data: |
       join (
-        file "test.zson"
+        from "test.jsup"
       ) on x=x p:=a
       ===
       reader
@@ -15,7 +16,7 @@ outputs:
         =>
           pass
         =>
-          file test.zson
+          file test.jsup
       )
       | join on x=x p:=a
       | output main

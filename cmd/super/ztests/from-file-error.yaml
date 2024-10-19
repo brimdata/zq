@@ -1,12 +1,14 @@
 script: |
-  ! super -I query.zed
+  ! super -I query.spq
 
 inputs:
-  - name: query.zed
+  - name: query.spq
     data: |
-      file a.zson
+      file a.jsup
 
 outputs:
   - name: stderr
     regexp: |
-      a.zson: file does not exist
+      "a.jsup": not such file in query.spq at line 1, column 6:
+      file a.jsup
+           ~~~~~~

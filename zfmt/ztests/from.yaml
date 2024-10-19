@@ -24,13 +24,13 @@ script: |
 outputs:
   - name: stdout
     data: |
-      file path
+      from path
       ===
-      file path format f
+      from path format f
       ===
-      get "http://host/path"
+      from "http://host/path"
       ===
-      get "http://host/path" format f
+      from "http://host/path" format f
       ===
       from foo
       ===
@@ -38,32 +38,44 @@ outputs:
       ===
       from /foo/
       ===
-      from (
-        file path
-        get "http://host/path"
-        pool name
+      fork (
+        =>
+          from path
+        =>
+          from "http://host/path"
+        =>
+          from name
       )
       ===
-      from (
-        file path format f
-        get "http://host/path" format g
-        pool name
+      fork (
+        =>
+          from path format f
+        =>
+          from "http://host/path" format g
+        =>
+          from name
       )
       ===
-      from (
-        file path =>
-          head
-        get "http://host/path" =>
-          head
-        pool name =>
-          head
+      fork (
+        =>
+          from path
+          | head
+        =>
+          from "http://host/path"
+          | head
+        =>
+          from name
+          | head
       )
       ===
-      from (
-        file path format f =>
-          head
-        get "http://host/path" format g =>
-          head
-        pool name =>
-          head
+      fork (
+        =>
+          from path format f
+          | head
+        =>
+          from "http://host/path" format g
+          | head
+        =>
+          from name
+          | head
       )

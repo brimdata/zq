@@ -14,9 +14,9 @@ inputs:
   - name: service.sh
   - name: multifrom.spq
     data: |
-      from (
-        pool test1
-        pool test2
+      fork (
+        => from test1
+        => from test2
       ) | put foo := "bar"
   - name: agg.spq
     data: |

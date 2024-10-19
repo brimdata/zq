@@ -1,6 +1,7 @@
 script: |
   super compile -C -I test.spq
   echo "==="
+  touch fruit.json people.json
   super compile -dag -C -I test.spq
 
 inputs:
@@ -13,9 +14,9 @@ inputs:
       op stamp(assignee): ( yield {...this, assignee, ts: now()} )
       op nop(foo): ( pass )
       op joinTest(left_file, right_file, left_key, right_key, left_dest, right_source): (
-        file "left_file"
+        from [left_file]
         | inner join (
-          file "right_file"
+          from [right_file]
         ) on left_key = right_key left_dest := right_source
       )
       joinTest("fruit.json", "people.json", flavor, likes, eater, name)
@@ -39,9 +40,9 @@ outputs:
         pass
       )
       op joinTest(left_file, right_file, left_key, right_key, left_dest, right_source): (
-        file left_file
+        from [left_file]
         | join (
-          file right_file
+          from [right_file]
         ) on left_key=right_key left_dest:=right_source
       )
       joinTest("fruit.json", "people.json", flavor, likes, eater, name)

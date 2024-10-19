@@ -3,6 +3,9 @@ package semantic
 import (
 	"errors"
 	"fmt"
+	"net/url"
+	"os"
+	"path/filepath"
 	"regexp"
 	"slices"
 	"strings"
@@ -33,50 +36,8 @@ func (a *analyzer) semSeq(seq ast.Seq) dag.Seq {
 	return converted
 }
 
-func (a *analyzer) semFrom(from *ast.From, seq dag.Seq) dag.Seq {
-	switch len(from.Trunks) {
-	case 0:
-		a.error(from, errors.New("from operator has no paths"))
-		return append(seq, badOp())
-	case 1:
-		return a.semTrunk(from.Trunks[0], seq)
-	default:
-		paths := make([]dag.Seq, 0, len(from.Trunks))
-		for _, in := range from.Trunks {
-			paths = append(paths, a.semTrunk(in, nil))
-		}
-		return append(seq, &dag.Fork{
-			Kind:  "Fork",
-			Paths: paths,
-		})
-	}
-}
-
-func (a *analyzer) semTrunk(trunk ast.Seq, out dag.Seq) dag.Seq {
-	src := trunk[0].(ast.Source)
-	if pool, ok := src.(*ast.Pool); ok && len(trunk) > 1 {
-		switch pool.Spec.Pool.(type) {
-		case *ast.Glob, *ast.Regexp:
-			a.error(src, errors.New("=> not allowed after pool pattern in 'from' operator"))
-			return append(out, badOp())
-		}
-	}
-	sources := a.semSource(src)
-	seq := a.semSeq(trunk[1:])
-	if len(sources) == 1 {
-		return append(out, append(dag.Seq{sources[0]}, seq...)...)
-	}
-	paths := make([]dag.Seq, 0, len(sources))
-	for _, source := range sources {
-		paths = append(paths, append(dag.Seq{source}, seq...))
-	}
-	return append(out, &dag.Fork{Kind: "Fork", Paths: paths})
-}
-
-//XXX make sure you can't read files from a lake instance
-
-func (a *analyzer) semOpSource(source ast.Source, out dag.Seq) dag.Seq {
-	sources := a.semSource(source)
+func (a *analyzer) semFrom(from *ast.From, out dag.Seq) dag.Seq {
+	sources := a.semFromEntity(from.Entity, from.Args)
 	if len(sources) == 1 {
 		return append(sources, out...)
 	}
@@ -87,102 +48,201 @@ func (a *analyzer) semOpSource(source ast.Source, out dag.Seq) dag.Seq {
 	return append(out, &dag.Fork{Kind: "Fork", Paths: paths})
 }
 
-func (a *analyzer) semSource(source ast.Source) []dag.Op {
-	switch s := source.(type) {
-	case *ast.File:
-		var path string
-		switch p := s.Path.(type) {
-		case *ast.Name:
-			// This can be either a reference to a constant or a string.
-			var err error
-			if path, err = a.maybeStringConst(p.Text); err != nil {
-				a.error(s.Path, err)
-			}
-		default:
-			panic(fmt.Errorf("semantic analyzer: unknown AST file type %T", p))
+func (a *analyzer) semFromEntity(entity ast.FromEntity, args ast.FromArgs) dag.Seq {
+	switch entity := entity.(type) {
+	case *ast.Glob:
+		if a.source.IsLake() {
+			return a.semPoolFromRegexp(entity, reglob.Reglob(entity.Pattern), entity.Pattern, "glob", args)
 		}
-		return []dag.Op{
-			&dag.FileScan{
-				Kind:     "FileScan",
-				Path:     path,
-				Format:   nullableName(s.Format),
-				SortKeys: a.semSortKeys(s.SortKeys),
-			},
+		return dag.Seq{a.semFromFileGlob(entity, entity.Pattern, args)}
+	case *ast.Regexp:
+		if !a.source.IsLake() {
+			a.error(entity, errors.New("cannot use regular expression with from operaetor on local file system"))
 		}
-	case *ast.HTTP:
+		return a.semPoolFromRegexp(entity, entity.Pattern, entity.Pattern, "regexp", args)
+	case *ast.Name:
+		return dag.Seq{a.semFromName(entity, entity.Text, args)}
+	case *ast.ExprEntity:
+		return a.semFromExpr(entity, args)
+	case *ast.LakeMeta:
+		return dag.Seq{a.semLakeMeta(entity)}
+	default:
+		panic(fmt.Sprintf("semFromEntity: unknown entity type: %T", entity))
+	}
+}
+
+func (a *analyzer) semFromExpr(entity *ast.ExprEntity, args ast.FromArgs) dag.Seq {
+	expr := a.semExpr(entity.Expr)
+	val, err := kernel.EvalAtCompileTime(a.zctx, expr)
+	if err != nil {
+		a.error(entity, err)
+		return dag.Seq{badOp()}
+	}
+	vals, err := val.Elements()
+	if err != nil {
+		a.error(entity.Expr, errors.New("from expression requires a string array"))
+		return dag.Seq{badOp()}
+	}
+	names := make([]string, 0, len(vals))
+	for _, val := range vals {
+		if super.TypeUnder(val.Type()) != super.TypeString {
+			a.error(entity.Expr, fmt.Errorf("from expression requires a string but encountered: %s", zson.String(val)))
+			return dag.Seq{badOp()}
+		}
+		names = append(names, val.AsString())
+	}
+	if len(names) == 1 {
+		return dag.Seq{a.semFromName(entity, names[0], args)}
+	}
+	var paths []dag.Seq
+	for _, name := range names {
+		paths = append(paths, dag.Seq{a.semFromName(entity, name, args)})
+	}
+	return dag.Seq{
+		&dag.Fork{
+			Kind:  "Fork",
+			Paths: paths,
+		},
+	}
+}
+
+func (a *analyzer) semFromName(nameLoc ast.Node, name string, args ast.FromArgs) dag.Op {
+	if isURL(name) {
+		return a.semFromURL(nameLoc, name, args)
+	}
+	if a.source.IsLake() {
+		poolArgs, err := asPoolArgs(args)
+		if err != nil {
+			a.error(args, err)
+			return badOp()
+		}
+		return a.semPool(nameLoc, name, poolArgs)
+	}
+	return a.semFile(nameLoc, name, args)
+}
+
+func asPoolArgs(args ast.FromArgs) (*ast.PoolArgs, error) {
+	if args == nil {
+		return nil, nil
+	}
+	switch args := args.(type) {
+	case *ast.FormatArg:
+		return nil, errors.New("cannot use format argument with a pool")
+	case *ast.PoolArgs:
+		return args, nil
+	case *ast.HTTPArgs:
+		return nil, errors.New("cannot use HTTP arguments with a pool")
+	default:
+		panic(fmt.Sprintf("unknown args type: %T", args))
+	}
+}
+
+func asFileArgs(args ast.FromArgs) (*ast.FormatArg, error) {
+	if args == nil {
+		return nil, nil
+	}
+	switch args := args.(type) {
+	case *ast.FormatArg:
+		return args, nil
+	case *ast.PoolArgs:
+		return nil, errors.New("cannot use pool arguments when from operator references a file ")
+	case *ast.HTTPArgs:
+		return nil, errors.New("cannot use http arguments when from operator references a file")
+	default:
+		panic(fmt.Sprintf("unknown args type: %T", args))
+	}
+}
+
+func (a *analyzer) semFile(nameLoc ast.Node, name string, args ast.FromArgs) dag.Op {
+	if _, err := os.Stat(name); err != nil {
+		a.error(nameLoc, fmt.Errorf("%q: not such file", name))
+		return badOp()
+	}
+	formatArg, err := asFileArgs(args)
+	if err != nil {
+		a.error(args, err)
+		return badOp()
+	}
+	var format string
+	if formatArg != nil {
+		format = nullableName(formatArg.Format)
+	}
+	return &dag.FileScan{
+		Kind:   "FileScan",
+		Path:   name,
+		Format: format,
+	}
+}
+
+func (a *analyzer) semFromFileGlob(globLoc ast.Node, pattern string, args ast.FromArgs) dag.Op {
+	names, err := filepath.Glob(pattern)
+	if err != nil {
+		a.error(globLoc, err)
+		return badOp()
+	}
+	if len(names) == 0 {
+		a.error(globLoc, errors.New("no file names match glob pattern"))
+		return badOp()
+	}
+	if len(names) == 1 {
+		return a.semFile(globLoc, names[0], args)
+	}
+	paths := make([]dag.Seq, 0, len(names))
+	for _, name := range names {
+		paths = append(paths, dag.Seq{a.semFile(globLoc, name, args)})
+	}
+	return &dag.Fork{
+		Kind:  "Fork",
+		Paths: paths,
+	}
+}
+
+func (a *analyzer) semFromURL(urlLoc ast.Node, u string, args ast.FromArgs) dag.Op {
+	_, err := url.ParseRequestURI(u)
+	if err != nil {
+		a.error(urlLoc, err)
+		return badOp()
+	}
+	format, method, headers, body, err := a.evalHTTPArgs(args)
+	if err != nil {
+		a.error(args, err)
+		return badOp()
+	}
+	return &dag.HTTPScan{
+		Kind:    "HTTPScan",
+		URL:     u,
+		Format:  format,
+		Method:  method,
+		Headers: headers,
+		Body:    body,
+	}
+}
+
+func (a *analyzer) evalHTTPArgs(args ast.FromArgs) (string, string, map[string][]string, string, error) {
+	switch args := args.(type) {
+	case nil:
+		return "", "", nil, "", nil
+	case *ast.HTTPArgs:
 		var headers map[string][]string
-		if s.Headers != nil {
-			expr := a.semExpr(s.Headers)
+		if args.Headers != nil {
+			expr := a.semExpr(args.Headers)
 			val, err := kernel.EvalAtCompileTime(a.zctx, expr)
 			if err != nil {
-				a.error(s.Headers, err)
+				a.error(args.Headers, err)
 			} else {
 				headers, err = unmarshalHeaders(val)
 				if err != nil {
-					a.error(s.Headers, err)
+					a.error(args.Headers, err)
 				}
 			}
 		}
-		var url string
-		switch p := s.URL.(type) {
-		case *ast.Name:
-			// This can be either a reference to a constant or a string.
-			var err error
-			if url, err = a.maybeStringConst(p.Text); err != nil {
-				a.error(s.URL, err)
-				// Set url so we don't report an error for this twice.
-				url = "http://error"
-			}
-		default:
-			panic(fmt.Errorf("semantic analyzer: unsupported AST get type %T", p))
-		}
-		if !strings.HasPrefix(url, "http://") && !strings.HasPrefix(url, "https://") {
-			a.error(s.URL, fmt.Errorf("invalid URL %s", url))
-		}
-		return []dag.Op{
-			&dag.HTTPScan{
-				Kind:     "HTTPScan",
-				URL:      url,
-				Format:   nullableName(s.Format),
-				SortKeys: a.semSortKeys(s.SortKeys),
-				Method:   nullableName(s.Method),
-				Headers:  headers,
-				Body:     nullableName(s.Body),
-			},
-		}
-	case *ast.Pool:
-		if !a.source.IsLake() {
-			a.error(s, errors.New("\"from pool\" cannot be used without a lake"))
-			return []dag.Op{badOp()}
-		}
-		return a.semPool(s)
-	case *ast.Pass:
-		//XXX just connect parent
-		return []dag.Op{dag.PassOp}
-	case *ast.Delete:
-		if !a.source.IsLake() {
-			a.error(s, errors.New("deletions cannot be applied to non-lake entity"))
-			return []dag.Op{badOp()}
-		}
-		pool, commit, err := a.checkHead("HEAD", "")
-		if err != nil {
-			a.error(s, err)
-			return []dag.Op{badOp()}
-		}
-		poolID, commitID, err := a.lookupPoolIDs(pool, commit)
-		if err != nil {
-			a.error(s, err)
-			return []dag.Op{badOp()}
-		}
-		return []dag.Op{
-			&dag.DeleteScan{
-				Kind:   "DeleteScan",
-				ID:     poolID,
-				Commit: commitID,
-			},
-		}
+		return nullableName(args.Format), nullableName(args.Method), headers, nullableName(args.Body), nil
+	case *ast.FormatArg:
+		return nullableName(args.Format), "", nil, "", nil
+	case *ast.PoolArgs:
+		return "", "", nil, "", errors.New("cannot use pool-style argument with a URL in a from operator")
 	default:
-		panic(fmt.Errorf("semantic analyzer: unknown AST source type %T", s))
+		panic(fmt.Errorf("semantic analyzer: unsupported AST args type %T", args))
 	}
 }
 
@@ -208,19 +268,22 @@ func unmarshalHeaders(val super.Value) (map[string][]string, error) {
 	return headers, nil
 }
 
-func (a *analyzer) semSortKeys(sortExprs []ast.SortExpr) order.SortKeys {
-	var sortKeys order.SortKeys
-	for _, e := range sortExprs {
-		s := a.semSortExpr(e)
-		switch key := s.Key.(type) {
-		case *dag.This:
-			sortKeys = append(sortKeys, order.NewSortKey(s.Order, key.Path))
-		case *dag.BadExpr: // ignore so we don't report double errors
-		default:
-			a.error(e.Expr, errors.New("field required in sort expression"))
-		}
+func (a *analyzer) semPoolFromRegexp(patternLoc ast.Node, re, orig, which string, args ast.FromArgs) dag.Seq {
+	poolNames, err := a.matchPools(re, orig, which)
+	if err != nil {
+		a.error(patternLoc, err)
+		return dag.Seq{badOp()}
 	}
-	return sortKeys
+	poolArgs, err := asPoolArgs(args)
+	if err != nil {
+		a.error(args, err)
+		return dag.Seq{badOp()}
+	}
+	var sources []dag.Op
+	for _, name := range poolNames {
+		sources = append(sources, a.semPool(patternLoc, name, poolArgs))
+	}
+	return sources
 }
 
 func (a *analyzer) semSortExpr(s ast.SortExpr) dag.SortExpr {
@@ -235,106 +298,62 @@ func (a *analyzer) semSortExpr(s ast.SortExpr) dag.SortExpr {
 	return dag.SortExpr{Key: e, Order: o}
 }
 
-func (a *analyzer) semPool(p *ast.Pool) []dag.Op {
-	var poolNames []string
-	var err error
-	switch specPool := p.Spec.Pool.(type) {
-	case nil:
-		// This is a lake meta-query.
-		poolNames = []string{""}
-	case *ast.Glob:
-		poolNames, err = a.matchPools(reglob.Reglob(specPool.Pattern), specPool.Pattern, "glob")
-	case *ast.Regexp:
-		poolNames, err = a.matchPools(specPool.Pattern, specPool.Pattern, "regexp")
-	case *ast.Name:
-		// This can be either a reference to a constant or a string.
-		var name string
-		if name, err = a.maybeStringConst(specPool.Text); err == nil {
-			poolNames = []string{name}
-		}
-	default:
-		panic(fmt.Errorf("semantic analyzer: unknown AST pool type %T", specPool))
+func (a *analyzer) semPool(nameLoc ast.Node, poolName string, args *ast.PoolArgs) dag.Op {
+	var commit, meta string
+	var tap bool
+	if args != nil {
+		commit = nullableName(args.Commit)
+		meta = nullableName(args.Meta)
+		tap = args.Tap
 	}
-	if err != nil {
-		// XXX PoolSpec should have a node position but for now just report
-		// error as entire source.
-		a.error(p.Spec.Pool, err)
-		return []dag.Op{badOp()}
-	}
-	var sources []dag.Op
-	for _, name := range poolNames {
-		sources = append(sources, a.semPoolWithName(p, name))
-	}
-	return sources
-}
-
-func (a *analyzer) maybeStringConst(name string) (string, error) {
-	e, err := a.scope.LookupExpr(name)
-	if err != nil || e == nil {
-		return name, err
-	}
-	l, ok := e.(*dag.Literal)
-	if !ok {
-		return "", fmt.Errorf("%s: string value required", name)
-	}
-	val := zson.MustParseValue(a.zctx, l.Value)
-	if val.Type().ID() != super.IDString {
-		return "", fmt.Errorf("%s: string value required", name)
-	}
-	return val.AsString(), nil
-}
-
-func (a *analyzer) semPoolWithName(p *ast.Pool, poolName string) dag.Op {
-	poolName, commit, err := a.checkHead(poolName, nullableName(p.Spec.Commit))
-	if err != nil {
-		a.error(p.Spec.Pool, errors.New("cannot scan from unknown HEAD"))
-		return badOp()
-	}
-	if poolName == "" {
-		meta := p.Spec.Meta
-		if meta == nil || meta.Text == "" {
-			a.error(p, errors.New("pool name missing"))
+	if poolName == "HEAD" {
+		if a.head == nil || a.head.Pool == "" {
+			a.error(nameLoc, errors.New("cannot resolve unknown HEAD"))
 			return badOp()
 		}
-		if _, ok := dag.LakeMetas[meta.Text]; !ok {
-			a.error(p, fmt.Errorf("unknown lake metadata type %q in from operator", meta.Text))
-			return badOp()
-		}
-		return &dag.LakeMetaScan{
-			Kind: "LakeMetaScan",
-			Meta: p.Spec.Meta.Text,
-		}
+		poolName = a.head.Pool
+		commit = a.head.Branch
 	}
-	poolID, commitID, err := a.lookupPoolIDs(poolName, commit)
+	poolID, err := a.source.PoolID(a.ctx, poolName)
 	if err != nil {
-		a.error(p.Spec.Pool, err)
+		a.error(nameLoc, err)
 		return badOp()
 	}
-	if meta := p.Spec.Meta; meta != nil && meta.Text != "" {
-		if _, ok := dag.CommitMetas[meta.Text]; ok {
+	var commitID ksuid.KSUID
+	if commit != "" {
+		if commitID, err = lakeparse.ParseID(commit); err != nil {
+			commitID, err = a.source.CommitObject(a.ctx, poolID, commit)
+			if err != nil {
+				a.error(args.Commit, err)
+				return badOp()
+			}
+		}
+	}
+	if meta != "" {
+		if _, ok := dag.CommitMetas[meta]; ok {
 			if commitID == ksuid.Nil {
 				commitID, err = a.source.CommitObject(a.ctx, poolID, "main")
 				if err != nil {
-					a.error(p, err)
+					a.error(args.Commit, err)
 					return badOp()
 				}
 			}
 			return &dag.CommitMetaScan{
 				Kind:   "CommitMetaScan",
-				Meta:   meta.Text,
+				Meta:   meta,
 				Pool:   poolID,
 				Commit: commitID,
-				Tap:    p.Spec.Tap,
+				Tap:    tap,
 			}
 		}
-		if _, ok := dag.PoolMetas[meta.Text]; ok {
+		if _, ok := dag.PoolMetas[meta]; ok {
 			return &dag.PoolMetaScan{
 				Kind: "PoolMetaScan",
-				Meta: meta.Text,
+				Meta: meta,
 				ID:   poolID,
 			}
 		}
-		a.error(p, fmt.Errorf("unknown metadata type %q", meta))
+		a.error(nameLoc, fmt.Errorf("unknown metadata type %q", meta))
 		return badOp()
 	}
 	if commitID == ksuid.Nil {
@@ -342,7 +361,7 @@ func (a *analyzer) semPoolWithName(p *ast.Pool, poolName string) dag.Op {
 		// there is a "from pool" operator with no meta query or commit object.
 		commitID, err = a.source.CommitObject(a.ctx, poolID, "main")
 		if err != nil {
-			a.error(p, err)
+			a.error(nameLoc, err)
 			return badOp()
 		}
 	}
@@ -353,32 +372,48 @@ func (a *analyzer) semPoolWithName(p *ast.Pool, poolName string) dag.Op {
 	}
 }
 
-func (a *analyzer) checkHead(pool, commit string) (string, string, error) {
-	if pool == "HEAD" {
-		if a.head == nil {
-			return "", "", errors.New("cannot scan from unknown HEAD")
-		}
-		pool = a.head.Pool
-		commit = a.head.Branch
+func (a *analyzer) semLakeMeta(entity *ast.LakeMeta) dag.Op {
+	meta := nullableName(entity.Meta)
+	if _, ok := dag.LakeMetas[meta]; !ok {
+		a.error(entity, fmt.Errorf("unknown lake metadata type %q in from operator", meta))
+		return badOp()
 	}
-	return pool, commit, nil
+	return &dag.LakeMetaScan{
+		Kind: "LakeMetaScan",
+		Meta: meta,
+	}
 }
 
-func (a *analyzer) lookupPoolIDs(pool, commit string) (ksuid.KSUID, ksuid.KSUID, error) {
+func (a *analyzer) semDelete(op *ast.Delete) dag.Op {
+	if !a.source.IsLake() {
+		a.error(op, errors.New("deletion requires data lake"))
+		return badOp()
+	}
+	// delete-where only supports deleting at head
+	pool := a.head.Pool
+	commit := a.head.Branch
+
 	poolID, err := a.source.PoolID(a.ctx, pool)
 	if err != nil {
-		return ksuid.Nil, ksuid.Nil, err
+		a.error(op, err)
+		return badOp()
 	}
 	var commitID ksuid.KSUID
 	if commit != "" {
+		var err error
 		if commitID, err = lakeparse.ParseID(commit); err != nil {
 			commitID, err = a.source.CommitObject(a.ctx, poolID, commit)
 			if err != nil {
-				return ksuid.Nil, ksuid.Nil, err
+				a.error(op, err)
+				return badOp()
 			}
 		}
 	}
-	return poolID, commitID, nil
+	return &dag.DeleteScan{
+		Kind:   "DeleteScan",
+		ID:     poolID,
+		Commit: commitID,
+	}
 }
 
 func (a *analyzer) matchPools(pattern, origPattern, patternDesc string) ([]string, error) {
@@ -442,8 +477,11 @@ func (a *analyzer) semOp(o ast.Op, seq dag.Seq) dag.Seq {
 	switch o := o.(type) {
 	case *ast.From:
 		return a.semFrom(o, seq)
-	case *ast.Pool, *ast.File, *ast.HTTP, *ast.Delete:
-		return a.semOpSource(o.(ast.Source), seq)
+	case *ast.Delete:
+		if len(seq) > 0 {
+			panic("analyzer.SemOp: delete scan cannot have parent in AST")
+		}
+		return dag.Seq{a.semDelete(o)}
 	case *ast.Summarize:
 		keys := a.semAssignments(o.Keys)
 		a.checkStaticAssignment(o.Keys, keys)
@@ -1182,4 +1220,8 @@ func (a *analyzer) maybeConvertUserOp(call *ast.Call) dag.Seq {
 		}
 	}
 	return a.semSeq(decl.ast.Body)
+}
+
+func isURL(s string) bool {
+	return strings.HasPrefix(s, "http://") || strings.HasPrefix(s, "https://")
 }

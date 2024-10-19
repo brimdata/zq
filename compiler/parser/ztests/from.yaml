@@ -12,24 +12,28 @@ script: |
 outputs:
   - name: stdout
     data: |
-      from (
-        pool a =>
-          search x and pool and b
+      fork (
+        =>
+          from a
+          | search x and pool and b
       )
       === No spaces around parentheses.
-      from (
-        file a
+      fork (
+        =>
+          from a
       )
-      from (
-        get "http://a"
+      fork (
+        =>
+          from "http://a"
       )
-      from (
-        pool a
+      fork (
+        =>
+          from a
       )
       === No space before vertical bar.
-      file a
+      from a
       | search b
-      get "http://a"
+      from "http://a"
       | search b
       from a
       | search b
