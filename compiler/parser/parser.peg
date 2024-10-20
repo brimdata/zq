@@ -112,7 +112,7 @@ Operation
   / "from" __ "(" trunks:FromLeg+ __ ")" {
       return &ast.From{
           Kind: "From",
-          Trunks: sliceOf[ast.Trunk](trunks),
+          Trunks: sliceOf[ast.Seq](trunks),
           KeywordPos: c.pos.offset,
           Rparen: lastPos(c, ")"),
       }, nil
@@ -153,12 +153,12 @@ Case
   / "default" { return nil, nil }
 
 FromLeg
-  = __ source:FromSource opt:(__ "=>" __ Seq)? {
-      t := ast.Trunk{Kind:"Trunk",Source:source.(ast.Source)}
-      if opt != nil {
-        t.Seq = sliceOf[ast.Op](opt.([]any)[3])
+  = __ source:FromSource seq:(__ "=>" __ s:Seq { return s, nil })? {
+      ops := []any{source}
+      if seq != nil {
+        ops = append(ops, seq.([]any)...)
       }
-      return t, nil
+      return ast.Seq(sliceOf[ast.Op](ops)), nil
     }
 
 FromSource

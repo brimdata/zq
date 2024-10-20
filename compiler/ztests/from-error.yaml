@@ -33,4 +33,4 @@ outputs:
       ===
       => not allowed after pool pattern in 'from' operator at line 1, column 7:
       from (pool * => count())
-            ~~~~~~~~~~~~~~~~~
+            ~~~~~~

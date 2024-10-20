@@ -48,7 +48,6 @@ var unpacker = unpack.New(
 	Merge{},
 	Output{},
 	Over{},
-	Trunk{},
 	astzed.Map{},
 	MapExpr{},
 	Shape{},

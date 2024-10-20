@@ -598,10 +598,10 @@ type (
 		KeywordPos int    `json:"keyword_pos"`
 	}
 	From struct {
-		Kind       string  `json:"kind" unpack:""`
-		KeywordPos int     `json:"keyword_pos"`
-		Trunks     []Trunk `json:"trunks"`
-		Rparen     int     `json:"rparen"`
+		Kind       string `json:"kind" unpack:""`
+		KeywordPos int    `json:"keyword_pos"`
+		Trunks     []Seq  `json:"trunks"`
+		Rparen     int    `json:"rparen"`
 	}
 	Load struct {
 		Kind       string `json:"kind" unpack:""`
@@ -706,21 +706,6 @@ func (s SortExpr) End() int {
 		s.Order.End()
 	}
 	return s.Expr.End()
-}
-
-type Trunk struct {
-	Kind   string `json:"kind" unpack:""`
-	Source Source `json:"source"`
-	Seq    Seq    `json:"seq"`
-}
-
-func (t *Trunk) Pos() int { return t.Source.Pos() }
-
-func (t *Trunk) End() int {
-	if len(t.Seq) > 0 {
-		return t.Seq.End()
-	}
-	return t.Source.End()
 }
 
 type Case struct {

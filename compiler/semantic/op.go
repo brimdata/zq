@@ -52,16 +52,17 @@ func (a *analyzer) semFrom(from *ast.From, seq dag.Seq) dag.Seq {
 	}
 }
 
-func (a *analyzer) semTrunk(trunk ast.Trunk, out dag.Seq) dag.Seq {
-	if pool, ok := trunk.Source.(*ast.Pool); ok && trunk.Seq != nil {
+func (a *analyzer) semTrunk(trunk ast.Seq, out dag.Seq) dag.Seq {
+	src := trunk[0].(ast.Source)
+	if pool, ok := src.(*ast.Pool); ok && len(trunk) > 1 {
 		switch pool.Spec.Pool.(type) {
 		case *ast.Glob, *ast.Regexp:
-			a.error(&trunk, errors.New("=> not allowed after pool pattern in 'from' operator"))
+			a.error(src, errors.New("=> not allowed after pool pattern in 'from' operator"))
 			return append(out, badOp())
 		}
 	}
-	sources := a.semSource(trunk.Source)
-	seq := a.semSeq(trunk.Seq)
+	sources := a.semSource(src)
+	seq := a.semSeq(trunk[1:])
 	if len(sources) == 1 {
 		return append(out, append(dag.Seq{sources[0]}, seq...)...)
 	}

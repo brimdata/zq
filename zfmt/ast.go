@@ -428,14 +428,14 @@ func (c *canon) op(p ast.Op) {
 	case *ast.From:
 		c.next()
 		c.open("from (")
-		for _, trunk := range p.Trunks {
+		for _, seq := range p.Trunks {
 			c.ret()
-			c.source(trunk.Source)
-			if trunk.Seq != nil {
+			c.source(seq[0].(ast.Source))
+			if len(seq) > 1 {
 				c.write(" =>")
 				c.open()
 				c.head = true
-				c.seq(trunk.Seq)
+				c.seq(seq[1:])
 				c.close()
 			}
 		}
