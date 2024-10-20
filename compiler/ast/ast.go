@@ -4,7 +4,6 @@ package ast
 
 import (
 	astzed "github.com/brimdata/super/compiler/ast/zed"
-	"github.com/brimdata/super/pkg/field"
 )
 
 // This module is derived from the GO AST design pattern in
@@ -444,18 +443,12 @@ type (
 		Body  Seq    `json:"body"`
 	}
 	// A Parallel operator represents a set of operators that each get
-	// a stream of Zed values from their parent.
+	// a copy of the input from its parent.
 	Parallel struct {
-		Kind string `json:"kind" unpack:""`
-		// If non-zero, MergeBy contains the field name on
-		// which the branches of this parallel operator should be
-		// merged in the order indicated by MergeReverse.
-		// XXX merge_by should be a list of expressions
-		KeywordPos   int        `json:"keyword_pos"`
-		MergeBy      field.Path `json:"merge_by,omitempty"`
-		MergeReverse bool       `json:"merge_reverse,omitempty"`
-		Paths        []Seq      `json:"paths"`
-		Rparen       int        `json:"rparen"`
+		Kind       string `json:"kind" unpack:""`
+		KeywordPos int    `json:"keyword_pos"`
+		Paths      []Seq  `json:"paths"`
+		Rparen     int    `json:"rparen"`
 	}
 	Switch struct {
 		Kind       string `json:"kind" unpack:""`

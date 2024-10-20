@@ -392,13 +392,6 @@ func (c *canon) op(p ast.Op) {
 		c.ret()
 		c.flush()
 		c.write(")")
-		if p.MergeBy != nil {
-			c.write(" merge-by ")
-			c.fieldpath(p.MergeBy)
-		}
-		if p.MergeReverse {
-			c.write(" rev")
-		}
 	case *ast.Switch:
 		c.next()
 		c.write("switch ")
