@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"io"
 
-	 "github.com/brimdata/super"
+	"github.com/brimdata/super"
 	"github.com/brimdata/super/cli/outputflags"
 	"github.com/brimdata/super/cmd/super/dev"
 	"github.com/brimdata/super/cmd/super/root"

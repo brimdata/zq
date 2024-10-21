@@ -133,7 +133,7 @@ import (
 	"testing"
 	"unicode/utf8"
 
-	 "github.com/brimdata/super"
+	"github.com/brimdata/super"
 	"github.com/brimdata/super/cli/inputflags"
 	"github.com/brimdata/super/cli/outputflags"
 	"github.com/brimdata/super/compiler"

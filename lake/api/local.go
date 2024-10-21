@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	 "github.com/brimdata/super"
+	"github.com/brimdata/super"
 	"github.com/brimdata/super/api"
 	"github.com/brimdata/super/compiler"
 	"github.com/brimdata/super/compiler/parser"

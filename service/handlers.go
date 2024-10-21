@@ -8,7 +8,7 @@ import (
 	"os"
 	"time"
 
-	 "github.com/brimdata/super"
+	"github.com/brimdata/super"
 	"github.com/brimdata/super/api"
 	"github.com/brimdata/super/api/queryio"
 	"github.com/brimdata/super/compiler"
