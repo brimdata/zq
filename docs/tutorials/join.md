@@ -142,16 +142,16 @@ The join type `anti` allows us to see which fruits are not liked by anyone.
 Note that with anti join only values from the left-hand input appear in the
 results.
 
-The Zed script `anti-join.zed`:
-```mdtest-input anti-join.zed
-file fruit.ndjson
+The query `anti-join.spq`:
+```mdtest-input anti-join.spq
+file fruit.json
 | anti join (
-  file people.ndjson
+  file people.json
 ) on flavor=likes
 ```
-Executing the Zed script:
+Executing the query:
 ```mdtest-command
-zq -z -I anti-join.zed
+super query -z -I anti-join.spq
 ```
 produces
 ```mdtest-output
