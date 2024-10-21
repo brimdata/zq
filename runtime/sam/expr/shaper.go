@@ -352,10 +352,10 @@ const (
 // copy/cast steps to be carried out over an input record.
 type step struct {
 	op        op
-	caster    Evaluator // for castPrimitive
-	fromIndex int       // for children of a record step
-	fromType  super.Type  // for castPrimitive and castToUnion
-	toTag     int       // for castToUnion
+	caster    Evaluator  // for castPrimitive
+	fromIndex int        // for children of a record step
+	fromType  super.Type // for castPrimitive and castToUnion
+	toTag     int        // for castToUnion
 	toType    super.Type
 	// if op == record, contains one op for each field.
 	// if op == array, contains one op for all array elements.

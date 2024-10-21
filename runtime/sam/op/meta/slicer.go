@@ -135,8 +135,8 @@ func (s *Slicer) stash(o *data.Object) (zbuf.Batch, error) {
 // objects that should be scanned along with a span to limit the scan
 // to only the span involved.
 type Partition struct {
-	Min     super.Value      `zed:"min"`
-	Max     super.Value      `zed:"max"`
+	Min     super.Value    `zed:"min"`
+	Max     super.Value    `zed:"max"`
 	Objects []*data.Object `zed:"objects"`
 }
 

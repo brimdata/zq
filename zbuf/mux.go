@@ -30,8 +30,8 @@ type EndOfChannel string
 
 var _ Batch = (*EndOfChannel)(nil)
 
-func (*EndOfChannel) Ref()                {}
-func (*EndOfChannel) Unref()              {}
+func (*EndOfChannel) Ref()                  {}
+func (*EndOfChannel) Unref()                {}
 func (*EndOfChannel) Values() []super.Value { return nil }
 func (*EndOfChannel) Vars() []super.Value   { return nil }
 
