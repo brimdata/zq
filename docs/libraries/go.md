@@ -47,7 +47,7 @@ import (
 	"log"
 	"os"
 
-	super "github.com/brimdata/super"
+	"github.com/brimdata/super"
 	"github.com/brimdata/super/zio/zsonio"
 	"github.com/brimdata/super/zson"
 )
@@ -114,7 +114,7 @@ import (
 	"log"
 	"os"
 
-	super "github.com/brimdata/super"
+	"github.com/brimdata/super"
 	"github.com/brimdata/super/lake/api"
 	"github.com/brimdata/super/pkg/storage"
 	"github.com/brimdata/super/zbuf"

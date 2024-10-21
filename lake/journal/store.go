@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	super "github.com/brimdata/super"
+	 "github.com/brimdata/super"
 	"github.com/brimdata/super/pkg/storage"
 	"github.com/brimdata/super/zio/zngio"
 	"github.com/brimdata/super/zngbytes"

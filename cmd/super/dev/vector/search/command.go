@@ -4,7 +4,7 @@ import (
 	"errors"
 	"flag"
 
-	super "github.com/brimdata/super"
+	 "github.com/brimdata/super"
 	"github.com/brimdata/super/cli/lakeflags"
 	"github.com/brimdata/super/cli/outputflags"
 	"github.com/brimdata/super/cli/poolflags"

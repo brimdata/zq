@@ -10,7 +10,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	super "github.com/brimdata/super"
+	 "github.com/brimdata/super"
 	"github.com/brimdata/super/cli/commitflags"
 	"github.com/brimdata/super/cli/inputflags"
 	"github.com/brimdata/super/cli/lakeflags"
