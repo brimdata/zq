@@ -24,8 +24,8 @@ type Summarize struct {
 	results []aggTable
 }
 
-func New(parent vector.Puller, zctx *zed.Context, aggNames field.List, aggs []*expr.Aggregator, keyNames []field.Path, keyExprs []expr.Evaluator) (*Summarize, error) {
-	builder, err := vector.NewRecordBuilder(zctx, append(keyNames, aggNames...))
+func New(parent vector.Puller, zctx *zed.Context, aggPaths field.List, aggs []*expr.Aggregator, keyNames []field.Path, keyExprs []expr.Evaluator) (*Summarize, error) {
+	builder, err := vector.NewRecordBuilder(zctx, append(keyNames, aggPaths...))
 	if err != nil {
 		return nil, err
 	}
@@ -85,18 +85,27 @@ func (s *Summarize) consume(keys []vector.Any, vals []vector.Any) {
 	tableID := s.typeTable.Lookup(keyTypes)
 	table, ok := s.tables[tableID]
 	if !ok {
-		table = s.newAggTable()
+		table = s.newAggTable(keyTypes)
 		s.tables[tableID] = table
 	}
 	table.update(keys, vals)
 }
 
-func (s *Summarize) newAggTable() aggTable {
+func (s *Summarize) newAggTable(keyTypes []zed.Type) aggTable {
+	// Check if we can us an optimized table, else go slow path.
+	if s.isCountByString(keyTypes) {
+		return newCountByString(s.builder)
+	}
 	return &superTable{
 		table:   make(map[string]aggRow),
 		aggs:    s.aggs,
 		builder: s.builder,
 	}
+}
+
+func (s *Summarize) isCountByString(keyTypes []zed.Type) bool {
+	return len(s.aggs) == 1 && len(keyTypes) == 1 && s.aggs[0].Name == "count" &&
+		keyTypes[0].ID() == zed.IDString
 }
 
 func (s *Summarize) next() vector.Any {

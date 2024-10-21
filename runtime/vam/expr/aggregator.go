@@ -8,6 +8,7 @@ import (
 
 type Aggregator struct {
 	Pattern agg.Pattern
+	Name    string
 	Expr    Evaluator
 	Where   Evaluator
 }
@@ -24,6 +25,7 @@ func NewAggregator(name string, expr Evaluator, where Evaluator) (*Aggregator, e
 	}
 	return &Aggregator{
 		Pattern: pattern,
+		Name:    name,
 		Expr:    expr,
 		Where:   where,
 	}, nil

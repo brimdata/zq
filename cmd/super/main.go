@@ -28,7 +28,6 @@ import (
 	_ "github.com/brimdata/super/cmd/super/dev/compile"
 	_ "github.com/brimdata/super/cmd/super/dev/dig/frames"
 	_ "github.com/brimdata/super/cmd/super/dev/dig/slice"
-	_ "github.com/brimdata/super/cmd/super/dev/vector/agg"
 	_ "github.com/brimdata/super/cmd/super/dev/vector/copy"
 	_ "github.com/brimdata/super/cmd/super/dev/vector/project"
 	_ "github.com/brimdata/super/cmd/super/dev/vector/query"

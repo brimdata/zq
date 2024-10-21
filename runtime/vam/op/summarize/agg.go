@@ -2,7 +2,6 @@ package summarize
 
 import (
 	"fmt"
-	"slices"
 
 	zed "github.com/brimdata/super"
 	"github.com/brimdata/super/runtime/vam/expr"
@@ -102,107 +101,82 @@ func (s *superTable) materializeRow(row aggRow) vector.Any {
 	return s.builder.New(vecs)
 }
 
-//XXX need to make sure vam operator objects are returned to GC as they are finished
-
-type CountByString struct {
-	parent vector.Puller
-	zctx   *zed.Context
-	field  expr.Evaluator
-	name   string
-	table  countByString
-	done   bool
+type countByString struct {
+	nulls   uint64
+	table   map[string]uint64
+	builder *vector.RecordBuilder
 }
 
-func NewCountByString(zctx *zed.Context, parent vector.Puller, name string) *CountByString {
-	return &CountByString{
-		parent: parent,
-		zctx:   zctx,
-		field:  expr.NewDotExpr(zctx, &expr.This{}, name),
-		name:   name,
-		table:  countByString{table: make(map[string]uint64)}, //XXX
-	}
+func newCountByString(b *vector.RecordBuilder) aggTable {
+	return &countByString{builder: b, table: make(map[string]uint64)}
 }
 
-func (c *CountByString) Pull(done bool) (vector.Any, error) {
-	if done {
-		_, err := c.parent.Pull(done)
-		return nil, err
-	}
-	if c.done {
-		return nil, nil
-	}
-	for {
-		//XXX check context Done
-		vec, err := c.parent.Pull(false)
-		if err != nil {
-			return nil, err
-		}
-		if vec == nil {
-			c.done = true
-			return c.table.materialize(c.zctx, c.name), nil
-		}
-		c.update(vec)
-	}
-}
-
-func (c *CountByString) update(val vector.Any) {
-	if val, ok := val.(*vector.Dynamic); ok {
-		for _, val := range val.Values {
-			c.update(val)
-		}
-		return
-	}
-	switch val := c.field.Eval(val).(type) {
+func (c *countByString) update(keys []vector.Any, _ []vector.Any) {
+	switch val := keys[0].(type) {
 	case *vector.String:
-		c.table.count(val)
+		c.count(val)
 	case *vector.Dict:
-		c.table.countDict(val.Any.(*vector.String), val.Counts)
+		c.countDict(val.Any.(*vector.String), val.Counts, val.Nulls)
 	case *vector.Const:
-		c.table.countFixed(val)
+		c.countFixed(val)
 	default:
 		panic(fmt.Sprintf("UNKNOWN %T", val))
 	}
 }
 
-type countByString struct {
-	nulls uint64
-	table map[string]uint64
-}
-
 func (c *countByString) count(vec *vector.String) {
 	offs := vec.Offsets
 	bytes := vec.Bytes
-	n := len(offs) - 1
-	for k := 0; k < n; k++ {
-		c.table[string(bytes[offs[k]:offs[k+1]])]++
+	if vec.Nulls == nil {
+		for k := range vec.Len() {
+			c.table[string(bytes[offs[k]:offs[k+1]])]++
+		}
+	} else {
+		for k := range vec.Len() {
+			if vec.Nulls.Value(k) {
+				c.nulls++
+			} else {
+				c.table[string(bytes[offs[k]:offs[k+1]])]++
+			}
+		}
 	}
 }
 
-func (c *countByString) countDict(vec *vector.String, counts []uint32) {
+func (c *countByString) countDict(vec *vector.String, counts []uint32, nulls *vector.Bool) {
 	offs := vec.Offsets
 	bytes := vec.Bytes
-	n := len(offs) - 1
-	for k := 0; k < n; k++ {
+	for k := range vec.Len() {
 		c.table[string(bytes[offs[k]:offs[k+1]])] = uint64(counts[k])
+	}
+	if nulls != nil {
+		for k := range nulls.Len() {
+			if nulls.Value(k) {
+				c.nulls++
+			}
+		}
 	}
 }
 
 func (c *countByString) countFixed(vec *vector.Const) {
-	//XXX
 	val := vec.Value()
 	switch val.Type().ID() {
 	case zed.IDString:
-		c.table[zed.DecodeString(val.Bytes())] += uint64(vec.Len())
+		var nullCnt uint64
+		if vec.Nulls != nil {
+			for k := range vec.Len() {
+				if vec.Nulls.Value(k) {
+					nullCnt++
+				}
+			}
+			c.nulls += nullCnt
+		}
+		c.table[zed.DecodeString(val.Bytes())] += uint64(vec.Len()) - nullCnt
 	case zed.IDNull:
 		c.nulls += uint64(vec.Len())
 	}
 }
 
-func (c *countByString) materialize(zctx *zed.Context, name string) *vector.Record {
-	typ := zctx.MustLookupTypeRecord([]zed.Field{
-		{Type: zed.TypeString, Name: name},
-		{Type: zed.TypeUint64, Name: "count"},
-	})
+func (c *countByString) materialize() vector.Any {
 	length := len(c.table)
 	counts := make([]uint64, length)
 	var bytes []byte
@@ -215,22 +189,17 @@ func (c *countByString) materialize(zctx *zed.Context, name string) *vector.Reco
 		k++
 	}
 	offs[k] = uint32(len(bytes))
-	// XXX change nulls to string null... this will be fixed in
-	// prod-quality summarize op
 	var nulls *vector.Bool
 	if c.nulls > 0 {
 		length++
-		counts = slices.Grow(counts, length)[0:length]
-		offs = slices.Grow(offs, length+1)[0 : length+1]
-		counts[k] = c.nulls
-		k++
-		offs[k] = uint32(len(bytes))
-		nulls = vector.NewBoolEmpty(uint32(k), nil)
-		nulls.Set(uint32(k - 1))
+		counts = append(counts, c.nulls)
+		offs = append(offs, uint32(len(bytes)))
+		nulls = vector.NewBoolEmpty(uint32(length), nil)
+		nulls.Set(uint32(length - 1))
 	}
 	keyVec := vector.NewString(offs, bytes, nulls)
 	countVec := vector.NewUint(zed.TypeUint64, counts, nil)
-	return vector.NewRecord(typ, []vector.Any{keyVec, countVec}, uint32(length), nil)
+	return c.builder.New([]vector.Any{keyVec, countVec})
 }
 
 type Sum struct {
