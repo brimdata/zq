@@ -7,11 +7,11 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$SCRIPT_DIR" || exit 1
 
 shaper=$(mktemp)
-sed -e '1,/```mdtest-input shaper.zed/d' -e '/```/,$d' ../docs/integrations/zeek/shaping-zeek-ndjson.md > "$shaper"
+sed -e '1,/```mdtest-input shaper.zed/d' -e '/```/,$d' ../docs/integrations/zeek/shaping-zeek-json.md > "$shaper"
 
 DATA="../zed-sample-data"
 ln -sfn zeek-default "$DATA/zeek"
-ln -sfn zeek-ndjson "$DATA/ndjson"
+ln -sfn zeek-json "$DATA/json"
 
 if [[ $(type -P "gzcat") ]]; then
   ZCAT="gzcat"
@@ -82,17 +82,17 @@ do
     echo -e "### $DESC\n" | tee "$MD"
     echo "|**<br>Tool**|**<br>Arguments**|**Input<br>Format**|**Output<br>Format**|**<br>Real**|**<br>User**|**<br>Sys**|" | tee -a "$MD"
     echo "|:----------:|:---------------:|:-----------------:|:------------------:|-----------:|-----------:|----------:|" | tee -a "$MD"
-    for INPUT in zeek zng zng-uncompressed zson ndjson ; do
-      for OUTPUT in zeek zng zng-uncompressed zson ndjson ; do
+    for INPUT in zeek zng zng-uncompressed zson json ; do
+      for OUTPUT in zeek zng zng-uncompressed zson json ; do
         superpipe_query=${SUPERPIPE_QUERIES[$n]}
         echo -n "|\`super query\`|\`$superpipe_query\`|$INPUT|$OUTPUT|" | tee -a "$MD"
         case $INPUT in
-          ndjson ) super_flags="-i json -I $shaper" superpipe_query="| $superpipe_query" ;;
+          json ) super_flags="-i json -I $shaper" superpipe_query="| $superpipe_query" ;;
           zng-uncompressed ) super_flags="-i zng" ;;
           * ) super_flags="-i $INPUT" ;;
         esac
         case $OUTPUT in
-          ndjson ) super_flags="$super_flags -f json" ;;
+          json ) super_flags="$super_flags -f json" ;;
           zng-uncompressed ) super_flags="$super_flags -f zng -zng.compress=false" ;;
           * ) super_flags="$super_flags -f $OUTPUT" ;;
         esac
@@ -110,9 +110,9 @@ do
 
     JQ=${JQ_FILTERS[$n]}
     JQFLAG=${JQFLAGS[$n]}
-    echo -n "|\`jq\`|\`$JQFLAG ""'""${JQ//|/\\|}""'""\`|ndjson|ndjson|" | tee -a "$MD"
+    echo -n "|\`jq\`|\`$JQFLAG ""'""${JQ//|/\\|}""'""\`|json|json|" | tee -a "$MD"
     # shellcheck disable=SC2086      # For expanding JQFLAG
-    ALL_TIMES=$(time -p ($ZCAT "$DATA"/zeek-ndjson/* | jq $JQFLAG "$JQ" > /dev/null) 2>&1)
+    ALL_TIMES=$(time -p ($ZCAT "$DATA"/zeek-json/* | jq $JQFLAG "$JQ" > /dev/null) 2>&1)
     echo "$ALL_TIMES" | tr '\n' ' ' | awk '{ print $2 "|" $4 "|" $6 "|" }' | tee -a "$MD"
 
     echo | tee -a "$MD"

@@ -7,4 +7,4 @@ docs may be of interest to you.
 
 * [Reading Zeek Log Formats](reading-zeek-log-formats.md)
 * [Zed/Zeek Data Type Compatibility](data-type-compatibility.md)
-* [Shaping Zeek NDJSON](shaping-zeek-ndjson.md)
+* [Shaping Zeek JSON](shaping-zeek-json.md)

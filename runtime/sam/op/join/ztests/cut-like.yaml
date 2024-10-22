@@ -4,16 +4,16 @@ inputs:
   - name: test.zed
     data: |
       from (
-        file people.ndjson
-        file fruit.ndjson
+        file people.json
+        file fruit.json
       ) | left join on likes=flavor fruit:=name,note:=quiet(note)
-  - name: people.ndjson
+  - name: people.json
     data: |
       {"name":"morgan","age":61,"likes":"tart"}
       {"name":"quinn","age":14,"likes":"sweet"}
       {"name":"jessie","age":30,"likes":"plain"}
       {"name":"chris","age":47,"likes":"tart"}
-  - name: fruit.ndjson
+  - name: fruit.json
     data: |
       {"name":"apple","color":"red","flavor":"tart"}
       {"name":"banana","color":"yellow","flavor":"sweet"}

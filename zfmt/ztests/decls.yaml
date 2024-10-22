@@ -18,7 +18,7 @@ inputs:
           file right_file
         ) on left_key = right_key left_dest := right_source
       )
-      joinTest("fruit.ndjson", "people.ndjson", flavor, likes, eater, name)
+      joinTest("fruit.json", "people.json", flavor, likes, eater, name)
       | stamp("bob")
 
 outputs:
@@ -44,7 +44,7 @@ outputs:
           file right_file
         ) on left_key=right_key left_dest:=right_source
       )
-      joinTest("fruit.ndjson", "people.ndjson", flavor, likes, eater, name)
+      joinTest("fruit.json", "people.json", flavor, likes, eater, name)
       | stamp("bob")
       ===
       (
@@ -57,12 +57,12 @@ outputs:
           a+b
         )
         
-        file fruit.ndjson
+        file fruit.json
         | fork (
           =>
             pass
           =>
-            file people.ndjson
+            file people.json
         )
         | join on flavor=likes eater:=name
         | yield {...this,assignee:"bob",ts:now()}

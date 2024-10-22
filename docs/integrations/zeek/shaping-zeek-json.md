@@ -1,11 +1,11 @@
 ---
 sidebar_position: 3
-sidebar_label: Shaping Zeek NDJSON
+sidebar_label: Shaping Zeek JSON
 ---
 
-# Shaping Zeek NDJSON
+# Shaping Zeek JSON
 
-When [reading Zeek NDJSON format logs](reading-zeek-log-formats.md#zeek-ndjson),
+When [reading Zeek JSON format logs](reading-zeek-log-formats.md#zeek-json),
 much of the rich data typing that was originally present inside Zeek is at risk
 of being lost. This detail can be restored using a Zed
 [shaper](../../language/shaping.md), such as the
@@ -14,7 +14,7 @@ of being lost. This detail can be restored using a Zed
 ## Zeek Version/Configuration
 
 The fields and data types in the reference shaper reflect the default
-NDJSON-format logs output by Zeek releases up to the version number referenced
+JSON-format logs output by Zeek releases up to the version number referenced
 in the comments at the top. They have been revisited periodically
 as new Zeek versions have been released.
 
@@ -40,8 +40,8 @@ The following reference `shaper.zed` may seem large, but ultimately it follows a
 fairly simple pattern that repeats across the many [Zeek log types](https://docs.zeek.org/en/master/script-reference/log-files.html).
 
 ```mdtest-input shaper.zed
-// This reference Zed shaper for Zeek NDJSON logs was most recently tested with
-// Zeek v7.0.0. The fields and data types reflect the default NDJSON
+// This reference Zed shaper for Zeek JSON logs was most recently tested with
+// Zeek v7.0.0. The fields and data types reflect the default JSON
 // logs output by that Zeek version when using the JSON Streaming Logs package.
 // (https://github.com/corelight/json-streaming-logs).
 
@@ -146,10 +146,10 @@ yield nest_dotted(this)
 ### Configurable Options
 
 The shaper begins with some configurable boolean constants that control how
-the shaper will behave when the NDJSON data does not precisely match the Zeek
+the shaper will behave when the JSON data does not precisely match the Zeek
 type definitions.
 
-* `_crop_records` (default: `true`) - Fields in the NDJSON records whose names
+* `_crop_records` (default: `true`) - Fields in the JSON records whose names
 are not referenced in the type definitions will be removed. If set to `false`,
 such a field would be maintained and assigned an inferred type.
 
@@ -159,7 +159,7 @@ original input record will be
 along with the shaped and cropped variations.
 
 At these default settings, the shaper is well-suited for an iterative workflow
-with a goal of establishing full coverage of the NDJSON data with rich Zed
+with a goal of establishing full coverage of the JSON data with rich Zed
 types. For instance, the [`has_error` function](../../language/functions/has_error.md)
 can be applied on the shaped output and any error values surfaced will point
 to fields that can be added to the type definitions in the shaper.
@@ -182,7 +182,7 @@ record.
 ### Type Definitions Per Zeek Log `_path`
 
 The bulk of this Zed shaper consists of detailed per-field data type
-definitions for each record in the default set of NDJSON logs output by Zeek.
+definitions for each record in the default set of JSON logs output by Zeek.
 These type definitions reference the types we defined above, such as `port`
 and `conn_id`. The syntax for defining primitive and complex types follows the
 relevant sections of the [ZSON Format](../../formats/zson.md#2-the-zson-format)
@@ -198,7 +198,7 @@ specification.
 :::tip note
 See [the role of `_path`](reading-zeek-log-formats.md#the-role-of-_path)
 for important details if you're using Zeek's built-in [ASCII logger](https://docs.zeek.org/en/current/scripts/base/frameworks/logging/writers/ascii.zeek.html)
-to generate NDJSON rather than the [JSON Streaming Logs](https://github.com/corelight/json-streaming-logs) package.
+to rather than the [JSON Streaming Logs](https://github.com/corelight/json-streaming-logs) package.
 :::
 
 ### Zed Pipeline
@@ -237,7 +237,7 @@ Picking this apart, it transforms each record as it's being read in several
 steps.
 
 1. The [`nest_dotted` function](../../language/functions/nest_dotted.md)
-   reverses the Zeek NDJSON logger's "flattening" of nested records, e.g., how
+   reverses the Zeek JSON logger's "flattening" of nested records, e.g., how
    it populates a field named `id.orig_h` rather than creating a field `id` with
    sub-field `orig_h` inside it. Restoring the original nesting now gives us
    the option to reference the embedded record named `id` in the Zed language
@@ -247,17 +247,17 @@ steps.
 2. The [`switch` operator](../../language/operators/switch.md) is used to flag
    any problems encountered when applying the shaper logic, e.g.,
 
-   * An incoming Zeek NDJSON record has a `_path` value for which the shaper
+   * An incoming Zeek JSON record has a `_path` value for which the shaper
     lacks a type definition.
-   * A field in an incoming Zeek NDJSON record is located in our type
+   * A field in an incoming Zeek JSON record is located in our type
      definitions but cannot be successfully [cast](../../language/functions/cast.md)
      to the target type defined in the shaper.
-   * An incoming Zeek NDJSON record has additional field(s) beyond those in
+   * An incoming Zeek JSON record has additional field(s) beyond those in
      the target type definition and the [configurable options](#configurable-options)
      are set such that this should be treated as an error.
 
 3. Each [`shape` function](../../language/functions/shape.md) call applies an
-   appropriate type definition based on the nature of the incoming Zeek NDJSON
+   appropriate type definition based on the nature of the incoming Zeek JSON
    record. The logic of `shape` includes:
 
    * For any fields referenced in the type definition that aren't present in
@@ -271,9 +271,9 @@ steps.
 
 A shaper is typically invoked via the `-I` option of `zq`.
 
-For example, if we assume this input file `weird.ndjson`
+For example, if we assume this input file `weird.json`
 
-```mdtest-input weird.ndjson
+```mdtest-input weird.json
 {
   "_path": "weird",
   "_write_ts": "2018-03-24T17:15:20.600843Z",
@@ -292,7 +292,7 @@ For example, if we assume this input file `weird.ndjson`
 applying the reference shaper via
 
 ```mdtest-command
-super query -Z -I shaper.zed weird.ndjson
+super query -Z -I shaper.zed weird.json
 ```
 
 produces
@@ -317,7 +317,7 @@ produces
 } (=weird)
 ```
 
-If working in a directory containing many NDJSON logs, the
+If working in a directory containing many JSON logs, the
 reference shaper can be applied to all the records they contain and
 output them all in a single binary [ZNG](../../formats/zng.md) file as
 follows:
@@ -340,8 +340,8 @@ super query -Z -I shaper.zed -c '| has_error(this)' *.log
 
 ## Importing Shaped Data Into Zui
 
-If you wish to shape your Zeek NDJSON data in [Zui](https://zui.brimdata.io/),
-drag the NDJSON files into the app and then paste the contents of the
+If you wish to shape your Zeek JSON data in [Zui](https://zui.brimdata.io/),
+drag the files into the app and then paste the contents of the
 [`shaper.zed` shown above](#reference-shaper-contents) into the
 **Shaper Editor** of the [**Preview & Load**](https://zui.brimdata.io/docs/features/Preview-Load)
 screen.

@@ -1,195 +1,195 @@
 # Performance
 
-The tables below provide a summary of simple operations and how `zq`
+The tables below provide a summary of simple operations and how `super`
 performs at them relative to `zeek-cut` and `jq`. All operations were performed
 on an AWS `t3.2xlarge` VM (8 vCPUs, 32 GB memory, 30 GB gp2 SSD).
 `make perf-compare` was used to generate the results.
 
 As there are many results to sift through, here's a few key summary take-aways:
 
-* The numerous input/output formats in `zq` are helpful for fitting into your
-legacy pipelines. However, ZNG performs the best of all `zq`-compatible
+* The numerous input/output formats in `super` are helpful for fitting into your
+legacy pipelines. However, ZNG performs the best of all `super`-compatible
 formats, due to its binary/optimized nature. If you have logs in a non-ZNG
-format and expect to query them many times, a one-time pass through `zq` to
+format and expect to query them many times, a one-time pass through `super` to
 convert them to ZNG format will save you significant time.
 
-* Despite it having some CPU cost, the LZ4 compression that `zq` performs by
+* Despite it having some CPU cost, the LZ4 compression that `super` performs by
 default when outputting ZNG is shown to have a negligible user-perceptible
 performance impact. With this sample data, the LZ4-compressed ZNG is less than
 half the size of the uncompressed ZNG.
 
 * Particularly when working in ZNG format and when simple analytics (counting,
-grouping) are in play, `zq` can significantly outperform `jq`. That said, `zq`
+grouping) are in play, `super` can significantly outperform `jq`. That said, `super`
 does not (yet) include the full set of mathematical/other operations available
 in `jq`. If there's glaring functional omissions that are limiting your use of
-`zq`, we welcome [contributions](../README.md#contributing).
+`super`, we welcome [contributions](../README.md#contributing).
 
-* For the permutations with `ndjson` input the recommended approach for
-[shaping Zeek NDJSON](https://zed.brimdata.io/docs/integrations/zeek/shaping-zeek-ndjson)
+* For the permutations with `json` input the recommended approach for
+[shaping Zeek JSON](https://zed.brimdata.io/docs/integrations/zeek/shaping-zeek-json)
 was followed as the input data was being read. In addition to conforming to the
 best practices as described in that article, this also avoids a problem
 described in [a comment in super/2123](https://github.com/brimdata/super/pull/2123#issuecomment-859164320).
-Separate tests on our VM confirmed the shaping portion of the runs with NDJSON
+Separate tests on our VM confirmed the shaping portion of the runs with JSON
 input consumed approximately 5 seconds out of the total run time on each of
 these runs.
 
 # Results
 
-The results below reflect performance as of `zq` commit `20a867d`.
+The results below reflect performance as of `super` commit `baf921f`.
 
 ### Output all events unmodified
 
 |**<br>Tool**|**<br>Arguments**|**Input<br>Format**|**Output<br>Format**|**<br>Real**|**<br>User**|**<br>Sys**|
 |:----------:|:---------------:|:-----------------:|:------------------:|-----------:|-----------:|----------:|
-|`zq`|`*`|zeek|zeek|11.85|12.39|0.19|
-|`zq`|`*`|zeek|zng|4.47|4.47|0.08|
-|`zq`|`*`|zeek|zng-uncompressed|3.52|3.52|0.08|
-|`zq`|`*`|zeek|zson|24.86|27.01|0.73|
-|`zq`|`*`|zeek|ndjson|30.59|31.42|0.53|
-|`zq`|`*`|zng|zeek|6.79|8.62|0.16|
-|`zq`|`*`|zng|zng|1.38|2.53|0.11|
-|`zq`|`*`|zng|zng-uncompressed|1.16|1.45|0.08|
-|`zq`|`*`|zng|zson|18.35|20.93|0.53|
-|`zq`|`*`|zng|ndjson|23.48|25.41|0.33|
-|`zq`|`*`|zng-uncompressed|zeek|6.81|8.63|0.23|
-|`zq`|`*`|zng-uncompressed|zng|1.50|2.62|0.08|
-|`zq`|`*`|zng-uncompressed|zng-uncompressed|1.55|1.77|0.15|
-|`zq`|`*`|zng-uncompressed|zson|20.19|23.25|0.69|
-|`zq`|`*`|zng-uncompressed|ndjson|24.66|26.65|0.38|
-|`zq`|`*`|zson|zeek|179.55|195.58|4.82|
-|`zq`|`*`|zson|zng|177.27|190.88|4.37|
-|`zq`|`*`|zson|zng-uncompressed|173.23|187.41|4.28|
-|`zq`|`*`|zson|zson|188.89|207.11|5.35|
-|`zq`|`*`|zson|ndjson|198.45|215.70|5.17|
-|`zq`|`*`|ndjson|zeek|28.55|75.46|4.39|
-|`zq`|`*`|ndjson|zng|26.69|61.08|3.51|
-|`zq`|`*`|ndjson|zng-uncompressed|26.25|59.42|3.35|
-|`zq`|`*`|ndjson|zson|32.27|95.64|5.49|
-|`zq`|`*`|ndjson|ndjson|37.48|98.96|4.64|
-|`zeek-cut`||zeek|zeek-cut|1.50|1.49|0.22|
-|`jq`|`-c '.'`|ndjson|ndjson|48.17|51.37|1.91|
+|`super query`|`*`|zeek|zeek|10.23|11.29|0.26|
+|`super query`|`*`|zeek|zng|3.85|3.95|0.08|
+|`super query`|`*`|zeek|zng-uncompressed|3.21|3.23|0.06|
+|`super query`|`*`|zeek|zson|23.11|25.46|0.54|
+|`super query`|`*`|zeek|json|27.63|28.70|0.39|
+|`super query`|`*`|zng|zeek|6.63|8.27|0.20|
+|`super query`|`*`|zng|zng|1.16|2.21|0.10|
+|`super query`|`*`|zng|zng-uncompressed|1.24|1.56|0.08|
+|`super query`|`*`|zng|zson|18.15|20.69|0.42|
+|`super query`|`*`|zng|json|23.83|25.90|0.36|
+|`super query`|`*`|zng-uncompressed|zeek|6.59|8.31|0.20|
+|`super query`|`*`|zng-uncompressed|zng|1.28|2.19|0.08|
+|`super query`|`*`|zng-uncompressed|zng-uncompressed|1.24|1.40|0.07|
+|`super query`|`*`|zng-uncompressed|zson|19.39|22.21|0.44|
+|`super query`|`*`|zng-uncompressed|json|23.67|25.73|0.37|
+|`super query`|`*`|zson|zeek|156.14|176.34|3.79|
+|`super query`|`*`|zson|zng|147.29|163.52|3.02|
+|`super query`|`*`|zson|zng-uncompressed|150.17|167.85|3.37|
+|`super query`|`*`|zson|zson|169.48|190.82|3.80|
+|`super query`|`*`|zson|json|183.59|204.98|4.49|
+|`super query`|`*`|json|zeek|28.25|80.26|4.44|
+|`super query`|`*`|json|zng|26.04|66.42|3.30|
+|`super query`|`*`|json|zng-uncompressed|27.44|68.50|3.62|
+|`super query`|`*`|json|zson|33.52|105.72|5.23|
+|`super query`|`*`|json|json|35.29|103.72|4.71|
+|`zeek-cut`||zeek|zeek-cut|1.40|1.42|0.22|
+|`jq`|`-c '.'`|json|json|33.35|36.50|1.83|
 
 ### Extract the field `ts`
 
 |**<br>Tool**|**<br>Arguments**|**Input<br>Format**|**Output<br>Format**|**<br>Real**|**<br>User**|**<br>Sys**|
 |:----------:|:---------------:|:-----------------:|:------------------:|-----------:|-----------:|----------:|
-|`zq`|`cut quiet(ts)`|zeek|zeek|9.79|13.44|1.22|
-|`zq`|`cut quiet(ts)`|zeek|zng|8.22|11.48|1.05|
-|`zq`|`cut quiet(ts)`|zeek|zng-uncompressed|8.79|12.10|1.43|
-|`zq`|`cut quiet(ts)`|zeek|zson|10.12|13.82|1.26|
-|`zq`|`cut quiet(ts)`|zeek|ndjson|10.04|13.88|1.26|
-|`zq`|`cut quiet(ts)`|zng|zeek|2.08|3.79|0.17|
-|`zq`|`cut quiet(ts)`|zng|zng|1.42|2.44|0.20|
-|`zq`|`cut quiet(ts)`|zng|zng-uncompressed|1.47|2.62|0.15|
-|`zq`|`cut quiet(ts)`|zng|zson|2.22|3.90|0.21|
-|`zq`|`cut quiet(ts)`|zng|ndjson|2.47|4.19|0.31|
-|`zq`|`cut quiet(ts)`|zng-uncompressed|zeek|2.21|3.94|0.29|
-|`zq`|`cut quiet(ts)`|zng-uncompressed|zng|1.62|2.63|0.12|
-|`zq`|`cut quiet(ts)`|zng-uncompressed|zng-uncompressed|1.47|2.35|0.13|
-|`zq`|`cut quiet(ts)`|zng-uncompressed|zson|2.14|3.85|0.24|
-|`zq`|`cut quiet(ts)`|zng-uncompressed|ndjson|2.22|3.86|0.21|
-|`zq`|`cut quiet(ts)`|zson|zeek|172.78|191.22|5.76|
-|`zq`|`cut quiet(ts)`|zson|zng|171.33|188.36|4.68|
-|`zq`|`cut quiet(ts)`|zson|zng-uncompressed|174.57|192.35|4.98|
-|`zq`|`cut quiet(ts)`|zson|zson|180.15|198.90|6.01|
-|`zq`|`cut quiet(ts)`|zson|ndjson|186.63|206.34|6.55|
-|`zq`|`cut quiet(ts)`|ndjson|zeek|32.32|72.35|5.94|
-|`zq`|`cut quiet(ts)`|ndjson|zng|31.81|68.47|4.53|
-|`zq`|`cut quiet(ts)`|ndjson|zng-uncompressed|31.69|68.69|4.92|
-|`zq`|`cut quiet(ts)`|ndjson|zson|32.01|72.90|5.29|
-|`zq`|`cut quiet(ts)`|ndjson|ndjson|30.25|69.95|4.70|
-|`zeek-cut`|`ts`|zeek|zeek-cut|1.68|1.62|0.29|
-|`jq`|`-c '. \| { ts }'`|ndjson|ndjson|25.27|28.21|1.69|
+|`super query`|`cut quiet(ts)`|zeek|zeek|8.73|12.42|1.15|
+|`super query`|`cut quiet(ts)`|zeek|zng|7.25|10.53|0.96|
+|`super query`|`cut quiet(ts)`|zeek|zng-uncompressed|7.09|10.38|0.98|
+|`super query`|`cut quiet(ts)`|zeek|zson|8.79|12.54|1.11|
+|`super query`|`cut quiet(ts)`|zeek|json|8.98|12.92|0.91|
+|`super query`|`cut quiet(ts)`|zng|zeek|1.94|3.51|0.17|
+|`super query`|`cut quiet(ts)`|zng|zng|1.19|2.22|0.13|
+|`super query`|`cut quiet(ts)`|zng|zng-uncompressed|1.22|2.10|0.16|
+|`super query`|`cut quiet(ts)`|zng|zson|2.13|3.58|0.18|
+|`super query`|`cut quiet(ts)`|zng|json|2.16|3.62|0.13|
+|`super query`|`cut quiet(ts)`|zng-uncompressed|zeek|1.87|3.40|0.13|
+|`super query`|`cut quiet(ts)`|zng-uncompressed|zng|1.51|2.45|0.11|
+|`super query`|`cut quiet(ts)`|zng-uncompressed|zng-uncompressed|1.44|2.27|0.12|
+|`super query`|`cut quiet(ts)`|zng-uncompressed|zson|2.25|3.86|0.21|
+|`super query`|`cut quiet(ts)`|zng-uncompressed|json|2.06|3.54|0.17|
+|`super query`|`cut quiet(ts)`|zson|zeek|155.19|177.80|4.53|
+|`super query`|`cut quiet(ts)`|zson|zng|152.61|172.17|3.80|
+|`super query`|`cut quiet(ts)`|zson|zng-uncompressed|154.97|177.34|4.86|
+|`super query`|`cut quiet(ts)`|zson|zson|157.22|179.82|4.92|
+|`super query`|`cut quiet(ts)`|zson|json|166.79|191.20|5.80|
+|`super query`|`cut quiet(ts)`|json|zeek|31.16|77.11|4.51|
+|`super query`|`cut quiet(ts)`|json|zng|30.06|73.06|3.90|
+|`super query`|`cut quiet(ts)`|json|zng-uncompressed|32.17|77.60|4.52|
+|`super query`|`cut quiet(ts)`|json|zson|31.38|78.03|4.69|
+|`super query`|`cut quiet(ts)`|json|json|30.56|76.57|4.81|
+|`zeek-cut`|`ts`|zeek|zeek-cut|1.53|1.51|0.23|
+|`jq`|`-c '. \| { ts }'`|json|json|21.37|24.25|1.51|
 
 ### Count all events
 
 |**<br>Tool**|**<br>Arguments**|**Input<br>Format**|**Output<br>Format**|**<br>Real**|**<br>User**|**<br>Sys**|
 |:----------:|:---------------:|:-----------------:|:------------------:|-----------:|-----------:|----------:|
-|`zq`|`count:=count()`|zeek|zeek|3.35|3.37|0.06|
-|`zq`|`count:=count()`|zeek|zng|3.77|3.75|0.09|
-|`zq`|`count:=count()`|zeek|zng-uncompressed|4.00|4.01|0.08|
-|`zq`|`count:=count()`|zeek|zson|3.90|3.89|0.08|
-|`zq`|`count:=count()`|zeek|ndjson|3.97|4.02|0.09|
-|`zq`|`count:=count()`|zng|zeek|1.25|1.51|0.10|
-|`zq`|`count:=count()`|zng|zng|1.22|1.45|0.08|
-|`zq`|`count:=count()`|zng|zng-uncompressed|1.43|1.67|0.09|
-|`zq`|`count:=count()`|zng|zson|1.22|1.49|0.08|
-|`zq`|`count:=count()`|zng|ndjson|1.11|1.32|0.13|
-|`zq`|`count:=count()`|zng-uncompressed|zeek|1.47|1.66|0.06|
-|`zq`|`count:=count()`|zng-uncompressed|zng|1.37|1.50|0.09|
-|`zq`|`count:=count()`|zng-uncompressed|zng-uncompressed|1.37|1.50|0.09|
-|`zq`|`count:=count()`|zng-uncompressed|zson|1.37|1.50|0.08|
-|`zq`|`count:=count()`|zng-uncompressed|ndjson|1.40|1.58|0.10|
-|`zq`|`count:=count()`|zson|zeek|181.69|196.81|4.94|
-|`zq`|`count:=count()`|zson|zng|170.71|185.82|4.69|
-|`zq`|`count:=count()`|zson|zng-uncompressed|170.71|185.37|4.13|
-|`zq`|`count:=count()`|zson|zson|176.58|191.38|4.99|
-|`zq`|`count:=count()`|zson|ndjson|170.36|185.81|4.74|
-|`zq`|`count:=count()`|ndjson|zeek|30.11|65.13|4.20|
-|`zq`|`count:=count()`|ndjson|zng|29.72|64.47|3.92|
-|`zq`|`count:=count()`|ndjson|zng-uncompressed|30.67|66.47|4.60|
-|`zq`|`count:=count()`|ndjson|zson|29.12|63.77|4.22|
-|`zq`|`count:=count()`|ndjson|ndjson|29.28|64.15|4.17|
-|`jq`|`-c -s '. \| length'`|ndjson|ndjson|26.39|27.33|3.95|
+|`super query`|`count:=count()`|zeek|zeek|3.20|3.34|0.06|
+|`super query`|`count:=count()`|zeek|zng|3.21|3.26|0.09|
+|`super query`|`count:=count()`|zeek|zng-uncompressed|2.98|2.99|0.06|
+|`super query`|`count:=count()`|zeek|zson|3.15|3.16|0.05|
+|`super query`|`count:=count()`|zeek|json|2.97|2.98|0.04|
+|`super query`|`count:=count()`|zng|zeek|1.15|1.38|0.09|
+|`super query`|`count:=count()`|zng|zng|1.10|1.35|0.06|
+|`super query`|`count:=count()`|zng|zng-uncompressed|1.09|1.33|0.07|
+|`super query`|`count:=count()`|zng|zson|1.62|1.86|0.13|
+|`super query`|`count:=count()`|zng|json|1.26|1.52|0.08|
+|`super query`|`count:=count()`|zng-uncompressed|zeek|1.26|1.39|0.11|
+|`super query`|`count:=count()`|zng-uncompressed|zng|1.30|1.46|0.08|
+|`super query`|`count:=count()`|zng-uncompressed|zng-uncompressed|1.37|1.51|0.10|
+|`super query`|`count:=count()`|zng-uncompressed|zson|1.38|1.53|0.08|
+|`super query`|`count:=count()`|zng-uncompressed|json|1.24|1.40|0.07|
+|`super query`|`count:=count()`|zson|zeek|159.03|178.35|3.85|
+|`super query`|`count:=count()`|zson|zng|161.73|184.81|5.41|
+|`super query`|`count:=count()`|zson|zng-uncompressed|161.83|181.70|4.36|
+|`super query`|`count:=count()`|zson|zson|157.25|178.62|4.89|
+|`super query`|`count:=count()`|zson|json|158.86|179.40|4.23|
+|`super query`|`count:=count()`|json|zeek|33.22|78.02|5.04|
+|`super query`|`count:=count()`|json|zng|30.42|72.83|4.30|
+|`super query`|`count:=count()`|json|zng-uncompressed|29.74|72.31|3.97|
+|`super query`|`count:=count()`|json|zson|29.77|72.57|4.15|
+|`super query`|`count:=count()`|json|json|31.86|76.31|4.67|
+|`jq`|`-c -s '. \| length'`|json|json|29.21|29.24|5.03|
 
 ### Count all events, grouped by the field `id.orig_h`
 
 |**<br>Tool**|**<br>Arguments**|**Input<br>Format**|**Output<br>Format**|**<br>Real**|**<br>User**|**<br>Sys**|
 |:----------:|:---------------:|:-----------------:|:------------------:|-----------:|-----------:|----------:|
-|`zq`|`count() by quiet(id.orig_h)`|zeek|zeek|3.52|3.54|0.06|
-|`zq`|`count() by quiet(id.orig_h)`|zeek|zng|3.99|3.99|0.09|
-|`zq`|`count() by quiet(id.orig_h)`|zeek|zng-uncompressed|3.96|3.98|0.06|
-|`zq`|`count() by quiet(id.orig_h)`|zeek|zson|3.96|3.98|0.09|
-|`zq`|`count() by quiet(id.orig_h)`|zeek|ndjson|4.32|4.30|0.09|
-|`zq`|`count() by quiet(id.orig_h)`|zng|zeek|1.19|1.73|0.10|
-|`zq`|`count() by quiet(id.orig_h)`|zng|zng|1.28|1.74|0.08|
-|`zq`|`count() by quiet(id.orig_h)`|zng|zng-uncompressed|1.22|1.77|0.08|
-|`zq`|`count() by quiet(id.orig_h)`|zng|zson|1.30|1.83|0.08|
-|`zq`|`count() by quiet(id.orig_h)`|zng|ndjson|1.13|1.63|0.07|
-|`zq`|`count() by quiet(id.orig_h)`|zng-uncompressed|zeek|1.31|1.71|0.06|
-|`zq`|`count() by quiet(id.orig_h)`|zng-uncompressed|zng|1.53|1.89|0.09|
-|`zq`|`count() by quiet(id.orig_h)`|zng-uncompressed|zng-uncompressed|1.41|1.77|0.06|
-|`zq`|`count() by quiet(id.orig_h)`|zng-uncompressed|zson|1.27|1.66|0.06|
-|`zq`|`count() by quiet(id.orig_h)`|zng-uncompressed|ndjson|1.91|2.49|0.11|
-|`zq`|`count() by quiet(id.orig_h)`|zson|zeek|171.86|187.47|4.60|
-|`zq`|`count() by quiet(id.orig_h)`|zson|zng|169.77|185.68|4.11|
-|`zq`|`count() by quiet(id.orig_h)`|zson|zng-uncompressed|173.50|188.96|4.40|
-|`zq`|`count() by quiet(id.orig_h)`|zson|zson|168.29|183.41|4.02|
-|`zq`|`count() by quiet(id.orig_h)`|zson|ndjson|173.91|189.04|4.47|
-|`zq`|`count() by quiet(id.orig_h)`|ndjson|zeek|29.37|65.66|4.32|
-|`zq`|`count() by quiet(id.orig_h)`|ndjson|zng|28.87|64.13|4.04|
-|`zq`|`count() by quiet(id.orig_h)`|ndjson|zng-uncompressed|29.10|65.06|3.90|
-|`zq`|`count() by quiet(id.orig_h)`|ndjson|zson|28.58|63.77|4.12|
-|`zq`|`count() by quiet(id.orig_h)`|ndjson|ndjson|29.07|65.38|4.26|
-|`jq`|`-c -s 'group_by(."id.orig_h")[] \| length as $l \| .[0] \| .count = $l \| {count,"id.orig_h"}'`|ndjson|ndjson|41.30|42.09|4.29|
+|`super query`|`count() by quiet(id.orig_h)`|zeek|zeek|3.25|3.41|0.09|
+|`super query`|`count() by quiet(id.orig_h)`|zeek|zng|3.38|3.48|0.10|
+|`super query`|`count() by quiet(id.orig_h)`|zeek|zng-uncompressed|3.19|3.49|0.13|
+|`super query`|`count() by quiet(id.orig_h)`|zeek|zson|3.23|3.37|0.15|
+|`super query`|`count() by quiet(id.orig_h)`|zeek|json|3.33|3.51|0.24|
+|`super query`|`count() by quiet(id.orig_h)`|zng|zeek|1.34|1.93|0.18|
+|`super query`|`count() by quiet(id.orig_h)`|zng|zng|1.30|1.86|0.14|
+|`super query`|`count() by quiet(id.orig_h)`|zng|zng-uncompressed|1.05|1.52|0.09|
+|`super query`|`count() by quiet(id.orig_h)`|zng|zson|1.17|1.61|0.10|
+|`super query`|`count() by quiet(id.orig_h)`|zng|json|1.27|1.80|0.17|
+|`super query`|`count() by quiet(id.orig_h)`|zng-uncompressed|zeek|1.57|1.94|0.11|
+|`super query`|`count() by quiet(id.orig_h)`|zng-uncompressed|zng|1.62|2.05|0.11|
+|`super query`|`count() by quiet(id.orig_h)`|zng-uncompressed|zng-uncompressed|1.38|1.89|0.17|
+|`super query`|`count() by quiet(id.orig_h)`|zng-uncompressed|zson|1.47|1.85|0.14|
+|`super query`|`count() by quiet(id.orig_h)`|zng-uncompressed|json|1.57|2.06|0.14|
+|`super query`|`count() by quiet(id.orig_h)`|zson|zeek|151.64|169.93|3.48|
+|`super query`|`count() by quiet(id.orig_h)`|zson|zng|154.16|172.46|3.35|
+|`super query`|`count() by quiet(id.orig_h)`|zson|zng-uncompressed|157.09|175.74|3.50|
+|`super query`|`count() by quiet(id.orig_h)`|zson|zson|154.70|173.75|3.54|
+|`super query`|`count() by quiet(id.orig_h)`|zson|json|154.02|172.52|3.40|
+|`super query`|`count() by quiet(id.orig_h)`|json|zeek|29.41|72.86|4.27|
+|`super query`|`count() by quiet(id.orig_h)`|json|zng|30.53|73.71|4.30|
+|`super query`|`count() by quiet(id.orig_h)`|json|zng-uncompressed|29.27|71.83|4.26|
+|`super query`|`count() by quiet(id.orig_h)`|json|zson|29.65|73.21|4.23|
+|`super query`|`count() by quiet(id.orig_h)`|json|json|29.87|73.57|4.08|
+|`jq`|`-c -s 'group_by(."id.orig_h")[] \| length as $l \| .[0] \| .count = $l \| {count,"id.orig_h"}'`|json|json|32.30|32.51|3.98|
 
 ### Output all events with the field `id.resp_h` set to `52.85.83.116`
 
 |**<br>Tool**|**<br>Arguments**|**Input<br>Format**|**Output<br>Format**|**<br>Real**|**<br>User**|**<br>Sys**|
 |:----------:|:---------------:|:-----------------:|:------------------:|-----------:|-----------:|----------:|
-|`zq`|`id.resp_h==52.85.83.116`|zeek|zeek|3.74|3.74|0.08|
-|`zq`|`id.resp_h==52.85.83.116`|zeek|zng|3.67|3.71|0.05|
-|`zq`|`id.resp_h==52.85.83.116`|zeek|zng-uncompressed|3.65|3.65|0.07|
-|`zq`|`id.resp_h==52.85.83.116`|zeek|zson|3.58|3.59|0.07|
-|`zq`|`id.resp_h==52.85.83.116`|zeek|ndjson|3.82|3.83|0.07|
-|`zq`|`id.resp_h==52.85.83.116`|zng|zeek|1.30|1.61|0.08|
-|`zq`|`id.resp_h==52.85.83.116`|zng|zng|1.17|1.47|0.07|
-|`zq`|`id.resp_h==52.85.83.116`|zng|zng-uncompressed|1.16|1.48|0.08|
-|`zq`|`id.resp_h==52.85.83.116`|zng|zson|1.31|1.67|0.05|
-|`zq`|`id.resp_h==52.85.83.116`|zng|ndjson|1.29|1.61|0.16|
-|`zq`|`id.resp_h==52.85.83.116`|zng-uncompressed|zeek|1.45|1.68|0.12|
-|`zq`|`id.resp_h==52.85.83.116`|zng-uncompressed|zng|1.45|1.67|0.12|
-|`zq`|`id.resp_h==52.85.83.116`|zng-uncompressed|zng-uncompressed|1.44|1.68|0.06|
-|`zq`|`id.resp_h==52.85.83.116`|zng-uncompressed|zson|1.46|1.69|0.08|
-|`zq`|`id.resp_h==52.85.83.116`|zng-uncompressed|ndjson|1.51|1.67|0.16|
-|`zq`|`id.resp_h==52.85.83.116`|zson|zeek|171.78|187.50|4.21|
-|`zq`|`id.resp_h==52.85.83.116`|zson|zng|182.02|198.56|5.45|
-|`zq`|`id.resp_h==52.85.83.116`|zson|zng-uncompressed|187.08|202.91|5.71|
-|`zq`|`id.resp_h==52.85.83.116`|zson|zson|184.96|200.95|5.05|
-|`zq`|`id.resp_h==52.85.83.116`|zson|ndjson|183.24|198.73|5.64|
-|`zq`|`id.resp_h==52.85.83.116`|ndjson|zeek|30.52|66.89|4.43|
-|`zq`|`id.resp_h==52.85.83.116`|ndjson|zng|28.92|64.00|4.24|
-|`zq`|`id.resp_h==52.85.83.116`|ndjson|zng-uncompressed|28.46|63.45|3.86|
-|`zq`|`id.resp_h==52.85.83.116`|ndjson|zson|27.61|62.06|3.83|
-|`zq`|`id.resp_h==52.85.83.116`|ndjson|ndjson|28.29|63.42|4.16|
-|`jq`|`-c '. \| select(.["id.resp_h"]=="52.85.83.116")'`|ndjson|ndjson|22.19|25.56|1.44|
+|`super query`|`id.resp_h==52.85.83.116`|zeek|zeek|3.22|3.23|0.06|
+|`super query`|`id.resp_h==52.85.83.116`|zeek|zng|3.42|3.43|0.06|
+|`super query`|`id.resp_h==52.85.83.116`|zeek|zng-uncompressed|3.50|3.53|0.06|
+|`super query`|`id.resp_h==52.85.83.116`|zeek|zson|3.49|3.52|0.06|
+|`super query`|`id.resp_h==52.85.83.116`|zeek|json|3.60|3.90|0.11|
+|`super query`|`id.resp_h==52.85.83.116`|zng|zeek|1.33|1.66|0.09|
+|`super query`|`id.resp_h==52.85.83.116`|zng|zng|1.19|1.49|0.08|
+|`super query`|`id.resp_h==52.85.83.116`|zng|zng-uncompressed|1.23|1.56|0.11|
+|`super query`|`id.resp_h==52.85.83.116`|zng|zson|1.24|1.54|0.10|
+|`super query`|`id.resp_h==52.85.83.116`|zng|json|1.14|1.45|0.07|
+|`super query`|`id.resp_h==52.85.83.116`|zng-uncompressed|zeek|1.46|1.65|0.09|
+|`super query`|`id.resp_h==52.85.83.116`|zng-uncompressed|zng|1.41|1.61|0.09|
+|`super query`|`id.resp_h==52.85.83.116`|zng-uncompressed|zng-uncompressed|1.35|1.53|0.11|
+|`super query`|`id.resp_h==52.85.83.116`|zng-uncompressed|zson|1.39|1.62|0.11|
+|`super query`|`id.resp_h==52.85.83.116`|zng-uncompressed|json|1.57|1.78|0.12|
+|`super query`|`id.resp_h==52.85.83.116`|zson|zeek|169.93|192.80|5.16|
+|`super query`|`id.resp_h==52.85.83.116`|zson|zng|168.84|191.15|5.09|
+|`super query`|`id.resp_h==52.85.83.116`|zson|zng-uncompressed|172.81|194.61|4.91|
+|`super query`|`id.resp_h==52.85.83.116`|zson|zson|167.40|187.45|4.16|
+|`super query`|`id.resp_h==52.85.83.116`|zson|json|167.00|187.98|4.67|
+|`super query`|`id.resp_h==52.85.83.116`|json|zeek|33.41|79.47|4.92|
+|`super query`|`id.resp_h==52.85.83.116`|json|zng|35.15|81.74|5.48|
+|`super query`|`id.resp_h==52.85.83.116`|json|zng-uncompressed|34.40|80.35|5.17|
+|`super query`|`id.resp_h==52.85.83.116`|json|zson|32.92|78.71|5.01|
+|`super query`|`id.resp_h==52.85.83.116`|json|json|33.68|79.77|5.23|
+|`jq`|`-c '. \| select(.["id.resp_h"]=="52.85.83.116")'`|json|json|18.43|21.13|1.35|
