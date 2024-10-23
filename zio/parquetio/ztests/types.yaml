@@ -16,7 +16,7 @@ inputs:
           i64: -64,
           // duration is not supported by pqarrow.
           tim: 1970-01-01T00:00:00Z,
-          // float16 is not supported by pqarrow.
+          f16: 16. (float16),
           f32: 32. (float32),
           f64: 64.,
           boo: false,
@@ -38,6 +38,7 @@ inputs:
           i32: null,
           i64: null,
           tim: null,
+          f16: null,
           f32: null,
           f64: null,
           boo: null,
@@ -64,6 +65,7 @@ outputs:
           i32: -32 (int32),
           i64: -64,
           tim: 1970-01-01T00:00:00Z,
+          f16: 16. (float16),
           f32: 32. (float32),
           f64: 64.,
           boo: false,
@@ -87,6 +89,7 @@ outputs:
           i32: null (int32),
           i64: null (int64),
           tim: null (time),
+          f16: null (float16),
           f32: null (float32),
           f64: null (float64),
           boo: null (bool),

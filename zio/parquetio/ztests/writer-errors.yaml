@@ -3,7 +3,6 @@ script: |
   ! echo 1 | super -f parquet -
   ! echo {} | super -f parquet -
   ! echo {a:1s} | super -f parquet -
-  ! echo '{a:1.(float16)}' | super -f parquet -
 
 outputs:
   - name: stderr
@@ -12,4 +11,3 @@ outputs:
         parquetio: not a record: 1
         parquetio: unsupported type: empty record
         parquetio: unsupported type: not implemented: support for DURATION
-        parquetio: unsupported type: not implemented: support for FLOAT16
