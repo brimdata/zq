@@ -101,7 +101,7 @@ log, but now as generated using the JSON Streaming Logs package.
 #### Example
 
 ```mdtest-command
-super -Z -c 'head 1' conn.ndjson
+super -Z -c 'head 1' conn.json
 ```
 
 #### Output
