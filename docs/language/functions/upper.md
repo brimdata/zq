@@ -16,7 +16,7 @@ to upper case and returns the result.
 ### Examples
 
 ```mdtest-command
-echo '"Super JSON"' | super query -z -c 'yield upper(this)' -
+echo '"Super JSON"' | super -z -c 'yield upper(this)' -
 ```
 =>
 ```mdtest-output
@@ -27,7 +27,7 @@ echo '"Super JSON"' | super query -z -c 'yield upper(this)' -
 
 ```mdtest-command
 echo '"super JSON"' |
-  super query -z -c 'func capitalize(str): (
+  super -z -c 'func capitalize(str): (
            upper(str[0:1]) + str[1:]
          )
          yield capitalize(this)

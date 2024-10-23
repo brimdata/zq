@@ -1,11 +1,11 @@
 script: |
-  super query -o out.zng in.zson
+  super -o out.zng in.zson
   for i in {1..7}; do
     cat out.zng out.zng out.zng out.zng > out2.zng
     mv out2.zng out.zng
   done
-  super query -zng.compress=false -o bigrow.zng -c "collect:=collect(s)" out.zng
-  ! super query  -i zng -o /dev/null -zng.readmax 10KB -c "count:=count()" bigrow.zng
+  super -zng.compress=false -o bigrow.zng -c "collect:=collect(s)" out.zng
+  ! super  -i zng -o /dev/null -zng.readmax 10KB -c "count:=count()" bigrow.zng
 
 inputs:
   - name: in.zson

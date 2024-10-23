@@ -85,7 +85,7 @@ do
     for INPUT in zeek zng zng-uncompressed zson ndjson ; do
       for OUTPUT in zeek zng zng-uncompressed zson ndjson ; do
         superpipe_query=${SUPERPIPE_QUERIES[$n]}
-        echo -n "|\`super query\`|\`$superpipe_query\`|$INPUT|$OUTPUT|" | tee -a "$MD"
+        echo -n "|\`super\`|\`$superpipe_query\`|$INPUT|$OUTPUT|" | tee -a "$MD"
         case $INPUT in
           ndjson ) super_flags="-i json -I $shaper" superpipe_query="| $superpipe_query" ;;
           zng-uncompressed ) super_flags="-i zng" ;;
@@ -96,7 +96,7 @@ do
           zng-uncompressed ) super_flags="$super_flags -f zng -zng.compress=false" ;;
           * ) super_flags="$super_flags -f $OUTPUT" ;;
         esac
-        ALL_TIMES=$(time -p (super query $super_flags -c "$superpipe_query" $DATA/$INPUT/* > /dev/null) 2>&1)
+        ALL_TIMES=$(time -p (super $super_flags -c "$superpipe_query" $DATA/$INPUT/* > /dev/null) 2>&1)
         echo "$ALL_TIMES" | tr '\n' ' ' | awk '{ print $2 "|" $4 "|" $6 "|" }' | tee -a "$MD"
       done
     done

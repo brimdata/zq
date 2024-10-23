@@ -53,7 +53,7 @@ file fruit.json
 
 Executing the query:
 ```mdtest-command
-super query -z -I inner-join.spq
+super -z -I inner-join.spq
 ```
 produces
 ```mdtest-output
@@ -89,7 +89,7 @@ file fruit.json
 Executing the query:
 
 ```mdtest-command
-super query -z -I left-join.spq
+super -z -I left-join.spq
 ```
 produces
 ```mdtest-output
@@ -120,7 +120,7 @@ file fruit.json
 ```
 Executing the query:
 ```mdtest-command
-super query -z -I right-join.spq
+super -z -I right-join.spq
 ```
 produces
 ```mdtest-output
@@ -151,7 +151,7 @@ file fruit.json
 ```
 Executing the query:
 ```mdtest-command
-super query -z -I anti-join.spq
+super -z -I anti-join.spq
 ```
 produces
 ```mdtest-output
@@ -220,7 +220,7 @@ from (
 
 Executing the query:
 ```mdtest-command
-super query -z -I inner-join-alternate.spq
+super -z -I inner-join-alternate.spq
 ```
 produces
 ```mdtest-output
@@ -237,7 +237,7 @@ produces
 In addition to the named files and pools like we've used in the prior examples,
 SuperPipe also works on a single sequence of data that is split and
 joined to itself.  Here we'll combine our file sources into a stream that we'll
-pipe into `super query` via stdin.  Because `join` requires two separate inputs, here
+pipe into `super` via stdin.  Because `join` requires two separate inputs, here
 we'll use the `has()` function inside a `switch` operator to identify the
 records in the stream that will be treated as the left and right sides.  Then
 we'll use the [alternate syntax for `join`](#alternate-syntax) to read those two
@@ -254,7 +254,7 @@ switch (
 
 Executing the query:
 ```mdtest-command
-cat fruit.json people.json | super query -z -I inner-join-streamed.spq -
+cat fruit.json people.json | super -z -I inner-join-streamed.spq -
 ```
 produces
 ```mdtest-output
@@ -300,7 +300,7 @@ file fruit.json | put fruitkey:={name,color}
 
 Executing the query:
 ```mdtest-command
-super query -z -I multi-value-join.spq
+super -z -I multi-value-join.spq
 ```
 produces
 ```mdtest-output
@@ -341,7 +341,7 @@ file fruit.json
 Executing the query:
 
 ```mdtest-command
-super query -z -I three-way-join.spq
+super -z -I three-way-join.spq
 ```
 
 produces
@@ -379,7 +379,7 @@ file fruit.json
 Executing the query:
 
 ```mdtest-command
-super query -z -I embed-opposite.spq
+super -z -I embed-opposite.spq
 ```
 produces
 ```mdtest-output
@@ -412,7 +412,7 @@ file fruit.json
 Executing the query:
 
 ```mdtest-command
-super query -z -I merge-opposite.spq
+super -z -I merge-opposite.spq
 ```
 
 produces

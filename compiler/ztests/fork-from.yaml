@@ -1,5 +1,5 @@
 script: |
-  super query -z -I query.zed
+  super -z -I query.zed
 
 inputs:
   - name: query.zed

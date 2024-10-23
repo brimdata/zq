@@ -21,7 +21,7 @@ The `yield` keyword is optional since it is an
 
 _Hello, world_
 ```mdtest-command
-echo null | super query -z -c 'yield "hello, world"' -
+echo null | super -z -c 'yield "hello, world"' -
 ```
 =>
 ```mdtest-output
@@ -29,7 +29,7 @@ echo null | super query -z -c 'yield "hello, world"' -
 ```
 _Yield evaluates each expression for every input value_
 ```mdtest-command
-echo 'null null null' | super query -z -c 'yield 1,2' -
+echo 'null null null' | super -z -c 'yield 1,2' -
 ```
 =>
 ```mdtest-output
@@ -42,7 +42,7 @@ echo 'null null null' | super query -z -c 'yield 1,2' -
 ```
 _Yield typically operates on its input_
 ```mdtest-command
-echo '1 2 3' | super query -z -c 'yield this*2+1' -
+echo '1 2 3' | super -z -c 'yield this*2+1' -
 ```
 =>
 ```mdtest-output
@@ -52,7 +52,7 @@ echo '1 2 3' | super query -z -c 'yield this*2+1' -
 ```
 _Yield is often used to transform records_
 ```mdtest-command
-echo '{a:1,b:2}{a:3,b:4}' | super query -z -c 'yield [a,b],[b,a] | collect(this)' -
+echo '{a:1,b:2}{a:3,b:4}' | super -z -c 'yield [a,b],[b,a] | collect(this)' -
 ```
 =>
 ```mdtest-output

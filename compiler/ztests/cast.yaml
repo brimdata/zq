@@ -1,7 +1,7 @@
 script: |
-  super query -z -c 'type port = uint16 yield <port>(80)'
-  super query -z -c '<(uint16,string)>("foo")'
-  super query -z -c '<{x:uint16}>({x:1})'
+  super -z -c 'type port = uint16 yield <port>(80)'
+  super -z -c '<(uint16,string)>("foo")'
+  super -z -c '<{x:uint16}>({x:1})'
 
 outputs:
   - name: stdout

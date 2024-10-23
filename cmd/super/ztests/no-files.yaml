@@ -1,0 +1,9 @@
+script: |
+  ! super -z -c doesnotexist
+
+outputs:
+  - name: stdout
+    data: ""
+  - name: stderr
+    data: |
+      super: no data source found

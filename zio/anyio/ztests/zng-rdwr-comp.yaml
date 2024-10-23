@@ -1,9 +1,9 @@
 script: |
-  super query -zng.compress=false -o uncomp.zng in.zson
-  super query  -o comp.zng in.zson
-  super query -z uncomp.zng
+  super -zng.compress=false -o uncomp.zng in.zson
+  super  -o comp.zng in.zson
+  super -z uncomp.zng
   echo ===
-  super query -z comp.zng
+  super -z comp.zng
 
 inputs:
   - name: in.zson

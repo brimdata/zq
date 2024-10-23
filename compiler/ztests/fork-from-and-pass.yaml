@@ -1,7 +1,7 @@
 skip: XXX let's discuss this one
 
 script: |
-  super query -c 'fork (=> from (file a.zson) => pass)' a.zson
+  super -c 'fork (=> from (file a.zson) => pass)' a.zson
 
 inputs:
   - name: a.zson

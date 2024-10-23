@@ -1,8 +1,8 @@
 script: |
-  ! super query -z -c "cut rec,other,rec" in.zson
-  ! super query -z -c "cut rec.sub1,rec.sub1" in.zson
-  ! super query -z -c "cut rec.sub,rec.sub.sub" in.zson
-  ! super query -z -c "cut rec.sub.sub,rec.sub" in.zson
+  ! super -z -c "cut rec,other,rec" in.zson
+  ! super -z -c "cut rec.sub1,rec.sub1" in.zson
+  ! super -z -c "cut rec.sub,rec.sub.sub" in.zson
+  ! super -z -c "cut rec.sub.sub,rec.sub" in.zson
 
 inputs:
   - name: in.zson

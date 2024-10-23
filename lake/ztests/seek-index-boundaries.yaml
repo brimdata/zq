@@ -4,7 +4,7 @@ script: |
   for o in asc desc; do
     echo // $o | tee /dev/stderr
     super db create -use -q -seekstride 1B -orderby ts:$o $o
-    seq 20 | super query -c 'yield {ts:this}' - | super db load -q -
+    seq 20 | super -c 'yield {ts:this}' - | super db load -q -
     source query.sh 'ts == 5'
     source query.sh 'ts < 2'
     source query.sh 'ts <= 2'

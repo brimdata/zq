@@ -1,6 +1,6 @@
 script: |
-  super query -f vng -o f -
-  super query -z f
+  super -f vng -o f -
+  super -z f
 
 inputs:
   - name: stdin

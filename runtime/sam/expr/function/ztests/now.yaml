@@ -1,4 +1,4 @@
-script: echo {} | super query -z -c 'const t1 = now() yield t1, now()' -
+script: echo {} | super -z -c 'const t1 = now() yield t1, now()' -
 
 outputs:
   - name: stdout

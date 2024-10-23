@@ -1,7 +1,0 @@
-script: |
-  ! super query -sortmem 0 -
-
-outputs:
-  - name: stderr
-    data: |
-      sortmem value must be greater than zero

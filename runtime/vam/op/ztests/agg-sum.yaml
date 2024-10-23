@@ -6,7 +6,7 @@ script: |
   {
     seq -f '{x: 0, y: %.0f}' 257
     seq -f '{x: 1, y: %.0f}' 257
-  } | super query -o t.vng -f vng -
+  } | super -o t.vng -f vng -
   super dev vector query -z 'sum(x)' t.vng
   super dev vector query -z 'sum(y)' t.vng
 

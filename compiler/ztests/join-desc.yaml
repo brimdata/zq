@@ -1,5 +1,5 @@
 script: |
-  super query -z -I file.zed > file.zson
+  super -z -I file.zed > file.zson
   export ZED_LAKE=test
   super db init -q 
   super db create -q -use -orderby likes:desc people 

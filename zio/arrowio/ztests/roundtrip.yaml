@@ -1,5 +1,5 @@
 script: |
-  super query -f arrows - | super query -i arrows -Z -
+  super -f arrows - | super -i arrows -Z -
 
 inputs:
   - name: stdin

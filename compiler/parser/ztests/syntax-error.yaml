@@ -1,5 +1,5 @@
 script: |
-  ! super query -z -c 'count() by ,x,y' -
+  ! super -z -c 'count() by ,x,y' -
 
 inputs:
   - name: stdin
@@ -8,6 +8,6 @@ inputs:
 outputs:
   - name: stderr
     data: |
-      super query: error parsing SuperPipe at line 1, column 12:
+      super: error parsing SuperPipe at line 1, column 12:
       count() by ,x,y
              === ^ ===

@@ -45,7 +45,7 @@ Super data is super-structured, and fortunately, does not require such a structu
 
 _Fuse two records_
 ```mdtest-command
-echo '{a:1}{b:2}' | super query -z -c fuse -
+echo '{a:1}{b:2}' | super -z -c fuse -
 ```
 =>
 ```mdtest-output
@@ -54,7 +54,7 @@ echo '{a:1}{b:2}' | super query -z -c fuse -
 ```
 _Fuse records with type variation_
 ```mdtest-command
-echo '{a:1}{a:"foo"}' | super query -z -c fuse -
+echo '{a:1}{a:"foo"}' | super -z -c fuse -
 ```
 =>
 ```mdtest-output
@@ -63,7 +63,7 @@ echo '{a:1}{a:"foo"}' | super query -z -c fuse -
 ```
 _Fuse records with complex type variation_
 ```mdtest-command
-echo '{a:[1,2]}{a:["foo","bar"],b:10.0.0.1}' | super query -z -c fuse -
+echo '{a:[1,2]}{a:["foo","bar"],b:10.0.0.1}' | super -z -c fuse -
 ```
 =>
 ```mdtest-output
@@ -72,7 +72,7 @@ echo '{a:[1,2]}{a:["foo","bar"],b:10.0.0.1}' | super query -z -c fuse -
 ```
 _The table format clarifies what fuse does_
 ```mdtest-command
-echo '{a:1}{b:2}{a:3}' | super query -f table -c fuse -
+echo '{a:1}{b:2}{a:3}' | super -f table -c fuse -
 ```
 =>
 ```mdtest-output

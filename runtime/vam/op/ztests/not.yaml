@@ -1,5 +1,5 @@
 script: |
-  super query -o t.vng -f vng -
+  super -o t.vng -f vng -
   super dev vector query -z "yield not (a>1)" t.vng
 
 inputs:

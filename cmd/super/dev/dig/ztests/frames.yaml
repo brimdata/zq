@@ -1,6 +1,6 @@
 script: |
-  super query a.zson > c.zng
-  super query b.zson >> c.zng
+  super a.zson > c.zng
+  super b.zson >> c.zng
   super dev dig frames -z c.zng
 
 inputs:

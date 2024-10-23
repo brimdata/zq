@@ -21,10 +21,10 @@ The _under_ function returns the value underlying the argument `val`:
 Unions are unwrapped:
 ```mdtest-command
 echo '1((int64,string)) "foo"((int64,string))' |
-  super query -z -c 'yield this' -
+  super -z -c 'yield this' -
 
 echo '1((int64,string)) "foo"((int64,string))' |
-  super query -z -c 'yield under(this)' -
+  super -z -c 'yield under(this)' -
 ```
 =>
 ```mdtest-output
@@ -36,8 +36,8 @@ echo '1((int64,string)) "foo"((int64,string))' |
 
 Errors are unwrapped:
 ```mdtest-command
-echo 'error("foo") error({err:"message"})' | super query -z -c 'yield this' -
-echo 'error("foo") error({err:"message"})' | super query -z -c 'yield under(this)' -
+echo 'error("foo") error({err:"message"})' | super -z -c 'yield this' -
+echo 'error("foo") error({err:"message"})' | super -z -c 'yield under(this)' -
 ```
 =>
 ```mdtest-output
@@ -49,8 +49,8 @@ error({err:"message"})
 
 Values of named types are unwrapped:
 ```mdtest-command
-echo '80(port=uint16)' | super query -z -c 'yield this' -
-echo '80(port=uint16)' | super query -z -c 'yield under(this)' -
+echo '80(port=uint16)' | super -z -c 'yield this' -
+echo '80(port=uint16)' | super -z -c 'yield under(this)' -
 ```
 =>
 ```mdtest-output
@@ -59,7 +59,7 @@ echo '80(port=uint16)' | super query -z -c 'yield under(this)' -
 ```
 Values that are not wrapped are unmodified:
 ```mdtest-command
-echo '1 "foo" <int16> {x:1}' | super query -z -c 'yield under(this)' -
+echo '1 "foo" <int16> {x:1}' | super -z -c 'yield under(this)' -
 ```
 =>
 ```mdtest-output

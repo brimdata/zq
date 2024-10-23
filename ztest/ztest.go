@@ -490,8 +490,7 @@ func runzq(path, zedProgram, input string, outputFlags []string, inputFlags []st
 			return "", "", err
 		}
 		flags := append(outputFlags, inputFlags...)
-		args := append([]string{"query"}, flags...)
-		args = append(args, []string{"-c", zedProgram, "-"}...)
+		args := append(flags, []string{"-c", zedProgram, "-"}...)
 		cmd := exec.Command(super, args...)
 		cmd.Stdin = strings.NewReader(input)
 		cmd.Stdout = &outbuf

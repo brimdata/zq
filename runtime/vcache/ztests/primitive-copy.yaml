@@ -1,6 +1,6 @@
 # Exercise the logic that builds values from cached non-constant vectors.
 script: |
-  super query -f vng -o test.vng -
+  super -f vng -o test.vng -
   super dev vector copy -z test.vng
 
 inputs:

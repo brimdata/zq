@@ -1,7 +1,7 @@
 script: |
-  super query -z -c "_path == 'conn' | count()" in.zson
+  super -z -c "_path == 'conn' | count()" in.zson
   echo ===
-  super query -z -c "count() where _path == 'conn'" in.zson
+  super -z -c "count() where _path == 'conn'" in.zson
 
 inputs:
   - name: in.zson

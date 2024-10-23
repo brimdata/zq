@@ -3,8 +3,8 @@ script: |
   super db init -q
   super db create -q -seekstride 1KB -orderby k:asc asc
   super db create -q -seekstride 1KB -orderby k:desc desc
-  seq 1 15000 | super query -c '{k:this,foo:123}' - | super db load -q -use asc -
-  seq 1 15000 | super query -c '{k:this,foo:123}' - | super db load -q -use desc -
+  seq 1 15000 | super -c '{k:this,foo:123}' - | super db load -q -use asc -
+  seq 1 15000 | super -c '{k:this,foo:123}' - | super db load -q -use desc -
   super db query -s -z 'from asc | k >= 1000 and k <= 1002'
   super db query -s -z 'from asc | k == 12321'
   super db query -s -z 'from asc | k == 12322 or foo != 123'

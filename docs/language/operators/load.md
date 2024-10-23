@@ -11,7 +11,7 @@ load <pool>[@<branch>] [author <author>] [message <message>] [meta <meta>]
 :::tip Note
 The `load` operator is exclusively for working with pools in a
 [SuperDB data lake](../../commands/zed.md) and is not available for use in
-[`super query`](../../commands/zq.md).
+[`super`](../../commands/zq.md).
 :::
 
 ### Description

@@ -1,5 +1,5 @@
 script: |
-  super query -f vng -o test.vng -
+  super -f vng -o test.vng -
   super dev vector project -z test.vng x y z
   echo ===
   super dev vector project -z test.vng s

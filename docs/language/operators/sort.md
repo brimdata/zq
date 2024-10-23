@@ -57,7 +57,7 @@ when comparing heterogeneously typed values.
 
 _A simple sort with a null_
 ```mdtest-command
-echo '2 null 1 3' | super query -z -c 'sort this' -
+echo '2 null 1 3' | super -z -c 'sort this' -
 ```
 =>
 ```mdtest-output
@@ -68,7 +68,7 @@ null
 ```
 _With no sort expression, sort will sort by [`this`](../pipeline-model.md#the-special-value-this) for non-records_
 ```mdtest-command
-echo '2 null 1 3' | super query -z -c sort -
+echo '2 null 1 3' | super -z -c sort -
 ```
 =>
 ```mdtest-output
@@ -79,7 +79,7 @@ null
 ```
 _The "nulls last" default may be overridden_
 ```mdtest-command
-echo '2 null 1 3' | super query -z -c 'sort -nulls first' -
+echo '2 null 1 3' | super -z -c 'sort -nulls first' -
 ```
 =>
 ```mdtest-output
@@ -90,7 +90,7 @@ null
 ```
 _With no sort expression, sort's heuristics will find a numeric key_
 ```mdtest-command
-echo '{s:"bar",k:2}{s:"bar",k:3}{s:"foo",k:1}' | super query -z -c sort -
+echo '{s:"bar",k:2}{s:"bar",k:3}{s:"foo",k:1}' | super -z -c sort -
 ```
 =>
 ```mdtest-output
@@ -100,7 +100,7 @@ echo '{s:"bar",k:2}{s:"bar",k:3}{s:"foo",k:1}' | super query -z -c sort -
 ```
 _It's best practice to provide the sort key_
 ```mdtest-command
-echo '{s:"bar",k:2}{s:"bar",k:3}{s:"foo",k:1}' | super query -z -c 'sort k' -
+echo '{s:"bar",k:2}{s:"bar",k:3}{s:"foo",k:1}' | super -z -c 'sort k' -
 ```
 =>
 ```mdtest-output
@@ -110,7 +110,7 @@ echo '{s:"bar",k:2}{s:"bar",k:3}{s:"foo",k:1}' | super query -z -c 'sort k' -
 ```
 _Sort with a secondary key_
 ```mdtest-command
-echo '{s:"bar",k:2}{s:"bar",k:3}{s:"foo",k:2}' | super query -z -c 'sort k,s' -
+echo '{s:"bar",k:2}{s:"bar",k:3}{s:"foo",k:2}' | super -z -c 'sort k,s' -
 ```
 =>
 ```mdtest-output
@@ -120,7 +120,7 @@ echo '{s:"bar",k:2}{s:"bar",k:3}{s:"foo",k:2}' | super query -z -c 'sort k,s' -
 ```
 _Sort by secondary key in reverse order when the primary keys are identical_
 ```mdtest-command
-echo '{s:"bar",k:2}{s:"bar",k:3}{s:"foo",k:2}' | super query -z -c 'sort k,s desc' -
+echo '{s:"bar",k:2}{s:"bar",k:3}{s:"foo",k:2}' | super -z -c 'sort k,s desc' -
 ```
 =>
 ```mdtest-output
@@ -131,7 +131,7 @@ echo '{s:"bar",k:2}{s:"bar",k:3}{s:"foo",k:2}' | super query -z -c 'sort k,s des
 _Sort with a numeric expression_
 ```mdtest-command
 echo '{s:"sum 2",x:2,y:0}{s:"sum 3",x:1,y:2}{s:"sum 0",x:-1,y:-1}' |
-  super query -z -c 'sort x+y' -
+  super -z -c 'sort x+y' -
 ```
 =>
 ```mdtest-output
@@ -142,7 +142,7 @@ echo '{s:"sum 2",x:2,y:0}{s:"sum 3",x:1,y:2}{s:"sum 0",x:-1,y:-1}' |
 _Case sensitivity affects sorting "lowest value to highest" in string values_
 ```mdtest-command
 echo '{word:"hello"}{word:"Hi"}{word:"WORLD"}' |
-  super query -z -c 'sort' -
+  super -z -c 'sort' -
 ```
 =>
 ```mdtest-output
@@ -153,7 +153,7 @@ echo '{word:"hello"}{word:"Hi"}{word:"WORLD"}' |
 _Case-insensitive sort by using a string expression_
 ```mdtest-command
 echo '{word:"hello"}{word:"Hi"}{word:"WORLD"}' |
-  super query -z -c 'sort lower(word)' -
+  super -z -c 'sort lower(word)' -
 ```
 =>
 ```mdtest-output
@@ -163,7 +163,7 @@ echo '{word:"hello"}{word:"Hi"}{word:"WORLD"}' |
 ```
 _Shorthand to reverse the sort order for each key_
 ```mdtest-command
-echo '2 null 1 3' | super query -z -c 'sort -r' -
+echo '2 null 1 3' | super -z -c 'sort -r' -
 ```
 =>
 ```mdtest-output

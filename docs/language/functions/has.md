@@ -31,13 +31,13 @@ switch (
 ### Examples
 
 ```mdtest-command
-echo '{foo:10}' | super query -z -c 'yield {yes:has(foo),no:has(bar)}' -
-echo '{foo:[1,2,3]}' | super query -z -c 'yield {yes: has(foo[0]),no:has(foo[3])}' -
+echo '{foo:10}' | super -z -c 'yield {yes:has(foo),no:has(bar)}' -
+echo '{foo:[1,2,3]}' | super -z -c 'yield {yes: has(foo[0]),no:has(foo[3])}' -
 echo '{foo:{bar:"value"}}' |
-  super query -z -c 'yield {yes:has(foo.bar),no:has(foo.baz)}' -
-echo '{foo:10}' | super query -z -c 'yield {yes:has(foo+1),no:has(bar+1)}' -
-echo 1 | super query -z -c 'yield has(bar)' -
-echo '{x:error("missing")}' | super query -z -c 'yield has(x)' -
+  super -z -c 'yield {yes:has(foo.bar),no:has(foo.baz)}' -
+echo '{foo:10}' | super -z -c 'yield {yes:has(foo+1),no:has(bar+1)}' -
+echo 1 | super -z -c 'yield has(bar)' -
+echo '{x:error("missing")}' | super -z -c 'yield has(x)' -
 ```
 =>
 ```mdtest-output

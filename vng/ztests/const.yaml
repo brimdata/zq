@@ -1,5 +1,5 @@
 script: |
-  super query -f vng -o out.vng -
+  super -f vng -o out.vng -
   super dev vng -z out.vng
 
 inputs:
