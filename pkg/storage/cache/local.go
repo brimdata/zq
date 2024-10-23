@@ -6,19 +6,19 @@ import (
 
 	"github.com/brimdata/super/lake/data"
 	"github.com/brimdata/super/pkg/storage"
-	lru "github.com/hashicorp/golang-lru/v2"
+	arc "github.com/hashicorp/golang-lru/arc/v2"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
 type LocalCache struct {
 	storage.Engine
 	metrics
-	lru       *lru.ARCCache[string, []byte]
+	lru       *arc.ARCCache[string, []byte]
 	cacheable Cacheable
 }
 
 func NewLocalCache(engine storage.Engine, cacheable Cacheable, size int, registerer prometheus.Registerer) (*LocalCache, error) {
-	lru, err := lru.NewARC[string, []byte](size)
+	lru, err := arc.NewARC[string, []byte](size)
 	if err != nil {
 		return nil, err
 	}

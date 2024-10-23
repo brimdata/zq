@@ -20,7 +20,7 @@ import (
 	"github.com/brimdata/super/zio/zngio"
 	"github.com/brimdata/super/zngbytes"
 	"github.com/brimdata/super/zson"
-	lru "github.com/hashicorp/golang-lru/v2"
+	arc "github.com/hashicorp/golang-lru/arc/v2"
 	"github.com/segmentio/ksuid"
 	"go.uber.org/zap"
 )
@@ -44,7 +44,7 @@ type Root struct {
 	logger *zap.Logger
 	path   *storage.URI
 
-	poolCache *lru.ARCCache[ksuid.KSUID, *Pool]
+	poolCache *arc.ARCCache[ksuid.KSUID, *Pool]
 	pools     *pools.Store
 	vCache    *vcache.Cache
 }
@@ -55,7 +55,7 @@ type LakeMagic struct {
 }
 
 func newRoot(engine storage.Engine, logger *zap.Logger, path *storage.URI) *Root {
-	poolCache, err := lru.NewARC[ksuid.KSUID, *Pool](1024)
+	poolCache, err := arc.NewARC[ksuid.KSUID, *Pool](1024)
 	if err != nil {
 		panic(err)
 	}

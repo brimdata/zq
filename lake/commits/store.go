@@ -15,7 +15,7 @@ import (
 	"github.com/brimdata/super/zio"
 	"github.com/brimdata/super/zio/zngio"
 	"github.com/brimdata/super/zngbytes"
-	lru "github.com/hashicorp/golang-lru/v2"
+	arc "github.com/hashicorp/golang-lru/arc/v2"
 	"github.com/segmentio/ksuid"
 	"go.uber.org/zap"
 )
@@ -31,21 +31,21 @@ type Store struct {
 	logger *zap.Logger
 	path   *storage.URI
 
-	cache     *lru.ARCCache[ksuid.KSUID, *Object]
-	paths     *lru.ARCCache[ksuid.KSUID, []ksuid.KSUID]
-	snapshots *lru.ARCCache[ksuid.KSUID, *Snapshot]
+	cache     *arc.ARCCache[ksuid.KSUID, *Object]
+	paths     *arc.ARCCache[ksuid.KSUID, []ksuid.KSUID]
+	snapshots *arc.ARCCache[ksuid.KSUID, *Snapshot]
 }
 
 func OpenStore(engine storage.Engine, logger *zap.Logger, path *storage.URI) (*Store, error) {
-	cache, err := lru.NewARC[ksuid.KSUID, *Object](1024)
+	cache, err := arc.NewARC[ksuid.KSUID, *Object](1024)
 	if err != nil {
 		return nil, err
 	}
-	paths, err := lru.NewARC[ksuid.KSUID, []ksuid.KSUID](1024)
+	paths, err := arc.NewARC[ksuid.KSUID, []ksuid.KSUID](1024)
 	if err != nil {
 		return nil, err
 	}
-	snapshots, err := lru.NewARC[ksuid.KSUID, *Snapshot](32)
+	snapshots, err := arc.NewARC[ksuid.KSUID, *Snapshot](32)
 	if err != nil {
 		return nil, err
 	}

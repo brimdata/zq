@@ -14,7 +14,7 @@ require (
 	github.com/golang/mock v1.5.0
 	github.com/gorilla/mux v1.7.5-0.20200711200521-98cb6bf42e08
 	github.com/gosuri/uilive v0.0.4
-	github.com/hashicorp/golang-lru/v2 v2.0.1
+	github.com/hashicorp/golang-lru/arc/v2 v2.0.7
 	github.com/kr/text v0.2.0
 	github.com/lestrrat-go/strftime v1.0.6
 	github.com/paulbellamy/ratecounter v0.2.0
@@ -53,6 +53,7 @@ require (
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/flatbuffers v23.5.26+incompatible // indirect
+	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/klauspost/asmfmt v1.3.2 // indirect
 	github.com/klauspost/compress v1.16.7 // indirect
