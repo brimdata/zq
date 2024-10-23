@@ -198,7 +198,7 @@ specification.
 :::tip note
 See [the role of `_path`](reading-zeek-log-formats.md#the-role-of-_path)
 for important details if you're using Zeek's built-in [ASCII logger](https://docs.zeek.org/en/current/scripts/base/frameworks/logging/writers/ascii.zeek.html)
-to rather than the [JSON Streaming Logs](https://github.com/corelight/json-streaming-logs) package.
+rather than the [JSON Streaming Logs](https://github.com/corelight/json-streaming-logs) package.
 :::
 
 ### Zed Pipeline
