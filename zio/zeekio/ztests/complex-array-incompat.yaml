@@ -1,5 +1,5 @@
 script: |
-  ! super query -f zeek -
+  ! super -f zeek -
 
 inputs:
   - name: stdin

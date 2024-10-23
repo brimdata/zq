@@ -9,9 +9,9 @@ script: |
   echo ===
 
   # Verify that output flags are honored.
-  super db ls -f zson | super query -i zson -f zson -c "cut name | sort name" -
+  super db ls -f zson | super -i zson -f zson -c "cut name | sort name" -
   echo ===
-  super db ls -f zng | super query -i zng -f table -c "cut name | sort name" -
+  super db ls -f zng | super -i zng -f table -c "cut name | sort name" -
   echo ===
 
 inputs:

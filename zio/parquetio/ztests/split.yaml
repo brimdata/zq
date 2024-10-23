@@ -1,6 +1,6 @@
 script: |
-  super query -o out -split . -f parquet -
-  super query -z -c "sort this" out-*.parquet
+  super -o out -split . -f parquet -
+  super -z -c "sort this" out-*.parquet
 
 inputs:
   - name: stdin

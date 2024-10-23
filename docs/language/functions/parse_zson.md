@@ -21,7 +21,7 @@ of Super JSON or JSON into a value of any type.  This is analogous to JavaScript
 _Parse Super JSON text_
 
 ```mdtest-command
-echo '{foo:"{a:\"1\",b:2}"}' | super query -z -c 'foo := parse_zson(foo)' -
+echo '{foo:"{a:\"1\",b:2}"}' | super -z -c 'foo := parse_zson(foo)' -
 ```
 =>
 ```mdtest-output
@@ -31,7 +31,7 @@ echo '{foo:"{a:\"1\",b:2}"}' | super query -z -c 'foo := parse_zson(foo)' -
 _Parse JSON text_
 ```mdtest-command
 echo '{"foo": "{\"a\": \"1\", \"b\": 2}"}' |
-  super query -z -c 'foo := parse_zson(foo)' -
+  super -z -c 'foo := parse_zson(foo)' -
 ```
 =>
 ```mdtest-output

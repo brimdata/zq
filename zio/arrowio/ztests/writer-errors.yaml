@@ -1,7 +1,7 @@
 script: |
-  ! echo '{a:1} {b:2}' | super query -f arrows -
-  ! echo 1 | super query -f arrows -
-  ! echo {} | super query -f arrows -
+  ! echo '{a:1} {b:2}' | super -f arrows -
+  ! echo 1 | super -f arrows -
+  ! echo {} | super -f arrows -
 
 outputs:
   - name: stderr

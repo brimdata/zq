@@ -81,7 +81,7 @@ issue describing your use case.
 
    ```mdtest-command
    echo '"Jan  1 06:25:43 mailserver14 postfix/cleanup[21403]: BEF25A72965: message-id=<20130101142543.5828399CCAF@mailserver14.example.com>"' |
-     super query -Z -c 'yield grok("%{SYSLOGBASE} %{POSTFIX_QUEUEID:queue_id}: %{GREEDYDATA:syslog_message}",
+     super -Z -c 'yield grok("%{SYSLOGBASE} %{POSTFIX_QUEUEID:queue_id}: %{GREEDYDATA:syslog_message}",
                        this,
                        "POSTFIX_QUEUEID [0-9A-F]{10,11}")' -
    ```
@@ -152,7 +152,7 @@ on the [community Slack](https://www.brimdata.io/join-slack/).
 Parsing a simple log line using the built-in named patterns:
 ```mdtest-command
 echo '"2020-09-16T04:20:42.45+01:00 DEBUG This is a sample debug log message"' |
-  super query -Z -c 'yield grok("%{TIMESTAMP_ISO8601:timestamp} %{LOGLEVEL:level} %{GREEDYDATA:message}",
+  super -Z -c 'yield grok("%{TIMESTAMP_ISO8601:timestamp} %{LOGLEVEL:level} %{GREEDYDATA:message}",
                     this)' -
 ```
 =>
@@ -171,7 +171,7 @@ such as changing the `\d` to `\\d` if we repurpose the
 
 ```mdtest-command
 echo '"+7000"' |
-  super query -z -c 'yield grok("%{MY_NUMTZ:tz}",
+  super -z -c 'yield grok("%{MY_NUMTZ:tz}",
                     this,
                     "MY_NUMTZ [+-]\\d{4}")' -
 ```
@@ -186,7 +186,7 @@ readability.
 
 ```mdtest-command
 echo '"(555)-1212"' |
-  super query -z -c 'yield grok("\\(%{PH_PREFIX:prefix}\\)-%{PH_LINE_NUM:line_number}",
+  super -z -c 'yield grok("\\(%{PH_PREFIX:prefix}\\)-%{PH_LINE_NUM:line_number}",
                     this, 
                     "PH_PREFIX \\d{3}\n" +
                     "PH_LINE_NUM \\d{4}")' -

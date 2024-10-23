@@ -33,12 +33,11 @@ import (
 	_ "github.com/brimdata/super/cmd/super/dev/vector/query"
 	_ "github.com/brimdata/super/cmd/super/dev/vector/search"
 	_ "github.com/brimdata/super/cmd/super/dev/vng"
-	_ "github.com/brimdata/super/cmd/super/query"
 	"github.com/brimdata/super/cmd/super/root"
 )
 
 func main() {
-	if err := root.Super.ExecRoot(os.Args[1:]); err != nil {
+	if err := root.Super.Exec(os.Args[1:]); err != nil {
 		fmt.Fprintf(os.Stderr, "%s\n", err)
 		os.Exit(1)
 	}

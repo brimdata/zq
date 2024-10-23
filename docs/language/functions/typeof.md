@@ -20,7 +20,7 @@ The types of various values:
 
 ```mdtest-command
 echo  '1 "foo" 10.0.0.1 [1,2,3] {s:"foo"} null error("missing")' |
-  super query -z -c 'yield typeof(this)' -
+  super -z -c 'yield typeof(this)' -
 ```
 =>
 ```mdtest-output
@@ -34,7 +34,7 @@ echo  '1 "foo" 10.0.0.1 [1,2,3] {s:"foo"} null error("missing")' |
 ```
 The type of a type is type `type`:
 ```mdtest-command
-echo null | super query -z -c 'yield typeof(typeof(this))' -
+echo null | super -z -c 'yield typeof(typeof(this))' -
 ```
 =>
 ```mdtest-output

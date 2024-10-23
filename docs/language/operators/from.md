@@ -35,7 +35,7 @@ File paths and URIs may be followed by an optional [format](../../commands/zq.md
 Sourcing data from pools is only possible when querying a lake, such as
 via the [`super db` command](../../commands/zed.md) or
 [SuperDB lake API](../../lake/api.md). Sourcing data from files is only possible
-with the [`super query` command](../../commands/zq.md).
+with the [`super` command](../../commands/zq.md).
 
 When a single pool name is specified without `@`-referencing a commit or ID, or
 when using a pool pattern, the tip of the `main` branch of each pool is
@@ -112,7 +112,7 @@ The following file `hello.zson` is also used.
 _Source structured data from a local file_
 
 ```mdtest-command
-super query -z -c 'file hello.zson | yield greeting'
+super -z -c 'file hello.zson | yield greeting'
 ```
 =>
 ```mdtest-output
@@ -121,7 +121,7 @@ super query -z -c 'file hello.zson | yield greeting'
 
 _Source data from a local file, but in line format_
 ```mdtest-command
-super query -z -c 'file hello.zson format line'
+super -z -c 'file hello.zson format line'
 ```
 =>
 ```mdtest-output
@@ -130,7 +130,7 @@ super query -z -c 'file hello.zson format line'
 
 _Source structured data from a URI_
 ```
-super query -z -c 'get https://raw.githubusercontent.com/brimdata/zui-insiders/main/package.json
+super -z -c 'get https://raw.githubusercontent.com/brimdata/zui-insiders/main/package.json
        | yield productName'
 ```
 =>

@@ -7,14 +7,22 @@ import (
 )
 
 var (
-	NeedHelp = errors.New("help")
-	ErrNoRun = errors.New("no run method")
+	NeedHelp   = errors.New("help")
+	ErrNoRun   = errors.New("no run method")
+	ErrNotLeaf = errors.New("no internal leaf found")
 )
 
 type Constructor func(Command, *flag.FlagSet) (Command, error)
 
 type Command interface {
 	Run([]string) error
+}
+
+// An interior leaf command that implements SetLeafFlags has at least
+// some flags that are used by that subcommand but has children that
+// don't inherit these flags.
+type InternalLeaf interface {
+	SetLeafFlags(*flag.FlagSet)
 }
 
 type Spec struct {
@@ -31,8 +39,13 @@ type Spec struct {
 	// where a flag is shown (if not hidden) but its default value is hidden,
 	// e.g., as is useful for a password flag.
 	RedactedFlags string
-	children      []*Spec
-	parent        *Spec
+	// True for commands that have internal leaf flags.
+	// We can't infer this by asserting the InternalLeaf interface when
+	// command hierarchies embed and export parent command structs to children so
+	// we have this flag to override such exportation.
+	InternalLeaf bool
+	children     []*Spec
+	parent       *Spec
 }
 
 func (c *Spec) Add(child *Spec) {
@@ -49,16 +62,11 @@ func (c *Spec) lookupSub(name string) *Spec {
 	return nil
 }
 
-func (s *Spec) Exec(parent Command, args []string) error {
-	path, args, _, err := parse(s, args, parent)
-	if path == nil || err != nil {
-		return err
+func (s *Spec) Exec(args []string) error {
+	path, rest, showHidden, err := parse(s, args, nil, true)
+	if err == ErrNotLeaf {
+		path, rest, showHidden, err = parse(s, args, nil, false)
 	}
-	return path.run(args)
-}
-
-func (s *Spec) ExecRoot(args []string) error {
-	path, rest, showHidden, err := parse(s, args, nil)
 	if err == nil {
 		err = path.run(rest)
 	}

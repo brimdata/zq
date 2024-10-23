@@ -1,7 +1,7 @@
 script: |
-  ! super query -I duplicate.zed -
-  ! super query -I call-non-func.zed -
-  ! super query -I wrong-args.zed -
+  ! super -I duplicate.zed -
+  ! super -I call-non-func.zed -
+  ! super -I wrong-args.zed -
 
 inputs:
   - name: duplicate.zed

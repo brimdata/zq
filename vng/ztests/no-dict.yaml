@@ -1,6 +1,6 @@
 script: |
-  seq 1000 | super query -f vng -o out.vng -c "{x:this}" -
-  super dev vng out.vng | super query -Z -c "over Fields | yield Values.Dict" -
+  seq 1000 | super -f vng -o out.vng -c "{x:this}" -
+  super dev vng out.vng | super -Z -c "over Fields | yield Values.Dict" -
 
 outputs:
   - name: stdout

@@ -3,7 +3,7 @@ script: |
   super db init -q
   super db create -q test
   mv test/lake.zng lake-orig.zng
-  super query -o test/lake.zng -c 'version:=1' lake-orig.zng
+  super -o test/lake.zng -c 'version:=1' lake-orig.zng
   ! super db serve
 
 outputs:

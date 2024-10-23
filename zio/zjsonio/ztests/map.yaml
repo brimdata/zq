@@ -1,5 +1,5 @@
 script: |
-  super query -f zjson in.zson | super query -z -
+  super -f zjson in.zson | super -z -
 
 inputs:
   - name: in.zson

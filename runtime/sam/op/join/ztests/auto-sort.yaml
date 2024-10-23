@@ -1,15 +1,15 @@
 script: |
-  super query -z -c 'file a.zson | join (file b.zson) on a=b'
+  super -z -c 'file a.zson | join (file b.zson) on a=b'
   echo '// ==='
-  super query -z -c 'file a.zson | join (file b.zson | sort -r b) on a=b'
+  super -z -c 'file a.zson | join (file b.zson | sort -r b) on a=b'
   echo '// ==='
-  super query -z -c 'file a.zson | join (file b.zson | sort b) on a=b'
+  super -z -c 'file a.zson | join (file b.zson | sort b) on a=b'
   echo '// ==='
-  super query -z -c 'file a.zson | sort a | join (file b.zson | sort -r b) on a=b'
+  super -z -c 'file a.zson | sort a | join (file b.zson | sort -r b) on a=b'
   echo '// ==='
-  super query -z -c 'file a.zson | sort -r a | join (file b.zson) on a=b'
+  super -z -c 'file a.zson | sort -r a | join (file b.zson) on a=b'
   echo '// ==='
-  super query -z -c 'file a.zson | sort -r a | join (file b.zson | sort b) on a=b'
+  super -z -c 'file a.zson | sort -r a | join (file b.zson | sort b) on a=b'
 
 inputs:
   - name: a.zson

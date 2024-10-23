@@ -16,7 +16,7 @@ to lower case and returns the result.
 ### Examples
 
 ```mdtest-command
-echo '"Zed"' | super query -z -c 'yield lower(this)' -
+echo '"Zed"' | super -z -c 'yield lower(this)' -
 ```
 =>
 ```mdtest-output

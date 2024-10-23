@@ -1,6 +1,6 @@
 script: |
-  super query -f parquet -o f -
-  super query -z f
+  super -f parquet -o f -
+  super -z f
 
 inputs:
   - name: stdin

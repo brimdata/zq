@@ -3,7 +3,7 @@ script: |
   super db init -q
   super db create -q logs
   super db load -q -use logs babble.zson
-  super db ls -f zng | super query -Z -c "drop id,ts" -
+  super db ls -f zng | super -Z -c "drop id,ts" -
   echo ===
   super db query -Z "from logs@main:objects | drop id"
 

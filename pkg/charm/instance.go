@@ -48,7 +48,7 @@ func (i *instance) options(showHidden bool) []string {
 	return body
 }
 
-func parse(spec *Spec, args []string, parent Command) (path, []string, bool, error) {
+func parse(spec *Spec, args []string, parent Command, interiorLeaf bool) (path, []string, bool, error) {
 	var path path
 	var help, hidden, usage bool
 	flags := flag.NewFlagSet(spec.Name, flag.ContinueOnError)
@@ -62,6 +62,11 @@ func parse(spec *Spec, args []string, parent Command) (path, []string, bool, err
 		cmd, err := spec.New(parent, flags)
 		if err != nil {
 			return nil, nil, false, err
+		}
+		var haveLeaf bool
+		if interiorLeaf && spec.InternalLeaf {
+			cmd.(InternalLeaf).SetLeafFlags(flags)
+			haveLeaf = true
 		}
 		component := &instance{
 			spec:    spec,
@@ -83,6 +88,9 @@ func parse(spec *Spec, args []string, parent Command) (path, []string, bool, err
 		if len(rest) != 0 {
 			spec = component.spec.lookupSub(rest[0])
 			if spec != nil {
+				if haveLeaf {
+					return nil, nil, false, ErrNotLeaf
+				}
 				// We found a subcommand, so continue building the chain.
 				args = rest[1:]
 				continue
@@ -136,6 +144,19 @@ func parseHelp(spec *Spec, args []string) (path, error) {
 				args = rest[1:]
 				continue
 			}
+		}
+		// If this is an interior leaf command with leaf flags, then we display
+		// all the leaf flags here since the help is being invoked for this
+		// interior command.  When it is invoked for a child, this check won't happen.
+		if spec.InternalLeaf {
+			var flags flag.FlagSet
+			cmd.(InternalLeaf).SetLeafFlags(&flags)
+			flags.VisitAll(func(f *flag.Flag) {
+				if _, ok := component.flags[f.Name]; ok {
+					panic(fmt.Sprintf("duplicate flag -%s for command %s", f.Name, path.pathname()))
+				}
+				component.flags[f.Name] = f
+			})
 		}
 		return path, nil
 	}

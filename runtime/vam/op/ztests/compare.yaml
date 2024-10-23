@@ -1,7 +1,7 @@
 # Test that comparison works on union and dynamic vectors.
 
 script: |
-  super query -o t.vng -f vng -
+  super -o t.vng -f vng -
   super dev vector query -z "yield this,a<a,a<b,b<a,b<b" t.vng
 
 inputs:

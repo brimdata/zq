@@ -1,4 +1,4 @@
-script: super query -i csv -z -c '*' -
+script: super -i csv -z -c '*' -
 
 inputs:
   - name: stdin

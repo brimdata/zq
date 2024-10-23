@@ -1,4 +1,4 @@
-script: super query in.zson | super query -z -
+script: super in.zson | super -z -
 
 inputs:
   - name: in.zson

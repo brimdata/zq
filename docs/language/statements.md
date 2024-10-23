@@ -15,7 +15,7 @@ where `<id>` is an identifier and `<expr>` is a constant [expression](expression
 that must evaluate to a constant at compile time and not reference any
 runtime state such as `this`, e.g.,
 ```mdtest-command
-echo '{r:5}{r:10}' | super query -z -c "const PI=3.14159 2*PI*r" -
+echo '{r:5}{r:10}' | super -z -c "const PI=3.14159 2*PI*r" -
 ```
 produces
 ```mdtest-output
@@ -48,7 +48,7 @@ state such as `this`.
 
 For example,
 ```mdtest-command
-echo 1 2 3 4 | super query -z -c 'func add1(n): (n+1) add1(this)' -
+echo 1 2 3 4 | super -z -c 'func add1(n): (n+1) add1(this)' -
 ```
 produces
 ```mdtest-output
@@ -114,7 +114,7 @@ myop()
 ```
 run via
 ```mdtest-command
-echo {x:1} | super query -z -I myop.spq -
+echo {x:1} | super -z -I myop.spq -
 ```
 produces
 ```mdtest-output
@@ -141,10 +141,10 @@ op AddMessage(field_for_message, msg): (
 the `msg` parameter may be used flexibly
 ```mdtest-command
 echo '{greeting: "hi"}' |
-  super query -z -I params.spq -c 'AddMessage(message, "hello")' -
+  super -z -I params.spq -c 'AddMessage(message, "hello")' -
 
 echo '{greeting: "hi"}' |
-  super query -z -I params.spq -c 'AddMessage(message, greeting)' -
+  super -z -I params.spq -c 'AddMessage(message, greeting)' -
 ```
 to produce the respective outputs
 ```mdtest-output
@@ -158,7 +158,7 @@ explicitly mentioned "field" in the name of our first parameter's name may help
 us avoid making mistakes when passing arguments, such as
 ```mdtest-command fails
 echo '{greeting: "hi"}' |
-  super query -z -I params.spq -c 'AddMessage("message", "hello")' -
+  super -z -I params.spq -c 'AddMessage("message", "hello")' -
 ```
 which produces
 ```mdtest-output
@@ -210,7 +210,7 @@ add4(a.b)
 ```
 run via
 ```mdtest-command
-echo '{a:{b:1}}' | super query -z -I nested.spq -
+echo '{a:{b:1}}' | super -z -I nested.spq -
 ```
 produces
 ```mdtest-output
@@ -230,7 +230,7 @@ type <id> = <type>
 where `<id>` is an identifier and `<type>` is a [type](data-types.md#first-class-types).
 This creates a new type with the given name in the type system, e.g.,
 ```mdtest-command
-echo 80 | super query -z -c 'type port=uint16 cast(this, <port>)' -
+echo 80 | super -z -c 'type port=uint16 cast(this, <port>)' -
 ```
 produces
 ```mdtest-output

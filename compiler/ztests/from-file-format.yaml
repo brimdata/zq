@@ -1,5 +1,5 @@
 script: |
-  super query -z -c 'file in.csv format csv'
+  super -z -c 'file in.csv format csv'
 
 inputs:
   - name: in.csv

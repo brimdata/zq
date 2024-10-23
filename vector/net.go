@@ -18,8 +18,8 @@ func NewNet(values []netip.Prefix, nulls *Bool) *Net {
 	return &Net{Values: values, Nulls: nulls}
 }
 
-func (n *Net) Type() zed.Type {
-	return zed.TypeNet
+func (n *Net) Type() super.Type {
+	return super.TypeNet
 }
 
 func (n *Net) Len() uint32 {
@@ -30,7 +30,7 @@ func (n *Net) Serialize(b *zcode.Builder, slot uint32) {
 	if n.Nulls.Value(slot) {
 		b.Append(nil)
 	} else {
-		b.Append(zed.EncodeNet(n.Values[slot]))
+		b.Append(super.EncodeNet(n.Values[slot]))
 	}
 }
 
@@ -38,7 +38,7 @@ func (n *Net) AppendKey(b []byte, slot uint32) []byte {
 	if n.Nulls.Value(slot) {
 		return append(b, 0)
 	}
-	return zed.AppendNet(b, n.Values[slot])
+	return super.AppendNet(b, n.Values[slot])
 }
 
 func NetValue(val Any, slot uint32) (netip.Prefix, bool) {
@@ -50,7 +50,7 @@ func NetValue(val Any, slot uint32) (netip.Prefix, bool) {
 			return netip.Prefix{}, true
 		}
 		s, _ := val.AsBytes()
-		return zed.DecodeNet(s), false
+		return super.DecodeNet(s), false
 	case *Dict:
 		if val.Nulls.Value(slot) {
 			return netip.Prefix{}, true
