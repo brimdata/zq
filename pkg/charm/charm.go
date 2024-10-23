@@ -41,7 +41,7 @@ type Spec struct {
 	RedactedFlags string
 	// True for commands that have internal leaf flags.
 	// We can't infer this by asserting the InternalLeaf interface when
-	// command hiearchys embed and export parent command structs to children so
+	// command hierarchies embed and export parent command structs to children so
 	// we have this flag to override such exportation.
 	InternalLeaf bool
 	children     []*Spec

@@ -147,7 +147,7 @@ func parseHelp(spec *Spec, args []string) (path, error) {
 		}
 		// If this is an interior leaf command with leaf flags, then we display
 		// all the leaf flags here since the help is being invoked for this
-		// interior command.  When it is invoked for a chile, this check won't happen.
+		// interior command.  When it is invoked for a child, this check won't happen.
 		if spec.InternalLeaf {
 			var flags flag.FlagSet
 			cmd.(InternalLeaf).SetLeafFlags(&flags)
