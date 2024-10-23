@@ -501,6 +501,9 @@ func TestCasts(t *testing.T) {
 	testSuccessful(t, "uint8(-1)", "", `error({message:"cannot cast to uint8",on:-1})`)
 	testSuccessful(t, "uint8(300)", "", `error({message:"cannot cast to uint8",on:300})`)
 	testSuccessful(t, `uint8("foo")`, "", `error({message:"cannot cast to uint8",on:"foo"})`)
+	testSuccessful(t, `uint8("-1")`, "", `error({message:"cannot cast to uint8",on:"-1"})`)
+	testSuccessful(t, "uint8(258.)", "", `error({message:"cannot cast to uint8",on:258.})`)
+	testSuccessful(t, `uint8("255")`, "", `255(uint8)`)
 
 	// Test casts to int16
 	testSuccessful(t, "int16(10)", "", "10(int16)")
@@ -524,12 +527,19 @@ func TestCasts(t *testing.T) {
 	testSuccessful(t, "uint32(10)", "", "10(uint32)")
 	testSuccessful(t, "uint32(-1)", "", `error({message:"cannot cast to uint32",on:-1})`)
 	testSuccessful(t, "uint32(4300000000)", "", `error({message:"cannot cast to uint32",on:4300000000})`)
+	testSuccessful(t, "uint32(-4.3e9)", "", `error({message:"cannot cast to uint32",on:-4300000000.})`)
 	testSuccessful(t, `uint32("foo")`, "", `error({message:"cannot cast to uint32",on:"foo"})`)
+
+	// Test cast to int64
+	testSuccessful(t, "int64(this)", "10000000000000000000(uint64)", `error({message:"cannot cast to int64",on:10000000000000000000(uint64)})(error({message:string,on:uint64}))`)
+	testSuccessful(t, "int64(this)", "1e+19", `error({message:"cannot cast to int64",on:1e+19})`)
+	testSuccessful(t, `int64("10000000000000000000")`, "", `error({message:"cannot cast to int64",on:"10000000000000000000"})`)
 
 	// Test casts to uint64
 	testSuccessful(t, "uint64(10)", "", "10(uint64)")
 	testSuccessful(t, "uint64(-1)", "", `error({message:"cannot cast to uint64",on:-1})`)
 	testSuccessful(t, `uint64("foo")`, "", `error({message:"cannot cast to uint64",on:"foo"})`)
+	testSuccessful(t, `uint64(+Inf)`, "", `error({message:"cannot cast to uint64",on:+Inf})`)
 
 	// Test casts to float16
 	testSuccessful(t, "float16(10)", "", "10.(float16)")
@@ -564,6 +574,8 @@ func TestCasts(t *testing.T) {
 
 	testSuccessful(t, "string(1.2)", "", `"1.2"`)
 	testSuccessful(t, "string(5)", "", `"5"`)
+	testSuccessful(t, "string(this)", "5(uint8)", `"5"`)
+	testSuccessful(t, "string(this)", "5.5(float16)", `"5.5"`)
 	testSuccessful(t, "string(1.2.3.4)", "", `"1.2.3.4"`)
 	testSuccessful(t, `int64("1")`, "", "1")
 	testSuccessful(t, `int64("-1")`, "", "-1")

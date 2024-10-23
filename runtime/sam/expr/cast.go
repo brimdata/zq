@@ -1,8 +1,8 @@
 package expr
 
 import (
-	"math"
 	"net/netip"
+	"strconv"
 	"unicode/utf8"
 
 	"github.com/araddon/dateparse"
@@ -11,35 +11,18 @@ import (
 	"github.com/brimdata/super/pkg/nano"
 	"github.com/brimdata/super/runtime/sam/expr/coerce"
 	"github.com/brimdata/super/zson"
-	"github.com/x448/float16"
 )
 
 func LookupPrimitiveCaster(zctx *super.Context, typ super.Type) Evaluator {
 	switch typ {
 	case super.TypeBool:
 		return &casterBool{zctx}
-	case super.TypeInt8:
-		return &casterIntN{zctx, super.TypeInt8, math.MinInt8, math.MaxInt8}
-	case super.TypeInt16:
-		return &casterIntN{zctx, super.TypeInt16, math.MinInt16, math.MaxInt16}
-	case super.TypeInt32:
-		return &casterIntN{zctx, super.TypeInt32, math.MinInt32, math.MaxInt32}
-	case super.TypeInt64:
-		return &casterIntN{zctx, super.TypeInt64, 0, 0}
-	case super.TypeUint8:
-		return &casterUintN{zctx, super.TypeUint8, math.MaxUint8}
-	case super.TypeUint16:
-		return &casterUintN{zctx, super.TypeUint16, math.MaxUint16}
-	case super.TypeUint32:
-		return &casterUintN{zctx, super.TypeUint32, math.MaxUint32}
-	case super.TypeUint64:
-		return &casterUintN{zctx, super.TypeUint64, 0}
-	case super.TypeFloat16:
-		return &casterFloat16{zctx}
-	case super.TypeFloat32:
-		return &casterFloat32{zctx}
-	case super.TypeFloat64:
-		return &casterFloat64{zctx}
+	case super.TypeInt8, super.TypeInt16, super.TypeInt32, super.TypeInt64:
+		return &casterIntN{zctx, typ}
+	case super.TypeUint8, super.TypeUint16, super.TypeUint32, super.TypeUint64:
+		return &casterUintN{zctx, typ}
+	case super.TypeFloat16, super.TypeFloat32, super.TypeFloat64:
+		return &casterFloat{zctx, typ}
 	case super.TypeIP:
 		return &casterIP{zctx}
 	case super.TypeNet:
@@ -62,13 +45,11 @@ func LookupPrimitiveCaster(zctx *super.Context, typ super.Type) Evaluator {
 type casterIntN struct {
 	zctx *super.Context
 	typ  super.Type
-	min  int64
-	max  int64
 }
 
 func (c *casterIntN) Eval(ectx Context, val super.Value) super.Value {
-	v, ok := coerce.ToInt(val)
-	if !ok || (c.min != 0 && (v < c.min || v > c.max)) {
+	v, ok := coerce.ToInt(val, c.typ)
+	if !ok {
 		return c.zctx.WrapError("cannot cast to "+zson.FormatType(c.typ), val)
 	}
 	return super.NewInt(c.typ, v)
@@ -77,12 +58,11 @@ func (c *casterIntN) Eval(ectx Context, val super.Value) super.Value {
 type casterUintN struct {
 	zctx *super.Context
 	typ  super.Type
-	max  uint64
 }
 
 func (c *casterUintN) Eval(ectx Context, val super.Value) super.Value {
-	v, ok := coerce.ToUint(val)
-	if !ok || (c.max != 0 && v > c.max) {
+	v, ok := coerce.ToUint(val, c.typ)
+	if !ok {
 		return c.zctx.WrapError("cannot cast to "+zson.FormatType(c.typ), val)
 	}
 	return super.NewUint(c.typ, v)
@@ -100,41 +80,17 @@ func (c *casterBool) Eval(ectx Context, val super.Value) super.Value {
 	return super.NewBool(b)
 }
 
-type casterFloat16 struct {
+type casterFloat struct {
 	zctx *super.Context
+	typ  super.Type
 }
 
-func (c *casterFloat16) Eval(ectx Context, val super.Value) super.Value {
-	f, ok := coerce.ToFloat(val)
+func (c *casterFloat) Eval(ectx Context, val super.Value) super.Value {
+	f, ok := coerce.ToFloat(val, c.typ)
 	if !ok {
-		return c.zctx.WrapError("cannot cast to float16", val)
+		return c.zctx.WrapError("cannot cast to "+zson.FormatType(c.typ), val)
 	}
-	f16 := float16.Fromfloat32(float32(f))
-	return super.NewFloat16(f16.Float32())
-}
-
-type casterFloat32 struct {
-	zctx *super.Context
-}
-
-func (c *casterFloat32) Eval(ectx Context, val super.Value) super.Value {
-	f, ok := coerce.ToFloat(val)
-	if !ok {
-		return c.zctx.WrapError("cannot cast to float32", val)
-	}
-	return super.NewFloat32(float32(f))
-}
-
-type casterFloat64 struct {
-	zctx *super.Context
-}
-
-func (c *casterFloat64) Eval(ectx Context, val super.Value) super.Value {
-	f, ok := coerce.ToFloat(val)
-	if !ok {
-		return c.zctx.WrapError("cannot cast to float64", val)
-	}
-	return super.NewFloat64(f)
+	return super.NewFloat(c.typ, f)
 }
 
 type casterIP struct {
@@ -196,7 +152,7 @@ func (c *casterDuration) Eval(ectx Context, val super.Value) super.Value {
 	if super.IsFloat(id) {
 		return super.NewDuration(nano.Duration(val.Float()))
 	}
-	v, ok := coerce.ToInt(val)
+	v, ok := coerce.ToInt(val, super.TypeDuration)
 	if !ok {
 		return c.zctx.WrapError("cannot cast to duration", val)
 	}
@@ -228,7 +184,7 @@ func (c *casterTime) Eval(ectx Context, val super.Value) super.Value {
 		}
 	case super.IsNumber(id):
 		//XXX we call coerce on integers here to avoid unsigned/signed decode
-		v, ok := coerce.ToInt(val)
+		v, ok := coerce.ToInt(val, super.TypeTime)
 		if !ok {
 			return c.zctx.WrapError("cannot cast to time: coerce to int failed", val)
 		}
@@ -244,12 +200,22 @@ type casterString struct {
 }
 
 func (c *casterString) Eval(ectx Context, val super.Value) super.Value {
+	val = val.Under()
 	id := val.Type().ID()
-	if id == super.IDBytes {
+	switch id {
+	case super.IDBytes:
 		if !utf8.Valid(val.Bytes()) {
 			return c.zctx.WrapError("cannot cast to string: invalid UTF-8", val)
 		}
 		return super.NewValue(super.TypeString, val.Bytes())
+	case super.IDString:
+		return super.NewValue(super.TypeString, val.Bytes())
+	case super.IDInt8, super.IDInt16, super.IDInt32, super.IDInt64:
+		return super.NewString(strconv.FormatInt(val.Int(), 10))
+	case super.IDUint8, super.IDUint16, super.IDUint32, super.IDUint64:
+		return super.NewString(strconv.FormatUint(val.Uint(), 10))
+	case super.IDFloat16, super.IDFloat32, super.IDFloat64:
+		return super.NewString(strconv.FormatFloat(val.Float(), 'g', -1, 64))
 	}
 	if enum, ok := val.Type().(*super.TypeEnum); ok {
 		selector := super.DecodeUint(val.Bytes())
@@ -258,11 +224,6 @@ func (c *casterString) Eval(ectx Context, val super.Value) super.Value {
 			return c.zctx.NewError(err)
 		}
 		return super.NewString(symbol)
-	}
-	if id == super.IDString {
-		// If it's already stringy, then the Zed encoding can stay
-		// the same and we just update the stringy type.
-		return super.NewValue(super.TypeString, val.Bytes())
 	}
 	// Otherwise, we'll use a canonical ZSON value for the string rep
 	// of an arbitrary value cast to a string.

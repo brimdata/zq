@@ -21,7 +21,7 @@ func (a *Avg) Consume(val super.Value) {
 	if val.IsNull() {
 		return
 	}
-	if d, ok := coerce.ToFloat(val); ok {
+	if d, ok := coerce.ToFloat(val, super.TypeFloat64); ok {
 		a.sum += float64(d)
 		a.count++
 	}

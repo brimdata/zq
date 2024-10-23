@@ -21,7 +21,7 @@ output: |
   null(string)
   null(string)
   "1"
-  "1(=int64_named)"
+  "1"
   error("createStep: incompatible types (int8,string) and (int64,string)")
   error("createStep: incompatible types (int64,string) and (int8,string)")
   "one"

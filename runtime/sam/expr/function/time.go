@@ -30,7 +30,7 @@ func (b *Bucket) Call(_ super.Allocator, args []super.Value) super.Value {
 	if binArg.Type() == super.TypeDuration {
 		bin = nano.Duration(binArg.Int())
 	} else {
-		d, ok := coerce.ToInt(binArg)
+		d, ok := coerce.ToInt(binArg, super.TypeDuration)
 		if !ok {
 			return b.zctx.WrapError(b.name+": second argument is not a duration or number", binArg)
 		}
@@ -40,7 +40,7 @@ func (b *Bucket) Call(_ super.Allocator, args []super.Value) super.Value {
 		dur := nano.Duration(tsArg.Int())
 		return super.NewDuration(dur.Trunc(bin))
 	}
-	v, ok := coerce.ToInt(tsArg)
+	v, ok := coerce.ToInt(tsArg, super.TypeInt64)
 	if !ok {
 		return b.zctx.WrapError(b.name+": first argument is not a time", tsArg)
 	}

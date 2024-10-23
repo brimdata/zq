@@ -99,7 +99,7 @@ func NewFloat64(f *anymath.Function, val super.Value) *Float64 {
 	state := f.Init.Float64
 	if !val.IsNull() {
 		var ok bool
-		state, ok = coerce.ToFloat(val)
+		state, ok = coerce.ToFloat(val, super.TypeFloat64)
 		if !ok {
 			panicCoercionFail(super.TypeFloat64, val.Type())
 		}
@@ -115,7 +115,7 @@ func (f *Float64) result() super.Value {
 }
 
 func (f *Float64) consume(val super.Value) {
-	if v, ok := coerce.ToFloat(val); ok {
+	if v, ok := coerce.ToFloat(val, super.TypeFloat64); ok {
 		f.state = f.function(f.state, v)
 	}
 }
@@ -131,7 +131,7 @@ func NewInt64(f *anymath.Function, val super.Value) *Int64 {
 	state := f.Init.Int64
 	if !val.IsNull() {
 		var ok bool
-		state, ok = coerce.ToInt(val)
+		state, ok = coerce.ToInt(val, super.TypeInt64)
 		if !ok {
 			panicCoercionFail(super.TypeInt64, val.Type())
 		}
@@ -147,7 +147,7 @@ func (i *Int64) result() super.Value {
 }
 
 func (i *Int64) consume(val super.Value) {
-	if v, ok := coerce.ToInt(val); ok {
+	if v, ok := coerce.ToInt(val, super.TypeInt64); ok {
 		i.state = i.function(i.state, v)
 	}
 }
@@ -163,7 +163,7 @@ func NewUint64(f *anymath.Function, val super.Value) *Uint64 {
 	state := f.Init.Uint64
 	if !val.IsNull() {
 		var ok bool
-		state, ok = coerce.ToUint(val)
+		state, ok = coerce.ToUint(val, super.TypeUint64)
 		if !ok {
 			panicCoercionFail(super.TypeUint64, val.Type())
 		}
@@ -179,7 +179,7 @@ func (u *Uint64) result() super.Value {
 }
 
 func (u *Uint64) consume(val super.Value) {
-	if v, ok := coerce.ToUint(val); ok {
+	if v, ok := coerce.ToUint(val, super.TypeUint64); ok {
 		u.state = u.function(u.state, v)
 	}
 }
@@ -195,7 +195,7 @@ func NewDuration(f *anymath.Function, val super.Value) *Duration {
 	state := f.Init.Int64
 	if !val.IsNull() {
 		var ok bool
-		state, ok = coerce.ToInt(val)
+		state, ok = coerce.ToInt(val, super.TypeDuration)
 		if !ok {
 			panicCoercionFail(super.TypeDuration, val.Type())
 		}
@@ -211,7 +211,7 @@ func (d *Duration) result() super.Value {
 }
 
 func (d *Duration) consume(val super.Value) {
-	if v, ok := coerce.ToInt(val); ok {
+	if v, ok := coerce.ToInt(val, super.TypeDuration); ok {
 		d.state = d.function(d.state, v)
 	}
 }
@@ -227,7 +227,7 @@ func NewTime(f *anymath.Function, val super.Value) *Time {
 	state := f.Init.Int64
 	if !val.IsNull() {
 		var ok bool
-		state, ok = coerce.ToInt(val)
+		state, ok = coerce.ToInt(val, super.TypeTime)
 		if !ok {
 			panicCoercionFail(super.TypeTime, val.Type())
 		}
@@ -243,7 +243,7 @@ func (t *Time) result() super.Value {
 }
 
 func (t *Time) consume(val super.Value) {
-	if v, ok := coerce.ToInt(val); ok {
+	if v, ok := coerce.ToInt(val, super.TypeTime); ok {
 		t.state = nano.Ts(t.function(int64(t.state), v))
 	}
 }

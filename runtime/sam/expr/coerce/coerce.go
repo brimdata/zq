@@ -4,7 +4,6 @@ import (
 	"bytes"
 
 	"github.com/brimdata/super"
-	"github.com/brimdata/super/pkg/byteconv"
 	"github.com/brimdata/super/zson"
 	"golang.org/x/exp/constraints"
 )
@@ -54,67 +53,4 @@ func ToNumeric[T constraints.Integer | constraints.Float](val super.Value) T {
 		return T(val.Float())
 	}
 	panic(zson.FormatValue(val))
-}
-
-func ToFloat(val super.Value) (float64, bool) {
-	val = val.Under()
-	switch id := val.Type().ID(); {
-	case super.IsUnsigned(id):
-		return float64(val.Uint()), true
-	case super.IsSigned(id):
-		return float64(val.Int()), true
-	case super.IsFloat(id):
-		return val.Float(), true
-	case id == super.IDString:
-		v, err := byteconv.ParseFloat64(val.Bytes())
-		return v, err == nil
-	}
-	return 0, false
-}
-
-func ToUint(val super.Value) (uint64, bool) {
-	val = val.Under()
-	switch id := val.Type().ID(); {
-	case super.IsUnsigned(id):
-		return val.Uint(), true
-	case super.IsSigned(id):
-		v := val.Int()
-		if v < 0 {
-			return 0, false
-		}
-		return uint64(v), true
-	case super.IsFloat(id):
-		return uint64(val.Float()), true
-	case id == super.IDString:
-		v, err := byteconv.ParseUint64(val.Bytes())
-		return v, err == nil
-	}
-	return 0, false
-}
-
-func ToInt(val super.Value) (int64, bool) {
-	val = val.Under()
-	switch id := val.Type().ID(); {
-	case super.IsUnsigned(id):
-		return int64(val.Uint()), true
-	case super.IsSigned(id):
-		// XXX check if negative? should -1:uint64 be maxint64 or an error?
-		return val.Int(), true
-	case super.IsFloat(id):
-		return int64(val.Float()), true
-	case id == super.IDString:
-		v, err := byteconv.ParseInt64(val.Bytes())
-		return v, err == nil
-	}
-	return 0, false
-}
-
-func ToBool(val super.Value) (bool, bool) {
-	val = val.Under()
-	if val.IsString() {
-		v, err := byteconv.ParseBool(val.Bytes())
-		return v, err == nil
-	}
-	v, ok := ToInt(val)
-	return v != 0, ok
 }

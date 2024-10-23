@@ -90,7 +90,7 @@ func sliceIndex(ectx Context, this super.Value, slot Evaluator, length int) (int
 		return 0, ErrSliceIndexEmpty
 	}
 	val := slot.Eval(ectx, this)
-	v, ok := coerce.ToInt(val)
+	v, ok := coerce.ToInt(val, super.TypeInt64)
 	if !ok {
 		return 0, ErrSliceIndex
 	}

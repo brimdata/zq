@@ -68,7 +68,7 @@ type Log struct {
 }
 
 func (l *Log) Call(_ super.Allocator, args []super.Value) super.Value {
-	x, ok := coerce.ToFloat(args[0])
+	x, ok := coerce.ToFloat(args[0], super.TypeFloat64)
 	if !ok {
 		return l.zctx.WrapError("log: not a number", args[0])
 	}
@@ -90,7 +90,7 @@ func (r *reducer) Call(_ super.Allocator, args []super.Value) super.Value {
 	case super.IsUnsigned(id):
 		result := val0.Uint()
 		for _, val := range args[1:] {
-			v, ok := coerce.ToUint(val)
+			v, ok := coerce.ToUint(val, super.TypeUint64)
 			if !ok {
 				return r.zctx.WrapError(r.name+": not a number", val)
 			}
@@ -102,7 +102,7 @@ func (r *reducer) Call(_ super.Allocator, args []super.Value) super.Value {
 		for _, val := range args[1:] {
 			//XXX this is really bad because we silently coerce
 			// floats to ints if we hit a float first
-			v, ok := coerce.ToInt(val)
+			v, ok := coerce.ToInt(val, super.TypeInt64)
 			if !ok {
 				return r.zctx.WrapError(r.name+": not a number", val)
 			}
@@ -114,7 +114,7 @@ func (r *reducer) Call(_ super.Allocator, args []super.Value) super.Value {
 		// need to be more robust and adjust type as new types encountered
 		result := val0.Float()
 		for _, val := range args[1:] {
-			v, ok := coerce.ToFloat(val)
+			v, ok := coerce.ToFloat(val, super.TypeFloat64)
 			if !ok {
 				return r.zctx.WrapError(r.name+": not a number", val)
 			}
@@ -147,11 +147,11 @@ type Pow struct {
 }
 
 func (p *Pow) Call(_ super.Allocator, args []super.Value) super.Value {
-	x, ok := coerce.ToFloat(args[0])
+	x, ok := coerce.ToFloat(args[0], super.TypeFloat64)
 	if !ok {
 		return p.zctx.WrapError("pow: not a number", args[0])
 	}
-	y, ok := coerce.ToFloat(args[1])
+	y, ok := coerce.ToFloat(args[1], super.TypeFloat64)
 	if !ok {
 		return p.zctx.WrapError("pow: not a number", args[1])
 	}
@@ -164,7 +164,7 @@ type Sqrt struct {
 }
 
 func (s *Sqrt) Call(_ super.Allocator, args []super.Value) super.Value {
-	x, ok := coerce.ToFloat(args[0])
+	x, ok := coerce.ToFloat(args[0], super.TypeFloat64)
 	if !ok {
 		return s.zctx.WrapError("sqrt: not a number", args[0])
 	}

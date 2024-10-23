@@ -57,15 +57,15 @@ func (c *Const) AsBytes() ([]byte, bool) {
 }
 
 func (c *Const) AsFloat() (float64, bool) {
-	return coerce.ToFloat(c.val)
+	return coerce.ToFloat(c.val, super.TypeFloat64)
 }
 
 func (c *Const) AsInt() (int64, bool) {
-	return coerce.ToInt(c.val)
+	return coerce.ToInt(c.val, super.TypeInt64)
 }
 
 func (c *Const) AsUint() (uint64, bool) {
-	return coerce.ToUint(c.val)
+	return coerce.ToUint(c.val, super.TypeUint64)
 }
 
 func (c *Const) AsString() (string, bool) {
