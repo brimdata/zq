@@ -65,7 +65,7 @@ func (s *Shared) Run(ctx context.Context, args []string, lakeFlags *lakeflags.Fl
 	if err != nil {
 		return err
 	}
-	if s.optimize || s.parallel > 0 {
+	if s.optimize || s.parallel > 0 || desc {
 		s.dag = true
 	}
 	if !s.dag {
