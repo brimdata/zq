@@ -133,19 +133,3 @@ func (r *valReader) Read() (*super.Value, error) {
 	r.Value = nil
 	return val, nil
 }
-
-/*
-func writeDescribe(ctx context.Context, seq dag.Seq, lk *lake.Root) {
-	info, err := describe.AnalyzeDAG(ctx, seq, data.NewSource(nil, lk), nil)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	out, err := json.MarshalIndent(info, "", "    ")
-	if err != nil {
-		fmt.Println(err)
-	} else {
-		fmt.Println(string(out))
-	}
-}
-*/
