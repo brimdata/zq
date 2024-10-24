@@ -570,8 +570,7 @@ func runvec(zedProgram string, input string, outputFlags []string) (string, stri
 		return "", "", err
 	}
 	defer object.Close()
-	rctx := runtime.NewContext(context.Background(), super.NewContext())
-	puller, err := compiler.VectorCompile(rctx, zedProgram, object)
+	puller, err := compiler.VectorCompile(runtime.DefaultContext(), zedProgram, object)
 	if err != nil {
 		return "", err.Error(), err
 	}
