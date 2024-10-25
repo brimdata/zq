@@ -13,7 +13,7 @@ var spec = &charm.Spec{
 	Short: "compile a local query for inspection and debugging",
 	Long: `
 This command parses a query and emits the resulting abstract syntax
-tree (AST) or runtime directed-acycle graph (DAG) in the output format desired.
+tree (AST) or runtime directed acyclic graph (DAG) in the output format desired.
 Use "-dag" to specify the DAG form; otherwise, the AST form is assumed.
 
 The query text may be either SQL or SPQ.  To force parsing as SQL,

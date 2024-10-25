@@ -17,6 +17,7 @@ import (
 	"github.com/brimdata/super/lake"
 	"github.com/brimdata/super/pkg/storage"
 	"github.com/brimdata/super/runtime"
+	"github.com/brimdata/super/zbuf"
 	"github.com/brimdata/super/zfmt"
 	"github.com/brimdata/super/zio"
 	"github.com/brimdata/super/zson"
@@ -117,19 +118,9 @@ func (s *Shared) writeValue(ctx context.Context, v any) error {
 	if err != nil {
 		return err
 	}
-	err = zio.CopyWithContext(ctx, writer, &valReader{&val})
+	err = zio.CopyWithContext(ctx, writer, zbuf.NewArray([]super.Value{val}))
 	if closeErr := writer.Close(); err == nil {
 		err = closeErr
 	}
 	return err
-}
-
-type valReader struct {
-	*super.Value
-}
-
-func (r *valReader) Read() (*super.Value, error) {
-	val := r.Value
-	r.Value = nil
-	return val, nil
 }
