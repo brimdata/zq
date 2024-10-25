@@ -1,18 +1,18 @@
-# Zed Formats
+# Formats
 
-> **TL;DR** The Zed data model defines a new and easy way to manage, store,
+> **TL;DR** The super data model defines a new and easy way to manage, store,
 > and process data utilizing an emerging concept called
-[super-structured data](#2-zed-a-super-structured-pattern).
+[super-structured data](#2-a-super-structured-pattern).
 > The [data model specification](zed.md) defines the high-level model that is realized
 > in a [family of interoperable serialization formats](#3-the-data-model-and-formats),
-> providing a unified approach to row, columnar, and human-readable formats.
-> Zed is a superset of both the dataframe/table model of relational systems and the
-> semi-structured model that is used ubiquitously in development as JSON and by NOSQL
-> data stores.  The ZSON spec has [a few examples](zson.md#3-examples).
+> providing a unified approach to row, columnar, and human-readable formats. Together these
+> represent a superset of both the dataframe/table model of relational systems and the
+> semi-structured model that is used ubiquitously in development as JSON and by NoSQL
+> data stores.  The Super JSON spec has [a few examples](zson.md#3-examples).
 
 ## 1. Background
 
-Zed offers a new and improved way to think about and manage data.
+SuperDB offers a new and improved way to think about and manage data.
 
 Modern data models are typically described in terms of their _structured-ness_:
 * _tabular-structured_, often simply called _"structured"_,
@@ -34,7 +34,7 @@ The traditional relational database, on the other hand,
 offers the classic, comprehensive example of the tabular-structured pattern.
 The table columns have precise names and types.
 Yet, like CSV, there is no universal standard format for relational tables.
-The [_SQLite file format_](https://sqlite.org/fileformat.html)
+The [SQLite file format](https://sqlite.org/fileformat.html)
 is arguably the _de facto_ standard for relational data,
 but this format describes a whole, specific database --- indexes and all ---
 rather than a stand-alone table.
@@ -82,64 +82,65 @@ As the utility and ease of the semi-structured design pattern emerged,
 relational system design, originally constrained by the tabular-structured
 design pattern, has embraced the semi-structured design pattern
 by adding support for semi-structured table columns.
-"Just put JSON in a column."
+This leads to a temptation to "just put JSON in a column."
 
 [SQL++](https://asterixdb.apache.org/docs/0.9.7.1/sqlpp/manual.html)
 pioneered the extension of SQL to semi-structured data by
 adding support for referencing and unwinding complex, semi-structured values,
 and most modern SQL query engines have adopted variations of this model
-and have extended the relational model with a semi-structured column type.
+and have extended the relational model with a semi-structured column type,
+often referred to as a "JSON column".
 
 But once you have put a number of columns of JSON data into a relational
 table, is it still appropriately called "structured"?
 Instead, we call this approach the hybrid tabular-/semi-structured pattern,
 or more simply, _"the hybrid pattern"_.
 
-## 2. Zed: A Super-structured Pattern
+## 2. A Super-structured Pattern
 
-The insight in Zed is to remove the tabular and schema concepts from
-the underlying data model altogether and replace them with a granular and
+The super data model removes the tabular and schema concepts from
+the underlying data model altogether and replaces them with a granular and
 modern type system inspired by general-purpose programming languages.
 Instead of defining a single, composite schema to
-which all values must conform, the Zed type system allows each value to freely
+which all values must conform, the type system allows each value to freely
 express its type in accordance with the type system.
 
-In this approach,
-Zed is neither tabular nor semi-structured.  Zed is "super-structured".
+In this approach, data in SuperDB is neither tabular nor semi-structured but
+instead "super-structured".
 
-In particular, the Zed record type looks like a schema but when
-serializing Zed data, the model is very different.  A Zed sequence does not
+In particular, SuperDB's record type looks like a schema but when values are
+serialized, the model is very different.  A sequence of values need not
 comprise a record-type declaration followed by a sequence of
 homogeneously-typed record values, but instead,
-is a sequence of arbitrarily typed Zed values, which may or may not all
+is a sequence of arbitrarily typed values which may or may not all
 be records.
 
-Yet when a sequence of Zed values _in fact conforms to a uniform record type_,
-then such a collection of Zed records looks precisely like a relational table.
+Yet when a sequence of values _in fact conforms to a uniform record type_,
+then such a collection of records looks precisely like a relational table.
 Here, the record type
 of such a collection corresponds to a well-defined schema consisting
-of field names (i.e, column names) where each field has a specific Zed type.
-Zed also has named types, so by simply naming a particular record type
-(i.e., a schema), a relational table can be projected from a pool of Zed data
-with a simple type query for that named type.
+of field names (i.e, column names) where each field has a specific type.
+[Named types](../language/data-types.md#named-types) are also available, so by simply naming a particular record type
+(i.e., a schema), a relational table can be projected from a pool of data
+with a simple query for that named type.
 
-But unlike traditional relational tables, these Zed-constructed tables can have arbitrary
-structure in each column as Zed allows the fields of a record
-to have an arbitrary type.  This is very different compared to the hybrid pattern:
-all Zed data at all levels conforms to the same data model.  Here, both the
+But unlike traditional relational tables, these tables based on super-structured data can have arbitrary
+structure in each column as the model allows the fields of a record
+to have arbitrary types.  This is very different compared to the hybrid pattern:
+here all data at all levels conforms to the same data model such that the
 tabular-structured and semi-structured patterns are representable in a single model.
-Unlike the hybrid pattern, systems based on Zed have
+Unlike the hybrid pattern, systems based on super-structured data have
 no need to simultaneously support two very different data models.
 
-In other words, Zed unifies the relational data model of SQL tables
+In other words, SuperDB unifies the relational data model of SQL tables
 with the document model of JSON into a _super-structured_
-design pattern enabled by the Zed type system.
+design pattern enabled by the type system.
 An explicit, uniquely-defined type of each value precisely
 defines its entire structure, i.e., its super-structure.  There is
 no need to traverse each hierarchical value --- as with JSON, BSON, or Ion ---
 to discover each value's structure.
 
-And because Zed derives it design from the vast landscape
+And because SuperDB derives it design from the vast landscape
 of existing formats and data models, it was deliberately designed to be
 a superset of --- and thus interoperable with --- a broad range of formats
 including JSON, BSON, Ion, Avro, ORC, Parquet, CSV, JSON Schema, and XML.
@@ -150,17 +151,17 @@ say the JSON value
 {"a":[1,"foo"]}
 ```
 is of type object and the value of key `a` is type array.
-In Zed, however, this value's type is type `record` with field `a`
+In SuperDB, however, this value's type is type `record` with field `a`
 of type `array` of type `union` of `int64` and `string`,
-expressed succinctly in ZSON as
+expressed succinctly in Super JSON as
 ```
 {a:[(int64,string)]}
 ```
 This is super-structuredness in a nutshell.
 
-### 2.1 Zed and Schemas
+### 2.1 Schemas
 
-While the Zed data model removes the schema constraint,
+While the super data model removes the schema constraint,
 the implication here is not that schemas are unimportant;
 to the contrary, schemas are foundational.  Schemas not only define agreement
 and semantics between communicating entities, but also serve as the cornerstone
@@ -174,13 +175,13 @@ Instead, the pipeline should continue to operate and the data should continue
 to land on the target system without having to fit into a predefined table,
 while also preserving its super-structure.
 
-This is precisely what Zed enables.  A system layer above and outside
-the scope of the Zed data layer can decide how to adapt to the structural
+This is precisely what SuperDB enables.  A system layer above and outside
+the scope of the data layer can decide how to adapt to the structural
 changes with or without administrative intervention.
 
 To this end, whether all the values must conform to a schema and
-how schemas are managed, revised, and enforced is all outside the scope of Zed;
-rather, the Zed data model provides a flexible and rich foundation
+how schemas are managed, revised, and enforced is all outside the scope of the super data model;
+rather, the data model provides a flexible and rich foundation
 for schema interpretation and management.
 
 ### 2.2 Type Combinatorics
@@ -196,15 +197,15 @@ JSON object structures.
 A few rare applications carry unique data values as JSON object keys,
 though this is considered bad practice.
 
-Even so, this is all manageable in the Zed data model as types are localized
+Even so, this is all manageable in the super data model as types are localized
 in scope.  The number of types that must be defined in a stream of values
 is linear in the input size.  Since data is self-describing and there is
-no need for a global schema registry in Zed, this hypothetical problem is moot.
+no need for a global schema registry in SuperDB, this hypothetical problem is moot.
 
 ### 2.3 Analytics Performance
 
-One might think that removing schemas from the Zed data model would conflict
-with an efficient columnar format for Zed, which is critical for
+One might think that removing schemas from the super data model would conflict
+with an efficient columnar format, which is critical for
 high-performance analytics.
 After all, database
 tables and formats like Parquet and ORC all require schemas to organize values
@@ -212,33 +213,33 @@ and then rely upon the natural mapping of schemas to columns.
 
 Super-structure, on the other hand, provides an alternative approach to columnar structure.
 Instead of defining a schema and then fitting a sequence of values into their appropriate
-columns based on the schema, Zed values self-organize into columns based on their
+columns based on the schema, values self-organize into columns based on their
 super-structure.  Here columns are created dynamically as data is analyzed
 and each top-level type induces a specific set of columns.  When all of the
-values have the same top-level type (i.e., like a schema), then the Zed columnar
+values have the same top-level type (i.e., like a schema), then the columnar
 object is just as performant as a traditional schema-based columnar format like Parquet.
 
 ### 2.4 First-class Types
 
-With first-class types, any type can also be a value, which means that in
-a properly designed query and analytics system based on Zed, a type can appear
+With [first-class types](../language/data-types.md#first-class-types), any type can also be a value, which means that in
+a properly designed query and analytics system based on the super data model, a type can appear
 anywhere that a value can appear.  In particular, types can be aggregation keys.
 
 This is very powerful for data discovery and introspection.  For example,
-to count the different shapes of data, you might have a SQL-like query,
+to count the different shapes of data, you might have a SuperSQL query,
 operating on each input value as `this`, that has the form:
 ```
-  SELECT count(), typeof(this) as shape GROUP by shape, count
+  SELECT count(), typeof(this) AS shape GROUP BY shape, count
 ```
 Likewise, you could select a sample value of each shape like this:
 ```
   SELECT shape FROM (
-    SELECT any(this) as sample, typeof(this) as shape GROUP by shape,sample
+    SELECT any(this) AS sample, typeof(this) AS shape GROUP BY shape,sample
   )
 ```
-The Zed language is exploring syntax so that such operations are tighter
-and more natural given the super-structure of Zed.  For example, the above
-two SQL-like queries could be written as:
+The SuperPipe language provides shortcuts that express such operations in ways
+that more directly leverage the nature of super-structured data. For example,
+the above two SuperSQL queries could be written as:
 ```
   count() by shape:=typeof(this)
   any(this) by typeof(this) | cut any
@@ -250,7 +251,7 @@ In SQL based systems, errors typically
 result in cryptic messages or null values offering little insight as to the
 actual cause of the error.
 
-Zed however includes first-class errors.  When combined with the super-structured
+By comparison, SuperDB includes [first-class errors](../language/data-types.md#first-class-errors).  When combined with the super
 data model, error values may appear anywhere in the output and operators
 can propagate or easily wrap errors so complicated analytics pipelines
 can be debugged by observing the location of errors in the output results.
@@ -258,26 +259,26 @@ can be debugged by observing the location of errors in the output results.
 ## 3. The Data Model and Formats
 
 The concept of super-structured data and first-class types and errors
-is solidified in the [Zed data model specification](zed.md),
+is solidified in the [data model specification](zed.md),
 which defines the model but not the serialization formats.
 
 A set of companion documents define a family of tightly integrated
-serialization formats that all adhere to the same Zed data model,
+serialization formats that all adhere to the same super data model,
 providing a unified approach to row, columnar, and human-readable formats:
 
-* [ZSON](zson.md) is a JSON-like, human readable format for Zed data.  All JSON
-documents are Zed values as the ZSON format is a strict superset of the JSON syntax.
-* [ZNG](zng.md) is a row-based, binary representation of Zed data somewhat like
-Avro but with Zed's more general model to represent a sequence of arbitrarily-typed
+* [Super JSON](zson.md) is a human-readable format for super-structured data.  All JSON
+documents are Super JSON values as the Super JSON format is a strict superset of the JSON syntax.
+* [Super Binary](zng.md) is a row-based, binary representation somewhat like
+Avro but leveraging the super data model to represent a sequence of arbitrarily-typed
 values.
-* [VNG](vng.md) is a columnar version of ZNG like Parquet or ORC but also
-embodies Zed's more general model for heterogeneous and self-describing schemas.
-* [Zed over JSON](zjson.md) defines a JSON format for encapsulating Zed data
-in JSON for easy decoding by JSON-based clients, e.g.,
-the [zed-js JavaScript library](https://github.com/brimdata/zui/tree/main/packages/zed-js)
-and the [Zed Python library](../libraries/python.md).
+* [Super Columnar](vng.md) is columnar like Parquet or ORC but also
+embodies the super data model for heterogeneous and self-describing schemas.
+* [Super JSON over JSON](zjson.md) defines a format for encapsulating Super JSON
+inside plain JSON for easy decoding by JSON-based clients, e.g.,
+the [JavaScript library used by SuperDB Desktop](https://github.com/brimdata/zui/tree/main/packages/zed-js)
+and the [SuperDB Python library](../libraries/python.md).
 
-Because all of the formats conform to the same Zed data model, conversions between
+Because all of the formats conform to the same super data model, conversions between
 a human-readable form, a row-based binary form, and a row-based columnar form can
 be trivially carried out with no loss of information.  This is the best of both worlds:
 the same data can be easily expressed in and converted between a human-friendly

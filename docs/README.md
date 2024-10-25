@@ -6,7 +6,7 @@ sidebar_label: Introduction
 # SuperDB
 
 SuperDB offers a new approach that makes it easier to manipulate and manage
-your data.  With its [super-structured data model](formats/README.md#2-zed-a-super-structured-pattern),
+your data.  With its [super-structured data model](formats/README.md#2-a-super-structured-pattern),
 messy JSON data can easily be given the fully-typed precision of relational tables
 without giving up JSON's uncanny ability to represent eclectic data.
 

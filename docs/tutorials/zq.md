@@ -411,7 +411,7 @@ preparation, union types are really quite powerful.  They allow records
 with fields of different types or mixed-type arrays to be easily expressed
 while also having a very precise type definition.  This is the essence
 of Zed's new
-[super-structured data model](../formats/README.md#2-zed-a-super-structured-pattern).
+[super-structured data model](../formats/README.md#2-a-super-structured-pattern).
 
 ## First-class Types
 
