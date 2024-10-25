@@ -5,7 +5,7 @@ import (
 	goruntime "runtime"
 
 	"github.com/brimdata/super/compiler/ast"
-	"github.com/brimdata/super/compiler/ast/dag"
+	"github.com/brimdata/super/compiler/dag"
 	"github.com/brimdata/super/compiler/data"
 	"github.com/brimdata/super/compiler/kernel"
 	"github.com/brimdata/super/compiler/optimizer"

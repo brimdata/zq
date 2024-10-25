@@ -6,7 +6,7 @@ import (
 
 	"github.com/brimdata/super"
 	"github.com/brimdata/super/compiler/ast"
-	"github.com/brimdata/super/compiler/ast/dag"
+	"github.com/brimdata/super/compiler/dag"
 	"github.com/brimdata/super/compiler/data"
 	"github.com/brimdata/super/compiler/parser"
 	"github.com/brimdata/super/lakeparse"

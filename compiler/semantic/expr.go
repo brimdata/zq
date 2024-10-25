@@ -6,8 +6,7 @@ import (
 
 	"github.com/brimdata/super"
 	"github.com/brimdata/super/compiler/ast"
-	"github.com/brimdata/super/compiler/ast/dag"
-	astzed "github.com/brimdata/super/compiler/ast/zed"
+	"github.com/brimdata/super/compiler/dag"
 	"github.com/brimdata/super/compiler/kernel"
 	"github.com/brimdata/super/pkg/reglob"
 	"github.com/brimdata/super/runtime/sam/expr"
@@ -34,7 +33,7 @@ func (a *analyzer) semExpr(e ast.Expr) dag.Expr {
 		}
 	case *ast.Grep:
 		return a.semGrep(e)
-	case *astzed.Primitive:
+	case *ast.Primitive:
 		val, err := zson.ParsePrimitive(e.Type, e.Text)
 		if err != nil {
 			a.error(e, err)
@@ -49,14 +48,14 @@ func (a *analyzer) semExpr(e ast.Expr) dag.Expr {
 	case *ast.Term:
 		var val string
 		switch t := e.Value.(type) {
-		case *astzed.Primitive:
+		case *ast.Primitive:
 			v, err := zson.ParsePrimitive(t.Type, t.Text)
 			if err != nil {
 				a.error(e, err)
 				return badExpr()
 			}
 			val = zson.FormatValue(v)
-		case *astzed.TypeValue:
+		case *ast.TypeValue:
 			tv, err := a.semType(t.Value)
 			if err != nil {
 				a.error(e, err)
@@ -123,7 +122,7 @@ func (a *analyzer) semExpr(e ast.Expr) dag.Expr {
 			From: from,
 			To:   to,
 		}
-	case *astzed.TypeValue:
+	case *ast.TypeValue:
 		typ, err := a.semType(e.Value)
 		if err != nil {
 			// If this is a type name, then we check to see if it's in the
@@ -163,7 +162,7 @@ func (a *analyzer) semExpr(e ast.Expr) dag.Expr {
 		var out []dag.RecordElem
 		for _, elem := range e.Elems {
 			switch elem := elem.(type) {
-			case *ast.Field:
+			case *ast.FieldExpr:
 				if _, ok := fields[elem.Name]; ok {
 					a.error(elem, fmt.Errorf("record expression: %w", &super.DuplicateFieldError{Name: elem.Name}))
 					continue
@@ -259,8 +258,8 @@ func (a *analyzer) semID(id *ast.ID) dag.Expr {
 	return pathOf(id.Name)
 }
 
-func semDynamicType(tv astzed.Type) *dag.Call {
-	if typeName, ok := tv.(*astzed.TypeName); ok {
+func semDynamicType(tv ast.Type) *dag.Call {
+	if typeName, ok := tv.(*ast.TypeName); ok {
 		return dynamicTypeName(typeName.Name)
 	}
 	return nil
@@ -621,7 +620,7 @@ func DotExprToFieldPath(e ast.Expr) *dag.This {
 		if this == nil {
 			return nil
 		}
-		id, ok := e.Index.(*astzed.Primitive)
+		id, ok := e.Index.(*ast.Primitive)
 		if !ok || id.Type != "string" {
 			return nil
 		}
@@ -643,7 +642,7 @@ func pathOf(name string) *dag.This {
 	return &dag.This{Kind: "This", Path: path}
 }
 
-func (a *analyzer) semType(typ astzed.Type) (string, error) {
+func (a *analyzer) semType(typ ast.Type) (string, error) {
 	ztype, err := zson.TranslateType(a.zctx, typ)
 	if err != nil {
 		return "", err

@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/brimdata/super"
-	"github.com/brimdata/super/compiler/ast/dag"
+	"github.com/brimdata/super/compiler/dag"
 	"github.com/brimdata/super/pkg/field"
 	"github.com/brimdata/super/runtime/sam/expr"
 	"github.com/brimdata/super/runtime/sam/expr/function"

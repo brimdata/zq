@@ -1,7 +1,7 @@
 package optimizer
 
 import (
-	"github.com/brimdata/super/compiler/ast/dag"
+	"github.com/brimdata/super/compiler/dag"
 	"github.com/brimdata/super/compiler/optimizer/demand"
 )
 

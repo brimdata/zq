@@ -9,7 +9,7 @@ import (
 
 	"github.com/brimdata/super"
 	"github.com/brimdata/super/compiler/ast"
-	"github.com/brimdata/super/compiler/ast/dag"
+	"github.com/brimdata/super/compiler/dag"
 	"github.com/brimdata/super/compiler/kernel"
 	"github.com/brimdata/super/lakeparse"
 	"github.com/brimdata/super/order"

@@ -8,7 +8,7 @@ import (
 	"io/fs"
 
 	"github.com/brimdata/super"
-	"github.com/brimdata/super/compiler/ast/dag"
+	"github.com/brimdata/super/compiler/dag"
 	"github.com/brimdata/super/lake/branches"
 	"github.com/brimdata/super/lake/data"
 	"github.com/brimdata/super/lake/pools"

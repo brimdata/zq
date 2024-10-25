@@ -7,7 +7,7 @@ import (
 	"net/http"
 
 	"github.com/brimdata/super"
-	"github.com/brimdata/super/compiler/ast/dag"
+	"github.com/brimdata/super/compiler/dag"
 	"github.com/brimdata/super/compiler/optimizer/demand"
 	"github.com/brimdata/super/lake"
 	"github.com/brimdata/super/lakeparse"

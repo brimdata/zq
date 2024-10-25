@@ -5,7 +5,6 @@ import (
 	"slices"
 
 	"github.com/brimdata/super/compiler/ast"
-	astzed "github.com/brimdata/super/compiler/ast/zed"
 	"github.com/brimdata/super/runtime/sam/expr/agg"
 	"github.com/brimdata/super/runtime/sam/expr/function"
 	"github.com/brimdata/super/zson"
@@ -92,7 +91,7 @@ func (c *canon) expr(e ast.Expr, parent string) {
 		}
 	case *ast.Assignment:
 		c.assignment(*e)
-	case *astzed.Primitive:
+	case *ast.Primitive:
 		c.literal(*e)
 	case *ast.ID:
 		c.write(e.Name)
@@ -117,7 +116,7 @@ func (c *canon) expr(e ast.Expr, parent string) {
 		c.write("(")
 		c.expr(e.Expr, "")
 		c.write(")")
-	case *astzed.TypeValue:
+	case *ast.TypeValue:
 		c.write("<")
 		c.typ(e.Value)
 		c.write(">")
@@ -158,7 +157,7 @@ func (c *canon) expr(e ast.Expr, parent string) {
 				c.write(",")
 			}
 			switch e := elem.(type) {
-			case *ast.Field:
+			case *ast.FieldExpr:
 				c.write(zson.QuotedName(e.Name))
 				c.write(":")
 				c.expr(e.Value, "")
@@ -732,7 +731,7 @@ func isAggFunc(e ast.Expr) *ast.Summarize {
 
 func IsBool(e ast.Expr) bool {
 	switch e := e.(type) {
-	case *astzed.Primitive:
+	case *ast.Primitive:
 		return e.Type == "bool"
 	case *ast.UnaryExpr:
 		return IsBool(e.Operand)
@@ -748,8 +747,8 @@ func IsBool(e ast.Expr) bool {
 	case *ast.Call:
 		return function.HasBoolResult(e.Name.Name)
 	case *ast.Cast:
-		if typval, ok := e.Type.(*astzed.TypeValue); ok {
-			if typ, ok := typval.Value.(*astzed.TypePrimitive); ok {
+		if typval, ok := e.Type.(*ast.TypeValue); ok {
+			if typ, ok := typval.Value.(*ast.TypePrimitive); ok {
 				return typ.Name == "bool"
 			}
 		}

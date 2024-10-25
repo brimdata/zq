@@ -11,7 +11,7 @@ import (
 	"strings"
 
 	"github.com/brimdata/super"
-	astzed "github.com/brimdata/super/compiler/ast/zed"
+	"github.com/brimdata/super/compiler/ast"
 	"github.com/brimdata/super/zcode"
 )
 
@@ -87,7 +87,7 @@ func MustParseValue(zctx *super.Context, zson string) super.Value {
 	return val
 }
 
-func ParseValueFromAST(zctx *super.Context, ast astzed.Value) (super.Value, error) {
+func ParseValueFromAST(zctx *super.Context, ast ast.Value) (super.Value, error) {
 	val, err := NewAnalyzer().ConvertValue(zctx, ast)
 	if err != nil {
 		return super.Null, err
@@ -95,6 +95,6 @@ func ParseValueFromAST(zctx *super.Context, ast astzed.Value) (super.Value, erro
 	return Build(zcode.NewBuilder(), val)
 }
 
-func TranslateType(zctx *super.Context, astType astzed.Type) (super.Type, error) {
+func TranslateType(zctx *super.Context, astType ast.Type) (super.Type, error) {
 	return NewAnalyzer().convertType(zctx, astType)
 }

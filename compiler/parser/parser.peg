@@ -3,7 +3,6 @@
 
     import (
         "github.com/brimdata/super/compiler/ast"
-        astzed "github.com/brimdata/super/compiler/ast/zed"
     )
 
 }
@@ -74,7 +73,7 @@ TypeDecl
       return &ast.TypeDecl{
         Kind: "TypeDecl",
         Name: name.(*ast.ID),
-        Type: typ.(astzed.Type),
+        Type: typ.(ast.Type),
         KeywordPos: c.pos.offset,
       }, nil
     }
@@ -207,11 +206,11 @@ SearchExpr
         Kind: "Term",
         Text: string(c.text),
         TextPos: c.pos.offset,
-        Value: v.(astzed.Any),
+        Value: v.(ast.Any),
       }, nil
     }
   / "*" !ExprGuard {
-      return &astzed.Primitive{Kind:"Primitive",Type:"bool",Text:"true"}, nil
+      return &ast.Primitive{Kind:"Primitive",Type:"bool",Text:"true"}, nil
     }
   / SearchPredicate
 
@@ -397,7 +396,7 @@ SortArg
       }
 
 TopOp
-  = "top" &EOKW limit:(_ e:Expr { return e, nil })? flush:(_ "-flush")? fields:(_ f:FieldExprs { return f, nil })? {
+  = "top" &EOKW limit:(_ e:Expr { return e, nil })? flush:(_ "-flush")? fields:(_ f:Lvals { return f, nil })? {
       op := &ast.Top{
         Kind: "Top",
         KeywordPos: c.pos.offset,
@@ -424,7 +423,7 @@ CutOp
     }
 
 DropOp
-  = "drop" _ args:FieldExprs {
+  = "drop" _ args:Lvals {
       return &ast.Drop{
           Kind: "Drop",
           Args: sliceOf[ast.Expr](args),
@@ -767,7 +766,7 @@ ExplodeOp
       o := &ast.Explode{
         Kind: "Explode",
         Args: sliceOf[ast.Expr](args),
-        Type: typ.(astzed.Type),
+        Type: typ.(ast.Type),
         KeywordPos: c.pos.offset,
       }
       if as != nil {
@@ -847,13 +846,6 @@ Lval = DerefExpr
 
 Lvals
   = first:Lval rest:(__ "," __ lval:Lval { return lval, nil })* {
-      return prepend(first, rest), nil
-    }
-
-FieldExpr = Lval
-
-FieldExprs
-  = first:FieldExpr rest:(__ "," __ f:FieldExpr{ return f, nil })* {
       return prepend(first, rest), nil
     }
 
@@ -1100,7 +1092,7 @@ RecordElemTail = __ "," __ elem:RecordElem { return elem, nil }
 
 RecordElem
   = Spread
-  / Field
+  / FieldExpr
   / Identifier
 
 Spread
@@ -1108,10 +1100,10 @@ Spread
       return &ast.Spread{Kind: "Spread", Expr: expr.(ast.Expr), StartPos: c.pos.offset}, nil
     }
 
-Field
+FieldExpr
   = name:FieldName __ ":" __ value:Expr {
-      return &ast.Field{
-        Kind: "Field",
+      return &ast.FieldExpr{
+        Kind: "FieldExpr",
         Name: name.(string),
         NamePos: c.pos.offset,
         Value: value.(ast.Expr),
@@ -1228,10 +1220,10 @@ BytesLiteral
 
 TypeLiteral
   = "<" typ:Type ">" {
-      return &astzed.TypeValue{
+      return &ast.TypeValue{
         Kind:"TypeValue",
         Lbrack: c.pos.offset,
-        Value: typ.(astzed.Type),
+        Value: typ.(ast.Type),
         Rbrack: lastPos(c, ">"),
       }, nil
     }
@@ -1243,29 +1235,29 @@ Type
 AmbiguousType
   = name:PrimitiveType !IdentifierRest { return name, nil }
   / "error" __ "(" __ t:Type __ ")" {
-      return &astzed.TypeError{
+      return &ast.TypeError{
           Kind: "TypeError",
-          Type: t.(astzed.Type),
+          Type: t.(ast.Type),
           KeywordPos: c.pos.offset,
           Rparen: lastPos(c, ")"),
       }, nil
     }
   / name:(IdentifierName / QuotedString) opt:(__ '=' __ Type)? {
       if opt != nil {
-        return &astzed.TypeDef{
+        return &ast.TypeDef{
             Kind: "TypeDef",
             Name: name.(string),
             NamePos: c.pos.offset,
-            Type: opt.([]any)[3].(astzed.Type),
+            Type: opt.([]any)[3].(ast.Type),
         }, nil
       }
-      return &astzed.TypeName{Kind: "TypeName", Name: name.(string), NamePos: c.pos.offset}, nil
+      return &ast.TypeName{Kind: "TypeName", Name: name.(string), NamePos: c.pos.offset}, nil
     }
   / "(" __ types:TypeList ")" {
-      return &astzed.TypeUnion{
+      return &ast.TypeUnion{
         Kind: "TypeUnion",
         Lparen: c.pos.offset,
-        Types: sliceOf[astzed.Type](types),
+        Types: sliceOf[ast.Type](types),
         Rparen: lastPos(c, ")"),
       }, nil
     }
@@ -1279,35 +1271,35 @@ TypeListTail = __ "," __ typ:Type { return typ, nil }
 
 ComplexType
   = "{" __ fields:TypeFieldList __ "}" {
-      return &astzed.TypeRecord{
+      return &ast.TypeRecord{
           Kind: "TypeRecord",
           Lbrace: c.pos.offset,
-          Fields: sliceOf[astzed.TypeField](fields),
+          Fields: sliceOf[ast.TypeField](fields),
           Rbrace: lastPos(c, "}"),
       }, nil
     }
   / "[" __ typ:Type __ "]" {
-      return &astzed.TypeArray{
+      return &ast.TypeArray{
           Kind: "TypeArray",
           Lbrack: c.pos.offset,
-          Type: typ.(astzed.Type),
+          Type: typ.(ast.Type),
           Rbrack: lastPos(c, "]"),
       }, nil
     }
   / "|[" __ typ:Type __ "]|" {
-      return &astzed.TypeSet{
+      return &ast.TypeSet{
           Kind: "TypeSet",
           Lpipe: c.pos.offset,
-          Type: typ.(astzed.Type),
+          Type: typ.(ast.Type),
           Rpipe: lastPos(c, "|"),
       }, nil
     }
   / "|{" __ keyType:Type __ ":" __ valType:Type __ "}|" {
-      return &astzed.TypeMap{
+      return &ast.TypeMap{
         Kind: "TypeMap",
         Lpipe: c.pos.offset,
-        KeyType: keyType.(astzed.Type),
-        ValType: valType.(astzed.Type),
+        KeyType: keyType.(ast.Type),
+        ValType: valType.(ast.Type),
         Rpipe: lastPos(c, "|"),
       }, nil
     }
@@ -1371,7 +1363,7 @@ PrimitiveType
       / "bytes"
       / "ip" / "net"
       / "type" / "null") {
-            return &astzed.TypePrimitive{
+            return &ast.TypePrimitive{
                 Kind: "TypePrimitive",
                 Name: string(c.text),
                 NamePos: c.pos.offset,
@@ -1388,9 +1380,9 @@ TypeFieldListTail = __ "," __ typ:TypeField { return typ, nil }
 
 TypeField
   = name:FieldName __ ":" __ typ:Type {
-      return astzed.TypeField{
+      return ast.TypeField{
           Name: name.(string),
-          Type: typ.(astzed.Type),
+          Type: typ.(ast.Type),
       }, nil
     }
 

@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/brimdata/super/compiler/ast/dag"
+	"github.com/brimdata/super/compiler/dag"
 	"github.com/brimdata/super/pkg/field"
 	vamexpr "github.com/brimdata/super/runtime/vam/expr"
 	vamfunc "github.com/brimdata/super/runtime/vam/expr/function"

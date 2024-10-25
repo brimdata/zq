@@ -5,7 +5,7 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/brimdata/super/compiler/ast/dag"
+	"github.com/brimdata/super/compiler/dag"
 	"github.com/brimdata/super/order"
 	"github.com/brimdata/super/pkg/field"
 )

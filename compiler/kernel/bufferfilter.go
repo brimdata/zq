@@ -2,7 +2,7 @@ package kernel
 
 import (
 	"github.com/brimdata/super"
-	"github.com/brimdata/super/compiler/ast/dag"
+	"github.com/brimdata/super/compiler/dag"
 	"github.com/brimdata/super/runtime/sam/expr"
 	"github.com/brimdata/super/zson"
 	"golang.org/x/text/unicode/norm"

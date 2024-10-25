@@ -4,10 +4,10 @@ import (
 	"errors"
 
 	"github.com/brimdata/super"
-	astzed "github.com/brimdata/super/compiler/ast/zed"
+	"github.com/brimdata/super/compiler/ast"
 )
 
-func (p *Parser) parseType() (astzed.Type, error) {
+func (p *Parser) parseType() (ast.Type, error) {
 	typ, err := p.matchType()
 	if typ == nil && err == nil {
 		err = p.error("couldn't parse type")
@@ -15,7 +15,7 @@ func (p *Parser) parseType() (astzed.Type, error) {
 	return typ, err
 }
 
-func (p *Parser) matchType() (astzed.Type, error) {
+func (p *Parser) matchType() (ast.Type, error) {
 	if typ, err := p.matchTypeName(); typ != nil || err != nil {
 		return typ, err
 	}
@@ -47,7 +47,7 @@ func (p *Parser) matchIdentifier() (string, error) {
 	return l.scanIdentifier()
 }
 
-func (p *Parser) matchTypeName() (astzed.Type, error) {
+func (p *Parser) matchTypeName() (ast.Type, error) {
 	l := p.lexer
 	if err := l.skipSpace(); err != nil {
 		return nil, err
@@ -70,30 +70,30 @@ func (p *Parser) matchTypeName() (astzed.Type, error) {
 		return p.matchTypeEnumBody()
 	}
 	if t := super.LookupPrimitive(name); t != nil {
-		return &astzed.TypePrimitive{Kind: "TypePrimitive", Name: name}, nil
+		return &ast.TypePrimitive{Kind: "TypePrimitive", Name: name}, nil
 	}
 	// Wherever we have a type name, we can have a type def defining the
 	// type name.
 	if ok, err := l.match('='); !ok || err != nil {
-		return &astzed.TypeName{Kind: "TypeName", Name: name}, nil
+		return &ast.TypeName{Kind: "TypeName", Name: name}, nil
 	}
 	typ, err := p.parseType()
 	if err != nil {
 		return nil, err
 	}
-	return &astzed.TypeDef{
+	return &ast.TypeDef{
 		Kind: "TypeDef",
 		Name: name,
 		Type: typ,
 	}, nil
 }
 
-func (p *Parser) matchTypeRecord() (*astzed.TypeRecord, error) {
+func (p *Parser) matchTypeRecord() (*ast.TypeRecord, error) {
 	l := p.lexer
 	if ok, err := l.match('{'); !ok || err != nil {
 		return nil, err
 	}
-	var fields []astzed.TypeField
+	var fields []ast.TypeField
 	for {
 		field, err := p.matchTypeField()
 		if err != nil {
@@ -118,13 +118,13 @@ func (p *Parser) matchTypeRecord() (*astzed.TypeRecord, error) {
 	if !ok {
 		return nil, p.error("mismatched braces while parsing record type")
 	}
-	return &astzed.TypeRecord{
+	return &ast.TypeRecord{
 		Kind:   "TypeRecord",
 		Fields: fields,
 	}, nil
 }
 
-func (p *Parser) matchTypeField() (*astzed.TypeField, error) {
+func (p *Parser) matchTypeField() (*ast.TypeField, error) {
 	l := p.lexer
 	symbol, ok, err := p.matchSymbol()
 	if err != nil {
@@ -144,13 +144,13 @@ func (p *Parser) matchTypeField() (*astzed.TypeField, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &astzed.TypeField{
+	return &ast.TypeField{
 		Name: symbol,
 		Type: typ,
 	}, nil
 }
 
-func (p *Parser) matchTypeArray() (*astzed.TypeArray, error) {
+func (p *Parser) matchTypeArray() (*ast.TypeArray, error) {
 	l := p.lexer
 	if ok, err := l.match('['); !ok || err != nil {
 		return nil, err
@@ -166,13 +166,13 @@ func (p *Parser) matchTypeArray() (*astzed.TypeArray, error) {
 	if !ok {
 		return nil, p.error("mismatched brackets while parsing array type")
 	}
-	return &astzed.TypeArray{
+	return &ast.TypeArray{
 		Kind: "TypeArray",
 		Type: typ,
 	}, nil
 }
 
-func (p *Parser) matchTypeSetOrMap() (astzed.Type, error) {
+func (p *Parser) matchTypeSetOrMap() (ast.Type, error) {
 	l := p.lexer
 	if ok, err := l.match('|'); !ok || err != nil {
 		return nil, err
@@ -181,7 +181,7 @@ func (p *Parser) matchTypeSetOrMap() (astzed.Type, error) {
 	if err != nil {
 		return nil, err
 	}
-	var typ astzed.Type
+	var typ ast.Type
 	var which string
 	if isSet {
 		which = "set"
@@ -196,7 +196,7 @@ func (p *Parser) matchTypeSetOrMap() (astzed.Type, error) {
 		if !ok {
 			return nil, p.error("mismatched set-brackets while parsing set type")
 		}
-		typ = &astzed.TypeSet{
+		typ = &ast.TypeSet{
 			Kind: "TypeSet",
 			Type: inner,
 		}
@@ -232,7 +232,7 @@ func (p *Parser) matchTypeSetOrMap() (astzed.Type, error) {
 
 }
 
-func (p *Parser) parseTypeMap() (*astzed.TypeMap, error) {
+func (p *Parser) parseTypeMap() (*ast.TypeMap, error) {
 	keyType, err := p.parseType()
 	if err != nil {
 		return nil, err
@@ -248,19 +248,19 @@ func (p *Parser) parseTypeMap() (*astzed.TypeMap, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &astzed.TypeMap{
+	return &ast.TypeMap{
 		Kind:    "TypeMap",
 		KeyType: keyType,
 		ValType: valType,
 	}, nil
 }
 
-func (p *Parser) matchTypeUnion() (*astzed.TypeUnion, error) {
+func (p *Parser) matchTypeUnion() (*ast.TypeUnion, error) {
 	l := p.lexer
 	if ok, err := l.match('('); !ok || err != nil {
 		return nil, err
 	}
-	var types []astzed.Type
+	var types []ast.Type
 	for {
 		typ, err := p.matchType()
 		if err != nil {
@@ -288,13 +288,13 @@ func (p *Parser) matchTypeUnion() (*astzed.TypeUnion, error) {
 	if !ok {
 		return nil, p.error("mismatched parentheses while parsing union type")
 	}
-	return &astzed.TypeUnion{
+	return &ast.TypeUnion{
 		Kind:  "TypeUnion",
 		Types: types,
 	}, nil
 }
 
-func (p *Parser) matchTypeEnumBody() (*astzed.TypeEnum, error) {
+func (p *Parser) matchTypeEnumBody() (*ast.TypeEnum, error) {
 	l := p.lexer
 	if ok, err := l.match('('); !ok || err != nil {
 		return nil, errors.New("no opening parenthesis in enum type")
@@ -310,7 +310,7 @@ func (p *Parser) matchTypeEnumBody() (*astzed.TypeEnum, error) {
 	if !ok {
 		return nil, p.error("mismatched parentheses while parsing enum type")
 	}
-	return &astzed.TypeEnum{
+	return &ast.TypeEnum{
 		Kind:    "TypeEnum",
 		Symbols: fields,
 	}, nil
@@ -339,7 +339,7 @@ func (p *Parser) matchEnumSymbols() ([]string, error) {
 	return symbols, nil
 }
 
-func (p *Parser) matchTypeErrorBody() (*astzed.TypeError, error) {
+func (p *Parser) matchTypeErrorBody() (*ast.TypeError, error) {
 	l := p.lexer
 	if ok, err := l.match('('); !ok || err != nil {
 		return nil, errors.New("no opening parenthesis in error type")
@@ -355,7 +355,7 @@ func (p *Parser) matchTypeErrorBody() (*astzed.TypeError, error) {
 	if !ok {
 		return nil, p.error("mismatched parentheses while parsing error type")
 	}
-	return &astzed.TypeError{
+	return &ast.TypeError{
 		Kind: "TypeError",
 		Type: inner,
 	}, nil

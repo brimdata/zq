@@ -1,8 +1,8 @@
 package zfmt
 
 import (
-	"github.com/brimdata/super/compiler/ast/dag"
-	astzed "github.com/brimdata/super/compiler/ast/zed"
+	"github.com/brimdata/super/compiler/ast"
+	"github.com/brimdata/super/compiler/dag"
 	"github.com/brimdata/super/zson"
 )
 
@@ -78,7 +78,7 @@ func (c *canonDAG) expr(e dag.Expr, parent string) {
 			c.write(" where ")
 			c.expr(e.Where, "")
 		}
-	case *astzed.Primitive:
+	case *ast.Primitive:
 		c.literal(*e)
 	case *dag.UnaryExpr:
 		c.write(e.Op)
@@ -139,7 +139,7 @@ func (c *canonDAG) expr(e dag.Expr, parent string) {
 		c.write("%s", e.Name)
 	case *dag.Literal:
 		c.write("%s", e.Value)
-	case *astzed.TypeValue:
+	case *ast.TypeValue:
 		c.write("type<")
 		c.typ(e.Value)
 		c.write(">")
@@ -630,7 +630,7 @@ func (c *canonDAG) scope(s *dag.Scope) {
 }
 
 func isDAGTrue(e dag.Expr) bool {
-	if p, ok := e.(*astzed.Primitive); ok {
+	if p, ok := e.(*ast.Primitive); ok {
 		return p.Type == "bool" && p.Text == "true"
 	}
 	return false

@@ -10,12 +10,12 @@ import (
 	"time"
 
 	"github.com/brimdata/super"
-	astzed "github.com/brimdata/super/compiler/ast/zed"
+	"github.com/brimdata/super/compiler/ast"
 	"github.com/brimdata/super/pkg/nano"
 	"github.com/brimdata/super/zcode"
 )
 
-func (p *Parser) ParseValue() (astzed.Value, error) {
+func (p *Parser) ParseValue() (ast.Value, error) {
 	v, err := p.matchValue()
 	if err == io.EOF {
 		err = nil
@@ -35,7 +35,7 @@ func noEOF(err error) error {
 	return err
 }
 
-func (p *Parser) matchValue() (astzed.Value, error) {
+func (p *Parser) matchValue() (ast.Value, error) {
 	if val, err := p.matchRecord(); val != nil || err != nil {
 		return p.decorate(val, err)
 	}
@@ -64,21 +64,21 @@ func (p *Parser) matchValue() (astzed.Value, error) {
 	return nil, nil
 }
 
-func anyAsValue(any astzed.Any) *astzed.ImpliedValue {
-	return &astzed.ImpliedValue{
+func anyAsValue(any ast.Any) *ast.ImpliedValue {
+	return &ast.ImpliedValue{
 		Kind: "ImpliedValue",
 		Of:   any,
 	}
 }
 
-func (p *Parser) decorate(any astzed.Any, err error) (astzed.Value, error) {
+func (p *Parser) decorate(any ast.Any, err error) (ast.Value, error) {
 	if err != nil {
 		return nil, err
 	}
 	// First see if there's a short-form typedef decorator.
 	// If there isn't, matchShortForm() returns the AnyValue wrapped
-	// in an astzed.ImpliedValue (as astzed.Value)  Otherwise, it returns an
-	//  astzed.DefVal (as astzed.Vaue).
+	// in an ast.ImpliedValue (as ast.Value)  Otherwise, it returns an
+	//  ast.DefVal (as ast.Vaue).
 	val, ok, err := p.matchDecorator(any, nil)
 	if err != nil {
 		return nil, err
@@ -88,7 +88,7 @@ func (p *Parser) decorate(any astzed.Any, err error) (astzed.Value, error) {
 		return anyAsValue(any), nil
 	}
 	// Now see if there are additional decorators to apply as casts and
-	// return value chain, wrapped if at all, as an astzed.Value.
+	// return value chain, wrapped if at all, as an ast.Value.
 	for {
 		outer, ok, err := p.matchDecorator(nil, val)
 		if err != nil {
@@ -103,7 +103,7 @@ func (p *Parser) decorate(any astzed.Any, err error) (astzed.Value, error) {
 
 // We pass both any and val in here to avoid having to backtrack.
 // If we had proper backtracking, this would look a little more sensible.
-func (p *Parser) matchDecorator(any astzed.Any, val astzed.Value) (astzed.Value, bool, error) {
+func (p *Parser) matchDecorator(any ast.Any, val ast.Value) (ast.Value, bool, error) {
 	l := p.lexer
 	ok, err := l.match('(')
 	if err != nil || !ok {
@@ -123,7 +123,7 @@ func (p *Parser) matchDecorator(any astzed.Any, val astzed.Value) (astzed.Value,
 	return val, true, nil
 }
 
-func (p *Parser) parseDecorator(any astzed.Any, val astzed.Value) (astzed.Value, error) {
+func (p *Parser) parseDecorator(any ast.Any, val ast.Value) (ast.Value, error) {
 	l := p.lexer
 	// We can have either:
 	//   Case 1: =<name>
@@ -139,7 +139,7 @@ func (p *Parser) parseDecorator(any astzed.Any, val astzed.Value) (astzed.Value,
 		if name == "" || err != nil {
 			return nil, p.error("bad short-form type definition")
 		}
-		return &astzed.DefValue{
+		return &ast.DefValue{
 			Kind:     "DefValue",
 			Of:       any,
 			TypeName: name,
@@ -150,20 +150,20 @@ func (p *Parser) parseDecorator(any astzed.Any, val astzed.Value) (astzed.Value,
 		return nil, err
 	}
 	if any != nil {
-		return &astzed.CastValue{
+		return &ast.CastValue{
 			Kind: "CastValue",
 			Of:   anyAsValue(any),
 			Type: typ,
 		}, nil
 	}
-	return &astzed.CastValue{
+	return &ast.CastValue{
 		Kind: "CastValue",
 		Of:   val,
 		Type: typ,
 	}, nil
 }
 
-func (p *Parser) matchPrimitive() (*astzed.Primitive, error) {
+func (p *Parser) matchPrimitive() (*ast.Primitive, error) {
 	if val, err := p.matchStringPrimitive(); val != nil || err != nil {
 		return val, noEOF(err)
 	}
@@ -215,19 +215,19 @@ func (p *Parser) matchPrimitive() (*astzed.Primitive, error) {
 		return nil, nil
 	}
 	l.skip(len(s))
-	return &astzed.Primitive{
+	return &ast.Primitive{
 		Kind: "Primitive",
 		Type: typ,
 		Text: s,
 	}, nil
 }
 
-func (p *Parser) matchStringPrimitive() (*astzed.Primitive, error) {
+func (p *Parser) matchStringPrimitive() (*ast.Primitive, error) {
 	s, ok, err := p.matchString()
 	if err != nil || !ok {
 		return nil, noEOF(err)
 	}
-	return &astzed.Primitive{
+	return &ast.Primitive{
 		Kind: "Primitive",
 		Type: "string",
 		Text: s,
@@ -256,7 +256,7 @@ func (p *Parser) matchString() (string, bool, error) {
 
 var arrow = []byte("=>")
 
-func (p *Parser) matchBacktickString() (*astzed.Primitive, error) {
+func (p *Parser) matchBacktickString() (*ast.Primitive, error) {
 	l := p.lexer
 	keepIndentation := false
 	ok, err := l.matchBytes(arrow)
@@ -284,14 +284,14 @@ func (p *Parser) matchBacktickString() (*astzed.Primitive, error) {
 	if !ok {
 		return nil, p.error("mismatched string backticks")
 	}
-	return &astzed.Primitive{
+	return &ast.Primitive{
 		Kind: "Primitive",
 		Type: "string",
 		Text: s,
 	}, nil
 }
 
-func (p *Parser) matchRecord() (*astzed.Record, error) {
+func (p *Parser) matchRecord() (*ast.Record, error) {
 	l := p.lexer
 	if ok, err := l.match('{'); !ok || err != nil {
 		return nil, noEOF(err)
@@ -307,15 +307,15 @@ func (p *Parser) matchRecord() (*astzed.Record, error) {
 	if !ok {
 		return nil, p.error("mismatched braces while parsing record type")
 	}
-	return &astzed.Record{
+	return &ast.Record{
 		Kind:   "Record",
 		Fields: fields,
 	}, nil
 }
 
-func (p *Parser) matchFields() ([]astzed.Field, error) {
+func (p *Parser) matchFields() ([]ast.Field, error) {
 	l := p.lexer
-	var fields []astzed.Field
+	var fields []ast.Field
 	seen := make(map[string]struct{})
 	for {
 		field, err := p.matchField()
@@ -340,7 +340,7 @@ func (p *Parser) matchFields() ([]astzed.Field, error) {
 	return fields, nil
 }
 
-func (p *Parser) matchField() (*astzed.Field, error) {
+func (p *Parser) matchField() (*ast.Field, error) {
 	l := p.lexer
 	name, ok, err := p.matchSymbol()
 	if err != nil {
@@ -360,7 +360,7 @@ func (p *Parser) matchField() (*astzed.Field, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &astzed.Field{
+	return &ast.Field{
 		Name:  name,
 		Value: val,
 	}, nil
@@ -381,7 +381,7 @@ func (p *Parser) matchSymbol() (string, bool, error) {
 	return s, true, nil
 }
 
-func (p *Parser) matchArray() (*astzed.Array, error) {
+func (p *Parser) matchArray() (*ast.Array, error) {
 	l := p.lexer
 	if ok, err := l.match('['); !ok || err != nil {
 		return nil, noEOF(err)
@@ -397,15 +397,15 @@ func (p *Parser) matchArray() (*astzed.Array, error) {
 	if !ok {
 		return nil, p.error("mismatched brackets while parsing array type")
 	}
-	return &astzed.Array{
+	return &ast.Array{
 		Kind:     "Array",
 		Elements: vals,
 	}, nil
 }
 
-func (p *Parser) matchValueList() ([]astzed.Value, error) {
+func (p *Parser) matchValueList() ([]ast.Value, error) {
 	l := p.lexer
-	var vals []astzed.Value
+	var vals []ast.Value
 	for {
 		val, err := p.matchValue()
 		if err != nil {
@@ -426,7 +426,7 @@ func (p *Parser) matchValueList() ([]astzed.Value, error) {
 	return vals, nil
 }
 
-func (p *Parser) matchSetOrMap() (astzed.Any, error) {
+func (p *Parser) matchSetOrMap() (ast.Any, error) {
 	l := p.lexer
 	if ok, err := l.match('|'); !ok || err != nil {
 		return nil, noEOF(err)
@@ -435,7 +435,7 @@ func (p *Parser) matchSetOrMap() (astzed.Any, error) {
 	if err != nil {
 		return nil, err
 	}
-	var val astzed.Any
+	var val ast.Any
 	var which string
 	if isSet {
 		which = "set"
@@ -450,7 +450,7 @@ func (p *Parser) matchSetOrMap() (astzed.Any, error) {
 		if !ok {
 			return nil, p.error("mismatched set value brackets")
 		}
-		val = &astzed.Set{
+		val = &ast.Set{
 			Kind:     "Set",
 			Elements: vals,
 		}
@@ -474,7 +474,7 @@ func (p *Parser) matchSetOrMap() (astzed.Any, error) {
 		if !ok {
 			return nil, p.error("mismatched map value brackets")
 		}
-		val = &astzed.Map{
+		val = &ast.Map{
 			Kind:    "Map",
 			Entries: entries,
 		}
@@ -490,8 +490,8 @@ func (p *Parser) matchSetOrMap() (astzed.Any, error) {
 
 }
 
-func (p *Parser) matchMapEntries() ([]astzed.Entry, error) {
-	var entries []astzed.Entry
+func (p *Parser) matchMapEntries() ([]ast.Entry, error) {
+	var entries []ast.Entry
 	for {
 		entry, err := p.parseEntry()
 		if err != nil {
@@ -512,7 +512,7 @@ func (p *Parser) matchMapEntries() ([]astzed.Entry, error) {
 	return entries, nil
 }
 
-func (p *Parser) parseEntry() (*astzed.Entry, error) {
+func (p *Parser) parseEntry() (*ast.Entry, error) {
 	key, err := p.matchValue()
 	if err != nil {
 		return nil, err
@@ -533,13 +533,13 @@ func (p *Parser) parseEntry() (*astzed.Entry, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &astzed.Entry{
+	return &ast.Entry{
 		Key:   key,
 		Value: val,
 	}, nil
 }
 
-func (p *Parser) matchEnum() (*astzed.Enum, error) {
+func (p *Parser) matchEnum() (*ast.Enum, error) {
 	// We only detect identifier-style enum values even though they can
 	// also be strings but we don't know that until the semantic check.
 	l := p.lexer
@@ -550,13 +550,13 @@ func (p *Parser) matchEnum() (*astzed.Enum, error) {
 	if err != nil || name == "" {
 		return nil, noEOF(err)
 	}
-	return &astzed.Enum{
+	return &ast.Enum{
 		Kind: "Enum",
 		Name: name,
 	}, nil
 }
 
-func (p *Parser) matchError() (*astzed.Error, error) {
+func (p *Parser) matchError() (*ast.Error, error) {
 	// We only detect identifier-style enum values even though they can
 	// also be strings but we don't know that until the semantic check.
 	name, err := p.matchIdentifier()
@@ -574,13 +574,13 @@ func (p *Parser) matchError() (*astzed.Error, error) {
 	if ok, err := l.match(')'); !ok || err != nil {
 		return nil, noEOF(err)
 	}
-	return &astzed.Error{
+	return &ast.Error{
 		Kind:  "Error",
 		Value: val,
 	}, nil
 }
 
-func (p *Parser) matchTypeValue() (*astzed.TypeValue, error) {
+func (p *Parser) matchTypeValue() (*ast.TypeValue, error) {
 	l := p.lexer
 	if ok, err := l.match('<'); !ok || err != nil {
 		return nil, noEOF(err)
@@ -596,7 +596,7 @@ func (p *Parser) matchTypeValue() (*astzed.TypeValue, error) {
 	if !ok {
 		return nil, p.error("mismatched parentheses while parsing type value")
 	}
-	return &astzed.TypeValue{
+	return &ast.TypeValue{
 		Kind:  "TypeValue",
 		Value: typ,
 	}, nil

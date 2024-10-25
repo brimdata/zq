@@ -1,13 +1,8 @@
-package zed
+package ast
 
 type Type interface {
 	Node
 	typeNode()
-}
-
-type Node interface {
-	Pos() int
-	End() int
 }
 
 type (

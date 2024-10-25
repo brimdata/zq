@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/brimdata/super"
-	astzed "github.com/brimdata/super/compiler/ast/zed"
+	"github.com/brimdata/super/compiler/ast"
 	"github.com/brimdata/super/pkg/fs"
 	"github.com/brimdata/super/zcode"
 	"github.com/brimdata/super/zson"
@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func parse(path string) (astzed.Value, error) {
+func parse(path string) (ast.Value, error) {
 	file, err := fs.Open(path)
 	if err != nil {
 		return nil, err

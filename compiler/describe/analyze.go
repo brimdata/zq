@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/brimdata/super/compiler/ast/dag"
+	"github.com/brimdata/super/compiler/dag"
 	"github.com/brimdata/super/compiler/data"
 	"github.com/brimdata/super/compiler/optimizer"
 	"github.com/brimdata/super/compiler/parser"

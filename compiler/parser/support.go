@@ -6,7 +6,6 @@ import (
 	"strconv"
 
 	"github.com/brimdata/super/compiler/ast"
-	astzed "github.com/brimdata/super/compiler/ast/zed"
 )
 
 func sliceOf[E any](s any) []E {
@@ -21,8 +20,8 @@ func sliceOf[E any](s any) []E {
 	return out
 }
 
-func newPrimitive(c *current, typ, text string) *astzed.Primitive {
-	return &astzed.Primitive{
+func newPrimitive(c *current, typ, text string) *ast.Primitive {
+	return &ast.Primitive{
 		Kind:    "Primitive",
 		Type:    typ,
 		Text:    text,

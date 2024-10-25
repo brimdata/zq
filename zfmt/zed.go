@@ -1,7 +1,7 @@
 package zfmt
 
 import (
-	astzed "github.com/brimdata/super/compiler/ast/zed"
+	"github.com/brimdata/super/compiler/ast"
 	"github.com/brimdata/super/zson"
 )
 
@@ -10,7 +10,7 @@ type canonZed struct {
 }
 
 // XXX this needs to change when we use the zson values from the ast
-func (c *canonZed) literal(e astzed.Primitive) {
+func (c *canonZed) literal(e ast.Primitive) {
 	switch e.Type {
 	case "string", "error":
 		c.write("\"%s\"", e.Text)
@@ -43,52 +43,52 @@ func (c *canonZed) fieldpath(path []string) {
 	}
 }
 
-func (c *canonZed) typ(t astzed.Type) {
+func (c *canonZed) typ(t ast.Type) {
 	switch t := t.(type) {
-	case *astzed.TypePrimitive:
+	case *ast.TypePrimitive:
 		c.write(t.Name)
-	case *astzed.TypeRecord:
+	case *ast.TypeRecord:
 		c.write("{")
 		c.typeFields(t.Fields)
 		c.write("}")
-	case *astzed.TypeArray:
+	case *ast.TypeArray:
 		c.write("[")
 		c.typ(t.Type)
 		c.write("]")
-	case *astzed.TypeSet:
+	case *ast.TypeSet:
 		c.write("|[")
 		c.typ(t.Type)
 		c.write("]|")
-	case *astzed.TypeUnion:
+	case *ast.TypeUnion:
 		c.write("(")
 		c.types(t.Types)
 		c.write(")")
-	case *astzed.TypeEnum:
+	case *ast.TypeEnum:
 		//XXX need to figure out Zed syntax for enum literal which may
 		// be different than zson, requiring some ast adjustments.
 		c.write("TBD:ENUM")
-	case *astzed.TypeMap:
+	case *ast.TypeMap:
 		c.write("|{")
 		c.typ(t.KeyType)
 		c.write(":")
 		c.typ(t.ValType)
 		c.write("}|")
-	case *astzed.TypeNull:
+	case *ast.TypeNull:
 		c.write("null")
-	case *astzed.TypeDef:
+	case *ast.TypeDef:
 		c.write("%s=(", t.Name)
 		c.typ(t.Type)
 		c.write(")")
-	case *astzed.TypeName:
+	case *ast.TypeName:
 		c.write(t.Name)
-	case *astzed.TypeError:
+	case *ast.TypeError:
 		c.write("error(")
 		c.typ(t.Type)
 		c.write(")")
 	}
 }
 
-func (c *canonZed) typeFields(fields []astzed.TypeField) {
+func (c *canonZed) typeFields(fields []ast.TypeField) {
 	for k, f := range fields {
 		if k != 0 {
 			c.write(",")
@@ -98,7 +98,7 @@ func (c *canonZed) typeFields(fields []astzed.TypeField) {
 	}
 }
 
-func (c *canonZed) types(types []astzed.Type) {
+func (c *canonZed) types(types []ast.Type) {
 	for k, t := range types {
 		if k != 0 {
 			c.write(",")

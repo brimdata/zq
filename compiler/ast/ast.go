@@ -2,10 +2,6 @@
 // queries.
 package ast
 
-import (
-	astzed "github.com/brimdata/super/compiler/ast/zed"
-)
-
 // This module is derived from the GO AST design pattern in
 // https://golang.org/pkg/go/ast/
 //
@@ -44,10 +40,10 @@ func (i *ID) Pos() int { return i.NamePos }
 func (i *ID) End() int { return i.NamePos + len(i.Name) }
 
 type Term struct {
-	Kind    string     `json:"kind" unpack:""`
-	Text    string     `json:"text"`
-	TextPos int        `json:"text_pos"`
-	Value   astzed.Any `json:"value"`
+	Kind    string `json:"kind" unpack:""`
+	Text    string `json:"text"`
+	TextPos int    `json:"text_pos"`
+	Value   Any    `json:"value"`
 }
 
 func (t *Term) Pos() int { return t.TextPos }
@@ -213,15 +209,15 @@ type RecordElem interface {
 	recordAST()
 }
 
-type Field struct {
+type FieldExpr struct {
 	Kind    string `json:"kind" unpack:""`
 	Name    string `json:"name"`
 	NamePos int    `json:"name_pos"`
 	Value   Expr   `json:"value"`
 }
 
-func (f *Field) Pos() int { return f.NamePos }
-func (f *Field) End() int { return f.Value.End() }
+func (f *FieldExpr) Pos() int { return f.NamePos }
+func (f *FieldExpr) End() int { return f.Value.End() }
 
 type Spread struct {
 	Kind     string `json:"kind" unpack:""`
@@ -232,9 +228,9 @@ type Spread struct {
 func (s *Spread) Pos() int { return s.StartPos }
 func (s *Spread) End() int { return s.Expr.End() }
 
-func (*Field) recordAST()  {}
-func (*ID) recordAST()     {}
-func (*Spread) recordAST() {}
+func (*FieldExpr) recordAST() {}
+func (*ID) recordAST()        {}
+func (*Spread) recordAST()    {}
 
 type ArrayExpr struct {
 	Kind   string       `json:"kind" unpack:""`
@@ -393,10 +389,10 @@ func (o *OpDecl) Pos() int { return o.KeywordPos }
 func (o *OpDecl) End() int { return o.Rparen }
 
 type TypeDecl struct {
-	Kind       string      `json:"kind" unpack:""`
-	KeywordPos int         `json:"keyword_pos"`
-	Name       *ID         `json:"name"`
-	Type       astzed.Type `json:"type"`
+	Kind       string `json:"kind" unpack:""`
+	KeywordPos int    `json:"keyword_pos"`
+	Name       *ID    `json:"name"`
+	Type       Type   `json:"type"`
 }
 
 func (t *TypeDecl) Pos() int { return t.KeywordPos }
@@ -475,11 +471,11 @@ type (
 		Args       []Expr `json:"args"`
 	}
 	Explode struct {
-		Kind       string      `json:"kind" unpack:""`
-		KeywordPos int         `json:"keyword_pos"`
-		Args       []Expr      `json:"args"`
-		Type       astzed.Type `json:"type"`
-		As         Expr        `json:"as"`
+		Kind       string `json:"kind" unpack:""`
+		KeywordPos int    `json:"keyword_pos"`
+		Args       []Expr `json:"args"`
+		Type       Type   `json:"type"`
+		As         Expr   `json:"as"`
 	}
 	Head struct {
 		Kind       string `json:"kind" unpack:""`

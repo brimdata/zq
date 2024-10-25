@@ -1,4 +1,4 @@
-package zed
+package ast
 
 type Value interface {
 	valueNode()
