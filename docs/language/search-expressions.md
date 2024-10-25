@@ -23,9 +23,7 @@ where a pattern is a regular expression, glob, or simple string.
 A regular expression is specified in the familiar slash syntax where the
 expression begins with a `/` character and ends with a terminating `/` character.
 The string between the slashes (exclusive of those characters) is the
-regular expression.
-
-The format of Zed regular expressions follows the syntax of the
+regular expression. The format follows the syntax of the
 [RE2 regular expression library](https://github.com/google/re2)
 and is documented in the
 [RE2 Wiki](https://github.com/google/re2/wiki/Syntax).
@@ -58,7 +56,7 @@ produces
 
 Globs provide a convenient short-hand for regular expressions and follow
 the familiar pattern of "file globbing" supported by Unix shells.
-Zed globs are a simple, special case that utilize only the `*` wildcard.
+Globs are a simple, special case that utilize only the `*` wildcard.
 
 Valid glob characters include `a` through `z`, `A` through `Z`,
 any valid string escape sequence
@@ -69,7 +67,9 @@ _ . : / % # @ ~
 A glob must begin with one of these characters or `*` then may be
 followed by any of these characters, `*`, or digits `0` through `9`.
 
-> Note that these rules do not allow for a leading digit.
+:::tip note
+These rules do not allow for a leading digit.
+:::
 
 For example, a prefix match is easily accomplished via `prefix*`, e.g.,
 ```mdtest-command
@@ -99,7 +99,7 @@ produces
 {a:1}
 ```
 
-Globs may also appear in the `grep` function:
+Globs may also appear in the [`grep` function](functions/grep.md)):
 ```mdtest-command
 echo '"foo" {s:"bar"} {s:"baz"} {foo:1}' | super -z -c 'yield grep(ba*, s)' -
 ```
@@ -127,11 +127,13 @@ is a Boolean comparison between the product `a*b` and `c`.
 The search patterns described above can be combined with other "search terms"
 using Boolean logic to form search expressions.
 
-> Note that when processing [ZNG](../formats/zng.md) data, the Zed runtime performs a multi-threaded
-> Boyer-Moore scan over decompressed data buffers before parsing any data.
-> This allows large buffers of data to be efficiently discarded and skipped when
-> searching for rarely occurring values.  For a [Zed lake](../lake/format.md),
-> a planned feature will use [VNG](../formats/vng.md) files to further accelerate searches.
+:::tip note
+When processing [Super Binary](../formats/zng.md) data, the SuperDB runtime performs a multi-threaded
+Boyer-Moore scan over decompressed data buffers before parsing any data.
+This allows large buffers of data to be efficiently discarded and skipped when
+searching for rarely occurring values.  For a [SuperDB data lake](../lake/format.md),
+a planned feature will use [Super Columnar](../formats/vng.md) files to further accelerate searches.
+:::
 
 ### Search Terms
 
@@ -205,7 +207,7 @@ where grep("foo", this)
 ```
 
 Note that the "search" keyword may be omitted.
-For example, the simplest Zed program is perhaps a single keyword search, e.g.,
+For example, the simplest SuperPipe program is perhaps a single keyword search, e.g.,
 ```
 foo
 ```
@@ -228,14 +230,16 @@ is equivalent to
 where grep("foo", this)
 ```
 
-> Note that this equivalency between keyword search terms and grep semantics
-> will change in the near future when we add support for full-text search.
-> In this case, grep will still support substring match but keyword search
-> will match segmented words from string fields.
+:::tip note
+This equivalency between keyword search terms and grep semantics
+will change in the near future when we add support for full-text search.
+In this case, grep will still support substring match but keyword search
+will match segmented words from string fields.
+:::
 
 #### Non-String Literal Search Term
 
-Search terms representing non-string Zed values search for both an exact
+Search terms representing non-string values search for both an exact
 match for the given value as well as a string search for the term exactly
 as it appears as typed.  Such values include:
 * integers,
@@ -247,7 +251,7 @@ as it appears as typed.  Such values include:
 * bytes values, and
 * type values.
 
-A search for a Zed value `<value>` represented as the string `<string>` is
+A search for a value `<value>` represented as the string `<string>` is
 equivalent to
 ```
 <value> in this or grep(<string>, this)
@@ -299,7 +303,8 @@ override natural precedence.
 Note that the concatenation form of `and` is not valid in standard expressions and
 is available only in search expressions.
 Concatenation is convenient in interactive sessions but it is best practice to
-explicitly include the `and` operator when editing Zed source files.
+explicitly include the `and` operator when composing saved queries planned for
+re-use and sharing.
 
 For example,
 ```
@@ -315,5 +320,5 @@ foo (bar or baz)
 ```
 means
 ```
-grep("foo") and (grep("bar)) or grep("baz"))
+grep("foo") and (grep("bar") or grep("baz"))
 ```
