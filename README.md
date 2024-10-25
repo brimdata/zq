@@ -13,7 +13,7 @@ You can easily do
 but data is ingested by default in its natural form no matter how much heterogeneity
 it might have.  And unlike systems based on the document data model,
 every value in SuperDB is strongly and dynamically typed thus providing the
-best of both worlds: the flexixbility of the document model and
+best of both worlds: the flexibility of the document model and
 the efficiency and performance of the relational model.
 
 In SuperDB's SQL dialect, there are no "JSON columns" so there isn't a "relational
@@ -53,9 +53,9 @@ and sequences of data need not all conform to a predefined schema.  To this end,
 SuperDB extends the JSON format to support super-structured data in a format called
 [Super JSON](https://zed.brimdata.io/docs/formats/zson) where all JSON values 
 are also Super JSON values.  Similarly,
-the [Super Binary](https://zed.brimdata.io/docs/formats/zson) format is an efficient
+the [Super Binary](https://zed.brimdata.io/docs/formats/zng) format is an efficient
 binary representation of Super JSON (a bit like Avro) and the
-[Super Columnar](https://zed.brimdata.io/docs/formats/zson) format is a columnar
+[Super Columnar](https://zed.brimdata.io/docs/formats/vng) format is a columnar
 representation of Super JSON (a bit like Parquet).
 
 Even though SuperDB is based on these super-structured data formats, it can read and write
@@ -73,21 +73,21 @@ The SuperDB query engine can run locally without a storage engine by accessing
 files, HTTP endpoints, or S3 paths using the `super` command. While
 [earlier in its development](https://zed.brimdata.io/docs/commands/zed/#status),
 SuperDB can also run on a
-[super-structured data lake](https://zed.brimdata.io/docs/commands/zed/#1-the-lake-model)
-using the `suber db` sub-commands.
+[super-structured data lake](https://zed.brimdata.io/docs/commands/zed/#the-lake-model)
+using the `super db` sub-commands.
 
 ## Piped Query Syntax
 
-The long-term goal for SuperDB's SQL syntax (SuperSQL) is to be Postgres-compatibe and interoperate 
+The long-term goal for SuperDB's SQL syntax (SuperSQL) is to be Postgres-compatible and interoperate 
 with BI tools though this is currently a roadmap item.  At the same time, the project
-seeks to forge now ground on the usability of SQL for data exploration.  To this end,
+seeks to forge new ground on the usability of SQL for data exploration.  To this end,
 SuperSQL supports the
 [pipe query syntax](https://github.com/google/zetasql/blob/master/docs/pipe-syntax.md)
 of GoogleSQL, recently described in their
 [VLDB 2024 paper](https://research.google/pubs/sql-has-problems-we-can-fix-them-pipe-syntax-in-sql/).
 
 In addition to the GoogleSQL syntax, SuperSQL includes additional pipeline 
-operators to enhance usuability, e.g., for search, for traversing 
+operators to enhance usability, e.g., for search, for traversing 
 highly nested JSON, for data shaping, etc.
 
 To facilitate real-time, data exploration use cases,
@@ -103,7 +103,7 @@ languages utilized in search systems.
 ### SuperDB Desktop - Coming Soon
 
 [SuperDB Desktop](https://github.com/brimdata/zui) is an Electron-based
-desktop app to explore, query, and shape data in SuperDB data lake.
+desktop app to explore, query, and shape data in a SuperDB data lake.
 It combines a search experience with a SQL query and has some really slick
 design for dealing with complex and large JSON data.
 
@@ -112,7 +112,7 @@ if you load it up with ginormous JSON values.
 
 ## Contributing
 
-See the [contributing guide](CONTRIBUTING.md) on how you can help improve Zed!
+See the [contributing guide](CONTRIBUTING.md) on how you can help improve SuperDB!
 
 ## Join the Community
 
