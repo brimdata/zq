@@ -4,7 +4,6 @@
     import (
         "github.com/brimdata/super/compiler/ast"
     )
-
 }
 
 start
@@ -94,7 +93,7 @@ LeanOp
     }
 
 EndOfOp = __ (Pipe / SearchKeywordGuard / "=>" / ")" / EOF)
-Pipe = "|" !("{" / "[")
+Pipe = "|>" / "|" !("{" / "[")
 
 ExprGuard = __ ((!"=>" Comparator) / AdditiveOperator / MultiplicativeOperator / ":" / "(" / "[" / "~")
 
@@ -176,7 +175,7 @@ Regexp
 /// === Aggregations ===
 
 Aggregation
-  = Summarize? keys:GroupByKeys limit:LimitArg {
+  = Summarize keys:GroupByKeys limit:LimitArg {
       return &ast.Summarize{
         Kind: "Summarize",
         Keys: sliceOf[ast.Assignment](keys),
@@ -184,7 +183,7 @@ Aggregation
         Loc: loc(c),
       }, nil
     }
-  / Summarize? aggs:AggAssignments keys:(_ GroupByKeys)? limit:LimitArg {
+  / Summarize aggs:AggAssignments keys:(_ GroupByKeys)? limit:LimitArg {
       s := &ast.Summarize{
         Kind: "Summarize",
         Aggs: sliceOf[ast.Assignment](aggs),
@@ -197,10 +196,10 @@ Aggregation
       return s, nil
     }
 
-Summarize = "summarize" _
+Summarize = KW_AGGREGATE _ / ("summarize" _)?
 
 GroupByKeys
-  = ByToken _ columns:FlexAssignments { return columns, nil }
+  = (KW_GROUP _)? ByToken _ columns:FlexAssignments { return columns, nil }
 
 LimitArg
   = _ "with" _ "-limit" _ limit:UInt { return limit, nil }
@@ -261,7 +260,8 @@ AggAssignments
 /// === Operators ===
 
 Operator
-  = ForkOp
+  = SelectExpr
+  / ForkOp
   / SwitchOp 
   / FromForkOp
   / SearchOp
@@ -354,7 +354,13 @@ FromPath
     }
 
 FromSource
-  = FromKeyWord _ spec:FromBody { return spec, nil }
+  = FromKeyWord _ elem:FromElem {
+        return &ast.From{
+            Kind: "From",
+            Elems: []*ast.FromElem{elem.(*ast.FromElem)},
+            Loc: loc(c),
+        }, nil
+    }
   / PassOp
 
 SearchOp
@@ -618,10 +624,12 @@ DebugOp
     }
 
 FromOp
-  = FromKeyWord _ f:FromBody {
-      from := f.(*ast.From)
-      from.Loc = loc(c)
-      return from, nil
+  = FromKeyWord _ elems:FromElems {
+      return &ast.From{
+        Kind: "From",
+        Elems: sliceOf[*ast.FromElem](elems),
+        Loc: loc(c),
+      }, nil
   }
 
 FromKeyWord
@@ -630,17 +638,28 @@ FromKeyWord
 
 DeprecatedFroms = "get" / "file" / "pool"
 
-FromBody
-  = entity:FromEntity args:FromArgs {
-      from := &ast.From{
-        Kind: "From",
+FromElems
+  = first:FromElem rest:( __ "," __ elem:FromElem { return elem, nil} )* {
+      return prepend(first, rest), nil
+    }
+    
+FromElem
+  = entity:FromEntity args:FromArgs o:OptOrdinality alias:OptAlias {
+      elem := &ast.FromElem{
+        Kind: "FromElem",
         Entity: entity.(ast.FromEntity),
         Loc: loc(c),
       }
       if args != nil {
-        from.Args = args.(ast.FromArgs)
+        elem.Args = args.(ast.FromArgs)
       }
-      return from, nil
+      if o != nil {
+        elem.Ordinality = o.(*ast.Ordinality)
+      }      
+      if alias != nil {
+        elem.Alias = alias.(*ast.Name)
+      }
+      return elem, nil
     }
 
 FromEntity
@@ -661,7 +680,6 @@ FromEntity
         Loc: loc(c),
       }, nil
     }
-  / Name
   / meta:PoolMeta {
       return &ast.LakeMeta{
         Kind: "LakeMeta",
@@ -669,6 +687,13 @@ FromEntity
         Loc: loc(c),
       }, nil
     }
+  / join:JoinOperation !AliasClause {return join, nil}
+  / "(" __ join:JoinOperation __ ")" { return join, nil }
+  / "(" __ s:SQLPipe __ ")" { 
+      return s, nil
+    }
+   / name:Name    { return name, nil }
+  // XXX UNNEST, PIVOT, UNPIVOT, type projection, left correlation?
 
 FromArgs
   = commit:PoolCommit meta:PoolMeta? tap:TapArg {
@@ -1117,7 +1142,7 @@ Primary
   / "(" __ expr:Expr __ ")" { return expr, nil }
 
 OverExpr
-  = "over" _ exprs:Exprs locals:Locals? __ "|" __ body:Seq {
+  = "over" _ exprs:Exprs locals:Locals? __ Pipe __ body:Seq {
       return &ast.OverExpr{
           Kind: "OverExpr",
           Locals: sliceOf[ast.Def](locals),
@@ -1782,3 +1807,408 @@ EOT = _ / EOF
 EOF = !.
 
 EOKW = !KeyWordChars
+
+/// === SuperSQL ===
+
+SQLPipe 
+  = s:Seq {
+      return &ast.SQLPipe{
+            Kind: "SQLPipe",
+            Ops: sliceOf[ast.Op](s),
+            Loc: loc(c),
+        }, nil
+    }
+
+SelectExpr 
+  = with:OptWithClause
+    body:(
+        SetOperation
+      / Select
+      / "(" __ s:SQLPipe __")"      { return s, nil }
+    )
+    orderby:OptOrderByClause
+    limit:OptLimitClause {
+      op := body.(ast.Op)
+      if with != nil {
+          w := with.(*ast.With)
+          w.Body = op
+          op = w 
+      }
+      if orderby != nil {
+          o := orderby.(*ast.OrderBy)
+          o.Op = op
+          op = o
+      }
+      if limit != nil {
+          l := limit.(*ast.Limit)
+          l.Op = op
+          op = l
+      }
+      return op, nil
+    }
+
+Select 
+  = KW_SELECT 
+    distinct:OptDistinct
+    value:OptSelectValue
+    //XXX for whitespace in front of target need it only if it begins with 
+    // an identifier, e.g., select(1); is ok
+    _ args:SelectList
+    from:OptFromClause
+    where:OptWhereClause
+    group:OptGroupClause
+    having:OptHavingClause
+    // XXX NOTYET OptQualifyClause
+    // XXX NOTYET OptWindowClause
+    {
+      sel := &ast.Select{
+          Kind: "Select",
+          Distinct: distinct.(bool),
+          Value: value.(bool),
+          Args: sliceOf[ast.Assignment](args),
+          Loc: loc(c),
+      }
+      if from != nil {
+        sel.From = from.(*ast.From)
+      }
+      if where != nil {
+        sel.Where = where.(ast.Expr)
+      }
+      if group != nil {
+        sel.GroupBy = sliceOf[ast.Expr](group)
+      }
+      if having != nil {
+        sel.Having = having.(ast.Expr)
+      }
+      return sel, nil
+    }
+
+OptDistinct
+  = _ KW_ALL        { return false, nil }
+  / _ KW_DISTINCT   { return true, nil }
+  / ""              { return false, nil }
+
+OptSelectValue
+  = _ KW_AS _ KW_VALUE  { return true, nil }
+  / _ KW_VALUE          { return true, nil } // SQL++ form XXX decide which
+  / ""                  { return false, nil }
+
+OptWithClause 
+  = WithClause 
+  / ""          { return nil, nil }
+
+WithClause 
+  = _ KW_WITH r:OptRecursive _ ctes:CteList {
+        return &ast.With{
+            Kind: "With",
+            Recursive: r.(bool), 
+            CTEs: sliceOf[ast.CTE](ctes),
+            Loc: loc(c),
+        }, nil
+    }
+
+OptRecursive 
+  = _ KW_RECURSIVE  { return true, nil }
+  / ""              { return false, nil }
+
+CteList = first:Cte rest:( __ "," __ cte:Cte { return cte, nil} )* {
+    return prepend(first, rest), nil 
+}
+
+Cte
+  = name:AliasName _ KW_AS m:OptMaterialized __ "(" __ s:SQLPipe __ ")" {
+        return ast.CTE{
+            Name: name.(string),
+            Materialized: m.(*bool),
+            Op: s.(ast.Op),
+            Loc: loc(c),
+        }, nil
+    }
+
+AliasName = Identifier
+
+OptMaterialized 
+  = _ KW_MATERIALIZED _             { return true, nil }
+  / _ KW_NOT _ KW_MATERIALIZED _    { return false, nil }
+  / ""                              { return false, nil }
+
+OptAllClause
+  = _ KW_ALL 
+  / ""
+
+OptFromClause
+  = _ from:FromOp {
+      return from, nil
+    }
+  / ""                  { return nil, nil }
+
+OptWhereClause
+  = where:WhereClause     { return where, nil }
+  / ""                      { return nil, nil }
+
+OptGroupClause
+  = _ group:GroupClause { return group, nil }
+  / ""                  { return nil, nil }
+
+GroupClause
+  = KW_GROUP _ KW_BY _ list:GroupByList { return list, nil }
+
+GroupByList 
+  = first:GroupByItem rest:( __ "," __ g:GroupByItem { return g, nil } )* {
+      return prepend(first, rest), nil
+    }
+
+GroupByItem = Expr
+
+OptHavingClause
+  = _ h:HavingClause { return h, nil }
+  / "" { return nil, nil }
+
+HavingClause
+  = KW_HAVING _ e:Expr { return e, nil }
+
+JoinOperation
+  = CrossJoin
+  / ConditionJoin
+
+CrossJoin
+  = left:FromElem CrossJoinOp right:FromElem {
+        return &ast.CrossJoin{
+            Kind: "CrossJoin",
+            Left: left.(*ast.FromElem),
+            Right: right.(*ast.FromElem),
+            Loc: loc(c),
+        }, nil
+    }
+
+CrossJoinOp 
+  = __ "," __ 
+  / _ KW_CROSS _ KW_JOIN _ 
+
+ConditionJoin
+  = left:FromElem style:SQLJoinStyle _ right:FromElem e:JoinExpr {
+        return &ast.SQLJoin{
+            Kind: "SQLJoin",
+            Style: style.(string),
+            Left: left.(*ast.FromElem),
+            Right: right.(*ast.FromElem),
+            Cond: e.(ast.JoinExpr),
+            Loc: loc(c),
+        }, nil
+    }
+
+SQLJoinStyle 
+  = (_ KW_INNER)? _ KW_JOIN             { return "inner", nil }
+  / _ KW_FULL (_ KW_OUTER)? _ KW_JOIN   { return "full", nil }
+  / _ KW_LEFT (_ KW_OUTER)? _ KW_JOIN   { return "left", nil }
+  / _ KW_RIGHT (_ KW_OUTER)? _ KW_JOIN   { return "right", nil }
+
+JoinExpr 
+  = _ KW_ON _ e:Expr { 
+        return &ast.JoinOn{
+            Kind: "JoinOn", 
+            Expr: e.(ast.Expr),
+        }, nil
+    }
+  / _ KW_USING __ "(" __ fields:FieldExprs __ ")" {
+        return &ast.JoinUsing{
+            Kind: "JoinUsing",
+            Fields: sliceOf[ast.Expr](fields),
+        }, nil
+    }
+
+OptOrdinality 
+  = _ KW_WITH _ KW_ORDINALITY   {
+        return &ast.Ordinality{
+            Kind: "Ordinality",
+            Loc: loc(c),
+        }, nil
+    }
+  / ""                          { return nil, nil }
+
+OptAlias
+  = _ a:AliasClause { return a, nil }
+  / ""              { return nil, nil }
+
+AliasClause 
+  = (KW_AS _)? !(SQLGuard / DeprecatedFroms) name:IdentifierName { // optional column defs no types
+      return &ast.Name{Kind: "Name", Text: name.(string), Loc: loc(c)}, nil
+    }
+
+SelectList
+  = first:SelectElem rest:( __ "," __ s:SelectElem{ return s, nil })* {
+      return prepend(first, rest), nil
+  }
+
+//XXX need to add *, id.*, except, replace
+SelectElem 
+  = e:Expr as:OptAsClause {
+      elem := ast.Assignment{
+        Kind: "Assignment",
+        RHS: e.(ast.Expr),
+        Loc: loc(c),
+      }
+      if as != nil {
+          elem.LHS = as.(*ast.ID)
+      }
+      return elem, nil
+    }
+
+OptAsClause 
+  = _ KW_AS _ id:Identifier { return id, nil }
+  / ""  { return nil, nil }
+
+OptOrderByClause 
+  = _ KW_ORDER _ KW_BY _ list:OrderByList { 
+        return &ast.OrderBy{
+          Kind: "OrderBy",
+          Exprs: list.([]ast.SortExpr),
+          Loc: loc(c),
+        }, nil
+    }
+  / ""          { return nil, nil }
+
+OrderByList 
+  = first:OrderByItem rest:( __ "," __ o:OrderByItem{ return o, nil})* {
+      return sliceOf[ast.SortExpr](prepend(first, rest)), nil
+    }
+
+OrderByItem
+  = e:Expr order:OptAscDesc nulls:OptNullsOrder {
+      s := ast.SortExpr{Kind: "SortExpr", Expr: e.(ast.Expr), Loc: loc(c)}
+      if order != nil {
+        s.Order = order.(*ast.ID)
+      }
+      if nulls != nil {
+        s.Nulls = nulls.(*ast.ID)
+      }
+      return s, nil
+    }
+
+OptAscDesc
+  = _ KW_ASC   { return &ast.ID{Kind: "ID", Name: "asc", Loc: loc(c)}, nil }
+  / _ KW_DESC  { return &ast.ID{Kind: "ID", Name: "desc", Loc: loc(c)}, nil }
+  / ""         { return nil, nil }
+
+OptNullsOrder
+  = _ KW_NULLS _ KW_FIRST   { return &ast.ID{Kind: "ID", Name: "first", Loc: loc(c)}, nil }
+  / _ KW_NULLS _ KW_LAST    { return &ast.ID{Kind: "ID", Name: "last", Loc: loc(c)}, nil }
+  / ""                      { return nil, nil }
+
+SelectLimit
+  = l:LimitClause o:OptOffsetClause {
+      limit := l.(*ast.Limit)
+      if o != nil {
+        limit.Offset = o.(ast.Expr)
+      }
+      return limit, nil
+    }
+  / o:OffsetClause l:OptLimitClause {
+      if l == nil {
+          return &ast.Limit{
+            Kind: "Limit",
+            Offset: o.(ast.Expr),
+            Loc: loc(c),
+          }, nil
+      }
+      limit := l.(*ast.Limit)
+      limit.Offset = o.(ast.Expr)
+      return limit, nil
+    }
+
+OptLimitClause 
+  = _ l:LimitClause { return l, nil }
+  / ""              { return nil, nil }
+
+LimitClause 
+  = KW_LIMIT _ KW_ALL { return &ast.Limit{Kind:"Limit", Loc: loc(c)}, nil }
+  / KW_LIMIT _ e:Expr {
+      return &ast.Limit{
+        Kind: "Limit",
+        Count: e.(ast.Expr),
+        Loc: loc(c),
+      }, nil
+    }
+
+OptOffsetClause 
+  = _ o:OffsetClause  { return o, nil }
+  / ""  { return nil, nil }
+
+OffsetClause 
+  = KW_OFFSET _ e:Expr  { return e, nil }
+
+SetOperation
+  = left:SelectExpr distinct:SetOp _ right:SelectExpr {
+        return &ast.Union{
+            Kind: "Union",
+            Distinct: distinct.(bool),
+            Left: left.(ast.Op),
+            Right: right.(ast.Op),
+            Loc: loc(c),
+        }, nil
+    }
+
+SetOp 
+  = _ KW_UNION _ KW_ALL       { return false, nil }
+  / _ KW_UNION _ KW_DISTINCT  { return true, nil }
+  / ""                      { return true, nil}
+
+// XXX incomplete
+SQLGuard =
+    KW_FROM / KW_GROUP / KW_HAVING / KW_SELECT / KW_RECURSIVE
+  / KW_INNER / KW_LEFT / KW_RIGHT / KW_OUTER / KW_CROSS / KW_JOIN
+  / KW_UNION
+  / KW_ORDER
+  / KW_LIMIT
+  / KW_WHERE 
+  / KW_WITH
+  / KW_USING
+  / KW_ON
+
+KW_AGGREGATE  = "AGGREGATE"i    !IdentifierStart
+
+KW_NULLS    = "NULLS"i  !IdentifierStart
+KW_NULL     = "NULL"i   !IdentifierStart
+KW_FIRST    = "FIRST"i  !IdentifierStart
+KW_LAST     = "LAST"i   !IdentifierStart
+
+KW_SELECT   = "SELECT"i     !IdentifierStart
+KW_RECURSIVE= "RECURSIVE"   !IdentifierStart
+
+KW_FROM     = "FROM"i       !IdentifierStart
+
+KW_AS       = "AS"i         !IdentifierStart
+
+KW_ON       = "ON"i       !IdentifierStart
+KW_LEFT     = "LEFT"i     !IdentifierStart
+KW_RIGHT    = "RIGHT"i    !IdentifierStart
+KW_FULL     = "FULL"i     !IdentifierStart
+KW_INNER    = "INNER"i    !IdentifierStart
+KW_CROSS    = "CROSS"i    !IdentifierStart
+KW_JOIN     = "JOIN"i     !IdentifierStart
+KW_OUTER    = "OUTER"i    !IdentifierStart
+KW_UNION    = "UNION"i    !IdentifierStart
+
+KW_VALUE    = "VALUE"i    !IdentifierStart
+KW_USING    = "USING"i    !IdentifierStart
+
+KW_WHERE    = "WHERE"i      !IdentifierStart
+KW_WITH     = "WITH"i       !IdentifierStart
+
+KW_GROUP    = "GROUP"i      !IdentifierStart
+KW_BY       = "BY"i         !IdentifierStart
+KW_ORDER    = "ORDER"i      !IdentifierStart
+KW_HAVING   = "HAVING"i     !IdentifierStart
+KW_ORDINALITY  = "ORDINALITY"i !IdentifierStart
+
+KW_LIMIT    = "LIMIT"i      !IdentifierStart
+KW_OFFSET   = "OFFSET"i     !IdentifierStart
+
+KW_ASC      = "ASC"i        !IdentifierStart 
+KW_DESC     = "DESC"i       !IdentifierStart 
+
+KW_ALL      = "ALL"i        !IdentifierStart
+KW_DISTINCT = "DISTINCT"i   !IdentifierStart
+
+KW_NOT      = "NOT"i        !IdentifierStart
+

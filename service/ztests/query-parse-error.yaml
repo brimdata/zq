@@ -34,34 +34,34 @@ outputs:
   - name: stderr
     data: |
       =1=
-      error parsing SuperPipe at line 1, column 11:
+      error parsing SuperPipe at line 1, column 12:
       from test \ count()
-            === ^ ===
+             === ^ ===
       =2=
-      error parsing SuperPipe at line 2, column 6:
+      error parsing SuperPipe at line 2, column 7:
       test \ count()
-       === ^ ===
+        === ^ ===
       =3=
-      error parsing SuperPipe at line 1, column 11:
+      error parsing SuperPipe at line 1, column 12:
       from test \ count()
-            === ^ ===
+             === ^ ===
       =4=
-      error parsing SuperPipe at line 2, column 6:
+      error parsing SuperPipe at line 2, column 7:
       test \ count()
-       === ^ ===
+        === ^ ===
       =5=
-      error parsing SuperPipe in bad-single-line.spq at line 1, column 11:
+      error parsing SuperPipe in bad-single-line.spq at line 1, column 12:
       from test \ count()
-            === ^ ===
+             === ^ ===
       =6=
-      error parsing SuperPipe in bad-multiple-lines.spq at line 2, column 6:
+      error parsing SuperPipe in bad-multiple-lines.spq at line 2, column 7:
       test \ count()
-       === ^ ===
+        === ^ ===
       =7=
-      error parsing SuperPipe in bad-single-line.spq at line 1, column 11:
+      error parsing SuperPipe in bad-single-line.spq at line 1, column 12:
       from test \ count()
-            === ^ ===
+             === ^ ===
       =8=
-      error parsing SuperPipe in bad-multiple-lines.spq at line 2, column 6:
+      error parsing SuperPipe in bad-multiple-lines.spq at line 2, column 7:
       test \ count()
-       === ^ ===
+        === ^ ===
