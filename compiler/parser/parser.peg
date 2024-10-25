@@ -17,6 +17,7 @@ Scope
         Kind: "Scope",
         Decls: sliceOf[ast.Decl](decls),
         Body: sliceOf[ast.Op](body),
+        Loc: loc(c),
       }, nil
     }
 
@@ -36,7 +37,7 @@ ConstDecl
           Kind: "ConstDecl",
           Name: name.(*ast.ID),
           Expr: expr.(ast.Expr),
-          KeywordPos: c.pos.offset,
+          Loc: loc(c),
       }, nil
     }
 
@@ -47,8 +48,7 @@ FuncDecl
         Name: name.(*ast.ID),
         Params: sliceOf[*ast.ID](params),
         Expr: expr.(ast.Expr),
-        KeywordPos: c.pos.offset,
-        Rparen: lastPos(c, ")"),
+        Loc: loc(c),
       }, nil
     }
 
@@ -59,8 +59,7 @@ OpDecl
         Name: name.(*ast.ID),
         Params: sliceOf[*ast.ID](params),
         Body: sliceOf[ast.Op](body),
-        KeywordPos: c.pos.offset,
-        Rparen: lastPos(c, ")"),
+        Loc: loc(c),
       }, nil
     }
 
@@ -74,7 +73,7 @@ TypeDecl
         Kind: "TypeDecl",
         Name: name.(*ast.ID),
         Type: typ.(ast.Type),
-        KeywordPos: c.pos.offset,
+        Loc: loc(c),
       }, nil
     }
 
@@ -87,8 +86,7 @@ Operation
       return &ast.Parallel{
           Kind: "Parallel",
           Paths: seqs,
-          KeywordPos: c.pos.offset,
-          Rparen: lastPos(c, ")"),
+          Loc: loc(c),
       }, nil
     }
   / "switch" _ expr:Expr _ "(" cases:SwitchLeg+ __ ")" {
@@ -96,24 +94,21 @@ Operation
           Kind: "Switch",
           Expr: expr.(ast.Expr),
           Cases: sliceOf[ast.Case](cases),
-          KeywordPos: c.pos.offset,
-          Rparen: lastPos(c, ")"),
+          Loc: loc(c),
       }, nil
     }
   / "switch" __ "(" cases:SwitchLeg+ __ ")" {
       return &ast.Switch{
           Kind: "Switch",
           Cases: sliceOf[ast.Case](cases),
-          KeywordPos: c.pos.offset,
-          Rparen: lastPos(c, ")"),
+          Loc: loc(c),
       }, nil
     }
   / "from" __ "(" trunks:FromLeg+ __ ")" {
       return &ast.From{
           Kind: "From",
           Trunks: sliceOf[ast.Seq](trunks),
-          KeywordPos: c.pos.offset,
-          Rparen: lastPos(c, ")"),
+          Loc: loc(c),
       }, nil
     }
   / "(" __ scope:Scope __ ")" { return scope, nil }
@@ -121,16 +116,16 @@ Operation
   / a:OpAssignment &EndOfOp { return a, nil }
   / !(Function EndOfOp) a:Aggregation &EndOfOp { return a, nil }
   / "search" _ expr:SearchBoolean {
-      return &ast.Search{Kind:"Search",Expr:expr.(ast.Expr),KeywordPos:c.pos.offset}, nil
+      return &ast.Search{Kind:"Search",Expr:expr.(ast.Expr),Loc:loc(c)}, nil
     }
   / expr:SearchBoolean {
-      return &ast.OpExpr{Kind:"OpExpr",Expr:expr.(ast.Expr)}, nil
+      return &ast.OpExpr{Kind:"OpExpr",Expr:expr.(ast.Expr),Loc:loc(c)}, nil
     }
   / expr:Cast {
-      return &ast.OpExpr{Kind:"OpExpr",Expr:expr.(ast.Expr)}, nil
+      return &ast.OpExpr{Kind:"OpExpr",Expr:expr.(ast.Expr),Loc:loc(c)}, nil
   }
   / expr:Expr {
-      return &ast.OpExpr{Kind:"OpExpr",Expr:expr.(ast.Expr)}, nil
+      return &ast.OpExpr{Kind:"OpExpr",Expr:expr.(ast.Expr),Loc:loc(c)}, nil
     }
 
 EndOfOp = __ (Pipe / SearchKeywordGuard / "=>" / ")" / EOF)
@@ -172,7 +167,7 @@ Comparator = ("==" / "!=" / ("in" !IdentifierRest) / "<=" / "<" / ">=" / ">") { 
 
 SearchBoolean
   = first:SearchAnd rest:SearchOrTerm* {
-      return makeBinaryExprChain(first, rest), nil
+      return makeBinaryExprChain(first, rest, c), nil
     }
 
 SearchOrTerm = _ OrToken _ t:SearchAnd { return []any{"or", t}, nil }
@@ -180,7 +175,7 @@ SearchOrTerm = _ OrToken _ t:SearchAnd { return []any{"or", t}, nil }
 SearchAnd
   = first:SearchFactor
     rest:((_ AndToken)? _ !(OrToken / SearchKeywordGuard) expr:SearchFactor { return []any{"and", expr}, nil })* {
-      return makeBinaryExprChain(first, rest), nil
+      return makeBinaryExprChain(first, rest, c), nil
     }
 
 SearchKeywordGuard
@@ -193,6 +188,7 @@ SearchFactor
           Kind: "UnaryExpr",
           Op: "!",
           Operand: e.(ast.Expr),
+          Loc: loc(c),
       }, nil
     }
   / "(" __ expr:SearchBoolean __ ")" { return expr, nil }
@@ -205,12 +201,12 @@ SearchExpr
       return &ast.Term{
         Kind: "Term",
         Text: string(c.text),
-        TextPos: c.pos.offset,
         Value: v.(ast.Any),
+        Loc: loc(c),
       }, nil
     }
   / "*" !ExprGuard {
-      return &ast.Primitive{Kind:"Primitive",Type:"bool",Text:"true"}, nil
+      return &ast.Primitive{Kind:"Primitive",Type:"bool",Text:"true",Loc:loc(c)}, nil
     }
   / SearchPredicate
 
@@ -221,6 +217,7 @@ SearchPredicate
         Op: op.(string),
         LHS: lhs.(ast.Expr),
         RHS: rhs.(ast.Expr),
+        Loc: loc(c),
       }, nil
     }
   / f:Function { return f, nil }
@@ -231,19 +228,21 @@ SearchValue
       return newPrimitive(c, "string", v.(string)), nil
     }
 
+//XXX get rid of QuotedString
+
 QuotedStringNode 
   = s:QuotedString {
-      return &ast.QuotedString{Kind: "QuotedString", Text: s.(string), Lquote: c.pos.offset}, nil
+      return &ast.QuotedString{Kind: "QuotedString", Text: s.(string), Loc: loc(c)}, nil
     }
 
 Glob
   = pattern:GlobPattern {
-      return &ast.Glob{Kind: "Glob", Pattern: pattern.(string), PatternPos: c.pos.offset}, nil
+      return &ast.Glob{Kind: "Glob", Pattern: pattern.(string), Loc: loc(c)}, nil
     }
 
 Regexp
   = pattern:RegexpPattern {
-      return &ast.Regexp{Kind:"Regexp", Pattern:pattern.(string), PatternPos: c.pos.offset}, nil
+      return &ast.Regexp{Kind:"Regexp", Pattern:pattern.(string), Loc: loc(c)}, nil
     }
 
 /// === Aggregations ===
@@ -254,7 +253,7 @@ Aggregation
         Kind: "Summarize",
         Keys: sliceOf[ast.Assignment](keys),
         Limit: limit.(int),
-        StartPos: c.pos.offset,
+        Loc: loc(c),
       }, nil
     }
   / Summarize? aggs:AggAssignments keys:(_ GroupByKeys)? limit:LimitArg {
@@ -262,7 +261,7 @@ Aggregation
         Kind: "Summarize",
         Aggs: sliceOf[ast.Assignment](aggs),
         Limit: limit.(int),
-        StartPos: c.pos.offset,
+        Loc: loc(c),
       }
       if keys != nil {
         s.Keys = sliceOf[ast.Assignment](keys.([]any)[1])
@@ -284,7 +283,7 @@ LimitArg
 // an expression like "count() by foo", the rhs is Field "foo" and the lhs is nil.
 FlexAssignment
   = Assignment
-  / expr:Expr { return ast.Assignment{Kind:"Assignment",RHS:expr.(ast.Expr)}, nil }
+  / expr:Expr { return ast.Assignment{Kind:"Assignment",RHS:expr.(ast.Expr),Loc:loc(c)}, nil }
 
 FlexAssignments
   = first:FlexAssignment rest:(__ "," __ expr:FlexAssignment { return expr, nil })* {
@@ -293,19 +292,18 @@ FlexAssignments
 
 AggAssignment
   = lval:Lval __ ":=" __ agg:Agg {
-      return ast.Assignment{Kind:"Assignment",LHS:lval.(ast.Expr),RHS:agg.(ast.Expr)}, nil
+      return ast.Assignment{Kind:"Assignment",LHS:lval.(ast.Expr),RHS:agg.(ast.Expr),Loc:loc(c)}, nil
     }
   / agg:Agg {
-      return ast.Assignment{Kind:"Assignment",RHS:agg.(ast.Expr)}, nil
+      return ast.Assignment{Kind:"Assignment",RHS:agg.(ast.Expr),Loc:loc(c)}, nil
     }
 
 Agg
-  = !FuncGuard op:AggName __ "(" __ expr:(OverExpr / Expr)? __ rparen:(")" { return c.pos.offset, nil }) !(__ ".") where:WhereClause? {
+  = !FuncGuard op:AggName __ "(" __ expr:(OverExpr / Expr)? __ ")" !(__ ".") where:WhereClause? {
       agg := &ast.Agg{
           Kind:"Agg", 
           Name: op.(string),
-          NamePos: c.pos.offset,
-          Rparen: rparen.(int),
+          Loc: loc(c),
       }
       if expr != nil {
         agg.Expr = expr.(ast.Expr)
@@ -366,7 +364,7 @@ AssertOp
           Kind: "Assert",
           Expr: expr.([]any)[0].(ast.Expr),
           Text: expr.([]any)[1].(string),
-          KeywordPos: c.pos.offset,
+          Loc: loc(c),
       }, nil
     }
 
@@ -374,8 +372,8 @@ SortOp
   = "sort" &EOKW args:SortArgs exprs:(__ e:SortExprs { return e, nil })? {
       o := &ast.Sort{
         Kind: "Sort",
-        KeywordPos: c.pos.offset,
         Args: sliceOf[ast.SortExpr](exprs),
+        Loc: loc(c),
       }
       argm := args.(map[string]any)
       if _, ok := argm["r"]; ok {
@@ -399,7 +397,7 @@ TopOp
   = "top" &EOKW limit:(_ e:Expr { return e, nil })? flush:(_ "-flush")? fields:(_ f:Lvals { return f, nil })? {
       op := &ast.Top{
         Kind: "Top",
-        KeywordPos: c.pos.offset,
+        Loc: loc(c),
       }
       if limit != nil {
         op.Limit = limit.(ast.Expr)
@@ -418,7 +416,7 @@ CutOp
       return &ast.Cut{
         Kind: "Cut",
         Args: sliceOf[ast.Assignment](args),
-        KeywordPos: c.pos.offset,
+        Loc: loc(c),
       }, nil
     }
 
@@ -427,7 +425,7 @@ DropOp
       return &ast.Drop{
           Kind: "Drop",
           Args: sliceOf[ast.Expr](args),
-          KeywordPos: c.pos.offset,
+          Loc: loc(c),
       }, nil
     }
 
@@ -436,13 +434,13 @@ HeadOp
       return &ast.Head{
         Kind: "Head",
         Count: count.(ast.Expr),
-        KeywordPos: c.pos.offset,
+        Loc: loc(c),
       }, nil
     }
   / "head" !(__ "(") &EOKW {
       return &ast.Head{
         Kind: "Head",
-        KeywordPos: c.pos.offset,
+        Loc: loc(c),
       }, nil
     }
 
@@ -451,13 +449,13 @@ TailOp
       return &ast.Tail{
         Kind: "Tail",
         Count: count.(ast.Expr),
-        KeywordPos: c.pos.offset,
+        Loc: loc(c),
       }, nil
     }
   / "tail" !(__ "(") &EOKW {
       return &ast.Tail{
         Kind: "Tail",
-        KeywordPos: c.pos.offset,
+        Loc: loc(c),
       }, nil
     }
 
@@ -466,16 +464,16 @@ WhereOp
       return &ast.Where{
         Kind: "Where",
         Expr: expr.(ast.Expr),
-        KeywordPos: c.pos.offset,
+        Loc: loc(c),
       }, nil
     }
 
 UniqOp
   = "uniq" _ "-c" {
-      return &ast.Uniq{Kind: "Uniq", Cflag: true, KeywordPos: c.pos.offset}, nil
+      return &ast.Uniq{Kind: "Uniq", Cflag: true, Loc: loc(c)}, nil
     }
   / "uniq" !(__ "(") &EOKW {
-      return &ast.Uniq{Kind: "Uniq", KeywordPos: c.pos.offset}, nil
+      return &ast.Uniq{Kind: "Uniq", Loc: loc(c)}, nil
     }
 
 PutOp
@@ -483,7 +481,7 @@ PutOp
       return &ast.Put{
           Kind: "Put",
           Args: sliceOf[ast.Assignment](args),
-          KeywordPos: c.pos.offset,
+          Loc: loc(c),
       }, nil
     }
 
@@ -493,7 +491,7 @@ RenameOp
       return &ast.Rename{
         Kind: "Rename",
         Args: sliceOf[ast.Assignment](args),
-        KeywordPos: c.pos.offset,
+        Loc: loc(c),
       }, nil
     }
 
@@ -503,12 +501,12 @@ RenameOp
 // aggregator, at which point we may no longer need this.
 FuseOp
   = "fuse" !(__ "(") &EOKW {
-      return &ast.Fuse{Kind: "Fuse", KeywordPos: c.pos.offset}, nil
+      return &ast.Fuse{Kind: "Fuse", Loc: loc(c)}, nil
     }
 
 ShapeOp
   = "shape" !(__ "(") &EOKW {
-      return &ast.Shape{Kind: "Shape", KeywordPos: c.pos.offset}, nil
+      return &ast.Shape{Kind: "Shape", Loc: loc(c)}, nil
     }
 
 JoinOp
@@ -517,7 +515,7 @@ JoinOp
         Kind: "Join",
         Style: style.(string),
         LeftKey: key.(ast.Expr),
-        KeywordPos: c.pos.offset,
+        Loc: loc(c),
       }
       if rightInput != nil {
         o.RightInput = sliceOf[ast.Op](rightInput)
@@ -548,7 +546,7 @@ JoinKey
 
 SampleOp
   = "sample" &EOKW expr:(_ e:Lval { return e, nil })? {
-      o := &ast.Sample{Kind: "Sample", KeywordPos: c.pos.offset}
+      o := &ast.Sample{Kind: "Sample", Loc: loc(c)}
       if expr != nil {
         o.Expr = expr.(ast.Expr)
       }
@@ -565,6 +563,7 @@ OpAssignment
       return &ast.OpAssignment{
           Kind: "OpAssignment",
           Assignments: sliceOf[ast.Assignment](a),
+          Loc: loc(c),
       }, nil
     }
 
@@ -577,8 +576,7 @@ LoadOp
         Author: nullableString(author),
         Message: nullableString(message),
         Meta: nullableString(meta),
-        KeywordPos: c.pos.offset,
-        EndPos: c.pos.offset+len(c.text),
+        Loc: loc(c),
       }, nil
     }
 
@@ -598,8 +596,8 @@ OutputOp
   = "output" _ name:Identifier {
       return &ast.Output{
         Kind: "Output",
-        KeywordPos: c.pos.offset,
         Name: name.(*ast.ID),
+        Loc: loc(c),
       }, nil
     }
 
@@ -607,7 +605,7 @@ DebugOp
   = "debug" &EOKW expr:(_ e:Expr { return e, nil })? {
       d := &ast.Debug{
         Kind: "Debug",
-        KeywordPos: c.pos.offset,
+        Loc: loc(c),
       }
       if expr != nil {
         d.Expr = expr.(ast.Expr)
@@ -624,11 +622,10 @@ File
   = "file" _ path:Path format:FormatArg? sortKeys:OrderArg? {
       return &ast.File{
         Kind: "File",
-        KeywordPos: c.pos.offset,
         Path: path.(ast.Pattern),
         Format: nullableString(format),
         SortKeys: sliceOf[ast.SortExpr](sortKeys),
-        EndPos: c.pos.offset+len(c.text),
+        Loc: loc(c),
       }, nil
     }
 
@@ -637,8 +634,7 @@ From
       return &ast.Pool{
         Kind: "Pool",
         Spec: spec.(ast.PoolSpec),
-        KeywordPos: c.pos.offset,
-        EndPos: c.pos.offset+len(c.text),
+        Loc: loc(c),
       }, nil
     }
 
@@ -647,8 +643,7 @@ Pool
       return &ast.Pool{
         Kind: "Pool",
         Spec: spec.(ast.PoolSpec),
-        KeywordPos: c.pos.offset,
-        EndPos: c.pos.offset+len(c.text),
+        Loc: loc(c),
       }, nil
     }
 
@@ -660,9 +655,8 @@ Get
         Format: nullableString(format),
         SortKeys: sliceOf[ast.SortExpr](sortKeys),
         Method: nullableString(method),
-        KeywordPos: c.pos.offset,
         Body: nullableString(body),
-        EndPos: c.pos.offset+len(c.text),
+        Loc: loc(c),
       }
       if headers != nil {
         h.Headers = headers.(*ast.RecordExpr)
@@ -679,7 +673,7 @@ BodyArg = _ "body" _ v:(IdentifierName / QuotedString) { return v, nil }
 Path
   = QuotedStringNode
   / [0-9a-zA-Z!@$%^&*_=<>,./?:[\]{}~+-]+ {
-      return &ast.String{Kind: "String", Text: string(c.text), TextPos: c.pos.offset}, nil
+      return &ast.String{Kind: "String", Text: string(c.text), Loc: loc(c)}, nil
     }
 
 //XXX this should be a timestamp
@@ -696,10 +690,11 @@ PoolSpec
         Commit: nullableString(commit),
         Meta: nullableString(meta),
         Tap: tap.(bool),
+        Loc: loc(c),
       }, nil
     }
   / meta:PoolMeta {
-      return ast.PoolSpec{Meta: meta.(string)}, nil
+      return ast.PoolSpec{Meta: meta.(string),Loc:loc(c)}, nil
     }
 
 PoolCommit
@@ -711,9 +706,9 @@ PoolMeta
 PoolName
   = Regexp
   / Glob
-  / "*" !ExprGuard { return &ast.Glob{Kind: "Glob", Pattern: "*", PatternPos: c.pos.offset}, nil }
+  / "*" !ExprGuard { return &ast.Glob{Kind: "Glob", Pattern: "*", Loc: loc(c)}, nil }
   / QuotedStringNode
-  / name:PoolNameString { return &ast.String{Kind: "String", Text: name.(string), TextPos: c.pos.offset}, nil }
+  / name:PoolNameString { return &ast.String{Kind: "String", Text: name.(string), Loc: loc(c)}, nil }
 
 PoolNameString
   = PoolIdentifier
@@ -735,7 +730,7 @@ SortExprs
 
 SortExpr
   = e:Expr order:(_ o:OrderSpec { return o, nil })? {
-      s := ast.SortExpr{Kind: "SortExpr", Expr: e.(ast.Expr)}      
+      s := ast.SortExpr{Kind: "SortExpr", Expr: e.(ast.Expr), Loc:loc(c)}      
       if order != nil {
         s.Order = order.(*ast.ID)
       }
@@ -744,7 +739,7 @@ SortExpr
 
 OrderSpec
   = ("asc" / "desc") {
-      return &ast.ID{Kind: "ID", Name: string(c.text), NamePos: c.pos.offset}, nil
+      return &ast.ID{Kind: "ID", Name: string(c.text), Loc: loc(c)}, nil
     }
 
 TapArg
@@ -756,7 +751,7 @@ FormatArg
 
 PassOp
   = "pass" !(__ "(") &EOKW {
-      return &ast.Pass{Kind: "Pass", KeywordPos: c.pos.offset}, nil
+      return &ast.Pass{Kind: "Pass", Loc: loc(c)}, nil
     }
 
 // Currently we support only "explode by type" but this will be generalized
@@ -767,7 +762,7 @@ ExplodeOp
         Kind: "Explode",
         Args: sliceOf[ast.Expr](args),
         Type: typ.(ast.Type),
-        KeywordPos: c.pos.offset,
+        Loc: loc(c),
       }
       if as != nil {
         o.As = as.(ast.Expr)
@@ -780,7 +775,7 @@ MergeOp
       return &ast.Merge{
         Kind: "Merge",
         Expr: expr.(ast.Expr),
-        KeywordPos: c.pos.offset,
+        Loc: loc(c),
       }, nil
     }
 
@@ -790,22 +785,22 @@ OverOp
         Kind: "Over",
         Exprs: sliceOf[ast.Expr](exprs),
         Locals: sliceOf[ast.Def](locals),
-        KeywordPos: c.pos.offset,
-        Rparen: -1,
+        Loc: loc(c),
       }
       if body != nil {
         o.Body = sliceOf[ast.Op](body.([]any)[0])
-        o.Rparen = body.([]any)[1].(int)
       }
       return o, nil
     }
 
+//XXX these locators in the any slice need to go
+
 Lateral
   = __ "=>" __ "(" __ scope:Scope __ ")" {
-      return []any{[]any{scope.(*ast.Scope)}, lastPos(c, ")")}, nil
+      return []any{[]any{scope.(*ast.Scope)}, loc(c).End()}, nil
     }
   / __ "=>" __ "(" __ seq:Seq __ ")" {
-      return []any{seq, lastPos(c, ")")}, nil
+      return []any{seq, loc(c).End()}, nil
     }
 
 Locals
@@ -818,6 +813,7 @@ LocalsAssignment
       def := ast.Def{
         Name: name.(*ast.ID),
         Expr: name.(*ast.ID),
+        Loc: loc(c),
       }
       if opt != nil {
         def.Expr = opt.([]any)[3].(ast.Expr)
@@ -830,7 +826,7 @@ YieldOp
       return &ast.Yield{
           Kind: "Yield",
           Exprs: sliceOf[ast.Expr](exprs),
-          KeywordPos: c.pos.offset,
+          Loc: loc(c),
       }, nil
     }
 
@@ -860,6 +856,7 @@ Assignment
           Kind: "Assignment",
           LHS: lhs.(ast.Expr),
           RHS: rhs.(ast.Expr),
+          Loc: loc(c),
       }, nil
     }
 
@@ -874,6 +871,7 @@ ConditionalExpr
             Cond: cond.(ast.Expr),
             Then: t.(ast.Expr),
             Else: e.(ast.Expr),
+            Loc: loc(c),
         }, nil
       }
       return cond, nil
@@ -882,13 +880,13 @@ ConditionalExpr
 LogicalOrExpr
   = first:LogicalAndExpr
     rest:(__ op:OrToken __ expr:LogicalAndExpr { return []any{op, expr}, nil })* {
-        return makeBinaryExprChain(first, rest), nil
+        return makeBinaryExprChain(first, rest, c), nil
     }
 
 LogicalAndExpr
   = first:ComparisonExpr
     rest:(__ op:AndToken __ expr:ComparisonExpr { return []any{op, expr}, nil })* {
-        return makeBinaryExprChain(first, rest), nil
+        return makeBinaryExprChain(first, rest, c), nil
     }
 
 ComparisonExpr
@@ -901,13 +899,14 @@ ComparisonExpr
         Op: opAndRHS.([]any)[1].(string),
         LHS: lhs.(ast.Expr),
         RHS: opAndRHS.([]any)[3].(ast.Expr),
+        Loc: loc(c),
       }, nil
     }
 
 AdditiveExpr
   = first:MultiplicativeExpr
     rest:(__ op:AdditiveOperator __ expr:MultiplicativeExpr { return []any{op, expr}, nil })* {
-        return makeBinaryExprChain(first, rest), nil
+        return makeBinaryExprChain(first, rest, c), nil
     }
 
 AdditiveOperator = ("+" / "-") { return string(c.text), nil }
@@ -915,7 +914,7 @@ AdditiveOperator = ("+" / "-") { return string(c.text), nil }
 MultiplicativeExpr
   = first:NotExpr
     rest:(__ op:MultiplicativeOperator __ expr:NotExpr { return []any{op, expr}, nil })* {
-        return makeBinaryExprChain(first, rest), nil
+        return makeBinaryExprChain(first, rest, c), nil
     }
 
 MultiplicativeOperator = ("*" / "/" / "%") { return string(c.text), nil }
@@ -925,8 +924,8 @@ NotExpr
       return &ast.UnaryExpr{
           Kind: "UnaryExpr",
           Op: "!",
-          OpPos: c.pos.offset,
           Operand: e.(ast.Expr),
+          Loc: loc(c),
       }, nil
     }
   / NegationExpr
@@ -936,19 +935,19 @@ NegationExpr
       return &ast.UnaryExpr{
           Kind: "UnaryExpr",
           Op: "-",
-          OpPos: c.pos.offset,
           Operand: e.(ast.Expr),
+          Loc: loc(c),
       }, nil
     }
   / DerefExpr
 
 DerefExpr
-  = expr:DerefExpr "[" from:AdditiveExpr __ ":" __ to:AdditiveExpr? "]" {
+  = expr:DerefExpr "[" __ from:AdditiveExpr __ ":" __ to:AdditiveExpr? __ "]" {
       e := &ast.SliceExpr{
         Kind: "SliceExpr",
         Expr: expr.(ast.Expr),
         From: from.(ast.Expr),
-        Rbrack: lastPos(c, "]"),
+        Loc: loc(c),
       }
       if to != nil {
         e.To = to.(ast.Expr)
@@ -960,7 +959,7 @@ DerefExpr
         Kind: "SliceExpr",
         Expr: expr.(ast.Expr),
         To: to.(ast.Expr),
-        Rbrack: lastPos(c, "]"),
+        Loc: loc(c),
       }, nil
     }
   / expr:DerefExpr "[" index:Expr "]" {
@@ -968,7 +967,7 @@ DerefExpr
         Kind: "IndexExpr",
         Expr: expr.(ast.Expr),
         Index: index.(ast.Expr),
-        Rbrack: lastPos(c, "]"),
+        Loc: loc(c),
       }, nil
     }
   / expr:DerefExpr "." id:Identifier {
@@ -977,23 +976,15 @@ DerefExpr
         Op: ".",
         LHS: expr.(ast.Expr),
         RHS: id.(ast.Expr),
+        Loc: loc(c),
       }, nil
     }
-  / fn:FuncExpr {
-      return fn, nil
-    }
-  / expr:Primary {
-      return expr, nil
-    }
-
+  / FuncExpr
+  / Primary
 
 FuncExpr
-  = cast:Cast {
-      return cast, nil
-    }
-  / fn:Function {
-      return fn, nil
-    }
+  = Cast
+  / Function
 
 FuncGuard = NotFuncs __ "("
 
@@ -1003,18 +994,18 @@ NotFuncs
 
 Cast
   = typ:TypeLiteral __ "(" __ expr:(OverExpr / Expr) __ ")" {
-      return &ast.Cast{Kind: "Cast", Expr: expr.(ast.Expr), Type: typ.(ast.Expr), Rparen: lastPos(c, ")")}, nil
+      return &ast.Cast{Kind: "Cast", Expr: expr.(ast.Expr), Type: typ.(ast.Expr), Loc: loc(c)}, nil
     }
 
 Function
   = Grep
   // Special case to handle `regexp(/x/, y)` and `regexp_replace(x, /y/, z)`.
   / "regexp" __ "(" __ arg0:RegexpPrimitive __ "," __ arg1:Expr __ ")" where:WhereClause? {
-      id := &ast.ID{Kind: "ID", Name: "regexp", NamePos: c.pos.offset}
+      id := &ast.ID{Kind: "ID", Name: "regexp", Loc: ast.NewLoc(c.pos.offset, c.pos.offset+6)}
       return newCall(c, id, []any{arg0, arg1}, where), nil
     }
   / "regexp_replace" __ "(" __ arg0:Expr __ "," __ arg1:RegexpPrimitive __ "," __ arg2:Expr __ ")" where:WhereClause? {
-      id := &ast.ID{Kind: "ID", Name: "regexp_replace", NamePos: c.pos.offset}
+      id := &ast.ID{Kind: "ID", Name: "regexp_replace", Loc: ast.NewLoc(c.pos.offset, c.pos.offset+14)}
       return newCall(c, id, []any{arg0, arg1, arg2}, where), nil
     }
   / !FuncGuard fn:Identifier __ "(" __ args:FunctionArgs __ ")" where:WhereClause? {
@@ -1032,9 +1023,8 @@ Grep
   = "grep" __ "(" __ pattern:(Regexp / Glob / Expr) __ opt:("," __ e:(OverExpr / Expr) __ { return e, nil })? ")" {
       g := &ast.Grep{
           Kind: "Grep",
-          KeywordPos: c.pos.offset,
           Pattern: pattern.(ast.Expr),
-          Rparen: lastPos(c, ")"),
+          Loc: loc(c),
       }
       if opt != nil {
           g.Expr = opt.(ast.Expr)
@@ -1065,10 +1055,10 @@ OverExpr
   = "over" _ exprs:Exprs locals:Locals? __ "|" __ body:Seq {
       return &ast.OverExpr{
           Kind: "OverExpr",
-          KeywordPos: c.pos.offset,
           Locals: sliceOf[ast.Def](locals),
           Exprs: sliceOf[ast.Expr](exprs),
           Body: sliceOf[ast.Op](body),
+          Loc: loc(c),
       }, nil
     }
 
@@ -1076,9 +1066,8 @@ Record
   = "{" __ elems:RecordElems __ "}" {
       return &ast.RecordExpr{
           Kind: "RecordExpr",
-          Lbrace: c.pos.offset,
           Elems: sliceOf[ast.RecordElem](elems),
-          Rbrace: lastPos(c, "}"),
+          Loc: loc(c),
       }, nil
     }
 
@@ -1097,7 +1086,7 @@ RecordElem
 
 Spread
   = "..." __ expr:Expr {
-      return &ast.Spread{Kind: "Spread", Expr: expr.(ast.Expr), StartPos: c.pos.offset}, nil
+      return &ast.Spread{Kind: "Spread", Expr: expr.(ast.Expr), Loc: loc(c)}, nil
     }
 
 FieldExpr
@@ -1105,8 +1094,8 @@ FieldExpr
       return &ast.FieldExpr{
         Kind: "FieldExpr",
         Name: name.(string),
-        NamePos: c.pos.offset,
         Value: value.(ast.Expr),
+        Loc: loc(c),
       }, nil
     }
 
@@ -1114,9 +1103,8 @@ Array
   = "[" __ elems:VectorElems __ "]" {
       return &ast.ArrayExpr{
           Kind: "ArrayExpr",
-          Lbrack: c.pos.offset,
           Elems: sliceOf[ast.VectorElem](elems),
-          Rbrack: lastPos(c, "]"),
+          Loc: loc(c),
       }, nil
     }
 
@@ -1124,9 +1112,8 @@ Set
   = "|[" __ elems:VectorElems __ "]|" {
       return &ast.SetExpr{
           Kind: "SetExpr",
-          Lpipe: c.pos.offset,
           Elems: sliceOf[ast.VectorElem](elems),
-          Rpipe: lastPos(c, "|"),
+          Loc: loc(c),
       }, nil
     }
 
@@ -1138,15 +1125,14 @@ VectorElems
 
 VectorElem
   = Spread
-  / e:Expr { return &ast.VectorValue{Kind: "VectorValue", Expr: e.(ast.Expr)}, nil }
+  / e:Expr { return &ast.VectorValue{Kind: "VectorValue", Expr: e.(ast.Expr),Loc:loc(c)}, nil }
 
 Map
   = "|{" __ exprs:Entries __ "}|" {
       return &ast.MapExpr{
           Kind: "MapExpr",
-          Lpipe: c.pos.offset,
           Entries: sliceOf[ast.EntryExpr](exprs),
-          Rpipe: lastPos(c, "|"),
+          Loc: loc(c),
       }, nil
     }
 
@@ -1161,7 +1147,7 @@ EntryTail = __ "," __ e:Entry { return e, nil }
 
 Entry
   = key:Expr __ ":" __ value:Expr {
-      return ast.EntryExpr{Key: key.(ast.Expr), Value: value.(ast.Expr)}, nil
+      return ast.EntryExpr{Key: key.(ast.Expr), Value: value.(ast.Expr),Loc:loc(c)}, nil
     }
 
 /// === Literals ===
@@ -1222,9 +1208,8 @@ TypeLiteral
   = "<" typ:Type ">" {
       return &ast.TypeValue{
         Kind:"TypeValue",
-        Lbrack: c.pos.offset,
         Value: typ.(ast.Type),
-        Rbrack: lastPos(c, ">"),
+        Loc: loc(c),
       }, nil
     }
 
@@ -1238,8 +1223,7 @@ AmbiguousType
       return &ast.TypeError{
           Kind: "TypeError",
           Type: t.(ast.Type),
-          KeywordPos: c.pos.offset,
-          Rparen: lastPos(c, ")"),
+          Loc: loc(c),
       }, nil
     }
   / name:(IdentifierName / QuotedString) opt:(__ '=' __ Type)? {
@@ -1247,18 +1231,17 @@ AmbiguousType
         return &ast.TypeDef{
             Kind: "TypeDef",
             Name: name.(string),
-            NamePos: c.pos.offset,
             Type: opt.([]any)[3].(ast.Type),
+            Loc: loc(c),
         }, nil
       }
-      return &ast.TypeName{Kind: "TypeName", Name: name.(string), NamePos: c.pos.offset}, nil
+      return &ast.TypeName{Kind: "TypeName", Name: name.(string), Loc: loc(c)}, nil
     }
   / "(" __ types:TypeList ")" {
       return &ast.TypeUnion{
         Kind: "TypeUnion",
-        Lparen: c.pos.offset,
         Types: sliceOf[ast.Type](types),
-        Rparen: lastPos(c, ")"),
+        Loc: loc(c),
       }, nil
     }
 
@@ -1273,34 +1256,30 @@ ComplexType
   = "{" __ fields:TypeFieldList __ "}" {
       return &ast.TypeRecord{
           Kind: "TypeRecord",
-          Lbrace: c.pos.offset,
           Fields: sliceOf[ast.TypeField](fields),
-          Rbrace: lastPos(c, "}"),
+          Loc: loc(c),
       }, nil
     }
   / "[" __ typ:Type __ "]" {
       return &ast.TypeArray{
           Kind: "TypeArray",
-          Lbrack: c.pos.offset,
           Type: typ.(ast.Type),
-          Rbrack: lastPos(c, "]"),
+          Loc: loc(c),
       }, nil
     }
   / "|[" __ typ:Type __ "]|" {
       return &ast.TypeSet{
           Kind: "TypeSet",
-          Lpipe: c.pos.offset,
           Type: typ.(ast.Type),
-          Rpipe: lastPos(c, "|"),
+          Loc: loc(c),
       }, nil
     }
   / "|{" __ keyType:Type __ ":" __ valType:Type __ "}|" {
       return &ast.TypeMap{
         Kind: "TypeMap",
-        Lpipe: c.pos.offset,
         KeyType: keyType.(ast.Type),
         ValType: valType.(ast.Type),
-        Rpipe: lastPos(c, "|"),
+        Loc: loc(c),
       }, nil
     }
 
@@ -1312,22 +1291,22 @@ FString
   = "f\"" v:FStringDoubleQuotedElem* '"' {
       return &ast.FString{
         Kind: "FString",
-        StartPos: c.pos.offset,
         Elems: sliceOf[ast.FStringElem](v),
+        Loc: loc(c),
       }, nil
     }
   / "f'" v:FStringSingleQuotedElem* "'" {
       return &ast.FString{
         Kind: "FString",
-        StartPos: c.pos.offset,
         Elems: sliceOf[ast.FStringElem](v),
+        Loc: loc(c),
       }, nil
     }
 
 FStringDoubleQuotedElem
   = FStringExpr
   / v:FStringDoubleQuotedChar+ {
-      return &ast.FStringText{Kind: "FStringText", TextPos: c.pos.offset, Text: joinChars(v)}, nil
+      return &ast.FStringText{Kind: "FStringText", Loc: loc(c), Text: joinChars(v)}, nil
     }
 
 FStringDoubleQuotedChar
@@ -1337,7 +1316,7 @@ FStringDoubleQuotedChar
 FStringSingleQuotedElem
   = FStringExpr
   / v:FStringSingleQuotedChar+ {
-      return &ast.FStringText{Kind: "FStringText", TextPos: c.pos.offset, Text: joinChars(v)}, nil
+      return &ast.FStringText{Kind: "FStringText", Loc: loc(c), Text: joinChars(v)}, nil
     }
 
 FStringSingleQuotedChar
@@ -1348,9 +1327,8 @@ FStringExpr
   = "{" __ e:Expr __ "}" {
       return &ast.FStringExpr{
         Kind: "FStringExpr",
-        Lbrace: c.pos.offset, 
         Expr: e.(ast.Expr),
-        Rbrace: lastPos(c, "}"),
+        Loc: loc(c),
       }, nil
     }
 
@@ -1366,7 +1344,7 @@ PrimitiveType
             return &ast.TypePrimitive{
                 Kind: "TypePrimitive",
                 Name: string(c.text),
-                NamePos: c.pos.offset,
+                Loc: loc(c),
             }, nil
         }
 
@@ -1383,6 +1361,7 @@ TypeField
       return ast.TypeField{
           Name: name.(string),
           Type: typ.(ast.Type),
+          Loc: loc(c),
       }, nil
     }
 
@@ -1404,7 +1383,7 @@ Identifier
       return &ast.ID{
           Kind: "ID",
           Name: id.(string),
-          NamePos: c.pos.offset,
+          Loc: loc(c),
       }, nil
     }
 
@@ -1624,7 +1603,7 @@ UnicodeEscape
     }
 
 RegexpPattern
-  = "/" body:RegexpBody "/" !KeyWordStart { return body, nil }
+  = "/" body:RegexpBody "/" !KeyWordStart { return body, nil } // XXX s/b Node
 
 RegexpBody
   = ([^/\\] / "\\" .)+ { return string(c.text), nil }

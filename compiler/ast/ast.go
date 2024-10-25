@@ -14,6 +14,18 @@ type Node interface {
 	End() int // Position of first character immediately after the node.
 }
 
+type Loc struct {
+	First int `json:"first"`
+	Last  int `json:"last"`
+}
+
+func NewLoc(pos, end int) Loc {
+	return Loc{pos, end}
+}
+
+func (l Loc) Pos() int { return l.First }
+func (l Loc) End() int { return l.Last }
+
 // Op is the interface implemented by all AST operator nodes.
 type Op interface {
 	Node
@@ -31,33 +43,24 @@ type Expr interface {
 }
 
 type ID struct {
-	Kind    string `json:"kind" unpack:""`
-	Name    string `json:"name"`
-	NamePos int    `json:"name_pos"`
+	Kind string `json:"kind" unpack:""`
+	Name string `json:"name"`
+	Loc  `json:"loc"`
 }
-
-func (i *ID) Pos() int { return i.NamePos }
-func (i *ID) End() int { return i.NamePos + len(i.Name) }
 
 type Term struct {
-	Kind    string `json:"kind" unpack:""`
-	Text    string `json:"text"`
-	TextPos int    `json:"text_pos"`
-	Value   Any    `json:"value"`
+	Kind  string `json:"kind" unpack:""`
+	Text  string `json:"text"`
+	Value Any    `json:"value"`
+	Loc   `json:"loc"`
 }
-
-func (t *Term) Pos() int { return t.TextPos }
-func (t *Term) End() int { return t.TextPos + len(t.Text) }
 
 type UnaryExpr struct {
 	Kind    string `json:"kind" unpack:""`
 	Op      string `json:"op"`
-	OpPos   int    `json:"op_pos"`
 	Operand Expr   `json:"operand"`
+	Loc     `json:"loc"`
 }
-
-func (u *UnaryExpr) Pos() int { return u.OpPos }
-func (u *UnaryExpr) End() int { return u.Operand.End() }
 
 // A BinaryExpr is any expression of the form "lhs kind rhs"
 // including arithmetic (+, -, *, /), logical operators (and, or),
@@ -67,20 +70,16 @@ type BinaryExpr struct {
 	Op   string `json:"op"`
 	LHS  Expr   `json:"lhs"`
 	RHS  Expr   `json:"rhs"`
+	Loc  `json:"loc"`
 }
-
-func (b *BinaryExpr) Pos() int { return b.LHS.Pos() }
-func (b *BinaryExpr) End() int { return b.RHS.End() }
 
 type Conditional struct {
 	Kind string `json:"kind" unpack:""`
 	Cond Expr   `json:"cond"`
 	Then Expr   `json:"then"`
 	Else Expr   `json:"else"`
+	Loc  `json:"loc"`
 }
-
-func (c *Conditional) Pos() int { return c.Cond.Pos() }
-func (c *Conditional) End() int { return c.Else.End() }
 
 // A Call represents different things dependending on its context.
 // As a operator, it is either a group-by with no group-by keys and no duration,
@@ -90,99 +89,66 @@ func (c *Conditional) End() int { return c.Else.End() }
 // a function call has the standard semantics where it takes one or more arguments
 // and returns a result.
 type Call struct {
-	Kind   string `json:"kind" unpack:""`
-	Name   *ID    `json:"name"`
-	Args   []Expr `json:"args"`
-	Rparen int    `json:"rparen"`
-	Where  Expr   `json:"where"`
-}
-
-func (c *Call) Pos() int { return c.Name.Pos() }
-
-func (c *Call) End() int {
-	if c.Where != nil {
-		return c.Where.End()
-	}
-	return c.Rparen + 1
+	Kind  string `json:"kind" unpack:""`
+	Name  *ID    `json:"name"`
+	Args  []Expr `json:"args"`
+	Where Expr   `json:"where"`
+	Loc   `json:"loc"`
 }
 
 type Cast struct {
-	Kind   string `json:"kind" unpack:""`
-	Expr   Expr   `json:"expr"`
-	Type   Expr   `json:"type"`
-	Rparen int    `json:"rparen"`
+	Kind string `json:"kind" unpack:""`
+	Expr Expr   `json:"expr"`
+	Type Expr   `json:"type"`
+	Loc  `json:"loc"`
 }
-
-func (c *Cast) Pos() int { return c.Type.Pos() }
-func (c *Cast) End() int { return c.Rparen + 1 }
 
 type IndexExpr struct {
-	Kind   string `json:"kind" unpack:""`
-	Expr   Expr   `json:"expr"`
-	Index  Expr   `json:"index"`
-	Rbrack int    `json:"rbrack"`
+	Kind  string `json:"kind" unpack:""`
+	Expr  Expr   `json:"expr"`
+	Index Expr   `json:"index"`
+	Loc   `json:"loc"`
 }
-
-func (i *IndexExpr) Pos() int { return i.Expr.Pos() }
-func (i *IndexExpr) End() int { return i.Rbrack + 1 }
 
 type SliceExpr struct {
-	Kind   string `json:"kind" unpack:""`
-	Expr   Expr   `json:"expr"`
-	From   Expr   `json:"from"`
-	To     Expr   `json:"to"`
-	Rbrack int    `json:"rbrack"`
+	Kind string `json:"kind" unpack:""`
+	Expr Expr   `json:"expr"`
+	From Expr   `json:"from"`
+	To   Expr   `json:"to"`
+	Loc  `json:"loc"`
 }
-
-func (s *SliceExpr) Pos() int { return s.Expr.Pos() }
-func (s *SliceExpr) End() int { return s.Rbrack + 1 }
 
 type Grep struct {
-	Kind       string `json:"kind" unpack:""`
-	KeywordPos int    `json:"keyword_pos"`
-	Pattern    Expr   `json:"pattern"`
-	Expr       Expr   `json:"expr"`
-	Rparen     int    `json:"rparen"`
+	Kind    string `json:"kind" unpack:""`
+	Pattern Expr   `json:"pattern"`
+	Expr    Expr   `json:"expr"`
+	Loc     `json:"loc"`
 }
-
-func (g *Grep) Pos() int { return g.KeywordPos }
-func (g *Grep) End() int { return g.Rparen + 1 }
 
 type Glob struct {
-	Kind       string `json:"kind" unpack:""`
-	Pattern    string `json:"pattern"`
-	PatternPos int    `json:"pattern_pos"`
+	Kind    string `json:"kind" unpack:""`
+	Pattern string `json:"pattern"`
+	Loc     `json:"loc"`
 }
-
-func (g *Glob) Pos() int { return g.PatternPos }
-func (g *Glob) End() int { return g.PatternPos + len(g.Pattern) }
 
 type QuotedString struct {
-	Kind   string `json:"kind" unpack:""`
-	Lquote int    `json:"lquote"`
-	Text   string `json:"text"`
+	Kind string `json:"kind" unpack:""`
+	Text string `json:"text"`
+	Loc  `json:"loc"`
 }
-
-func (q *QuotedString) Pos() int { return q.Lquote }
-func (q *QuotedString) End() int { return q.Lquote + 2 + len(q.Text) }
 
 type Regexp struct {
 	Kind       string `json:"kind" unpack:""`
 	Pattern    string `json:"pattern"`
 	PatternPos int    `json:"pattern_pos"`
+	Loc        `json:"loc"`
 }
-
-func (r *Regexp) Pos() int { return r.PatternPos }
-func (r *Regexp) End() int { return r.PatternPos + len(r.Pattern) + 2 }
 
 type String struct {
-	Kind    string `json:"kind" unpack:""`
-	Text    string `json:"text"`
-	TextPos int    `json:"text_pos"`
+	Kind string `json:"kind" unpack:""`
+	Text string `json:"text"`
+	Loc  `json:"loc"`
 }
-
-func (s *String) Pos() int { return s.TextPos }
-func (s *String) End() int { return s.TextPos + len(s.Text) }
 
 type Pattern interface {
 	Node
@@ -195,14 +161,10 @@ func (*Regexp) PatternAST()       {}
 func (*String) PatternAST()       {}
 
 type RecordExpr struct {
-	Kind   string       `json:"kind" unpack:""`
-	Lbrace int          `json:"lbrace"`
-	Elems  []RecordElem `json:"elems"`
-	Rbrace int          `json:"rbrace"`
+	Kind  string       `json:"kind" unpack:""`
+	Elems []RecordElem `json:"elems"`
+	Loc   `json:"loc"`
 }
-
-func (r *RecordExpr) Pos() int { return r.Lbrace }
-func (r *RecordExpr) End() int { return r.Rbrace + 1 }
 
 type RecordElem interface {
 	Node
@@ -210,47 +172,33 @@ type RecordElem interface {
 }
 
 type FieldExpr struct {
-	Kind    string `json:"kind" unpack:""`
-	Name    string `json:"name"`
-	NamePos int    `json:"name_pos"`
-	Value   Expr   `json:"value"`
+	Kind  string `json:"kind" unpack:""`
+	Name  string `json:"name"`
+	Value Expr   `json:"value"`
+	Loc   `json:"loc"`
 }
-
-func (f *FieldExpr) Pos() int { return f.NamePos }
-func (f *FieldExpr) End() int { return f.Value.End() }
 
 type Spread struct {
-	Kind     string `json:"kind" unpack:""`
-	StartPos int    `json:"start_pos"`
-	Expr     Expr   `json:"expr"`
+	Kind string `json:"kind" unpack:""`
+	Expr Expr   `json:"expr"`
+	Loc  `json:"loc"`
 }
-
-func (s *Spread) Pos() int { return s.StartPos }
-func (s *Spread) End() int { return s.Expr.End() }
 
 func (*FieldExpr) recordAST() {}
 func (*ID) recordAST()        {}
 func (*Spread) recordAST()    {}
 
 type ArrayExpr struct {
-	Kind   string       `json:"kind" unpack:""`
-	Lbrack int          `json:"lbrack"`
-	Elems  []VectorElem `json:"elems"`
-	Rbrack int          `json:"rbrack"`
+	Kind  string       `json:"kind" unpack:""`
+	Elems []VectorElem `json:"elems"`
+	Loc   `json:"loc"`
 }
-
-func (a *ArrayExpr) Pos() int { return a.Lbrack }
-func (a *ArrayExpr) End() int { return a.Rbrack + 1 }
 
 type SetExpr struct {
 	Kind  string       `json:"kind" unpack:""`
-	Lpipe int          `json:"lpipe"`
 	Elems []VectorElem `json:"elems"`
-	Rpipe int          `json:"rpipe"`
+	Loc   `json:"loc"`
 }
-
-func (s *SetExpr) Pos() int { return s.Lpipe }
-func (s *SetExpr) End() int { return s.Rpipe + 1 }
 
 type VectorElem interface {
 	vectorAST()
@@ -262,46 +210,33 @@ func (*VectorValue) vectorAST() {}
 type VectorValue struct {
 	Kind string `json:"kind" unpack:""`
 	Expr Expr   `json:"expr"`
+	Loc  `json:"loc"`
 }
 
 type MapExpr struct {
 	Kind    string      `json:"kind" unpack:""`
-	Lpipe   int         `json:"lpipe"`
 	Entries []EntryExpr `json:"entries"`
-	Rpipe   int         `json:"rpipe"`
+	Loc     `json:"loc"`
 }
-
-func (m *MapExpr) Pos() int { return m.Lpipe }
-func (m *MapExpr) End() int { return m.Rpipe + 1 }
 
 type EntryExpr struct {
 	Key   Expr `json:"key"`
 	Value Expr `json:"value"`
+	Loc   `json:"loc"`
 }
 
 type OverExpr struct {
-	Kind       string `json:"kind" unpack:""`
-	KeywordPos int    `json:"keyword"`
-	Locals     []Def  `json:"locals"`
-	Exprs      []Expr `json:"exprs"`
-	Body       Seq    `json:"body"`
+	Kind   string `json:"kind" unpack:""`
+	Locals []Def  `json:"locals"`
+	Exprs  []Expr `json:"exprs"`
+	Body   Seq    `json:"body"`
+	Loc    `json:"loc"`
 }
-
-func (o *OverExpr) Pos() int { return o.KeywordPos }
-func (o *OverExpr) End() int { return o.Body.End() }
 
 type FString struct {
-	Kind     string        `json:"kind" unpack:""`
-	StartPos int           `json:"start_pos"`
-	Elems    []FStringElem `json:"elems"`
-}
-
-func (f *FString) Pos() int { return f.StartPos }
-func (f *FString) End() int {
-	if n := len(f.Elems); n > 0 {
-		return f.Elems[n-1].End() + 1
-	}
-	return f.StartPos + 3
+	Kind  string        `json:"kind" unpack:""`
+	Elems []FStringElem `json:"elems"`
+	Loc   `json:"loc"`
 }
 
 type FStringElem interface {
@@ -310,23 +245,16 @@ type FStringElem interface {
 }
 
 type FStringText struct {
-	Kind    string `json:"kind" unpack:""`
-	Text    string `json:"text"`
-	TextPos int    `json:"text_pos"`
+	Kind string `json:"kind" unpack:""`
+	Text string `json:"text"`
+	Loc  `json:"loc"`
 }
-
-func (f *FStringText) Pos() int { return f.TextPos }
-func (f *FStringText) End() int { return f.TextPos + len(f.Text) }
 
 type FStringExpr struct {
-	Kind   string `json:"kind" unpack:""`
-	Lbrace int    `json:"lbrace"`
-	Expr   Expr   `json:"expr"`
-	Rbrace int    `json:"rbrace"`
+	Kind string `json:"kind" unpack:""`
+	Expr Expr   `json:"expr"`
+	Loc  `json:"loc"`
 }
-
-func (f *FStringExpr) Pos() int { return f.Lbrace }
-func (f *FStringExpr) End() int { return f.Rbrace + 1 }
 
 func (*FStringText) FStringElem() {}
 func (*FStringExpr) FStringElem() {}
@@ -355,48 +283,34 @@ func (*OverExpr) ExprAST()   {}
 func (*FString) ExprAST()    {}
 
 type ConstDecl struct {
-	Kind       string `json:"kind" unpack:""`
-	KeywordPos int    `json:"keyword_pos"`
-	Name       *ID    `json:"name"`
-	Expr       Expr   `json:"expr"`
+	Kind string `json:"kind" unpack:""`
+	Name *ID    `json:"name"`
+	Expr Expr   `json:"expr"`
+	Loc  `json:"loc"`
 }
-
-func (c *ConstDecl) Pos() int { return c.KeywordPos }
-func (c *ConstDecl) End() int { return c.Expr.End() }
 
 type FuncDecl struct {
-	Kind       string `json:"kind" unpack:""`
-	KeywordPos int    `json:"keyword_pos"`
-	Name       *ID    `json:"name"`
-	Params     []*ID  `json:"params"`
-	Expr       Expr   `json:"expr"`
-	Rparen     int    `json:"rparen"`
+	Kind   string `json:"kind" unpack:""`
+	Name   *ID    `json:"name"`
+	Params []*ID  `json:"params"`
+	Expr   Expr   `json:"expr"`
+	Loc    `json:"loc"`
 }
-
-func (f *FuncDecl) Pos() int { return f.KeywordPos }
-func (f *FuncDecl) End() int { return f.Rparen }
 
 type OpDecl struct {
-	Kind       string `json:"kind" unpack:""`
-	KeywordPos int    `json:"keyword_pos"`
-	Name       *ID    `json:"name"`
-	Params     []*ID  `json:"params"`
-	Body       Seq    `json:"body"`
-	Rparen     int    `json:"rparen"`
+	Kind   string `json:"kind" unpack:""`
+	Name   *ID    `json:"name"`
+	Params []*ID  `json:"params"`
+	Body   Seq    `json:"body"`
+	Loc    `json:"loc"`
 }
-
-func (o *OpDecl) Pos() int { return o.KeywordPos }
-func (o *OpDecl) End() int { return o.Rparen }
 
 type TypeDecl struct {
-	Kind       string `json:"kind" unpack:""`
-	KeywordPos int    `json:"keyword_pos"`
-	Name       *ID    `json:"name"`
-	Type       Type   `json:"type"`
+	Kind string `json:"kind" unpack:""`
+	Name *ID    `json:"name"`
+	Type Type   `json:"type"`
+	Loc  `json:"loc"`
 }
-
-func (t *TypeDecl) Pos() int { return t.KeywordPos }
-func (t *TypeDecl) End() int { return t.Type.End() }
 
 func (*ConstDecl) DeclAST() {}
 func (*FuncDecl) DeclAST()  {}
@@ -437,38 +351,37 @@ type (
 		Kind  string `json:"kind" unpack:""`
 		Decls []Decl `json:"decls"`
 		Body  Seq    `json:"body"`
+		Loc   `json:"loc"`
 	}
 	// A Parallel operator represents a set of operators that each get
 	// a copy of the input from its parent.
 	Parallel struct {
-		Kind       string `json:"kind" unpack:""`
-		KeywordPos int    `json:"keyword_pos"`
-		Paths      []Seq  `json:"paths"`
-		Rparen     int    `json:"rparen"`
+		Kind  string `json:"kind" unpack:""`
+		Paths []Seq  `json:"paths"`
+		Loc   `json:"loc"`
 	}
 	Switch struct {
-		Kind       string `json:"kind" unpack:""`
-		KeywordPos int    `json:"keyword_pos"`
-		Expr       Expr   `json:"expr"`
-		Cases      []Case `json:"cases"`
-		Rparen     int    `json:"rparen"`
+		Kind  string `json:"kind" unpack:""`
+		Expr  Expr   `json:"expr"`
+		Cases []Case `json:"cases"`
+		Loc   `json:"loc"`
 	}
 	Sort struct {
 		Kind       string     `json:"kind" unpack:""`
-		KeywordPos int        `json:"keyword_pos"`
 		Reverse    bool       `json:"reverse"`
 		NullsFirst bool       `json:"nullsfirst"`
 		Args       []SortExpr `json:"args"`
+		Loc        `json:"loc"`
 	}
 	Cut struct {
-		Kind       string      `json:"kind" unpack:""`
-		KeywordPos int         `json:"keyword_pos"`
-		Args       Assignments `json:"args"`
+		Kind string      `json:"kind" unpack:""`
+		Args Assignments `json:"args"`
+		Loc  `json:"loc"`
 	}
 	Drop struct {
-		Kind       string `json:"kind" unpack:""`
-		KeywordPos int    `json:"keyword_pos"`
-		Args       []Expr `json:"args"`
+		Kind string `json:"kind" unpack:""`
+		Args []Expr `json:"args"`
+		Loc  `json:"loc"`
 	}
 	Explode struct {
 		Kind       string `json:"kind" unpack:""`
@@ -476,74 +389,75 @@ type (
 		Args       []Expr `json:"args"`
 		Type       Type   `json:"type"`
 		As         Expr   `json:"as"`
+		Loc        `json:"loc"`
 	}
 	Head struct {
-		Kind       string `json:"kind" unpack:""`
-		KeywordPos int    `json:"keyword_pos"`
-		Count      Expr   `json:"count"`
+		Kind  string `json:"kind" unpack:""`
+		Count Expr   `json:"count"`
+		Loc   `json:"loc"`
 	}
 	Tail struct {
 		Kind       string `json:"kind" unpack:""`
 		KeywordPos int    `json:"keyword_pos"`
 		Count      Expr   `json:"count"`
+		Loc        `json:"loc"`
 	}
 	Pass struct {
-		Kind       string `json:"kind" unpack:""`
-		KeywordPos int    `json:"keyword_pos"`
+		Kind string `json:"kind" unpack:""`
+		Loc  `json:"loc"`
 	}
 	Uniq struct {
-		Kind       string `json:"kind" unpack:""`
-		KeywordPos int    `json:"keyword_pos"`
-		Cflag      bool   `json:"cflag"`
+		Kind  string `json:"kind" unpack:""`
+		Cflag bool   `json:"cflag"`
+		Loc   `json:"loc"`
 	}
 	Summarize struct {
 		Kind string `json:"kind" unpack:""`
 		// StartPos is not called KeywordPos for Summarize since the "summarize"
 		// keyword is optional.
-		StartPos int         `json:"start_pos"`
-		Limit    int         `json:"limit"`
-		Keys     Assignments `json:"keys"`
-		Aggs     Assignments `json:"aggs"`
+		Limit int         `json:"limit"`
+		Keys  Assignments `json:"keys"`
+		Aggs  Assignments `json:"aggs"`
+		Loc   `json:"loc"`
 	}
 	Top struct {
-		Kind       string `json:"kind" unpack:""`
-		KeywordPos int    `json:"keyword_pos"`
-		Limit      Expr   `json:"limit"`
-		Args       []Expr `json:"args"`
-		Flush      bool   `json:"flush"`
+		Kind  string `json:"kind" unpack:""`
+		Limit Expr   `json:"limit"`
+		Args  []Expr `json:"args"`
+		Flush bool   `json:"flush"`
+		Loc   `json:"loc"`
 	}
 	Put struct {
-		Kind       string      `json:"kind" unpack:""`
-		KeywordPos int         `json:"keyword_pos"`
-		Args       Assignments `json:"args"`
+		Kind string      `json:"kind" unpack:""`
+		Args Assignments `json:"args"`
+		Loc  `json:"loc"`
 	}
 	Merge struct {
-		Kind       string `json:"kind" unpack:""`
-		KeywordPos int    `json:"keyword_pos"`
-		Expr       Expr   `json:"expr"`
+		Kind string `json:"kind" unpack:""`
+		Expr Expr   `json:"expr"`
+		Loc  `json:"loc"`
 	}
 	Over struct {
-		Kind       string `json:"kind" unpack:""`
-		KeywordPos int    `json:"keyword_pos"`
-		Exprs      []Expr `json:"exprs"`
-		Locals     []Def  `json:"locals"`
-		Body       Seq    `json:"body"`
-		Rparen     int    `json:"rparen"`
+		Kind   string `json:"kind" unpack:""`
+		Exprs  []Expr `json:"exprs"`
+		Locals []Def  `json:"locals"`
+		Body   Seq    `json:"body"`
+		Loc    `json:"loc"`
 	}
 	Search struct {
-		Kind       string `json:"kind" unpack:""`
-		KeywordPos int    `json:"keyword_pos"`
-		Expr       Expr   `json:"expr"`
+		Kind string `json:"kind" unpack:""`
+		Expr Expr   `json:"expr"`
+		Loc  `json:"loc"`
 	}
 	Where struct {
-		Kind       string `json:"kind" unpack:""`
-		KeywordPos int    `json:"keyword_pos"`
-		Expr       Expr   `json:"expr"`
+		Kind string `json:"kind" unpack:""`
+		Expr Expr   `json:"expr"`
+		Loc  `json:"loc"`
 	}
 	Yield struct {
-		Kind       string `json:"kind" unpack:""`
-		KeywordPos int    `json:"keyword_pos"`
-		Exprs      []Expr `json:"exprs"`
+		Kind  string `json:"kind" unpack:""`
+		Exprs []Expr `json:"exprs"`
+		Loc   `json:"loc"`
 	}
 	// An OpAssignment is a list of assignments whose parent operator
 	// is unknown: It could be a Summarize or Put operator. This will be
@@ -551,6 +465,7 @@ type (
 	OpAssignment struct {
 		Kind        string      `json:"kind" unpack:""`
 		Assignments Assignments `json:"assignments"`
+		Loc         `json:"loc"`
 	}
 	// An OpExpr operator is an expression that appears as an operator
 	// and requires semantic analysis to determine if it is a filter, a yield,
@@ -558,67 +473,64 @@ type (
 	OpExpr struct {
 		Kind string `json:"kind" unpack:""`
 		Expr Expr   `json:"expr"`
+		Loc  `json:"loc"`
 	}
 	Rename struct {
-		Kind       string      `json:"kind" unpack:""`
-		KeywordPos int         `json:"keyword_pos"`
-		Args       Assignments `json:"args"`
+		Kind string      `json:"kind" unpack:""`
+		Args Assignments `json:"args"`
+		Loc  `json:"loc"`
 	}
 	Fuse struct {
-		Kind       string `json:"kind" unpack:""`
-		KeywordPos int    `json:"keyword_pos"`
+		Kind string `json:"kind" unpack:""`
+		Loc  `json:"loc"`
 	}
 	Join struct {
 		Kind       string      `json:"kind" unpack:""`
-		KeywordPos int         `json:"keyword_pos"`
 		Style      string      `json:"style"`
 		RightInput Seq         `json:"right_input"`
 		LeftKey    Expr        `json:"left_key"`
 		RightKey   Expr        `json:"right_key"`
 		Args       Assignments `json:"args"`
+		Loc        `json:"loc"`
 	}
 	Sample struct {
-		Kind       string `json:"kind" unpack:""`
-		KeywordPos int    `json:"keyword_pos"`
-		Expr       Expr   `json:"expr"`
+		Kind string `json:"kind" unpack:""`
+		Expr Expr   `json:"expr"`
+		Loc  `json:"loc"`
 	}
 	Shape struct {
-		Kind       string `json:"kind" unpack:""`
-		KeywordPos int    `json:"keyword_pos"`
+		Kind string `json:"kind" unpack:""`
+		Loc  `json:"loc"`
 	}
 	From struct {
-		Kind       string `json:"kind" unpack:""`
-		KeywordPos int    `json:"keyword_pos"`
-		Trunks     []Seq  `json:"trunks"`
-		Rparen     int    `json:"rparen"`
+		Kind   string `json:"kind" unpack:""`
+		Trunks []Seq  `json:"trunks"`
+		Loc    `json:"loc"`
 	}
 	Load struct {
-		Kind       string `json:"kind" unpack:""`
-		KeywordPos int    `json:"keyword_pos"`
-		Pool       string `json:"pool"`
-		Branch     string `json:"branch"`
-		Author     string `json:"author"`
-		Message    string `json:"message"`
-		Meta       string `json:"meta"`
-		// XXX This is super hacky but so is this Op. Fix this once we can get
-		// positional information for the various options.
-		EndPos int `json:"end_pos"` //
+		Kind    string `json:"kind" unpack:""`
+		Pool    string `json:"pool"` // ast.String etc
+		Branch  string `json:"branch"`
+		Author  string `json:"author"`
+		Message string `json:"message"`
+		Meta    string `json:"meta"`
+		Loc     `json:"loc"`
 	}
 	Assert struct {
-		Kind       string `json:"kind" unpack:""`
-		KeywordPos int    `json:"keyword_pos"`
-		Expr       Expr   `json:"expr"`
-		Text       string `json:"text"`
+		Kind string `json:"kind" unpack:""`
+		Expr Expr   `json:"expr"`
+		Text string `json:"text"` //XXX text?
+		Loc  `json:"loc"`
 	}
 	Output struct {
-		Kind       string `json:"kind" unpack:""`
-		KeywordPos int    `json:"keyword_pos"`
-		Name       *ID    `json:"name"`
+		Kind string `json:"kind" unpack:""`
+		Name *ID    `json:"name"`
+		Loc  `json:"loc"`
 	}
 	Debug struct {
-		Kind       string `json:"kind" unpack:""`
-		KeywordPos int    `json:"keyword_pos"`
-		Expr       Expr   `json:"expr"`
+		Kind string `json:"kind" unpack:""`
+		Expr Expr   `json:"expr"`
+		Loc  `json:"loc"`
 	}
 )
 
@@ -626,32 +538,30 @@ type (
 
 type (
 	File struct {
-		Kind       string     `json:"kind" unpack:""`
-		KeywordPos int        `json:"keyword_pos"`
-		Path       Pattern    `json:"path"`
-		Format     string     `json:"format"`
-		SortKeys   []SortExpr `json:"sort_keys"`
-		EndPos     int        `json:"end_pos"`
+		Kind     string     `json:"kind" unpack:""`
+		Path     Pattern    `json:"path"`
+		Format   string     `json:"format"`
+		SortKeys []SortExpr `json:"sort_keys"`
+		Loc      `json:"loc"`
 	}
 	HTTP struct {
-		Kind       string      `json:"kind" unpack:""`
-		KeywordPos int         `json:"keyword_pos"`
-		URL        Pattern     `json:"url"`
-		Format     string      `json:"format"`
-		SortKeys   []SortExpr  `json:"sort_keys"`
-		Method     string      `json:"method"`
-		Headers    *RecordExpr `json:"headers"`
-		Body       string      `json:"body"`
-		EndPos     int         `json:"end_pos"`
+		Kind     string      `json:"kind" unpack:""`
+		URL      Pattern     `json:"url"`
+		Format   string      `json:"format"`
+		SortKeys []SortExpr  `json:"sort_keys"`
+		Method   string      `json:"method"`
+		Headers  *RecordExpr `json:"headers"`
+		Body     string      `json:"body"`
+		Loc      `json:"loc"`
 	}
 	Pool struct {
-		Kind       string   `json:"kind" unpack:""`
-		KeywordPos int      `json:"keyword_pos"`
-		Spec       PoolSpec `json:"spec"`
-		EndPos     int      `json:"end_pos"`
+		Kind string   `json:"kind" unpack:""`
+		Spec PoolSpec `json:"spec"`
+		Loc  `json:"loc"`
 	}
 	Delete struct {
-		Kind string `json:"kind" unpack:""`
+		Kind string       `json:"kind" unpack:""`
+		Loc  `json:"loc"` // dummy field, not needed except to implement Node
 	}
 )
 
@@ -660,6 +570,7 @@ type PoolSpec struct {
 	Commit string  `json:"commit"`
 	Meta   string  `json:"meta"`
 	Tap    bool    `json:"tap"`
+	Loc    `json:"loc"`
 }
 
 type Source interface {
@@ -673,28 +584,11 @@ func (*HTTP) Source()   {}
 func (*Pass) Source()   {}
 func (*Delete) Source() {}
 
-func (x *Pool) Pos() int { return x.KeywordPos }
-func (x *File) Pos() int { return x.KeywordPos }
-func (x *HTTP) Pos() int { return x.KeywordPos }
-func (*Delete) Pos() int { return 0 }
-
-func (x *Pool) End() int { return x.EndPos }
-func (x *File) End() int { return x.EndPos }
-func (x *HTTP) End() int { return x.EndPos }
-func (*Delete) End() int { return 0 }
-
 type SortExpr struct {
 	Kind  string `json:"kind" unpack:""`
 	Expr  Expr   `json:"expr"`
 	Order *ID    `json:"order"`
-}
-
-func (s SortExpr) Pos() int { return s.Expr.Pos() }
-func (s SortExpr) End() int {
-	if s.Order != nil {
-		s.Order.End()
-	}
-	return s.Expr.End()
+	Loc   `json:"loc"`
 }
 
 type Case struct {
@@ -706,16 +600,8 @@ type Assignment struct {
 	Kind string `json:"kind" unpack:""`
 	LHS  Expr   `json:"lhs"`
 	RHS  Expr   `json:"rhs"`
+	Loc  `json:"loc"`
 }
-
-func (a *Assignment) Pos() int {
-	if a.LHS != nil {
-		return a.LHS.Pos()
-	}
-	return a.RHS.Pos()
-}
-
-func (a *Assignment) End() int { return a.RHS.End() }
 
 type Assignments []Assignment
 
@@ -728,15 +614,7 @@ func (a Assignments) End() int { return a[len(a)-1].End() }
 type Def struct {
 	Name *ID  `json:"name"`
 	Expr Expr `json:"expr"`
-}
-
-func (d Def) Pos() int { return d.Name.Pos() }
-
-func (d Def) End() int {
-	if d.Expr != nil {
-		d.Expr.End()
-	}
-	return d.Name.End()
+	Loc  `json:"loc"`
 }
 
 func (*Scope) OpAST()        {}
@@ -775,158 +653,6 @@ func (*Output) OpAST()       {}
 func (*Debug) OpAST()        {}
 func (*Delete) OpAST()       {}
 
-func (x *Scope) Pos() int {
-	if x.Decls != nil {
-		return x.Decls[0].End()
-	}
-	return x.Body.Pos()
-}
-func (x *Parallel) Pos() int     { return x.KeywordPos }
-func (x *Switch) Pos() int       { return x.KeywordPos }
-func (x *Sort) Pos() int         { return x.KeywordPos }
-func (x *Cut) Pos() int          { return x.KeywordPos }
-func (x *Drop) Pos() int         { return x.KeywordPos }
-func (x *Head) Pos() int         { return x.KeywordPos }
-func (x *Tail) Pos() int         { return x.KeywordPos }
-func (x *Pass) Pos() int         { return x.KeywordPos }
-func (x *Uniq) Pos() int         { return x.KeywordPos }
-func (x *Summarize) Pos() int    { return x.StartPos }
-func (x *Top) Pos() int          { return x.KeywordPos }
-func (x *Put) Pos() int          { return x.KeywordPos }
-func (x *OpAssignment) Pos() int { return x.Assignments[0].Pos() }
-func (x *OpExpr) Pos() int       { return x.Expr.Pos() }
-func (x *Rename) Pos() int       { return x.KeywordPos }
-func (x *Fuse) Pos() int         { return x.KeywordPos }
-func (x *Join) Pos() int         { return x.KeywordPos }
-func (x *Shape) Pos() int        { return x.KeywordPos }
-func (x *From) Pos() int         { return x.KeywordPos }
-func (x *Explode) Pos() int      { return x.KeywordPos }
-func (x *Merge) Pos() int        { return x.KeywordPos }
-func (x *Over) Pos() int         { return x.KeywordPos }
-func (x *Search) Pos() int       { return x.KeywordPos }
-func (x *Where) Pos() int        { return x.KeywordPos }
-func (x *Yield) Pos() int        { return x.KeywordPos }
-func (x *Sample) Pos() int       { return x.KeywordPos }
-func (x *Load) Pos() int         { return x.KeywordPos }
-func (x *Assert) Pos() int       { return x.KeywordPos }
-func (x *Output) Pos() int       { return x.KeywordPos }
-func (x *Debug) Pos() int        { return x.KeywordPos }
-
-func (x *Scope) End() int    { return x.Body.End() }
-func (x *Parallel) End() int { return x.Rparen }
-func (x *Switch) End() int   { return x.Rparen }
-func (x *Sort) End() int {
-	if len(x.Args) == 0 {
-		// XXX End is currently broken for Sort since, Exprs can be nil and we
-		// don't have positional information on Sort Flags.
-		return x.KeywordPos + 5
-	}
-	return x.Args[len(x.Args)-1].End()
-}
-func (x *Cut) End() int {
-	if len(x.Args) == 0 {
-		return x.KeywordPos + 4
-	}
-	return x.Args[len(x.Args)-1].End()
-}
-func (x *Drop) End() int {
-	if len(x.Args) == 0 {
-		return x.KeywordPos + 5
-	}
-	return x.Args[len(x.Args)-1].End()
-}
-func (x *Head) End() int {
-	if x.Count == nil {
-		return x.KeywordPos + 5
-	}
-	return x.Count.End()
-}
-func (x *Tail) End() int {
-	if x.Count == nil {
-		return x.KeywordPos + 5
-	}
-	return x.Count.End()
-}
-func (x *Pass) End() int { return x.KeywordPos + 5 }
-
-func (x *Uniq) End() int {
-	// XXX End for Uniq is not right since it doesn't not take into account a
-	// possible -c flag.
-	return x.KeywordPos + 5
-}
-
-func (x *Summarize) End() int {
-	// XXX End for Summarize isn't right because it current doesn't take into
-	// account the existence of the -limit flag. Positions for flags in operators
-	// will be addressed in a future PR.
-	if len(x.Keys) > 0 {
-		return x.Keys[len(x.Keys)-1].End()
-	}
-	return x.Aggs[len(x.Aggs)-1].End()
-}
-
-func (x *Top) End() int {
-	// XXX End for Top isn't right because positions do not work for -flush flag.
-	// Positions for flags in operators will be addressed in a future PR.
-	if len(x.Args) > 0 {
-		return x.Args[len(x.Args)-1].End()
-	}
-	if x.Limit != nil {
-		return x.Limit.End()
-	}
-	return x.KeywordPos + 4
-}
-func (x *Put) End() int          { return x.Args[len(x.Args)-1].End() }
-func (x *OpAssignment) End() int { return x.Assignments[len(x.Assignments)-1].End() }
-func (x *OpExpr) End() int       { return x.Expr.End() }
-func (x *Rename) End() int       { return -1 }
-func (x *Fuse) End() int         { return x.KeywordPos + 5 }
-func (x *Join) End() int {
-	switch {
-	case len(x.Args) > 0:
-		return x.Args[len(x.Args)-1].End()
-	case x.RightKey != nil:
-		return x.RightKey.End()
-	}
-	return x.LeftKey.End()
-}
-func (x *Shape) End() int { return x.KeywordPos + 6 }
-func (x *From) End() int  { return x.Rparen + 1 }
-func (x *Explode) End() int {
-	if x.As != nil {
-		return x.As.End()
-	}
-	return x.Type.End()
-}
-func (x *Merge) End() int { return x.Expr.End() }
-func (x *Over) End() int {
-	if x.KeywordPos != -1 {
-		return x.KeywordPos
-	}
-	if len(x.Locals) > 0 {
-		return x.Locals[len(x.Locals)-1].End()
-	}
-	return x.Exprs[len(x.Exprs)-1].End()
-}
-func (x *Search) End() int { return x.Expr.End() }
-func (x *Where) End() int  { return x.Expr.End() }
-func (x *Yield) End() int  { return x.Exprs[len(x.Exprs)-1].End() }
-func (x *Sample) End() int {
-	if x.Expr != nil {
-		return x.Expr.End()
-	}
-	return x.KeywordPos + 7
-}
-func (x *Load) End() int   { return x.EndPos }
-func (x *Assert) End() int { return x.Expr.End() }
-func (x *Output) End() int { return x.Name.End() }
-func (x *Debug) End() int {
-	if x.Expr != nil {
-		return x.Expr.End()
-	}
-	return x.KeywordPos + 6
-}
-
 // An Agg is an AST node that represents a aggregate function.  The Name
 // field indicates the aggregation method while the Expr field indicates
 // an expression applied to the incoming records that is operated upon by them
@@ -934,19 +660,9 @@ func (x *Debug) End() int {
 // upon a function of the record, e.g., count() counts up records without
 // looking into them.
 type Agg struct {
-	Kind    string `json:"kind" unpack:""`
-	Name    string `json:"name"`
-	NamePos int    `json:"name_pos"`
-	Expr    Expr   `json:"expr"`
-	Rparen  int    `json:"rparen"`
-	Where   Expr   `json:"where"`
-}
-
-func (a *Agg) Pos() int { return a.NamePos }
-
-func (a *Agg) End() int {
-	if a.Where != nil {
-		return a.Where.End()
-	}
-	return a.Rparen + 1
+	Kind  string `json:"kind" unpack:""`
+	Name  string `json:"name"`
+	Expr  Expr   `json:"expr"`
+	Where Expr   `json:"where"`
+	Loc   `json:"loc"`
 }

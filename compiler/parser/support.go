@@ -22,14 +22,14 @@ func sliceOf[E any](s any) []E {
 
 func newPrimitive(c *current, typ, text string) *ast.Primitive {
 	return &ast.Primitive{
-		Kind:    "Primitive",
-		Type:    typ,
-		Text:    text,
-		TextPos: c.pos.offset,
+		Kind: "Primitive",
+		Type: typ,
+		Text: text,
+		Loc:  loc(c),
 	}
 }
 
-func makeBinaryExprChain(first, rest any) any {
+func makeBinaryExprChain(first, rest any, c *current) any {
 	ret := first.(ast.Expr)
 	for _, p := range rest.([]any) {
 		part := p.([]any)
@@ -38,6 +38,7 @@ func makeBinaryExprChain(first, rest any) any {
 			Op:   part[0].(string),
 			LHS:  ret,
 			RHS:  part[1].(ast.Expr),
+			Loc:  loc(c),
 		}
 	}
 	return ret
@@ -72,10 +73,10 @@ func makeTemplateExprChain(in any) any {
 
 func newCall(c *current, name, args, where any) ast.Expr {
 	call := &ast.Call{
-		Kind:   "Call",
-		Name:   name.(*ast.ID),
-		Args:   sliceOf[ast.Expr](args),
-		Rparen: lastPos(c, ")"),
+		Kind: "Call",
+		Name: name.(*ast.ID),
+		Args: sliceOf[ast.Expr](args),
+		Loc:  loc(c),
 	}
 	if where != nil {
 		call.Where = where.(ast.Expr)
@@ -83,12 +84,8 @@ func newCall(c *current, name, args, where any) ast.Expr {
 	return call
 }
 
-func lastPos(c *current, s string) int {
-	i := bytes.LastIndex(c.text, []byte(s))
-	if i == -1 {
-		panic(fmt.Sprintf("system error: character %s not found in %s", s, string(c.text)))
-	}
-	return c.pos.offset + i
+func loc(c *current) ast.Loc {
+	return ast.NewLoc(c.pos.offset, c.pos.offset+len(c.text)-1)
 }
 
 func prepend(first, rest any) []any {
