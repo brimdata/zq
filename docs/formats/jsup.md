@@ -18,7 +18,7 @@ type for every value expressed in source text.
 Super JSON is also a superset of JSON in that all JSON documents are valid
 Super JSON values.
 
-## 2. The Suepr JSON Format
+## 2. The Super JSON Format
 
 A Super JSON text is a sequence of UTF-8 characters organized either as a bounded input
 or an unbounded stream.

@@ -61,7 +61,7 @@ Also, it is at the whim of a JSON implementation whether
 or not the order of object keys is preserved.
 
 While JSON is well suited for data exchange of generic information, it is not
-sufficient for the [super-structured data model](./README.md#2-zed-a-super-structured-pattern).
+sufficient for the [super-structured data model](./README.md#2-a-super-structured-pattern).
 That said, JSON can be used as an encoding format for super data with another layer
 of encoding on top of a JSON-based protocol.  This allows clients like web apps or
 Electron apps to receive and understand Super JSON and, with the help of client
