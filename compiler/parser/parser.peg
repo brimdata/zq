@@ -664,11 +664,12 @@ HeadersArg = _ "headers" _ v:Record { return v, nil }
 BodyArg = _ "body" _ s:String { return s, nil }
 
 Path
-  = String
   // XXX deprecate this
-  / [0-9a-zA-Z!@$%^&*_=<>,./?:[\]{}~+-]+ {
+  = [0-9a-zA-Z!@$%^&*_=<>,./?:[\]{}~+-]+ {
       return &ast.String{Kind: "String", Text: string(c.text), Loc: loc(c)}, nil
     }
+  / String
+
 
 //XXX this should be a timestamp
 PoolAt

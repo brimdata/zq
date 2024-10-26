@@ -704,7 +704,7 @@ func pattern(p ast.Pattern) string {
 	case *ast.Regexp:
 		return "/" + p.Pattern + "/"
 	case *ast.String:
-		return zson.QuotedString([]byte(p.Text))
+		return zson.QuotedName(p.Text)
 	default:
 		return fmt.Sprintf("(unknown pattern type %T)", p)
 	}

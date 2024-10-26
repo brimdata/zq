@@ -28,9 +28,9 @@ outputs:
       ===
       file path format f
       ===
-      get http://host/path
+      get "http://host/path"
       ===
-      get http://host/path format f
+      get "http://host/path" format f
       ===
       from foo
       ===
@@ -40,20 +40,20 @@ outputs:
       ===
       from (
         file path
-        get http://host/path
+        get "http://host/path"
         pool name
       )
       ===
       from (
         file path format f
-        get http://host/path format g
+        get "http://host/path" format g
         pool name
       )
       ===
       from (
         file path =>
           head
-        get http://host/path =>
+        get "http://host/path" =>
           head
         pool name =>
           head
@@ -62,7 +62,7 @@ outputs:
       from (
         file path format f =>
           head
-        get http://host/path format g =>
+        get "http://host/path" format g =>
           head
         pool name =>
           head

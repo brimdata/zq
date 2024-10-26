@@ -21,7 +21,7 @@ outputs:
         file a
       )
       from (
-        get http://a
+        get "http://a"
       )
       from (
         pool a
@@ -29,7 +29,7 @@ outputs:
       === No space before vertical bar.
       file a
       | search b
-      get http://a
+      get "http://a"
       | search b
       from a
       | search b
