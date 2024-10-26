@@ -449,7 +449,7 @@ can be interpreted as a _table_, where record values form the _rows_
 and the fields of the records form the _columns_.  In this way, these
 three records form a relational table conforming to the schema `city_schema`.
 
-In contrast, a text representing a semi-structured sequence of log lines
+In contrast, text representing a semi-structured sequence of log lines
 might look like this:
 ```
 {

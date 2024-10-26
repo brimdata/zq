@@ -107,7 +107,7 @@ a [`merge` operator](operators/merge.md)
 may be applied at the output of the switch specifying a sort key upon which
 to order the upstream data.  Often such order does not matter (e.g., when the output
 of the switch hits an [aggregator](aggregates/README.md)), in which case it is typically more performant
-to omit the merge (though the super runtime will often delete such unnecessary
+to omit the merge (though the SuperDB runtime will often delete such unnecessary
 operations automatically as part optimizing queries when they are compiled).
 
 If no `merge` or `join` is indicated downstream of a `fork` or `switch`,
@@ -202,7 +202,7 @@ in later expressions.
 
 ## Implied Operators
 
-When SuperPipe is utilized in an application like [SuperDB desktop](https://zui.brimdata.io),
+When SuperPipe is utilized in an application like [SuperDB Desktop](https://zui.brimdata.io),
 queries are often composed interactively in a "search bar" experience.
 The language design here attempts to support both this "lean forward" pattern of usage
 along with a "coding style" of query writing where the queries might be large

@@ -1,6 +1,6 @@
 # SuperDB [![Tests][tests-img]][tests] [![GoPkg][gopkg-img]][gopkg]
 
-SuperDB is a new analytics database that supports relational tables and JSON 
+SuperDB is a new analytics database that supports relational tables and JSON
 on an equal footing.  It shines when it comes to data wrangling where
 you need to explore or process large eclectic data sets.  It's also pretty
 decent at analytics and
@@ -23,7 +23,7 @@ system for semi-structured data,
 all data handled by SuperDB (e.g., JSON, CSV, Parquet files, Arrow streams, relational tables, etc) is automatically massaged into
 [super-structured data](https://zed.brimdata.io/docs/formats/#2-zed-a-super-structured-pattern)
 form.  This super-structured data is then processed by a runtime that simultaneously
-supports the statically-typed relational model and the dynamically-typed 
+supports the statically-typed relational model and the dynamically-typed
 JSON data model in a unified compute engine.
 
 ## SuperSQL
@@ -39,7 +39,7 @@ FROM 'https://data.gharchive.org/2015-01-01-15.json.gz'
    GROUP BY user
    ORDER BY len(repo) DESC LIMIT 5
 |> FORK (
-   => FROM f"https://api.github.com/users/${user}" 
+   => FROM f"https://api.github.com/users/${user}"
     |> SELECT VALUE {user:login,created_at:time(created_at)}
    => PASS
   )
@@ -48,10 +48,10 @@ FROM 'https://data.gharchive.org/2015-01-01-15.json.gz'
 
 ## Super JSON
 
-Super-structured data is strongly typed and "polymorphic": any value can take on any type 
+Super-structured data is strongly typed and "polymorphic": any value can take on any type
 and sequences of data need not all conform to a predefined schema.  To this end,
 SuperDB extends the JSON format to support super-structured data in a format called
-[Super JSON](https://zed.brimdata.io/docs/formats/jsup) where all JSON values 
+[Super JSON](https://zed.brimdata.io/docs/formats/next/jsup) where all JSON values
 are also Super JSON values.  Similarly,
 the [Super Binary](https://zed.brimdata.io/docs/formats/zng) format is an efficient
 binary representation of Super JSON (a bit like Avro) and the
@@ -78,7 +78,7 @@ using the `super db` sub-commands.
 
 ## Piped Query Syntax
 
-The long-term goal for SuperDB's SQL syntax (SuperSQL) is to be Postgres-compatible and interoperate 
+The long-term goal for SuperDB's SQL syntax (SuperSQL) is to be Postgres-compatible and interoperate
 with BI tools though this is currently a roadmap item.  At the same time, the project
 seeks to forge new ground on the usability of SQL for data exploration.  To this end,
 SuperSQL supports the
@@ -86,15 +86,15 @@ SuperSQL supports the
 of GoogleSQL, recently described in their
 [VLDB 2024 paper](https://research.google/pubs/sql-has-problems-we-can-fix-them-pipe-syntax-in-sql/).
 
-In addition to the GoogleSQL syntax, SuperSQL includes additional pipeline 
-operators to enhance usability, e.g., for search, for traversing 
+In addition to the GoogleSQL syntax, SuperSQL includes additional pipeline
+operators to enhance usability, e.g., for search, for traversing
 highly nested JSON, for data shaping, etc.
 
 To facilitate real-time, data exploration use cases,
 SuperDB supports an abbreviated form of SuperSQL called
 [SuperPipe](https://zed.brimdata.io/docs/language).
 
-SuperPipe provides a large number of shortcuts when typing interactive 
+SuperPipe provides a large number of shortcuts when typing interactive
 queries, e.g., implied group-by clauses, dropping keywords,
 implied keyword searches, and so forth.  Even though SuperPipe is simply
 a short-hand form SuperSQL, it sort of looks like the pipeline-style
