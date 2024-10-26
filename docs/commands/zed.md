@@ -529,7 +529,7 @@ The `date` field here is used by the Zed lake system to do time travel
 through the branch and pool history, allowing you to see the state of
 branches at any time in their commit history.
 
-Arbitrary metadata expressed as any [ZSON value](../formats/zson.md)
+Arbitrary metadata expressed as any [ZSON value](../formats/jsup.md)
 may be attached to a commit via the `-meta` flag.  This allows an application
 or user to transactionally commit metadata alongside committed data for any
 purpose.  This approach allows external applications to implement arbitrary
@@ -601,7 +601,7 @@ If the `-monitor` option is specified and the lake is [located](#locating-the-la
 via network connection, `zed manage` will run continuously and perform updates
 as needed.  By default a check is performed once per minute to determine if
 updates are necessary.  The `-interval` option may be used to specify an
-alternate check frequency in [duration format](../formats/zson.md#23-primitive-values).
+alternate check frequency in [duration format](../formats/jsup.md#23-primitive-values).
 
 If `-monitor` is not specified, a single maintenance pass is performed on the
 lake.

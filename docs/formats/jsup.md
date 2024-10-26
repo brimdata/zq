@@ -1,25 +1,26 @@
 ---
 sidebar_position: 3
-sidebar_label: ZSON
+sidebar_label: Super JSON
 ---
 
-# ZSON Specification
+# Super JSON Specification
 
 ## 1. Introduction
 
-ZSON is the human-readable, text-based serialization format of
-the super-structured [Zed data model](zed.md).
+Super JSON is the human-readable, text-based serialization format of
+the [super data model](zed.md).
 
-ZSON builds upon the elegant simplicity of JSON with "type decorators".
+Super JSON builds upon the elegant simplicity of JSON with "type decorators".
 Where the type of a value is not implied by its syntax, a parenthesized
 type decorator is appended to the value thus establishing a well-defined
-type for every value expressed in ZSON text.
+type for every value expressed in source text.
 
-ZSON is also a superset of JSON in that all JSON documents are valid ZSON values.
+Super JSON is also a superset of JSON in that all JSON documents are valid 
+Super JSON values.
 
-## 2. The ZSON Format
+## 2. The Suepr JSON Format
 
-A ZSON text is a sequence of UTF-8 characters organized either as a bounded input
+A Super JSON text is a sequence of UTF-8 characters organized either as a bounded input
 or an unbounded stream.
 
 The input text is organized as a sequence of one or more Zed values optionally
@@ -29,11 +30,11 @@ treated as whitespace and ignored.
 
 All subsequent references to characters and strings in this section refer to
 the Unicode code points that result when the stream is decoded.
-If a ZSON input includes data that is not valid UTF-8, the input is invalid.
+If an input text includes data that is not valid UTF-8, the input is invalid.
 
 ### 2.1 Names
 
-ZSON _names_ encode record fields, enum symbols, and named types.
+Super JSON _names_ encode record fields, enum symbols, and named types.
 A name is either an _identifier_ or a [quoted string](#231-strings).
 Names are referred to as `<name>` below.
 
@@ -90,7 +91,7 @@ same name, from the case that an existing named type is merely decorating the va
 ### 2.3 Primitive Values
 
 The type names and format for
-[Zed primitive](zed.md#1-primitive-types) values is as follows:
+[primitive values](zed.md#1-primitive-types) is as follows:
 
 | Type       | Value Format                                                  |
 |------------|---------------------------------------------------------------|
@@ -224,7 +225,7 @@ record types as well as enum symbols.
 ### 2.4 Complex Values
 
 Complex values are built from primitive values and/or other complex values
-and conform to the Zed data model's complex types:
+and conform to the super data model's complex types:
 [record](zed.md#21-record),
 [array](zed.md#22-array),
 [set](zed.md#23-set),
@@ -242,8 +243,8 @@ A record value has the form:
 ```
 { <name> : <value>, <name> : <value>, ... }
 ```
-where `<name>` is a [ZSON name](#21-names) and `<value>` is
-any optionally-decorated ZSON value inclusive of other records.
+where `<name>` is a [Super JSON name](#21-names) and `<value>` is
+any optionally-decorated value inclusive of other records.
 Each name/value pair is called a _field_.
 There may be zero or more fields.
 
@@ -303,7 +304,7 @@ An enum value is indicated with the sigil `%` and has the form
 ```
 %<name>
 ```
-where the `<name>` is [ZSON name](#21-names).
+where the `<name>` is [Super JSON name](#21-names).
 
 An enum value must appear in a context where the enum type is known, i.e.,
 with an explicit enum type decorator or within a complex type where the
@@ -322,7 +323,7 @@ An error value has the form:
 ```
 error(<value>)
 ```
-where `<value>` is any ZSON value.
+where `<value>` is any value.
 
 ### 2.5 Types
 
@@ -335,7 +336,7 @@ A _record type_ has the form:
 ```
 { <name> : <type>, <name> : <type>, ... }
 ```
-where `<name>` is a [ZSON name](#21-names) and
+where `<name>` is a [Super JSON name](#21-names) and
 `<type>` is any type.
 
 The order of the record fields is significant,
@@ -378,7 +379,7 @@ An _enum type_ has the form:
 ```
 enum( <name>, <name>, ... )
 ```
-where `<name>` is a [ZSON name](#21-names).
+where `<name>` is a [Super JSON name](#21-names).
 Each enum name must be unique and the order is not significant, e.g.,
 enum type `enum(HEADS,TAILS)` is equal to type `enum(TAILS,HEADS)`.
 
@@ -388,7 +389,7 @@ An _error type_ has the form:
 ```
 error( <type> )
 ```
-where `<type>` is the type of the underlying ZSON values wrapped as an error.
+where `<type>` is the type of the underlying values wrapped as an error.
 
 #### 2.5.8 Named Type
 
@@ -422,14 +423,11 @@ The null value is represented by the string `null`.
 
 A value of any type can be null.  It is up to an
 implementation to decide how external data structures map into and
-out of null values of different types.  Typically, a null value means either the
-zero value or, in the case of record fields, an optional field whose
-value is not present, though these semantics are not explicitly
-defined by ZSON.
+out of null values of different types.
 
 ## 3. Examples
 
-The simplest ZSON value is a single value, perhaps a string like this:
+The simplest Super JSON value is a single value, perhaps a string like this:
 ```
 "hello, world"
 ```
@@ -441,17 +439,17 @@ A relational table might look like this:
 { city: "Broad Cove", state: "ME", population: 806 (uint32) } (=city_schema)
 { city: "Baton Rouge", state: "LA", population: 221599 (uint32) } (=city_schema)
 ```
-This ZSON text here depicts three record values.  It defines a type called `city_schema`
+The text here depicts three record values.  It defines a type called `city_schema`
 and the inferred type of the `city_schema` has the signature:
 ```
 { city:string, state:string, population:uint32 }
 ```
 When all the values in a sequence have the same record type, the sequence
-can be interpreted as a _table_, where the ZSON record values form the _rows_
+can be interpreted as a _table_, where record values form the _rows_
 and the fields of the records form the _columns_.  In this way, these
 three records form a relational table conforming to the schema `city_schema`.
 
-In contrast, a ZSON text representing a semi-structured sequence of log lines
+In contrast, a text representing a semi-structured sequence of log lines
 might look like this:
 ```
 {
@@ -482,10 +480,10 @@ the value itself:
 
 The subsequent value defines a type called `access_list`.  In this case,
 the `nets` field is an array of networks and illustrates the helpful range of
-primitive types in ZSON.  Note that the syntax here implies
+primitive types.  Note that the syntax here implies
 the type of the array, as it is inferred from the type of the elements.
 
-Finally, there are four more values that show ZSON's efficacy for
+Finally, there are four more values that show Super JSON's efficacy for
 representing metrics.  Here, there are no type decorators as all of the field
 types are implied by their syntax, and hence, the top-level record type is implied.
 For instance, the `ts` field is an RFC 3339 date and time string,
@@ -496,13 +494,13 @@ record type implied by each of the three variations of type of the `value` field
 
 ## 4. Grammar
 
-Here is a left-recursive pseudo-grammar of ZSON.  Note that not all
+Here is a left-recursive pseudo-grammar of Super JSON.  Note that not all
 acceptable inputs are semantically valid as type mismatches may arise.
 For example, union and enum values must both appear in a context
 that defines their type.
 
 ```
-<zson> = <zson> <eos> <dec-value> | <zson> <dec-value> | <dec-value>
+<jsup> = <jsup> <eos> <dec-value> | <jsup> <dec-value> | <dec-value>
 
 <eos> = .
 

@@ -2,7 +2,7 @@
 
 This directory contains a small sample data set regarding California
 schools and their average SAT scores.  It is used in query examples in
-the [Zed language documentation](../../docs/language/README.md).
+the [SuperPipe language documentation](../../docs/language/README.md).
 
 
 # Acknowledgement
@@ -14,7 +14,7 @@ this data.
 
 # Creation
 
-[`schools.zson`](schools.zson) and [`testscores.zson`](testscores.zson)
+[`schools.jsup`](schools.jsup) and [`testscores.jsup`](testscores.jsup)
 are created by downloading an SQLite database, extracting two tables as
 JSON, and shaping and sorting the resulting records.
 
@@ -38,7 +38,7 @@ sqlite3 -json cdeschools.sqlite "select * from schools;" | super -z -c '
     Website:string
   };
   this := crop(shape(school), school) | sort School
-' - > schools.zson
+' - > schools.jsup
 
 sqlite3 -json cdeschools.sqlite "select * from satscores;" | super -z -c '
   type testscore = {
@@ -50,17 +50,17 @@ sqlite3 -json cdeschools.sqlite "select * from satscores;" | super -z -c '
     sname: string
   };
   this := crop(shape(testscore), testscore) | sort sname
-' - > testscores.zson
+' - > testscores.jsup
 ```
 
-Some Zed language examples require IP address data, so the data set is
-augmented with [`webaddrs.zson`](webaddrs.zson), which captures an IP
+Some SuperPipe language examples require IP address data, so the data set is
+augmented with [`webaddrs.jsup`](webaddrs.jsup), which captures an IP
 address at which each school website was once hosted.
 
 ```sh
-for host in $(zq -f text 'Website != null | by Website' schools.zson | sed -e 's|http://||' -e 's|/.*||' | sort -u); do
+for host in $(zq -f text 'Website != null | by Website' schools.jsup | sed -e 's|http://||' -e 's|/.*||' | sort -u); do
   addr=$(dig +short $host | egrep '\d{1,3}(.\d{1,3}){3}' | tail -1)
   [ "$addr" ] &&
     echo "{Website:\"$host\",addr:$addr}"
-done > webaddrs.zson
+done > webaddrs.jsup
 ```

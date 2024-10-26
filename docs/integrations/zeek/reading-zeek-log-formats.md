@@ -17,7 +17,7 @@ is Zeek's default output format for logs. This format can be read automatically
 with the Zed tools such as [`zq`](../../commands/zq.md).
 
 The following example shows a TSV [`conn.log`](https://docs.zeek.org/en/master/logs/conn.html) being read via `zq` and
-output as [ZSON](../../formats/zson.md).
+output as [Super JSON](../../formats/jsup.md).
 
 #### conn.log
 

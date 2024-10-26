@@ -8,7 +8,7 @@
 > providing a unified approach to row, columnar, and human-readable formats.
 > Zed is a superset of both the dataframe/table model of relational systems and the
 > semi-structured model that is used ubiquitously in development as JSON and by NOSQL
-> data stores.  The ZSON spec has [a few examples](zson.md#3-examples).
+> data stores.  The Super JSON spec has [a few examples](jsup.md#3-examples).
 
 ## 1. Background
 
@@ -152,7 +152,7 @@ say the JSON value
 is of type object and the value of key `a` is type array.
 In Zed, however, this value's type is type `record` with field `a`
 of type `array` of type `union` of `int64` and `string`,
-expressed succinctly in ZSON as
+expressed succinctly in Super JSON as
 ```
 {a:[(int64,string)]}
 ```
@@ -265,14 +265,14 @@ A set of companion documents define a family of tightly integrated
 serialization formats that all adhere to the same Zed data model,
 providing a unified approach to row, columnar, and human-readable formats:
 
-* [ZSON](zson.md) is a JSON-like, human readable format for Zed data.  All JSON
-documents are Zed values as the ZSON format is a strict superset of the JSON syntax.
-* [ZNG](zng.md) is a row-based, binary representation of Zed data somewhat like
+* [Super JSON](jsup.md) is a JSON-like, human readable format for Zed data.  All JSON
+documents are Super JSON values as the Super JSON format is a strict superset of the JSON syntax.
+* [Super Binary](zng.md) is a row-based, binary representation of Zed data somewhat like
 Avro but with Zed's more general model to represent a sequence of arbitrarily-typed
 values.
-* [VNG](vng.md) is a columnar version of ZNG like Parquet or ORC but also
+* [Super Columnar](vng.md) is a columnar version of ZNG like Parquet or ORC but also
 embodies Zed's more general model for heterogeneous and self-describing schemas.
-* [Zed over JSON](zjson.md) defines a JSON format for encapsulating Zed data
+* [Super JSON over JSON](zjson.md) defines a JSON format for encapsulating Zed data
 in JSON for easy decoding by JSON-based clients, e.g.,
 the [zed-js JavaScript library](https://github.com/brimdata/zui/tree/main/packages/zed-js)
 and the [Zed Python library](../libraries/python.md).
