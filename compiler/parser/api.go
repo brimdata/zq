@@ -118,11 +118,7 @@ func (e *Error) Error() string {
 }
 
 func formatSpanError(b *strings.Builder, line string, start, end Position) {
-	//	fmt.Println("SPAN ERR", start, end, "LINE", fmt.Sprintf("===%s===", line))
-	pad := start.Column - 1
-	if pad > 0 {
-		b.WriteString(strings.Repeat(" ", pad))
-	}
+	b.WriteString(strings.Repeat(" ", start.Column-1))
 	n := end.Column - start.Column + 1
 	if start.Line != end.Line {
 		n = len(line) - start.Column + 1
