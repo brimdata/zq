@@ -92,8 +92,8 @@ func AddDefaultSource(ctx context.Context, seq *dag.Seq, source *data.Source, he
 	pool := &ast.Pool{
 		Kind: "Pool",
 		Spec: ast.PoolSpec{
-			Pool: &ast.String{
-				Kind: "String",
+			Pool: &ast.Name{
+				Kind: "Name",
 				Text: "HEAD",
 			},
 		},

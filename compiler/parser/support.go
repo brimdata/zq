@@ -114,11 +114,11 @@ func parseInt(v interface{}) interface{} {
 	return i
 }
 
-func nullableString(v any) string {
+func nullableName(v any) *ast.Name {
 	if v == nil {
-		return ""
+		return nil
 	}
-	return v.(string)
+	return v.(*ast.Name)
 }
 
 func makeUnicodeChar(chars interface{}) string {

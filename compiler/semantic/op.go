@@ -92,9 +92,7 @@ func (a *analyzer) semSource(source ast.Source) []dag.Op {
 	case *ast.File:
 		var path string
 		switch p := s.Path.(type) {
-		case *ast.QuotedString:
-			path = p.Text
-		case *ast.String:
+		case *ast.Name:
 			// This can be either a reference to a constant or a string.
 			var err error
 			if path, err = a.maybeStringConst(p.Text); err != nil {
@@ -107,7 +105,7 @@ func (a *analyzer) semSource(source ast.Source) []dag.Op {
 			&dag.FileScan{
 				Kind:     "FileScan",
 				Path:     path,
-				Format:   s.Format,
+				Format:   nullableName(s.Format),
 				SortKeys: a.semSortKeys(s.SortKeys),
 			},
 		}
@@ -127,9 +125,7 @@ func (a *analyzer) semSource(source ast.Source) []dag.Op {
 		}
 		var url string
 		switch p := s.URL.(type) {
-		case *ast.QuotedString:
-			url = p.Text
-		case *ast.String:
+		case *ast.Name:
 			// This can be either a reference to a constant or a string.
 			var err error
 			if url, err = a.maybeStringConst(p.Text); err != nil {
@@ -147,11 +143,11 @@ func (a *analyzer) semSource(source ast.Source) []dag.Op {
 			&dag.HTTPScan{
 				Kind:     "HTTPScan",
 				URL:      url,
-				Format:   s.Format,
+				Format:   nullableName(s.Format),
 				SortKeys: a.semSortKeys(s.SortKeys),
-				Method:   s.Method,
+				Method:   nullableName(s.Method),
 				Headers:  headers,
-				Body:     s.Body,
+				Body:     nullableName(s.Body),
 			},
 		}
 	case *ast.Pool:
@@ -250,14 +246,12 @@ func (a *analyzer) semPool(p *ast.Pool) []dag.Op {
 		poolNames, err = a.matchPools(reglob.Reglob(specPool.Pattern), specPool.Pattern, "glob")
 	case *ast.Regexp:
 		poolNames, err = a.matchPools(specPool.Pattern, specPool.Pattern, "regexp")
-	case *ast.String:
+	case *ast.Name:
 		// This can be either a reference to a constant or a string.
 		var name string
 		if name, err = a.maybeStringConst(specPool.Text); err == nil {
 			poolNames = []string{name}
 		}
-	case *ast.QuotedString:
-		poolNames = []string{specPool.Text}
 	default:
 		panic(fmt.Errorf("semantic analyzer: unknown AST pool type %T", specPool))
 	}
@@ -291,24 +285,24 @@ func (a *analyzer) maybeStringConst(name string) (string, error) {
 }
 
 func (a *analyzer) semPoolWithName(p *ast.Pool, poolName string) dag.Op {
-	poolName, commit, err := a.checkHead(poolName, p.Spec.Commit)
+	poolName, commit, err := a.checkHead(poolName, nullableName(p.Spec.Commit))
 	if err != nil {
 		a.error(p.Spec.Pool, errors.New("cannot scan from unknown HEAD"))
 		return badOp()
 	}
 	if poolName == "" {
 		meta := p.Spec.Meta
-		if meta == "" {
+		if meta == nil || meta.Text == "" {
 			a.error(p, errors.New("pool name missing"))
 			return badOp()
 		}
-		if _, ok := dag.LakeMetas[meta]; !ok {
-			a.error(p, fmt.Errorf("unknown lake metadata type %q in from operator", meta))
+		if _, ok := dag.LakeMetas[meta.Text]; !ok {
+			a.error(p, fmt.Errorf("unknown lake metadata type %q in from operator", meta.Text))
 			return badOp()
 		}
 		return &dag.LakeMetaScan{
 			Kind: "LakeMetaScan",
-			Meta: p.Spec.Meta,
+			Meta: p.Spec.Meta.Text,
 		}
 	}
 	poolID, commitID, err := a.lookupPoolIDs(poolName, commit)
@@ -316,8 +310,8 @@ func (a *analyzer) semPoolWithName(p *ast.Pool, poolName string) dag.Op {
 		a.error(p.Spec.Pool, err)
 		return badOp()
 	}
-	if meta := p.Spec.Meta; meta != "" {
-		if _, ok := dag.CommitMetas[meta]; ok {
+	if meta := p.Spec.Meta; meta != nil && meta.Text != "" {
+		if _, ok := dag.CommitMetas[meta.Text]; ok {
 			if commitID == ksuid.Nil {
 				commitID, err = a.source.CommitObject(a.ctx, poolID, "main")
 				if err != nil {
@@ -327,16 +321,16 @@ func (a *analyzer) semPoolWithName(p *ast.Pool, poolName string) dag.Op {
 			}
 			return &dag.CommitMetaScan{
 				Kind:   "CommitMetaScan",
-				Meta:   meta,
+				Meta:   meta.Text,
 				Pool:   poolID,
 				Commit: commitID,
 				Tap:    p.Spec.Tap,
 			}
 		}
-		if _, ok := dag.PoolMetas[meta]; ok {
+		if _, ok := dag.PoolMetas[meta.Text]; ok {
 			return &dag.PoolMetaScan{
 				Kind: "PoolMetaScan",
-				Meta: meta,
+				Meta: meta.Text,
 				ID:   poolID,
 			}
 		}
@@ -830,9 +824,9 @@ func (a *analyzer) semOp(o ast.Op, seq dag.Seq) dag.Seq {
 			a.error(o, errors.New("load operator cannot be used without a lake"))
 			return []dag.Op{badOp()}
 		}
-		poolID, err := lakeparse.ParseID(o.Pool)
+		poolID, err := lakeparse.ParseID(o.Pool.Text)
 		if err != nil {
-			poolID, err = a.source.PoolID(a.ctx, o.Pool)
+			poolID, err = a.source.PoolID(a.ctx, o.Pool.Text)
 			if err != nil {
 				a.error(o, err)
 				return append(seq, badOp())
@@ -841,10 +835,10 @@ func (a *analyzer) semOp(o ast.Op, seq dag.Seq) dag.Seq {
 		return append(seq, &dag.Load{
 			Kind:    "Load",
 			Pool:    poolID,
-			Branch:  o.Branch,
-			Author:  o.Author,
-			Message: o.Message,
-			Meta:    o.Meta,
+			Branch:  nullableName(o.Branch),
+			Author:  nullableName(o.Author),
+			Message: nullableName(o.Message),
+			Meta:    nullableName(o.Meta),
 		})
 	case *ast.Output:
 		out := &dag.Output{Kind: "Output", Name: o.Name.Name}
@@ -852,6 +846,13 @@ func (a *analyzer) semOp(o ast.Op, seq dag.Seq) dag.Seq {
 		return append(seq, out)
 	}
 	panic(fmt.Errorf("semantic transform: unknown AST operator type: %T", o))
+}
+
+func nullableName(n *ast.Name) string {
+	if n == nil {
+		return ""
+	}
+	return n.Text
 }
 
 func (a *analyzer) singletonAgg(agg ast.Assignment, seq dag.Seq) dag.Seq {

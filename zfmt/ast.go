@@ -158,7 +158,7 @@ func (c *canon) expr(e ast.Expr, parent string) {
 			}
 			switch e := elem.(type) {
 			case *ast.FieldExpr:
-				c.write(zson.QuotedName(e.Name))
+				c.write(zson.QuotedName(e.Name.Text))
 				c.write(":")
 				c.expr(e.Value, "")
 			case *ast.ID:
@@ -495,18 +495,18 @@ func (c *canon) op(p ast.Op) {
 		}
 	case *ast.Load:
 		c.next()
-		c.write("load %s", zson.QuotedString([]byte(p.Pool)))
-		if p.Branch != "" {
-			c.write("@%s", p.Branch)
+		c.write("load %s", zson.QuotedString([]byte(p.Pool.Text)))
+		if p.Branch != nil {
+			c.write("@%s", p.Branch.Text)
 		}
-		if p.Author != "" {
-			c.write(" author %s", p.Author)
+		if p.Author != nil {
+			c.write(" author %s", p.Author.Text)
 		}
-		if p.Message != "" {
-			c.write(" message %s", p.Message)
+		if p.Message != nil {
+			c.write(" message %s", p.Message.Text)
 		}
-		if p.Meta != "" {
-			c.write(" meta %s", p.Meta)
+		if p.Meta != nil {
+			c.write(" meta %s", p.Meta.Text)
 		}
 	case *ast.Head:
 		c.next()
@@ -683,11 +683,11 @@ func (c *canon) scope(s *ast.Scope, parens bool) {
 func (c *canon) pool(p *ast.Pool) {
 	//XXX TBD name, from, to, id etc
 	s := pattern(p.Spec.Pool)
-	if p.Spec.Commit != "" {
-		s += "@" + p.Spec.Commit
+	if p.Spec.Commit != nil {
+		s += "@" + p.Spec.Commit.Text
 	}
-	if p.Spec.Meta != "" {
-		s += ":" + p.Spec.Meta
+	if p.Spec.Meta != nil {
+		s += ":" + p.Spec.Meta.Text
 	}
 	if p.Spec.Tap {
 		s += " tap"
@@ -703,10 +703,8 @@ func pattern(p ast.Pattern) string {
 		return p.Pattern
 	case *ast.Regexp:
 		return "/" + p.Pattern + "/"
-	case *ast.String:
-		return p.Text
-	case *ast.QuotedString:
-		return zson.QuotedString([]byte(p.Text))
+	case *ast.Name:
+		return zson.QuotedName(p.Text)
 	default:
 		return fmt.Sprintf("(unknown pattern type %T)", p)
 	}
@@ -787,26 +785,26 @@ func IsSearch(e ast.Expr) bool {
 func (c *canon) http(p *ast.HTTP) {
 	//XXX TBD other stuff
 	c.write("get %s", pattern(p.URL))
-	if p.Format != "" {
-		c.write(" format %s", p.Format)
+	if p.Format != nil {
+		c.write(" format %s", zson.QuotedName(p.Format.Text))
 	}
-	if p.Method != "" {
-		c.write(" method %s", zson.QuotedName(p.Method))
+	if p.Method != nil {
+		c.write(" method %s", zson.QuotedName(p.Method.Text))
 	}
 	if p.Headers != nil {
 		c.write(" headers ")
 		c.expr(p.Headers, "")
 	}
-	if p.Body != "" {
-		c.write(" body %s", zson.QuotedName(p.Body))
+	if p.Body != nil {
+		c.write(" body %s", zson.QuotedName(p.Body.Text))
 	}
 }
 
 func (c *canon) file(p *ast.File) {
 	//XXX TBD other stuff
 	c.write("file %s", pattern(p.Path))
-	if p.Format != "" {
-		c.write(" format %s", p.Format)
+	if p.Format != nil {
+		c.write(" format %s", zson.QuotedName(p.Format.Text))
 	}
 }
 

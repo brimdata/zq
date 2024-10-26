@@ -228,13 +228,6 @@ SearchValue
       return newPrimitive(c, "string", v.(string)), nil
     }
 
-//XXX get rid of QuotedString
-
-QuotedStringNode 
-  = s:QuotedString {
-      return &ast.QuotedString{Kind: "QuotedString", Text: s.(string), Loc: loc(c)}, nil
-    }
-
 Glob
   = pattern:GlobPattern {
       return &ast.Glob{Kind: "Glob", Pattern: pattern.(string), Loc: loc(c)}, nil
@@ -568,29 +561,29 @@ OpAssignment
     }
 
 LoadOp
-  = "load" _ pool:PoolNameString branch:PoolBranch? author:AuthorArg? message:MessageArg? meta:MetaArg? {
+  = "load" _ pool:Name branch:PoolBranch? author:AuthorArg? message:MessageArg? meta:MetaArg? {
       return &ast.Load{
         Kind: "Load",
-        Pool: nullableString(pool),
-        Branch: nullableString(branch),
-        Author: nullableString(author),
-        Message: nullableString(message),
-        Meta: nullableString(meta),
+        Pool: nullableName(pool),
+        Branch: nullableName(branch),
+        Author: nullableName(author),
+        Message: nullableName(message),
+        Meta: nullableName(meta),
         Loc: loc(c),
       }, nil
     }
 
 AuthorArg
-  = _ "author" _ val:QuotedString { return val, nil }
+  = _ "author" _ n:Name { return n, nil }
 
 MessageArg
-  = _ "message" _ val:QuotedString { return val, nil }
+  = _ "message" _ n:Name { return n, nil }
 
 MetaArg
-  = _ "meta" _ val:QuotedString { return val, nil }
+  = _ "meta" _ n:Name { return n, nil }
 
 PoolBranch
-  = "@" branch:(PoolIdentifier / QuotedString) { return branch, nil }
+  = "@" branch:Name { return branch, nil }
 
 OutputOp
   = "output" _ name:Identifier {
@@ -623,7 +616,7 @@ File
       return &ast.File{
         Kind: "File",
         Path: path.(ast.Pattern),
-        Format: nullableString(format),
+        Format: nullableName(format),
         SortKeys: sliceOf[ast.SortExpr](sortKeys),
         Loc: loc(c),
       }, nil
@@ -652,10 +645,10 @@ Get
       h := &ast.HTTP{
         Kind: "HTTP",
         URL: url.(ast.Pattern),
-        Format: nullableString(format),
+        Format: nullableName(format),
         SortKeys: sliceOf[ast.SortExpr](sortKeys),
-        Method: nullableString(method),
-        Body: nullableString(body),
+        Method: nullableName(method),
+        Body: nullableName(body),
         Loc: loc(c),
       }
       if headers != nil {
@@ -664,17 +657,19 @@ Get
       return h, nil
     }
 
-MethodArg = _ "method" _ v:(IdentifierName / QuotedString) { return v, nil }
+MethodArg = _ "method" _ n:Name { return n, nil }
 
 HeadersArg = _ "headers" _ v:Record { return v, nil }
 
-BodyArg = _ "body" _ v:(IdentifierName / QuotedString) { return v, nil }
+BodyArg = _ "body" _ n:Name { return n, nil }
 
 Path
-  = QuotedStringNode
-  / [0-9a-zA-Z!@$%^&*_=<>,./?:[\]{}~+-]+ {
-      return &ast.String{Kind: "String", Text: string(c.text), Loc: loc(c)}, nil
+  // XXX deprecate this
+  = [0-9a-zA-Z!@$%^&*_=<>,./?:[\]{}~+-]+ {
+      return &ast.Name{Kind: "Name", Text: string(c.text), Loc: loc(c)}, nil
     }
+  / Name
+
 
 //XXX this should be a timestamp
 PoolAt
@@ -687,36 +682,27 @@ PoolSpec
   = pool:PoolName commit:PoolCommit? meta:PoolMeta? tap:TapArg {
       return ast.PoolSpec{
         Pool: pool.(ast.Pattern),
-        Commit: nullableString(commit),
-        Meta: nullableString(meta),
+        Commit: nullableName(commit),
+        Meta: nullableName(meta),
         Tap: tap.(bool),
         Loc: loc(c),
       }, nil
     }
   / meta:PoolMeta {
-      return ast.PoolSpec{Meta: meta.(string),Loc:loc(c)}, nil
+      return ast.PoolSpec{Meta: meta.(*ast.Name),Loc:loc(c)}, nil
     }
 
 PoolCommit
-  = "@" commit:PoolNameString { return commit, nil }
+  = "@" n:Name { return n, nil }
 
 PoolMeta
-  = ":" meta:PoolIdentifier { return meta, nil }
+  = ":" n:Name { return n, nil }
 
 PoolName
   = Regexp
   / Glob
   / "*" !ExprGuard { return &ast.Glob{Kind: "Glob", Pattern: "*", Loc: loc(c)}, nil }
-  / QuotedStringNode
-  / name:PoolNameString { return &ast.String{Kind: "String", Text: name.(string), Loc: loc(c)}, nil }
-
-PoolNameString
-  = PoolIdentifier
-  / KSUID
-  / QuotedString
-
-PoolIdentifier
-  = (IdentifierStart / ".") (IdentifierRest / ".")* { return string(c.text), nil }
+  / Name
 
 OrderArg
   = _ "order" _ exprs:SortExprs {
@@ -747,7 +733,7 @@ TapArg
   / "" { return false, nil }
 
 FormatArg
-  = _ "format" _ val:IdentifierName { return val, nil }
+  = _ "format" _ n:Name { return n, nil }
 
 PassOp
   = "pass" !(__ "(") &EOKW {
@@ -1090,10 +1076,10 @@ Spread
     }
 
 FieldExpr
-  = name:FieldName __ ":" __ value:Expr {
+  = name:Name __ ":" __ value:Expr {
       return &ast.FieldExpr{
         Kind: "FieldExpr",
-        Name: name.(string),
+        Name: name.(*ast.Name),
         Value: value.(ast.Expr),
         Loc: loc(c),
       }, nil
@@ -1226,16 +1212,16 @@ AmbiguousType
           Loc: loc(c),
       }, nil
     }
-  / name:(IdentifierName / QuotedString) opt:(__ '=' __ Type)? {
+  / name:Name opt:(__ '=' __ Type)? {
       if opt != nil {
         return &ast.TypeDef{
             Kind: "TypeDef",
-            Name: name.(string),
+            Name: name.(*ast.Name).Text,
             Type: opt.([]any)[3].(ast.Type),
             Loc: loc(c),
         }, nil
       }
-      return &ast.TypeName{Kind: "TypeName", Name: name.(string), Loc: loc(c)}, nil
+      return &ast.TypeName{Kind: "TypeName", Name: name.(*ast.Name).Text, Loc: loc(c)}, nil
     }
   / "(" __ types:TypeList ")" {
       return &ast.TypeUnion{
@@ -1357,17 +1343,22 @@ TypeFieldList
 TypeFieldListTail = __ "," __ typ:TypeField { return typ, nil }
 
 TypeField
-  = name:FieldName __ ":" __ typ:Type {
+  = name:Name __ ":" __ typ:Type {
       return ast.TypeField{
-          Name: name.(string),
+          Name: name.(*ast.Name).Text,
           Type: typ.(ast.Type),
           Loc: loc(c),
       }, nil
     }
 
-FieldName
-  = IdentifierName
-  / QuotedString
+Name
+  = s:DottedIDs         { return &ast.Name{Kind:"Name",Text:s.(string),Loc:loc(c) }, nil }
+  / s:IdentifierName    { return &ast.Name{Kind:"Name",Text:s.(string),Loc:loc(c) }, nil }
+  / s:QuotedString      { return &ast.Name{Kind:"Name",Text:s.(string),Loc:loc(c) }, nil }
+  / s:KSUID             { return &ast.Name{Kind:"Name",Text:s.(string),Loc:loc(c) }, nil }
+
+DottedIDs
+  = (IdentifierStart / ".") (IdentifierRest / ".")* { return string(c.text), nil }
 
 AndToken = ("and" / "AND") !IdentifierRest { return "and", nil }
 ByToken = "by" !IdentifierRest
