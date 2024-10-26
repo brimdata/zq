@@ -207,11 +207,11 @@ where grep("foo", this)
 ```
 
 Note that the "search" keyword may be omitted.
-For example, the simplest SuperPipe program is perhaps a single keyword search, e.g.,
+For example, the simplest SuperPipe query is perhaps a single keyword search, e.g.,
 ```
 foo
 ```
-As above, this program searches the implied input for values that
+As above, this query searches the implied input for values that
 contain the string "foo".
 
 #### String Literal Search Term
