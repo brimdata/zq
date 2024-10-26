@@ -26,7 +26,7 @@ For a non-technical user, SuperDB is as easy to use as web search
 while for a technical user, SuperDB exposes its technical underpinnings
 in a gradual slope, providing as much detail as desired,
 packaged up in the easy-to-understand
-[Super JSON data format](formats/zson.md) and
+[Super JSON data format](formats/jsup.md) and
 [SuperPipe language](language/README.md).
 
 While `super` and its accompanying data formats are production quality, the project's
@@ -39,9 +39,9 @@ a number of different elements of the system:
 * The [super data model](formats/zed.md) is the abstract definition of the data types and semantics
 that underlie the super-structured data formats.
 * The [super data formats](formats/README.md) are a family of
-[human-readable (Super JSON, SUP)](formats/zson.md),
-[sequential (Binary Super JSON, SUPZ)](formats/zng.md), and
-[columnar (Super Parquet, SPAR)](formats/vng.md) formats that all adhere to the
+[human-readable (Super JSON, JSUP)](formats/jsup.md),
+[sequential (Super Binary, BSUP)](formats/zng.md), and
+[columnar (Super Columnar, CSUP)](formats/vng.md) formats that all adhere to the
 same abstract super data model.
 * The [SuperPipe language](language/README.md) is the system's pipeline language for performing
 queries, searches, analytics, transformations, or any of the above combined together.

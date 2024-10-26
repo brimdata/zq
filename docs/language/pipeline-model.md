@@ -5,7 +5,7 @@ sidebar_label: Pipeline Model
 
 # The Pipeline Model
 
-In Zed, each operator takes its input from the output of its upstream operator beginning
+In SuperPipe, each operator takes its input from the output of its upstream operator beginning
 either with a data source or with an implied source.
 
 All available operators are listed on the [reference page](operators/README.md).
@@ -16,30 +16,30 @@ In addition to the data sources specified as files on the `zq` command line,
 a source may also be specified with the [`from` operator](operators/from.md).
 
 When running on the command-line, `from` may refer to a file, an HTTP
-endpoint, or an [S3](../integrations/amazon-s3.md) URI.  When running in a [Zed lake](../commands/zed.md), `from` typically
+endpoint, or an [S3](../integrations/amazon-s3.md) URI.  When running in a [SuperDB data lake](../commands/zed.md), `from` typically
 refers to a collection of data called a "data pool" and is referenced using
 the pool's name much as SQL references database tables by their name.
 
 For more detail, see the reference page of the [`from` operator](operators/from.md),
 but as an example, you might use the `get` form of `from` to fetch data from an
-HTTP endpoint and process it with Zed, in this case, to extract the description
+HTTP endpoint and process it with `super`, in this case, to extract the description
 and license of a GitHub repository:
 ```
 super -f text -c 'get https://api.github.com/repos/brimdata/super
             | yield description,license.name'
 ```
-When a Zed query is run on the command-line with `zq`, the `from` source is
+When a query is run on the command-line with `super`, the `from` source is
 typically omitted and implied instead by the command-line file arguments.
 The input may be stdin via `-` as in
 ```
 echo '"hello, world"' | super  -
 ```
 The examples throughout the language documentation use this "echo pattern"
-to standard input of `zq -` to illustrate language semantics.
-Note that in these examples, the input values are expressed as Zed values serialized
-in the [ZSON text format](../formats/zson.md)
-and the `zq` query text expressed as the first argument of the `zq` command
-is expressed in the syntax of the Zed language described here.
+to standard input of `super -` to illustrate language semantics.
+Note that in these examples, the input values are expressed as a sequence of values serialized
+in the [Super JSON format](../formats/jsup.md)
+and the `super` query text expressed as the `-c` argument of the `super` command
+is expressed in the syntax of the SuperPipe language described here.
 
 ## Pipeline Operators
 
@@ -81,18 +81,18 @@ A pipeline can also be split to multiple branches using the
 corresponding branch (or dropped) based on the switch clauses.
 
 Switch operators typically
-involve multiline Zed programs, which are easiest to edit in a file.  For example,
-suppose this text is in a file called `switch.zed`:
-```mdtest-input switch.zed
+involve multiline SuperPipe programs, which are easiest to edit in a file.  For example,
+suppose this text is in a file called `switch.spq`:
+```mdtest-input switch.spq
 switch this (
   case 1 => yield {val:this,message:"one"}
   case 2 => yield {val:this,message:"two"}
   default => yield {val:this,message:"many"}
 ) | merge val
 ```
-Then, running `zq` with `-I switch.zed` like so:
+Then, running `super` with `-I switch.spq` like so:
 ```mdtest-command
-echo '1 2 3 4' | super -z -I switch.zed -
+echo '1 2 3 4' | super -z -I switch.spq -
 ```
 produces
 ```mdtest-output
@@ -107,7 +107,7 @@ a [`merge` operator](operators/merge.md)
 may be applied at the output of the switch specifying a sort key upon which
 to order the upstream data.  Often such order does not matter (e.g., when the output
 of the switch hits an [aggregator](aggregates/README.md)), in which case it is typically more performant
-to omit the merge (though the Zed system will often delete such unnecessary
+to omit the merge (though the super runtime will often delete such unnecessary
 operations automatically as part optimizing queries when they are compiled).
 
 If no `merge` or `join` is indicated downstream of a `fork` or `switch`,
@@ -116,14 +116,14 @@ forwarded from the switch to the downstream operator in an undefined order.
 
 ## The Special Value `this`
 
-In Zed, there are no looping constructs and variables are limited to binding
+In SuperPipe, there are no looping constructs and variables are limited to binding
 values between [lateral scopes](lateral-subqueries.md#lateral-scope).
 Instead, the input sequence
 to an operator is produced continuously and any output values are derived
 from input values.
 
 In contrast to SQL, where a query may refer to input tables by name,
-there are no explicit tables and a Zed operator instead refers
+there are no explicit tables and an operator instead refers
 to its input values using the special identifier `this`.
 
 For example, sorting the following input
@@ -152,10 +152,10 @@ produces
 
 ## Implied Field References
 
-A common use case for Zed is to process sequences of record-oriented data
+A common SuperPipe use case is to process sequences of record-oriented data
 (e.g., arising from formats like JSON or Avro) in the form of events
 or structured logs.  In this case, the input values to the operators
-are Zed [records](../formats/zed.md#21-record) and the fields of a record are referenced with the dot operator.
+are [records](../formats/zed.md#21-record) and the fields of a record are referenced with the dot operator.
 
 For example, if the input above were a sequence of records instead of strings
 and perhaps contained a second field, e.g.,
@@ -172,7 +172,7 @@ as above with `sort this.s`, which would give
 {s:"foo",x:1}
 ```
 This pattern is so common that field references to `this` may be shortened
-by simply referring to the field by name wherever a Zed expression is expected,
+by simply referring to the field by name wherever an expression is expected,
 e.g.,
 ```
 sort s
@@ -187,7 +187,7 @@ or extracting a subset of fields using the [`cut` operator](operators/cut.md).
 Also, when aggregating data using group-by keys, the group-by assignments
 create new named record fields.
 
-In all of these cases, the Zed language uses the token `:=` to denote
+In all of these cases, the SuperPipe language uses the token `:=` to denote
 field assignment.  For example,
 ```
 put x:=y+1
@@ -202,18 +202,18 @@ in later expressions.
 
 ## Implied Operators
 
-When Zed is run in an application like [Zui](https://zui.brimdata.io),
+When SuperPipe is utilized in an application like [SuperDB desktop](https://zui.brimdata.io),
 queries are often composed interactively in a "search bar" experience.
 The language design here attempts to support both this "lean forward" pattern of usage
 along with a "coding style" of query writing where the queries might be large
 and complex, e.g., to perform transformations in a data pipeline, where
-the Zed queries are stored under source-code control perhaps in GitHub or
+the SuperPipe queries are stored under source-code control perhaps in GitHub or
 in Zui's query library.
 
 To facilitate both a programming-like model as well as an ad hoc search
-experience, Zed has a canonical, long form that can be abbreviated
+experience, SuperPipe has a canonical, long form that can be abbreviated
 using syntax that supports an agile, interactive query workflow.
-To this end, Zed allows certain operator names to be optionally omitted when
+To this end, SuperPipe allows certain operator names to be optionally omitted when
 they can be inferred from context.  For example, the expression following
 the [`summarize` operator](operators/summarize.md)
 ```
@@ -233,7 +233,7 @@ is abbreviated
 foo bar or x > 100
 ```
 Furthermore, if an operator-free expression is not valid syntax for
-a search expression but is a valid [Zed expression](expressions.md),
+a search expression but is a valid [expression](expressions.md),
 then the abbreviation is treated as having an implied `yield` operator, e.g.,
 ```
 {s:lower(s)}
@@ -262,8 +262,8 @@ can be expressed simply as
 ```
 y:=2*x+1
 ```
-When composing long-form queries that are shared via Zui or managed in GitHub,
-it is best practice to include all operator names in the Zed source text.
+When composing long-form queries that are shared via SuperDB Desktop or managed in GitHub,
+it is best practice to include all operator names in the source text.
 
 In summary, if no operator name is given, the implied operator is determined
 from the operator-less source text, in the order given, as follows:

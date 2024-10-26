@@ -373,7 +373,7 @@ using the same tag within the union value.
 
 ### Hello, world
 
-Start with this ZNG data (shown as human-readable [ZSON](zson.md)):
+Start with this [Super JSON](jsup.md)):
 ```
 {a:"hello",b:"world"}
 {a:"goodnight",b:"gracie"}
@@ -381,7 +381,7 @@ Start with this ZNG data (shown as human-readable [ZSON](zson.md)):
 
 To convert to VNG format:
 ```
-super -f vng hello.zson > hello.vng
+super -f vng hello.jsup > hello.vng
 ```
 
 Segments in the VNG format would be laid out like this:

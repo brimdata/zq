@@ -40,7 +40,7 @@ tends to be the most space-efficient and most performant.  ZNG has efficiency si
 and [Protocol Buffers](https://developers.google.com/protocol-buffers)
 but its comprehensive [Zed type system](../formats/zed.md) obviates
 the need for schema specification or registries.
-Also, the [ZSON](../formats/zson.md) format is human-readable and entirely one-to-one with ZNG
+Also, the [ZSON](../formats/jsup.md) format is human-readable and entirely one-to-one with ZNG
 so there is no need to represent non-readable formats like Avro or Protocol Buffers
 in a clunky JSON encapsulated form.  
 
@@ -104,7 +104,7 @@ Note here that the query `1+1` [implies](../language/pipeline-model.md#implied-o
 | `zeek`    |  yes | [Zeek Logs](https://docs.zeek.org/en/master/logs/index.html) |
 | `zjson`   |  yes | [ZJSON - Zed over JSON](../formats/zjson.md) |
 | `zng`     |  yes | [ZNG - Binary Row Format](../formats/zng.md) |
-| `zson`    |  yes | [ZSON - Human-readable Format](../formats/zson.md) |
+| `zson`    |  yes | [ZSON - Human-readable Format](../formats/jsup.md) |
 
 The input format is typically [detected automatically](#auto-detection) and the formats for which
 "Auto" is "yes" in the table above support _auto-detection_.
@@ -146,7 +146,7 @@ would produce this output in the default ZSON format
 
 ### ZSON-JSON Auto-detection
 
-Since [ZSON](../formats/zson.md) is a superset of JSON, `zq` must be careful in whether it
+Since [ZSON](../formats/jsup.md) is a superset of JSON, `zq` must be careful in whether it
 interprets input as ZSON as JSON.  While you can always clarify your intent
 with the `-i zson` or `-i json`, `zq` attempts to "just do the right thing"
 when you run it with JSON vs. ZSON.
@@ -190,7 +190,7 @@ typically omit quotes around field names.
 | `zeek`    | [Zeek Logs](https://docs.zeek.org/en/master/logs/index.html) |
 | `zjson`   | [ZJSON - Zed over JSON](../formats/zjson.md) |
 | `zng`     | [ZNG - Binary Row Format](../formats/zng.md) |
-| `zson`    | [ZSON - Human-readable Format](../formats/zson.md) |
+| `zson`    | [ZSON - Human-readable Format](../formats/jsup.md) |
 
 The output format defaults to either ZSON or ZNG and may be specified
 with the `-f` option.

@@ -3,35 +3,35 @@ sidebar_position: 4
 sidebar_label: Schools Data
 ---
 
-# Zed and Schools Data
+# SiperPipe and Schools Data
 
-> This document provides a beginner's overview of the Zed language
-using the [zq command](../commands/zq.md) and
+> This document provides a beginner's overview of the SuperPipe language
+using the [super command](../commands/zq.md) and
 [real-world data](https://github.com/brimdata/super/blob/main/testdata/edu/README.md) relating to California schools
 and test scores.
 
 ## 1. Getting Started
 
 If you want to follow along by running the examples, simply
-[install zq](../install.md) and copy the
+[install super](../install.md) and copy the
 data files used here into your working directory:
 ```
-curl https://raw.githubusercontent.com/brimdata/super/main/testdata/edu/schools.zson > schools.zson
-curl https://raw.githubusercontent.com/brimdata/super/main/testdata/edu/testscores.zson > testscores.zson
-curl https://raw.githubusercontent.com/brimdata/super/main/testdata/edu/webaddrs.zson > webaddrs.zson
+curl https://raw.githubusercontent.com/brimdata/super/main/testdata/edu/schools.jsup > schools.jsup
+curl https://raw.githubusercontent.com/brimdata/super/main/testdata/edu/testscores.jsup > testscores.jsup
+curl https://raw.githubusercontent.com/brimdata/super/main/testdata/edu/webaddrs.jsup > webaddrs.jsup
 ```
-These files are all encoded in the human-readable [ZSON format](../formats/zson.md)
-so you can easily have a look at them.  ZSON is not optimized for speed but these
+These files are all encoded in the human-readable [Super JSON format](../formats/jsup.md)
+so you can easily have a look at them.  Super JSON is not optimized for speed but these
 files are small enough that the example queries here will all run fast enough.
 
 ## 2. Exploring the Data
 
 It's always a good idea to get a feel for any new data, which is easy to do
-with Zed.  Zed's [sample operator](../language/operators/sample.md) is just the ticket ---
+with SuperPipe.  The [sample operator](../language/operators/sample.md) is just the ticket ---
 `sample` will select one representative value from each "shape" of data present
 in the input, e.g.,
 ```mdtest-command dir=testdata/edu
-super -Z -c 'sample | sort this' schools.zson testscores.zson webaddrs.zson
+super -Z -c 'sample | sort this' schools.jsup testscores.jsup webaddrs.jsup
 ```
 displays
 ```mdtest-output
@@ -63,10 +63,10 @@ displays
     Website: null (string)
 }
 ```
->Note that the `-Z` option tells `zq` to "pretty print" the output in
-the [ZSON](../formats/zson.md) format.
+>Note that the `-Z` option tells `super` to "pretty print" the output in
+the [Super JSON](../formats/jsup.md) format.
 Furthermore, you will notice these examples often include a `-z` to indicate
-line-oriented ZSON, which is the default when `zq` is writing to standard output.
+line-oriented Super JSON, which is the default when `super` is writing to standard output.
 You can omit `-z` when running these commands on the terminal but we include
 them here for clarity and because all of the examples are tied to automated testing,
 which does not utilize a terminal for standard output.
@@ -79,7 +79,7 @@ super -Z -c '
   | by typeof(value)
   | yield typeof
   | sort
-' schools.zson testscores.zson webaddrs.zson
+' schools.jsup testscores.jsup webaddrs.jsup
 ```
 which emits
 ```mdtest-output
@@ -97,18 +97,18 @@ since we obtained the original data from
 
 ## 3. Searching
 
-Searching with Zed is easy but powerful because it blends together the
+Searching with SuperPipe is easy but powerful because it blends together the
 keyword search patterns of Web or email search with the more precise
 predicate matching patterns of query languages like SQL.
 
-With this in mind, you can simply start typing keyword search phrases in Zed
-and they will usually do the right thing.
+With this in mind, you can simply start typing keyword search phrases
+they will usually do the right thing.
 
 ### 3.1 Keyword Search
 
 With keyword search, you can just type a keyword that you want to look for, e.g.,
 ```mdtest-command dir=testdata/edu
-super -z -c Ygnacio schools.zson
+super -z -c Ygnacio schools.jsup
 ```
 which gives the one matching record:
 ```mdtest-output
@@ -120,18 +120,18 @@ As with keyword search, you can simply concantenate keywords to require both
 of them to match (i.e., a "logical AND" of the two search predicates), e.g.
 we can whittle down the two records above by adding the keyword _Delano_
 ```mdtest-command dir=testdata/edu
-super -z -c 'Ygnacio Delano' schools.zson
+super -z -c 'Ygnacio Delano' schools.jsup
 ```
 and we get just the one record that matches:
 ```mdtest-output
 {School:"Valencia (Ygnacio) High (Alternative)",District:"Delano Joint Union High",City:"Delano",County:"Kern",Zip:"93215-1526",Latitude:null(float64),Longitude:null(float64),Magnet:null(bool),OpenDate:1980-07-01T00:00:00Z,ClosedDate:2009-08-01T00:00:00Z,Phone:null(string),StatusType:"Closed",Website:null(string)}
 ```
-Under the covers, a keyword search translates to Zed's [grep function](../language/functions/grep.md),
+Under the covers, a keyword search translates to the [grep function](../language/functions/grep.md),
 which lets you search specific fields instead of the entire input value, e.g.,
 we can search for the string "bar" in the `City` field and list all the unique
 cities that match with a [group-by](#52-grouping):
 ```mdtest-command dir=testdata/edu
-super -f text -c 'grep("bar", City) | by City | yield City | sort' schools.zson
+super -f text -c 'grep("bar", City) | by City | yield City | sort' schools.jsup
 ```
 produces
 ```mdtest-output
@@ -145,7 +145,7 @@ Somes Bar
 ```
 In this example, we use the [yield operator](#8-value-construction) here to pull
 the `City` field out of the record result and we used `-f text` to output the
-results in "text" format instead of ZSON so the strings are printed
+results in "text" format instead of Super JSON so the strings are printed
 without quotes.  The text format is often useful for piping the output to
 other Unix tools that might not expect quotes.
 
@@ -163,7 +163,7 @@ used.
 For example, the following search finds records that contain school names
 that have some additional text between `ACE` and `Academy`:
 ```mdtest-command dir=testdata/edu
-super -z -c 'ACE*Academy' schools.zson
+super -z -c 'ACE*Academy' schools.jsup
 ```
 produces
 ```mdtest-output head
@@ -185,7 +185,7 @@ regexp.
 For example, since there are many high schools in our sample data, to find
 only records containing strings that _begin_ with the word `High`:
 ```mdtest-command dir=testdata/edu
-super -z -c '/^High /' schools.zson
+super -z -c '/^High /' schools.jsup
 ```
 produces
 ```mdtest-output head
@@ -196,12 +196,12 @@ produces
 ...
 ```
 Further details for regular expressions are available in
-the [Zed language documention](../language/search-expressions.md#regular-expressions).
+the [SuperPipe language documention](../language/search-expressions.md#regular-expressions).
 
 ### 3.4 Literal Search
 
 Sometimes you want to search for values that aren't strings, e.g., numbers
-or IP addresses.  Zed can search for any
+or IP addresses.  SuperPipe can search for any
 [primitive-type](../formats/zed.md#1-primitive-types) value just typing
 that value like a keyword.   In this case, the search looks for
 both fields of the value's type for an exact match as well as a substring
@@ -212,7 +212,7 @@ the number `596` matches records that contain numeric fields of this precise val
 (such as from the test scores) and also records that contain string fields
 (such as the ZIP code and phone number fields in the school data), e.g.,
 ```mdtest-command dir=testdata/edu
-super -z -c '596' testscores.zson schools.zson
+super -z -c '596' testscores.jsup schools.jsup
 ```
 finds these records
 ```mdtest-output head
@@ -231,7 +231,7 @@ Let's say we've noticed that a couple of the school names in our sample data
 include the string `Defunct=`. An attempt to enter this as a [keyword](#31-keyword-search)
 search causes a parse error, e.g.,
 ```mdtest-command dir=testdata/edu fails
-super -z -c 'Defunct=' *.zson
+super -z -c 'Defunct=' *.jsup
 ```
 produces
 ```mdtest-output
@@ -242,7 +242,7 @@ Defunct=
 However, wrapping in quotes to performa a string-literal search
 gives the desired result:
 ```mdtest-command dir=testdata/edu
-super -z -c '"Defunct="' schools.zson
+super -z -c '"Defunct="' schools.jsup
 ```
 produces
 ```mdtest-output
@@ -255,7 +255,7 @@ say we're looking for information on the Union Hill Elementary district.
 Entered without quotes, we end up matching far more records than we intended
 since each space character between words is treated as a [Boolean `and`](#541-and), e.g.,
 ```mdtest-command dir=testdata/edu
-super -z -c 'Union Hill Elementary' schools.zson
+super -z -c 'Union Hill Elementary' schools.jsup
 ```
 produces
 ```mdtest-output head
@@ -268,7 +268,7 @@ produces
 However, wrapping the entire search term in quotes allows us to search for the
 complete string, including the spaces, e.g.,
 ```mdtest-command dir=testdata/edu
-super -z -c '"Union Hill Elementary"' schools.zson
+super -z -c '"Union Hill Elementary"' schools.jsup
 ```
 produces
 ```mdtest-output
@@ -283,7 +283,7 @@ produces
 ### 3.5 Predicate Search
 
 Search terms can also be include Boolean predicates adhering
-to Zed's [expression syntax](../language/expressions.md).
+to SuperPipe's [expression syntax](../language/expressions.md).
 
 In particular, a search result can be narrowed down
 to include only records that contain a
@@ -291,7 +291,7 @@ certain value in a particular named field. For example, the following search
 will only match records containing the field called `District` where it is set
 to the precise string value `Winton`:
 ```mdtest-command dir=testdata/edu
-super -z -c 'District=="Winton"' schools.zson
+super -z -c 'District=="Winton"' schools.jsup
 ```
 produces
 ```mdtest-output
@@ -304,13 +304,13 @@ produces
 Because the right-hand-side value to which we were comparing was a string, it
 was necessary to wrap it in quotes. If this string were written as a keyword,
 it would have been interpreted as a field name as
-Zed [field references](../language/pipeline-model.md#implied-field-references)
+[field references](../language/pipeline-model.md#implied-field-references)
 look like keywords in the context of an expression.
 
 For example, to see the records in which the school and district name are the
 same:
 ```mdtest-command dir=testdata/edu
-super -z -c 'District==School' schools.zson
+super -z -c 'District==School' schools.jsup
 ```
 produces
 ```mdtest-output head
@@ -329,7 +329,7 @@ For instance, the "Zip" field in the schools data is a `string` rather than
 a number because of the extended ZIP+4 format that includes a hyphen and four
 additional digits and hence could not be represented in a numeric type, e.g.,
 ```mdtest-command dir=testdata/edu
-super -z -c 'cut Zip' schools.zson
+super -z -c 'cut Zip' schools.jsup
 ```
 produces
 ```mdtest-output head
@@ -338,11 +338,11 @@ produces
 {Zip:"92395-3360"}
 ...
 ```
-Because Zed does not coerce strings to numbers in expressions,
+Because SuperPipe does not coerce strings to numbers in expressions,
 the predicate `Zip==95959` would _not_
-match the top record shown, since Zed recognizes the bare value `95959` as a
+match the top record shown, since SuperPipe recognizes the bare value `95959` as a
 number before comparing it to all the fields named `Zip`.
-However, `Zip=="95959"` _would_ match, since the quotes cause Zed
+However, `Zip=="95959"` _would_ match, since the quotes cause SuperPipe
 to treat the value as a string.
 
 When confronted with messy data like this, you can usually cleaned it up
@@ -350,7 +350,7 @@ to achieve the intent of your searches.  For example, the dash suffix
 of the ZIP codes could be dropped, the string converted to an integer, then
 integer comparisons performed, i.e.,
 ```mdtest-command dir=testdata/edu
-super -z -c 'cut Zip | int64(Zip[0:5])==94607' schools.zson
+super -z -c 'cut Zip | int64(Zip[0:5])==94607' schools.jsup
 ```
 produces
 ```mdtest-output head
@@ -368,7 +368,7 @@ For example, let's say we know there are several school names that start with
 as a _substring_ of the district names in our sample data, the following example
 produces no output, e.g.,
 ```mdtest-command dir=testdata/edu
-super -z -c 'District=="Luther"' schools.zson
+super -z -c 'District=="Luther"' schools.jsup
 ```
 produces an empty output
 ```mdtest-output
@@ -378,7 +378,7 @@ To perform string searches inside of nested values, we can utilize the
 [grep function](../language/functions/grep.md) with
 a [glob](#32-globs), e.g.,
 ```mdtest-command dir=testdata/edu
-super -z -c 'grep(Luther*, District)' schools.zson
+super -z -c 'grep(Luther*, District)' schools.jsup
 ```
 produces
 ```mdtest-output head
@@ -388,7 +388,7 @@ produces
 
 [Regular expressions](#33-regular-expressions) can also be used with `grep`, e.g.,
 ```mdtest-command dir=testdata/edu
-super -z -c 'grep(/^Sunset (Ranch|Ridge) Elementary/, School)' schools.zson
+super -z -c 'grep(/^Sunset (Ranch|Ridge) Elementary/, School)' schools.jsup
 ```
 produces
 ```mdtest-output
@@ -404,7 +404,7 @@ This is performed with `in`.
 
 Since our sample data doesn't contain complex fields, we'll make one by
 using the [`union`](../language/aggregates/union.md) aggregate function to
-create a [`set`](../formats/zson.md#243-set-value)-typed
+create a [`set`](../formats/jsup.md#243-set-value)-typed
 field called `Schools` that contains all unique school names per district. From
 these we'll find each set that contains a school named `Lincoln Elementary`, e.g.,
 ```mdtest-command dir=testdata/edu
@@ -412,7 +412,7 @@ super -Z -c '
   Schools:=union(School) by District
   | "Lincoln Elementary" in Schools
   | sort this
-' schools.zson
+' schools.jsup
 ```
 produces
 ```mdtest-output head
@@ -450,7 +450,7 @@ In addition to testing for equality via `==` and testing containment via
 For example, the following search finds the schools that reported the highest
 math test scores,
 ```mdtest-command dir=testdata/edu
-super -z -c 'AvgScrMath > 690' testscores.zson
+super -z -c 'AvgScrMath > 690' testscores.jsup
 ```
 produces
 ```mdtest-output
@@ -462,7 +462,7 @@ produces
 The same approach can be used to compare characters in `string`-type values,
 such as this search that finds school names at the end of the alphabet, e.g.,
 ```mdtest-command dir=testdata/edu
-super -z -c 'School > "Z"' schools.zson
+super -z -c 'School > "Z"' schools.jsup
 ```
 produces
 ```mdtest-output head
@@ -475,7 +475,7 @@ produces
 ### 3.6 Boolean Logic
 
 Search terms can be combined with Boolean logic as detailed in
-the [Zed language documentation](../language/search-expressions.md#boolean-logic).
+the [SuperPipe language documentation](../language/search-expressions.md#boolean-logic).
 
 In particular, search terms separated by blank space implies
 Boolean `and` between the concatenated terms.
@@ -484,7 +484,7 @@ Let's say we're earching for information about academies
 that are flagged as being in a `Pending` status.  We can simply concatenate
 the predicate for "Pending" and the keyword search for `academy`, e.g.,
 ```mdtest-command dir=testdata/edu
-super -z -c 'StatusType=="Pending" academy' schools.zson
+super -z -c 'StatusType=="Pending" academy' schools.jsup
 ```
 produces
 ```mdtest-output
@@ -506,7 +506,7 @@ Let'a revisit two of our previous example searches that each only
 returned a couple records, searching now with `or` to see them all at once,
 e.g.,
 ```mdtest-command dir=testdata/edu
-super -z -c '"Defunct=" or ACE*Academy' schools.zson
+super -z -c '"Defunct=" or ACE*Academy' schools.jsup
 ```
 produces
 ```mdtest-output
@@ -522,7 +522,7 @@ it in your search.
 For example, to find schools in the `Dixon Unified` district _other than_
 elementary schools, we invert the logic of a search term:
 ```mdtest-command dir=testdata/edu
-super -z -c 'not elementary District=="Dixon Unified"' schools.zson
+super -z -c 'not elementary District=="Dixon Unified"' schools.jsup
 ```
 produces
 ```mdtest-output head
@@ -550,7 +550,7 @@ left-to-right evaluation.
 For example, we've noticed there are some test score records that have `null`
 values for all three test scores:
 ```mdtest-command dir=testdata/edu
-super -z -c 'AvgScrMath==null AvgScrRead==null AvgScrWrite==null' testscores.zson
+super -z -c 'AvgScrMath==null AvgScrRead==null AvgScrWrite==null' testscores.jsup
 ```
 produces
 ```mdtest-output head
@@ -562,7 +562,7 @@ We can easily filter these out by negating the search for these records, e.g.,
 ```mdtest-command dir=testdata/edu
 super -z -c '
   not (AvgScrMath==null AvgScrRead==null AvgScrWrite==null)
-' testscores.zson
+' testscores.jsup
 ```
 produces
 ```mdtest-output head
@@ -577,7 +577,7 @@ super -z -c '
   grep(*High*, sname)
     and (not (AvgScrMath==null AvgScrRead==null AvgScrWrite==null)
       and dname=="San Francisco Unified")
-' testscores.zson
+' testscores.jsup
 ```
 produces
 ```mdtest-output head
@@ -593,9 +593,9 @@ logic.
 
 ## 4. Record Operators
 
-As with the data sets explored here, a very typical use case for Zed is
-to operate over structured logs or events that are all represented as Zed records.
-While Zed queries may operate over any sequence of values, the following operators
+As with the data sets explored here, a very typical use case for SuperPipe is
+to operate over structured logs or events that are all represented as records.
+While SuperPipe queries may operate over any sequence of values, the following operators
 are designed specifically to work on sequences of records:
 * [cut](../language/operators/cut.md) - extract subsets of record fields into new records
 * [drop](../language/operators/drop.md) - drop fields from record values
@@ -610,7 +610,7 @@ the specified named fields.
 
 This example returns only the name and opening date from our school records:
 ```mdtest-command dir=testdata/edu
-super -Z -c 'cut School,OpenDate' schools.zson
+super -Z -c 'cut School,OpenDate' schools.jsup
 ```
 produces
 ```mdtest-output head
@@ -631,7 +631,7 @@ school data that includes fields for both `School` and `Website`, values from
 our web address data that have the `Website` and `addr` fields, and the
 missing value from the test score data since it has none of these fields:
 ```mdtest-command dir=testdata/edu
-super -z -c 'yosemiteuhsd | cut School,Website,addr' *.zson
+super -z -c 'yosemiteuhsd | cut School,Website,addr' *.jsup
 ```
 produces
 ```mdtest-output
@@ -641,7 +641,7 @@ produces
 Here, we return only the `sname` and `dname` fields of the test scores while also
 renaming the fields:
 ```mdtest-command dir=testdata/edu
-super -z -c 'cut School:=sname,District:=dname' testscores.zson
+super -z -c 'cut School:=sname,District:=dname' testscores.jsup
 ```
 produces
 ```mdtest-output head
@@ -657,7 +657,7 @@ fields dropped from the output.
 
 This example return all the fields _other than_ the score values in our test score data:
 ```mdtest-command dir=testdata/edu
-super -z -c 'drop AvgScrMath,AvgScrRead,AvgScrWrite' testscores.zson
+super -z -c 'drop AvgScrMath,AvgScrRead,AvgScrWrite' testscores.jsup
 ```
 produces
 ```mdtest-output head
@@ -679,7 +679,7 @@ Let's say you'd started with table-formatted output of all records in our data
 that reference the town of Geyserville, e.g.,
 
 ```mdtest-command dir=testdata/edu
-super -f table -c 'Geyserville' *.zson
+super -f table -c 'Geyserville' *.jsup
 ```
 produces
 ```mdtest-output
@@ -703,7 +703,7 @@ accurately conveys the heterogeneous nature of the data, but changing schemas
 mid-stream is not allowed in formats such as CSV or other downstream tooling
 such as SQL. Indeed, `zq` halts its output in this case, e.g.,
 ```mdtest-command dir=testdata/edu fails
-super -f csv -c 'Geyserville' *.zson
+super -f csv -c 'Geyserville' *.jsup
 ```
 produces
 ```mdtest-output
@@ -722,7 +722,7 @@ is assembled in a first pass through the data stream, which enables the
 presentation of the results under a single, wider header row with no further
 interruptions between the subsequent data rows, e.g.,
 ```mdtest-command dir=testdata/edu
-super -f csv -c 'Geyserville | fuse' *.zson
+super -f csv -c 'Geyserville | fuse' *.jsup
 ```
 produces
 ```mdtest-output
@@ -764,7 +764,7 @@ reading, and writing scores for each school that reported them, we could say:
 super -Z -c '
   AvgScrMath!=null
   | put AvgAll:=(AvgScrMath+AvgScrRead+AvgScrWrite)/3.0
-' testscores.zson
+' testscores.jsup
 ```
 which produces
 ```mdtest-output head
@@ -787,7 +787,7 @@ super -f table -c '
   | put combined_scores:=AvgScrMath+AvgScrRead+AvgScrWrite
   | cut sname,combined_scores,AvgScrMath,AvgScrRead,AvgScrWrite
   | head 5
-' testscores.zson
+' testscores.jsup
 ```
 produces
 ```mdtest-output
@@ -802,7 +802,7 @@ As noted above the `put` keyword is entirely optional. Here we omit
 it and create a new field to hold the lowercase representation of
 the school `District` field:
 ```mdtest-command dir=testdata/edu
-super -Z -c 'cut District | lower_district:=lower(District)' schools.zson
+super -Z -c 'cut District | lower_district:=lower(District)' schools.jsup
 ```
 produces
 ```mdtest-output head
@@ -824,7 +824,7 @@ The rename steps are applied left-to-right.
 Here is a simple example that renames some fields in our test score data
 to match the field names from our school data:
 ```mdtest-command dir=testdata/edu
-super -Z -c 'rename School:=sname,District:=dname,City:=cname' testscores.zson
+super -Z -c 'rename School:=sname,District:=dname,City:=cname' testscores.jsup
 ```
 produces
 ```mdtest-output head
@@ -841,8 +841,8 @@ produces
 As mentioned above, a field can only be renamed within its own record. In
 other words, a field cannot move between nested levels when being renamed.
 
-For example, consider this sample input data `nested.zson`:
-```mdtest-input nested.zson
+For example, consider this sample input data `nested.jsup`:
+```mdtest-input nested.jsup
 {
     outer: {
         inner: "MyValue"
@@ -851,7 +851,7 @@ For example, consider this sample input data `nested.zson`:
 ```
 The field `inner` can be renamed within that nested record, e.g.,
 ```mdtest-command
-super -Z -c 'rename outer.renamed:=outer.inner' nested.zson
+super -Z -c 'rename outer.renamed:=outer.inner' nested.jsup
 ```
 produces
 ```mdtest-output
@@ -863,7 +863,7 @@ produces
 ```
 However, an attempt to rename it to a top-level field will fail, e.g.,
 ```mdtest-command fails
-super -Z -c 'rename toplevel:=outer.inner' nested.zson
+super -Z -c 'rename toplevel:=outer.inner' nested.jsup
 ```
 produces this compile-time error message and the query is not run:
 ```mdtest-output
@@ -874,7 +874,7 @@ rename toplevel:=outer.inner
 This goal could instead be achieved by combining [`put`](#44-put) and [`drop`](#42-drop),
 e.g.,
 ```mdtest-command
-super -Z -c 'put toplevel:=outer.inner | drop outer.inner' nested.zson
+super -Z -c 'put toplevel:=outer.inner | drop outer.inner' nested.jsup
 ```
 produces
 ```mdtest-output
@@ -899,7 +899,7 @@ the math test scores:
 ```mdtest-command dir=testdata/edu
 super -f table -c '
   min(AvgScrMath),max(AvgScrMath),avg(AvgScrMath)
-' testscores.zson
+' testscores.jsup
 ```
 produces
 ```mdtest-output
@@ -922,7 +922,7 @@ explicit name for the generated field, e.g.,
 ```mdtest-command dir=testdata/edu
 super -f table -c '
   lowest:=min(AvgScrMath),highest:=max(AvgScrMath),typical:=avg(AvgScrMath)
-' testscores.zson
+' testscores.jsup
 ```
 produces
 ```mdtest-output
@@ -950,7 +950,7 @@ and San Francisco:
 super -Z -c '
   LA_Math:=avg(AvgScrMath) where cname=="Los Angeles",
   SF_Math:=avg(AvgScrMath) where cname=="San Francisco"
-' testscores.zson
+' testscores.jsup
 ```
 produces
 ```mdtest-output
@@ -977,7 +977,7 @@ not. The following query shows the cities in which all schools have a website. e
 super -Z -c '
   all_schools_have_website:=and(Website!=null) by City
   | sort City
-' schools.zson
+' schools.jsup
 ```
 produces
 ```mdtest-output head
@@ -1003,7 +1003,7 @@ an undefined manner.
 
 This query gives the name of one of the schools in our sample data:
 ```mdtest-command dir=testdata/edu
-super -z -c 'any(School)' schools.zson
+super -z -c 'any(School)' schools.jsup
 ```
 For small inputs that fit in memory, this will typically be the first such
 field in the stream, but in general you should not rely upon this.  In this
@@ -1018,7 +1018,7 @@ The `avg` function computes an arithmetic mean over all of all of its input.
 
 This query calculates the average of the math test scores:
 ```mdtest-command dir=testdata/edu
-super -f table -c 'avg:=avg(AvgScrMath)' testscores.zson
+super -f table -c 'avg:=avg(AvgScrMath)' testscores.jsup
 ```
 and produces
 ```mdtest-output
@@ -1038,7 +1038,7 @@ super -Z -c '
   County=="Fresno" Website!=null
   | Websites:=collect(Website),Schools:=collect(School) by City
   | sort City
-' schools.zson
+' schools.jsup
 ```
 and produces
 ```mdtest-output head
@@ -1075,9 +1075,9 @@ The `count` function produces a count of all of its input values.
 
 This query counts the number of records in each of our example data sources:
 ```mdtest-command dir=testdata/edu
-super -z -c 'count()' schools.zson
-super -z -c 'count()' testscores.zson
-super -z -c 'count()' webaddrs.zson
+super -z -c 'count()' schools.jsup
+super -z -c 'count()' testscores.jsup
+super -z -c 'count()' webaddrs.jsup
 ```
 and produces
 ```mdtest-output
@@ -1089,7 +1089,7 @@ The `Website` field is known to be in our school and website address data
 sources, but not in the test score data. To confirm this, we can count across
 all data sources and specify the named field, e.g.,
 ```mdtest-command dir=testdata/edu
-super -z -c 'count(Website)' *.zson
+super -z -c 'count(Website)' *.jsup
 ```
 produces
 ```mdtest-output
@@ -1109,7 +1109,7 @@ from the [HyperLogLog repository](https://github.com/axiomhq/hyperloglog).
 This query generates an approcimate count the number of unique school names
 in our sample data set:
 ```mdtest-command dir=testdata/edu
-super -z -c 'dcount(School)' schools.zson
+super -z -c 'dcount(School)' schools.jsup
 ```
 and produces
 ```mdtest-output
@@ -1117,7 +1117,7 @@ and produces
 ```
 To see the precise value, which may take longer to execute, this query
 ```mdtest-command dir=testdata/edu
-super -z -c 'count() by School | count()' schools.zson
+super -z -c 'count() by School | count()' schools.jsup
 ```
 produces
 ```mdtest-output
@@ -1131,7 +1131,7 @@ The `max` function computes the maximum numeric value over all of its input.
 
 To see the highest reported math test score, this query:
 ```mdtest-command dir=testdata/edu
-super -f table -c 'max:=max(AvgScrMath)' testscores.zson
+super -f table -c 'max:=max(AvgScrMath)' testscores.jsup
 ```
 produces
 ```mdtest-output
@@ -1145,7 +1145,7 @@ The `min` function computes the minimum numeric value over all of its input.
 
 To see the lowest reported math test score, this query
 ```mdtest-command dir=testdata/edu
-super -f table -c 'min:=min(AvgScrMath)' testscores.zson
+super -f table -c 'min:=min(AvgScrMath)' testscores.jsup
 ```
 produces
 ```mdtest-output
@@ -1165,7 +1165,7 @@ a listed website:
 super -Z -c '
   has_at_least_one_school_website:=or(Website!=null) by City
   | sort City
-' schools.zson
+' schools.jsup
 ```
 and produces
 ```mdtest-output head
@@ -1203,7 +1203,7 @@ super -Z -c '
   AllMath:=sum(AvgScrMath),
   AllRead:=sum(AvgScrRead),
   AllWrite:=sum(AvgScrWrite)
-' testscores.zson
+' testscores.jsup
 ```
 and produces
 ```mdtest-output
@@ -1226,7 +1226,7 @@ super -Z -c '
   County=="Fresno" Website!=null
   | Websites:=union(Website) by City
   | sort City
-' schools.zson
+' schools.jsup
 ```
 and produces
 ```mdtest-output head
@@ -1269,7 +1269,7 @@ For example, to see the different categories of status for the schools
 in our example data, this query:
 
 ```mdtest-command dir=testdata/edu
-super -z -c 'by StatusType | sort' schools.zson
+super -z -c 'by StatusType | sort' schools.jsup
 ```
 produces
 ```mdtest-output
@@ -1279,10 +1279,10 @@ produces
 {StatusType:"Pending"}
 ```
 If you work a lot at the UNIX/Linux shell, you might have sought to accomplish
-the same via a familiar idiom: `sort | uniq`.  This works in Zed, but the `by`
+the same via a familiar idiom: `sort | uniq`.  This works in SuperPipe, but the `by`
 shorthand is preferable, e.g.,
 ```mdtest-command dir=testdata/edu
-super -z -c 'cut StatusType | sort | uniq' schools.zson
+super -z -c 'cut StatusType | sort | uniq' schools.jsup
 ```
 produces
 ```mdtest-output
@@ -1299,7 +1299,7 @@ test scores and school count for each county/district pairing, this query:
 super -f table -c '
   avg(AvgScrRead),count() by cname,dname
   | sort count desc
-' testscores.zson
+' testscores.jsup
 ```
 produces
 ```mdtest-output head
@@ -1311,13 +1311,13 @@ San Francisco   San Francisco Unified                              454.368421052
 ...
 ```
 Instead of a simple field name, any of the comma-separated group-by elements
-can be any [Zed expression](../language/expressions.md), which may
+can be any [expression](../language/expressions.md), which may
 appear in the form of a field assignment `field:=expr`
 
 To see a count of how many school names of a particular character length
 appear in our example data, this query:
 ```mdtest-command dir=testdata/edu
-super -f table -c 'count() by Name_Length:=len(School) | sort -r' schools.zson
+super -f table -c 'count() by Name_Length:=len(School) | sort -r' schools.jsup
 ```
 produces
 ```mdtest-output head
@@ -1340,7 +1340,7 @@ the misspelled field would appear as embedded missing errors, e.g.,
 super -Z -c '
   avg(AvgScrRead),count() by cname,dnmae
   | sort count desc
-' testscores.zson
+' testscores.jsup
 ```
 produces
 ```mdtest-output head
@@ -1361,15 +1361,15 @@ produces
 
 ## 6. Sorting
 
-Zed provides a convenient way to sort data using the
+SuperPipe provides a convenient way to sort data using the
 [sort operator](../language/operators/sort.md).
-All values in Zed have a well-defined sort order, even complex values
+All values in super data model have a well-defined sort order, even complex values
 and values of different data types, so you can easily sort heterogenous
 sequences of values.
 
 This query sorts our test score records by average reading score:
 ```mdtest-command dir=testdata/edu
-super -z -c 'sort AvgScrRead' testscores.zson
+super -z -c 'sort AvgScrRead' testscores.jsup
 ```
 and produces
 ```mdtest-output head
@@ -1384,7 +1384,7 @@ Now we'll sort the test score records first by average reading score and then
 by average math score. Note how this changed the order of the bottom two
 records in the result, e.g.,
 ```mdtest-command dir=testdata/edu
-super -z -c 'sort AvgScrRead,AvgScrMath' testscores.zson
+super -z -c 'sort AvgScrRead,AvgScrMath' testscores.jsup
 ```
 produces
 ```mdtest-output head
@@ -1402,7 +1402,7 @@ field name as an explicit argument, the `sort` operator did what we wanted
 because it found a field of the `uint64` [data type](../language/data-types.md),
 e.g.,
 ```mdtest-command dir=testdata/edu
-super -z -c 'count() by County | sort -r' schools.zson
+super -z -c 'count() by County | sort -r' schools.jsup
 ```
 produces
 ```mdtest-output head
@@ -1416,7 +1416,7 @@ records. Since we know some of the records don't include a website, we'll
 deliberately put the null values at the front of the list so we can see how
 many there are, e.g.,
 ```mdtest-command dir=testdata/edu
-super -z -c 'count() by Website | sort -nulls first Website' schools.zson
+super -z -c 'count() by Website | sort -nulls first Website' schools.jsup
 ```
 produces
 ```mdtest-output head
@@ -1429,7 +1429,7 @@ produces
 
 ## 7. Sequence Filters
 
-Several Zed operators manipulate a sequence of values based on the order
+Several operators manipulate a sequence of values based on the order
 in which they appear in the input:
 * [head](../language/operators/head.md) - copy leading values of input sequence
 * [tail](../language/operators/tail.md) - copy trailing values of input sequence
@@ -1442,7 +1442,7 @@ of its input to its output.
 
 For example, this query selects the first school record:
 ```mdtest-command dir=testdata/edu
-super -Z -c 'head' schools.zson
+super -Z -c 'head' schools.jsup
 ```
 and produces
 ```mdtest-output
@@ -1464,7 +1464,7 @@ and produces
 ```
 To see the first five school records in Los Angeles county, this query
 ```mdtest-command dir=testdata/edu
-super -z -c 'County=="Los Angeles" | head 5' schools.zson
+super -z -c 'County=="Los Angeles" | head 5' schools.jsup
 ```
 produces
 ```mdtest-output
@@ -1481,7 +1481,7 @@ of its input to its output.
 
 For example, this query selects the last school record:
 ```mdtest-command dir=testdata/edu
-super -Z -c 'tail' schools.zson
+super -Z -c 'tail' schools.jsup
 ```
 and produces
 ```mdtest-output
@@ -1503,7 +1503,7 @@ and produces
 ```
 To see the last five school records in Los Angeles county, this query
 ```mdtest-command dir=testdata/edu
-super -z -c 'County=="Los Angeles" | tail 5' schools.zson
+super -z -c 'County=="Los Angeles" | tail 5' schools.jsup
 ```
 produces
 ```mdtest-output
@@ -1522,7 +1522,7 @@ input to the output.
 Let's say you'd been looking at the contents of just the `District` and
 `County` fields in the order they appear in the school data, e.g.,
 ```mdtest-command dir=testdata/edu
-super -z -c 'cut District,County' schools.zson
+super -z -c 'cut District,County' schools.jsup
 ```
 produces
 ```mdtest-output head
@@ -1541,7 +1541,7 @@ produces
 To eliminate the adjacent lines that share the same field/value pairs,
 this query
 ```mdtest-command dir=testdata/edu
-super -z -c 'cut District,County | uniq' schools.zson
+super -z -c 'cut District,County | uniq' schools.jsup
 ```
 produces
 ```mdtest-output head
@@ -1568,7 +1568,7 @@ the average math score with the school name and the county name:
 super -Z -c '
   AvgScrMath!=null
   | yield {school:sname,avg:AvgScrMath}, {county:cname,zvg:AvgScrMath}
-' testscores.zson
+' testscores.jsup
 ```
 which produces
 ```mdtest-output head 4
@@ -1597,7 +1597,7 @@ super -f table -c '
   | put combined_scores:=AvgScrMath+AvgScrRead+AvgScrWrite
   | cut sname,combined_scores,AvgScrMath,AvgScrRead,AvgScrWrite
   | head 5
-' testscores.zson
+' testscores.jsup
 ```
 produces
 ```mdtest-output
@@ -1621,7 +1621,7 @@ AvgScrMath != null
           AvgScrRead,
           AvgScrWrite
         }
-| head 5' testscores.zson
+| head 5' testscores.jsup
 ```
 produces
 ```mdtest-output

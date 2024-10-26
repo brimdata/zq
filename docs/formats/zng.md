@@ -8,12 +8,12 @@ sidebar_label: ZNG
 ## 1. Introduction
 
 ZNG (pronounced "zing") is an efficient, sequence-oriented serialization format for any data
-conforming to the [Zed data model](zed.md).
+conforming to the [super data model](zed.md).
 
 ZNG is "row oriented" and
 analogous to [Apache Avro](https://avro.apache.org) but does not
 require schema definitions as it instead utilizes the fine-grained type system
-of the Zed data model.
+of the super data model.
 This binary format is based on machine-readable data types with an
 encoding methodology inspired by Avro,
 [Parquet](https://en.wikipedia.org/wiki/Apache_Parquet), and
@@ -23,7 +23,7 @@ To this end, ZNG embeds all type information
 in the stream itself while having a binary serialization format that
 allows "lazy parsing" of fields such that
 only the fields of interest in a stream need to be deserialized and interpreted.
-Unlike Avro, ZNG embeds its "schemas" in the data stream as Zed types and thereby admits
+Unlike Avro, ZNG embeds its "schemas" in the data stream as types and thereby admits
 an efficient multiplexing of heterogeneous data types by prepending to each
 data value a simple integer identifier to reference its type.
 
@@ -152,7 +152,7 @@ then interpreted according to the `T` bits of the frame code as a
 
 ### 2.1 Types Frame
 
-A _types frame_ encodes a sequence of type definitions for complex Zed types
+A _types frame_ encodes a sequence of type definitions for complex types
 and establishes a "type ID" for each such definition.
 Type IDs for the "primitive types"
 are predefined with the IDs listed in the [Primitive Types](#3-primitive-types) table.
@@ -210,7 +210,7 @@ is further encoded as a "counted string", which is the `uvarint` encoding
 of the length of the string followed by that many bytes of UTF-8 encoded
 string data.
 
-N.B.: As defined by [ZSON](zson.md), a field name can be any valid UTF-8 string much like JSON
+N.B.: As defined by [Super JSON](jsup.md), a field name can be any valid UTF-8 string much like JSON
 objects can be indexed with arbitrary string keys (via index operator)
 even if the field names available to the dot operator are restricted
 by language syntax for identifiers.
@@ -313,7 +313,7 @@ type that differs from the previous definition.
 
 ### 2.2 Values Frame
 
-A _values frame_ is a sequence of Zed values each encoded as the value's type ID,
+A _values frame_ is a sequence of values each encoded as the value's type ID,
 encoded as a `uvarint`, followed by its tag-encoded serialization as described below.
 
 Since a single type ID encodes the entire value's structure, no additional
@@ -420,11 +420,11 @@ this specification to decode all of the data as described herein even if such
 frames provide additional semantics on top of the base ZNG format.
 
 The body of a control frame is a control message and may be JSON,
-ZSON, ZNG, binary, or UTF-8 text.  The serialization of the control
-frame body is independent of the ZNG stream containing the control
+Super JSON, Super Binary, arbitrary binary, or UTF-8 text.  The serialization of the control
+frame body is independent of the Super JSON stream containing the control
 frame.
 
-Any control message not known by a ZNG data receiver shall be ignored.
+Any control message not known by a Super Binary data receiver shall be ignored.
 
 The delivery order of control messages with respect to the delivery
 order of values of the ZNG stream should be preserved by an API implementing
@@ -442,7 +442,7 @@ A control frame has the following form:
 ```
 where
 * `<encoding>` is a single byte indicating whether the body is encoded
-as ZNG (0), JSON (1), ZSON (2), an arbitrary UTF-8 string (3), or arbitrary binary data (4),
+as ZNG (0), JSON (1), Super JSON (2), an arbitrary UTF-8 string (3), or arbitrary binary data (4),
 * `<len>` is a `uvarint` encoding the length in bytes of the body
 (exclusive of the length 1 encoding byte), and
 * `<body>` is a control message whose semantics are outside the scope of
@@ -531,7 +531,7 @@ are serialized in little-endian format.
 
 ## 4. Type Values
 
-As the ZSON data model supports first-class types and because the ZNG design goals
+As the super data model supports first-class types and because the ZNG design goals
 require that value serializations cannot change across type contexts, type values
 must be encoded in a fashion that is independent of the type context.
 Thus, a serialized type value encodes the entire type in a canonical form

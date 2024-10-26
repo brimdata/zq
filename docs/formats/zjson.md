@@ -7,14 +7,14 @@ sidebar_label: ZJSON
 
 ## 1. Introduction
 
-The [Zed data model](zed.md)
+The [super data model](zed.md)
 is based on richly typed records with a deterministic field order,
-as is implemented by the [ZSON](zson.md), [ZNG](zng.md), and [VNG](vng.md) formats.
+as is implemented by the [Super JSON](jsup.md), [Super Binary](zng.md), and [Super Columnar](vng.md) formats.
 Given the ubiquity of JSON, it is desirable to also be able to serialize
-Zed data into the JSON format.   However, encoding Zed data values
+super data into the JSON format.   However, encoding super data values
 directly as JSON values would not work without loss of information.
 
-For example, consider this Zed data as [ZSON](zson.md):
+For example, consider this [Super JSON](jsup.md) data:
 ```
 {
     ts: 2018-03-24T17:15:21.926018012Z,
@@ -61,28 +61,28 @@ Also, it is at the whim of a JSON implementation whether
 or not the order of object keys is preserved.
 
 While JSON is well suited for data exchange of generic information, it is not
-so appropriate for a [super-structured data model](./README.md#2-a-super-structured-pattern)
-like Zed.  That said, JSON can be used as an encoding format for Zed by mapping Zed data
-onto a JSON-based protocol.  This allows clients like web apps or
-Electron apps to receive and understand Zed and, with the help of client
+sufficient for the [super-structured data model](./README.md#2-zed-a-super-structured-pattern).
+That said, JSON can be used as an encoding format for super data with another layer
+of encoding on top of a JSON-based protocol.  This allows clients like web apps or
+Electron apps to receive and understand Super JSON and, with the help of client
 libraries like [zed-js](https://github.com/brimdata/zui/tree/main/packages/zed-js),
-to manipulate the rich, structured Zed types that are implemented on top of
+to manipulate the rich, structured Super JSON types that are implemented on top of
 the basic JavaScript types.
 
 In other words,
 because JSON objects do not have a deterministic field order nor does JSON
 in general have typing beyond the basics (i.e., strings, floating point numbers,
-objects, arrays, and booleans), we decided to encode Zed data with
-its embedded type model all in a layer above regular JSON.
+objects, arrays, and booleans), Super JSON and
+its embedded type model is layered on top of regular JSON.
 
 ## 2. The Format
 
-The format for representing Zed in JSON is called ZJSON.
-Converting ZSON, ZNG, or VNG to ZJSON and back results in a complete and
-accurate restoration of the original Zed data.
+The format for representing Super JSON data in JSON is called ZJSON.
+Converting Super JSON, Super Binary, or Super Columnar to ZJSON and back results in a complete and
+accurate restoration of the original super data.
 
 A ZJSON stream is defined as a sequence of JSON objects where each object
-represents a Zed value and has the form:
+represents a value and has the form:
 ```
 {
   "type": <type>,
@@ -93,7 +93,7 @@ The type and value fields are encoded as defined below.
 
 ### 2.1 Type Encoding
 
-The type encoding for a primitive type is simply its [Zed type name](zed.md#1-primitive-types)
+The type encoding for a primitive type is simply its [type name](zed.md#1-primitive-types)
 e.g., "int32" or "string".
 
 Complex types are encoded with small-integer identifiers.
@@ -101,7 +101,7 @@ The first instance of a unique type defines the binding between the
 integer identifier and its definition, where the definition may recursively
 refer  to earlier complex types by their identifiers.
 
-For example, the Zed type `{s:string,x:int32}` has this ZJSON format:
+For example, the type `{s:string,x:int32}` has this ZJSON format:
 ```
 {
   "id": 123,
@@ -229,7 +229,7 @@ where `<type>` is a recursively encoded type.
 
 #### 2.1.8 Named Type
 
-A named type is encoded as a binding between a name and a Zed type
+A named type is encoded as a binding between a name and a type
 and represents a new type so named.  A type definition type has the form
 ```
 {
@@ -244,7 +244,7 @@ and `<type>` is a recursively encoded type.
 
 ### 2.2 Value Encoding
 
-The primitive values comprising an arbitrarily complex Zed data value are encoded
+The primitive values comprising an arbitrarily complex data value are encoded
 as a JSON array of strings mixed with nested JSON arrays whose structure
 conforms to the nested structure of the value's schema as follows:
 * each record, array, and set is encoded as a JSON array of its composite values,
@@ -256,8 +256,8 @@ as described recursively herein,
 `[ <key>, <value> ]` where `key` and `value` are recursively encoded,
 * a type value is encoded [as above](#21-type-encoding),
 * each primitive that is not a type value
-is encoded as a string conforming to its ZSON representation, as described in the
-[corresponding section of the ZSON specification](zson.md#23-primitive-values).
+is encoded as a string conforming to its Super JSON representation, as described in the
+[corresponding section of the Super JSON specification](jsup.md#23-primitive-values).
 
 For example, a record with three fields --- a string, an array of integers,
 and an array of union of string, and float64 --- might have a value that looks like this:
@@ -275,9 +275,9 @@ writes its ZJSON output as lines of NDJSON.
 ## 4. Example
 
 Here is an example that illustrates values of a repeated type,
-nesting, records, array, and union. Consider the file `input.zson`:
+nesting, records, array, and union. Consider the file `input.jsup`:
 
-```mdtest-input input.zson
+```mdtest-input input.jsup
 {s:"hello",r:{a:1,b:2}}
 {s:"world",r:{a:3,b:4}}
 {s:"hello",r:{a:[1,2,3]}}
@@ -288,7 +288,7 @@ nesting, records, array, and union. Consider the file `input.zson`:
 This data is represented in ZJSON as follows:
 
 ```mdtest-command
-super -f zjson input.zson | jq .
+super -f zjson input.jsup | jq .
 ```
 
 ```mdtest-output

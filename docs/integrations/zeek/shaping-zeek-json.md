@@ -185,7 +185,7 @@ The bulk of this Zed shaper consists of detailed per-field data type
 definitions for each record in the default set of JSON logs output by Zeek.
 These type definitions reference the types we defined above, such as `port`
 and `conn_id`. The syntax for defining primitive and complex types follows the
-relevant sections of the [ZSON Format](../../formats/zson.md#2-the-zson-format)
+relevant sections of the [Super JSON Format](../../formats/jsup.md#2-the-super-json-format)
 specification.
 
 ```
@@ -331,7 +331,7 @@ operations on the richly-typed records, the Zed query on the command line
 should begin with a `|`, as this appends it to the pipeline at the bottom of
 the shaper from the included file.
 
-For example, to see a ZSON representation of just the errors that may have
+For example, to see a Super JSON representation of just the errors that may have
 come from attempting to shape all the logs in the current directory:
 
 ```

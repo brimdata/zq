@@ -76,7 +76,7 @@ which also gives
 4
 ```
 > Note that we are using the `-z` option with `zq` in all of the examples,
-> which causes `zq` to format the output as [ZSON](../formats/zson.md).
+> which causes `zq` to format the output as [ZSON](../formats/jsup.md).
 > When running `zq` on the terminal, you do not need `-z` as it is the default,
 > but we include it here for clarity and because all of these examples are
 > run through automated testing, which is not attached to a terminal.
@@ -158,7 +158,7 @@ trying to do high-precision stuff with data.
 When using `zq`, it's handy to operate in the
 domain of Zed data and only output to JSON when needed.
 
-The human-readable format of Zed is called [ZSON](../formats/zson.md)
+The human-readable format of Zed is called [ZSON](../formats/jsup.md)
 (and yes, that's a play on the acronym JSON).
 
 ZSON is nice because it has a comprehensive type system and you can
@@ -249,10 +249,10 @@ Here, `v1` is a 64-bit IEEE floating-point value just like JSON.
 
 Unlike JSON, `v2` is a 64-bit integer.  And there are other integer
 types as with `v3`,
-which utilizes a [ZSON type decorator](../formats/zson.md#22-type-decorators),
+which utilizes a [ZSON type decorator](../formats/jsup.md#22-type-decorators),
 in this case,
 to clarify its specific type of integer as unsigned 8 bits.
-
+a
 `v4` has type `time` and `v5` type `duration`.
 
 `v6` is type `ip` and `v7` type `net`.

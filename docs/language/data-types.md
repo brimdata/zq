@@ -5,37 +5,37 @@ sidebar_label: Data Types
 
 # Data Types
 
-The Zed language includes most data types of a typical programming language
-as defined in the [Zed data model](../formats/zed.md).
+The SuperPipe language includes most data types of a typical programming language
+as defined in the [super data model](../formats/zed.md).
 
 The syntax of individual literal values generally follows
-the [ZSON syntax](../formats/zson.md) with the exception that
-[type decorators](../formats/zson.md#22-type-decorators)
+the [Super JSON syntax](../formats/jsup.md) with the exception that
+[type decorators](../formats/jsup.md#22-type-decorators)
 are not included in the language.  Instead, a
 [type cast](expressions.md#casts) may be used in any expression for explicit
 type conversion.
 
 In particular, the syntax of primitive types follows the
-[primitive-value definitions](../formats/zson.md#23-primitive-values) in ZSON
-as well as the various [complex value definitions](../formats/zson.md#24-complex-values)
+[primitive-value definitions](../formats/jsup.md#23-primitive-values) in Super JSON
+as well as the various [complex value definitions](../formats/jsup.md#24-complex-values)
 like records, arrays, sets, and so forth.  However, complex values are not limited to
-constant values like ZSON and can be composed from [literal expressions](expressions.md#literals).
+constant values like Super JSON and can be composed from [literal expressions](expressions.md#literals).
 
 ## First-class Types
 
-Like the Zed data model, the Zed language has first-class types:
-any Zed type may be used as a value.
+As in the super data model, the SuperPipe language has first-class types:
+any type may be used as a value.
 
 The primitive types are listed in the
 [data model specification](../formats/zed.md#1-primitive-types)
-and have the same syntax in the Zed language.  Complex types also follow
-the ZSON syntax.  Note that the type of a type value is simply `type`.
+and have the same syntax in SuperPipe.  Complex types also follow
+the Super JSON syntax.  Note that the type of a type value is simply `type`.
 
-As in ZSON, _when types are used as values_, e.g., in a Zed expression,
+As in Super JSON, _when types are used as values_, e.g., in an expression,
 they must be referenced within angle brackets.  That is, the integer type
 `int64` is expressed as a type value using the syntax `<int64>`.
 
-Complex types in the Zed language follow the ZSON syntax as well.  Here are
+Complex types in the SuperPipe language follow the Super JSON syntax as well.  Here are
 a few examples:
 * a simple record type - `{x:int64,y:int64}`
 * an array of integers - `[int64]`
@@ -69,7 +69,7 @@ produces
 {typeof:<type>,count:1(uint64)}
 ```
 When running such a query over complex, semi-structured data, the results can
-be quite illuminating and can inform the design of "data shaping" Zed queries
+be quite illuminating and can inform the design of "data shaping" queries
 to transform raw, messy data into clean data for downstream tooling.
 
 Note the somewhat subtle difference between a record value with a field `t` of
@@ -105,11 +105,11 @@ type socket = {addr:ip,port:port=uint16}
 defines a named type `socket` that is a record with field `addr` of type `ip`
 and field `port` of type "port", where type "port" is a named type for type `uint16` .
 
-Named types may also be defined by the input data itself, as Zed data is
+Named types may also be defined by the input data itself, as super data is
 comprehensively self describing.
 When named types are defined in the input data, there is no need to declare their
 type in a query.
-In this case, a Zed expression may refer to the type by the name that simply
+In this case, a SuperPipe expression may refer to the type by the name that simply
 appears to the runtime as a side effect of operating upon the data.  If the type
 name referred to in this way does not exist, then the type value reference
 results in `error("missing")`.  For example,
@@ -156,16 +156,16 @@ results in
 Here, the two versions of type "foo" are retained in the group-by results.
 
 In general, it is bad practice to define multiple versions of a single named type,
-though the Zed system and Zed data model accommodate such dynamic bindings.
+though the SuperDB system and super data model accommodate such dynamic bindings.
 Managing and enforcing the relationship between type names and their type definitions
-on a global basis (e.g., across many different data pools in a Zed lake) is outside
+on a global basis (e.g., across many different data pools in a data lake) is outside
 the scope of the Zed data model and language.  That said, Zed provides flexible
 building blocks so systems can define their own schema versioning and schema
 management policies on top of these Zed primitives.
 
-Zed's [super-structured data model](../formats/README.md#2-a-super-structured-pattern)
+The [super-structured data model](../formats/README.md#2-a-super-structured-pattern)
 is a superset of relational tables and
-the Zed language's type system can easily make this connection.
+SuperPipe's type system can easily make this connection.
 As an example, consider this type definition for "employee":
 ```
 type employee = {id:int64,first:string,last:string,job:string,salary:float64}
@@ -177,7 +177,7 @@ FROM employee
 ORDER BY salary
 LIMIT 5
 ```
-In Zed, you would say
+In SuperPipe, you would say
 ```
 from anywhere
 | typeof(this)==<employee>
@@ -194,7 +194,7 @@ from anywhere
 | sort salary
 | head 5
 ```
-The power of Zed is that you can interpret data on the fly as belonging to
+The power of SuperPipe is that you can interpret data on the fly as belonging to
 a certain schema, in this case "employee", and those records can be intermixed
 with other relevant data.  There is no need to create a table called "employee"
 and put the data into the table before that data can be queried as an "employee".
@@ -203,8 +203,8 @@ to work.
 
 ## First-class Errors
 
-As with types, errors in Zed are first-class: any value can be transformed
-into an error by wrapping it in the Zed [`error` type](../formats/zed.md#27-error).
+As with types, errors in SuperPipe are first-class: any value can be transformed
+into an error by wrapping it in an [`error` type](../formats/zed.md#27-error).
 
 In general, expressions and functions that result in errors simply return
 a value of type `error` as a result.  This encourages a powerful flow-style
@@ -245,7 +245,7 @@ produces
 <error(string)>
 ```
 First-class errors are particularly useful for creating structured errors.
-When a Zed query encounters a problematic condition,
+When a SuperPipe query encounters a problematic condition,
 instead of silently dropping the problematic error
 and logging an error obscurely into some hard-to-find system log as so many
 ETL pipelines do, the Zed logic can
@@ -255,9 +255,9 @@ For example, suppose a bad value shows up:
 ```
 {kind:"bad", stuff:{foo:1,bar:2}}
 ```
-A Zed [shaper](shaping.md) could catch the bad value (e.g., as a default
+A [shaper](shaping.md) could catch the bad value (e.g., as a default
 case in a [`switch`](operators/switch.md) topology) and propagate it as
-an error using the Zed expression:
+an error using the expression:
 ```
 yield error({message:"unrecognized input",input:this})
 ```
@@ -286,7 +286,7 @@ useful approach that Zed enables.
 
 ### Missing and Quiet
 
-Zed's heterogeneous data model allows for queries
+SuperDB's heterogeneous data model allows for queries
 that operate over different types of data whose structure and type
 may not be known ahead of time, e.g., different
 types of records with different field names and varying structure.
@@ -314,7 +314,7 @@ To solve this problem, the `MISSING` value was proposed to represent the value t
 results from accessing a field that is not present.  Thus, `x==NULL` and
 `x==MISSING` could disambiguate the two cases above.
 
-Zed, instead, recognizes that the SQL value `MISSING` is a paradox:
+SuperPipe, instead, recognizes that the SQL value `MISSING` is a paradox:
 I'm here but I'm not.  
 
 In reality, a `MISSING` value is not a value.  It's an error condition
@@ -323,7 +323,7 @@ that resulted from trying to reference something that didn't exist.
 So why should we pretend that this is a bona fide value?  SQL adopted this
 approach because it lacks first-class errors.
 
-But Zed has first-class errors so
+But SuperPipe has first-class errors so
 a reference to something that does not exist is an error of type
 `error(string)` whose value is `error("missing")`.  For example,
 ```mdtest-command
