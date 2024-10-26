@@ -163,15 +163,15 @@ func (a *analyzer) semExpr(e ast.Expr) dag.Expr {
 		for _, elem := range e.Elems {
 			switch elem := elem.(type) {
 			case *ast.FieldExpr:
-				if _, ok := fields[elem.Name]; ok {
-					a.error(elem, fmt.Errorf("record expression: %w", &super.DuplicateFieldError{Name: elem.Name}))
+				if _, ok := fields[elem.Name.Text]; ok {
+					a.error(elem, fmt.Errorf("record expression: %w", &super.DuplicateFieldError{Name: elem.Name.Text}))
 					continue
 				}
-				fields[elem.Name] = struct{}{}
+				fields[elem.Name.Text] = struct{}{}
 				e := a.semExpr(elem.Value)
 				out = append(out, &dag.Field{
 					Kind:  "Field",
-					Name:  elem.Name,
+					Name:  elem.Name.Text,
 					Value: e,
 				})
 			case *ast.ID:

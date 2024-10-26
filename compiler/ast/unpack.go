@@ -56,7 +56,6 @@ var unpacker = unpack.New(
 	Pool{},
 	Primitive{},
 	Put{},
-	QuotedString{},
 	Record{},
 	Agg{},
 	Regexp{},

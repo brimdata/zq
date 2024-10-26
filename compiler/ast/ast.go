@@ -131,12 +131,6 @@ type Glob struct {
 	Loc     `json:"loc"`
 }
 
-type QuotedString struct {
-	Kind string `json:"kind" unpack:""`
-	Text string `json:"text"`
-	Loc  `json:"loc"`
-}
-
 type Regexp struct {
 	Kind       string `json:"kind" unpack:""`
 	Pattern    string `json:"pattern"`
@@ -155,10 +149,9 @@ type Pattern interface {
 	PatternAST()
 }
 
-func (*Glob) PatternAST()         {}
-func (*QuotedString) PatternAST() {}
-func (*Regexp) PatternAST()       {}
-func (*String) PatternAST()       {}
+func (*Glob) PatternAST()   {}
+func (*Regexp) PatternAST() {}
+func (*String) PatternAST() {}
 
 type RecordExpr struct {
 	Kind  string       `json:"kind" unpack:""`
@@ -172,9 +165,9 @@ type RecordElem interface {
 }
 
 type FieldExpr struct {
-	Kind  string `json:"kind" unpack:""`
-	Name  string `json:"name"`
-	Value Expr   `json:"value"`
+	Kind  string  `json:"kind" unpack:""`
+	Name  *String `json:"name"`
+	Value Expr    `json:"value"`
 	Loc   `json:"loc"`
 }
 
@@ -397,10 +390,9 @@ type (
 		Loc   `json:"loc"`
 	}
 	Tail struct {
-		Kind       string `json:"kind" unpack:""`
-		KeywordPos int    `json:"keyword_pos"`
-		Count      Expr   `json:"count"`
-		Loc        `json:"loc"`
+		Kind  string `json:"kind" unpack:""`
+		Count Expr   `json:"count"`
+		Loc   `json:"loc"`
 	}
 	Pass struct {
 		Kind string `json:"kind" unpack:""`
@@ -412,9 +404,7 @@ type (
 		Loc   `json:"loc"`
 	}
 	Summarize struct {
-		Kind string `json:"kind" unpack:""`
-		// StartPos is not called KeywordPos for Summarize since the "summarize"
-		// keyword is optional.
+		Kind  string      `json:"kind" unpack:""`
 		Limit int         `json:"limit"`
 		Keys  Assignments `json:"keys"`
 		Aggs  Assignments `json:"aggs"`
@@ -508,18 +498,18 @@ type (
 		Loc    `json:"loc"`
 	}
 	Load struct {
-		Kind    string `json:"kind" unpack:""`
-		Pool    string `json:"pool"` // ast.String etc
-		Branch  string `json:"branch"`
-		Author  string `json:"author"`
-		Message string `json:"message"`
-		Meta    string `json:"meta"`
+		Kind    string  `json:"kind" unpack:""`
+		Pool    *String `json:"pool"`
+		Branch  *String `json:"branch"`
+		Author  *String `json:"author"`
+		Message *String `json:"message"`
+		Meta    *String `json:"meta"`
 		Loc     `json:"loc"`
 	}
 	Assert struct {
 		Kind string `json:"kind" unpack:""`
 		Expr Expr   `json:"expr"`
-		Text string `json:"text"` //XXX text?
+		Text string `json:"text"`
 		Loc  `json:"loc"`
 	}
 	Output struct {
@@ -540,18 +530,18 @@ type (
 	File struct {
 		Kind     string     `json:"kind" unpack:""`
 		Path     Pattern    `json:"path"`
-		Format   string     `json:"format"`
+		Format   *String    `json:"format"`
 		SortKeys []SortExpr `json:"sort_keys"`
 		Loc      `json:"loc"`
 	}
 	HTTP struct {
 		Kind     string      `json:"kind" unpack:""`
 		URL      Pattern     `json:"url"`
-		Format   string      `json:"format"`
+		Format   *String     `json:"format"`
 		SortKeys []SortExpr  `json:"sort_keys"`
-		Method   string      `json:"method"`
+		Method   *String     `json:"method"`
 		Headers  *RecordExpr `json:"headers"`
-		Body     string      `json:"body"`
+		Body     *String     `json:"body"`
 		Loc      `json:"loc"`
 	}
 	Pool struct {
@@ -567,8 +557,8 @@ type (
 
 type PoolSpec struct {
 	Pool   Pattern `json:"pool"`
-	Commit string  `json:"commit"`
-	Meta   string  `json:"meta"`
+	Commit *String `json:"commit"`
+	Meta   *String `json:"meta"`
 	Tap    bool    `json:"tap"`
 	Loc    `json:"loc"`
 }
