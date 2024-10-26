@@ -40,6 +40,7 @@ func (s *Shared) SetFlags(fs *flag.FlagSet) {
 	fs.IntVar(&s.parallel, "P", 0, "display parallelized DAG")
 	fs.BoolVar(&s.query, "C", false, "display DAG or AST as query text")
 	fs.BoolVar(&s.sql, "sql", false, "force a strict SQL intepretation of the query text")
+	s.OutputFlags.DefaultPretty = true
 	s.OutputFlags.SetFlags(fs)
 }
 

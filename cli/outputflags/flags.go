@@ -22,6 +22,7 @@ import (
 type Flags struct {
 	anyio.WriterOpts
 	DefaultFormat string
+	DefaultPretty bool
 	split         string
 	splitSize     auto.Bytes
 	outputFile    string
@@ -79,7 +80,7 @@ func (f *Flags) SetFormatFlags(fs *flag.FlagSet) {
 	fs.BoolVar(&f.jsonShortcut, "j", false, "use line-oriented JSON output independent of -f option")
 	fs.BoolVar(&f.jsonPretty, "J", false, "use formatted JSON output independent of -f option")
 	fs.BoolVar(&f.zsonShortcut, "z", false, "use line-oriented ZSON output independent of -f option")
-	fs.BoolVar(&f.zsonPretty, "Z", false, "use formatted ZSON output independent of -f option")
+	fs.BoolVar(&f.zsonPretty, "Z", f.DefaultPretty, "use formatted ZSON output independent of -f option")
 	fs.BoolVar(&f.forceBinary, "B", false, "allow binary zng be sent to a terminal output")
 }
 
