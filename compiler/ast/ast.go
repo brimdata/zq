@@ -81,6 +81,21 @@ type Conditional struct {
 	Loc  `json:"loc"`
 }
 
+type CaseExpr struct {
+	Kind  string `json:"kind" unpack:""`
+	Expr  Expr   `json:"expr"`
+	Whens []When `json:"whens"`
+	Else  Expr   `json:"else"`
+	Loc   `json:"loc"`
+}
+
+type When struct {
+	Kind string `json:"kind" unpack:""`
+	Cond Expr   `json:"expr"`
+	Then Expr   `json:"else"`
+	Loc  `json:"loc"`
+}
+
 // A Call represents different things dependending on its context.
 // As a operator, it is either a group-by with no group-by keys and no duration,
 // or a filter with a function that is boolean valued.  This is determined
@@ -264,6 +279,7 @@ func (*UnaryExpr) ExprAST()   {}
 func (*BinaryExpr) ExprAST()  {}
 func (*Conditional) ExprAST() {}
 func (*Call) ExprAST()        {}
+func (*CaseExpr) ExprAST()    {}
 func (*Cast) ExprAST()        {}
 func (*ID) ExprAST()          {}
 func (*IndexExpr) ExprAST()   {}

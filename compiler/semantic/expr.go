@@ -237,6 +237,9 @@ func (a *analyzer) semExpr(e ast.Expr) dag.Expr {
 		}
 	case *ast.FString:
 		return a.semFString(e)
+	case *ast.CaseExpr:
+		a.error(e, errors.New("case matching-style expressions not yet supported"))
+		return badExpr()
 	}
 	panic(errors.New("invalid expression type"))
 }

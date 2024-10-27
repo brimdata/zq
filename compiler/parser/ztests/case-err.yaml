@@ -1,0 +1,8 @@
+zed: 'yield case x when 1 then "foo" when 2 then "bar" else {y:12} end'
+input: |
+  {x:1}
+  {x:2,y:3}
+  {x:3}
+  1
+
+errorRE: 'case matching-style expressions not yet supported'

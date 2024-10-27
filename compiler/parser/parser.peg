@@ -983,6 +983,7 @@ DerefExpr
       }, nil
     }
   / FuncExpr
+  / CaseExpr
   / Primary
 
 FuncExpr
@@ -1013,6 +1014,53 @@ Function
     }
   / !FuncGuard fn:Identifier __ "(" __ args:FunctionArgs __ ")" where:WhereClause? {
       return newCall(c, fn, args, where), nil
+    }
+
+CaseExpr
+  = "case"i cases:When+ else_:(_ "else" _ Expr)? _ "end"i (_ "case"i)? {
+        whens := sliceOf[ast.When](cases)
+        cond := &ast.Conditional{
+            Kind: "Conditional",
+            Loc: loc(c),
+            Cond: whens[0].Cond,
+            Then: whens[0].Then,
+        }
+        last := cond
+        for _, when := range whens[1:] {
+            next := &ast.Conditional{
+               Kind: "Conditional",
+               Cond: when.Cond,
+               Then: when.Then,
+               Loc: loc(c),
+            }
+            last.Else = next
+            last = next
+        }
+        if else_ != nil {
+            last.Else = else_.([]any)[3].(ast.Expr)
+        }
+        return cond, nil
+    }
+  / "case"i _ expr:Expr whens:When+ else_:(_ "else" _ Expr)? _ "end"i (_ "case"i)? {
+        cond := &ast.CaseExpr{
+            Kind: "CaseExpr",
+            Expr: expr.(ast.Expr),
+            Whens: sliceOf[ast.When](whens),
+            Loc: loc(c),
+        }
+        if else_ != nil {
+            cond.Else = else_.([]any)[3].(ast.Expr)
+        }
+        return cond, nil
+    }
+
+When
+  = _ "when"i __ cond:Expr _ "then"i _ then:Expr {
+      return ast.When{
+        Kind: "When",
+        Cond: cond.(ast.Expr),
+        Then: then.(ast.Expr),
+      }, nil
     }
 
 RegexpPrimitive
