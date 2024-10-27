@@ -1603,7 +1603,7 @@ UnicodeEscape
     }
 
 RegexpPattern
-  = "/" body:RegexpBody "/" !KeyWordStart { return body, nil } // XXX s/b Node
+  = "/" body:RegexpBody "/" !KeyWordStart { return body, nil }
 
 RegexpBody
   = ([^/\\] / "\\" .)+ { return string(c.text), nil }
