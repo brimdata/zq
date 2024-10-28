@@ -4,6 +4,6 @@ script: |
 outputs:
   - name: stderr
     data: |
-      super: "a": not such file at line 1, column 13:
+      super: "a": no such file at line 1, column 13:
       from ( pool a )
                   ~

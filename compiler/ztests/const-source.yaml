@@ -37,12 +37,12 @@ outputs:
       )
   - name: stderr
     data: |
-      from expression requires a string but encountered: 3.14 at line 1, column 24:
+      from expression requires a string but encountered 3.14 at line 1, column 24:
       const POOL = 3.14 from [POOL]
                              ~~~~~~
-      from expression requires a string but encountered: 127.0.0.1 at line 1, column 29:
+      from expression requires a string but encountered 127.0.0.1 at line 1, column 29:
       const FILE = 127.0.0.1 file [FILE]
                                   ~~~~~~
-      from expression requires a string but encountered: true at line 1, column 22:
+      from expression requires a string but encountered true at line 1, column 22:
       const URL = true get [URL]
                            ~~~~~

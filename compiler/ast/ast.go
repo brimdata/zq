@@ -146,7 +146,7 @@ type Name struct {
 
 type FromEntity interface {
 	Node
-	FromEntityAST()
+	fromEntityAST()
 }
 
 type ExprEntity struct {
@@ -155,11 +155,11 @@ type ExprEntity struct {
 	Loc  `json:"loc"`
 }
 
-func (*Glob) FromEntityAST()       {}
-func (*Regexp) FromEntityAST()     {}
-func (*ExprEntity) FromEntityAST() {}
-func (*LakeMeta) FromEntityAST()   {}
-func (*Name) FromEntityAST()       {}
+func (*Glob) fromEntityAST()       {}
+func (*Regexp) fromEntityAST()     {}
+func (*ExprEntity) fromEntityAST() {}
+func (*LakeMeta) fromEntityAST()   {}
+func (*Name) fromEntityAST()       {}
 
 type RecordExpr struct {
 	Kind  string       `json:"kind" unpack:""`
@@ -571,12 +571,12 @@ type HTTPArgs struct {
 
 type FromArgs interface {
 	Node
-	FromArgs()
+	fromArgs()
 }
 
-func (*PoolArgs) FromArgs()  {}
-func (*FormatArg) FromArgs() {}
-func (*HTTPArgs) FromArgs()  {}
+func (*PoolArgs) fromArgs()  {}
+func (*FormatArg) fromArgs() {}
+func (*HTTPArgs) fromArgs()  {}
 
 type SortExpr struct {
 	Kind  string `json:"kind" unpack:""`

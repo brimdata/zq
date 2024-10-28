@@ -292,7 +292,7 @@ AggAssignment
 Agg
   = !FuncGuard op:AggName __ "(" __ expr:(OverExpr / Expr)? __ ")" !(__ ".") where:WhereClause? {
       agg := &ast.Agg{
-          Kind:"Agg",
+          Kind: "Agg",
           Name: op.(string),
           Loc: loc(c),
       }
@@ -622,6 +622,7 @@ FromBody
       from := &ast.From{
         Kind: "From",
         Entity: entity.(ast.FromEntity),
+        Loc: loc(c),
       }
       if args != nil {
         from.Args = args.(ast.FromArgs)
@@ -663,6 +664,7 @@ FromArgs
         Commit: nullableName(commit),
         Meta: nullableName(meta),
         Tap: tap.(bool),
+        Loc: loc(c),
       }, nil
     }
   / meta:PoolMeta tap:TapArg {
@@ -670,6 +672,7 @@ FromArgs
         Kind: "PoolArgs",
         Meta: nullableName(meta),
         Tap: tap.(bool),
+        Loc: loc(c),
       }, nil
     }
   / format:FormatArg !(_ ("method" / "header" / "body")) {
@@ -748,8 +751,6 @@ OrderSpec
 TapArg
   = _ "tap" { return true, nil }
   / "" { return false, nil }
-
-
 
 PassOp
   = "pass" !(__ "(") &EOKW {

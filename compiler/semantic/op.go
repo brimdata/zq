@@ -86,7 +86,7 @@ func (a *analyzer) semFromExpr(entity *ast.ExprEntity, args ast.FromArgs) dag.Se
 	names := make([]string, 0, len(vals))
 	for _, val := range vals {
 		if super.TypeUnder(val.Type()) != super.TypeString {
-			a.error(entity.Expr, fmt.Errorf("from expression requires a string but encountered: %s", zson.String(val)))
+			a.error(entity.Expr, fmt.Errorf("from expression requires a string but encountered %s", zson.String(val)))
 			return dag.Seq{badOp()}
 		}
 		names = append(names, val.AsString())
@@ -122,10 +122,9 @@ func (a *analyzer) semFromName(nameLoc ast.Node, name string, args ast.FromArgs)
 }
 
 func asPoolArgs(args ast.FromArgs) (*ast.PoolArgs, error) {
-	if args == nil {
-		return nil, nil
-	}
 	switch args := args.(type) {
+	case nil:
+		return nil, nil
 	case *ast.FormatArg:
 		return nil, errors.New("cannot use format argument with a pool")
 	case *ast.PoolArgs:
@@ -138,10 +137,9 @@ func asPoolArgs(args ast.FromArgs) (*ast.PoolArgs, error) {
 }
 
 func asFileArgs(args ast.FromArgs) (*ast.FormatArg, error) {
-	if args == nil {
-		return nil, nil
-	}
 	switch args := args.(type) {
+	case nil:
+		return nil, nil
 	case *ast.FormatArg:
 		return args, nil
 	case *ast.PoolArgs:
@@ -155,7 +153,7 @@ func asFileArgs(args ast.FromArgs) (*ast.FormatArg, error) {
 
 func (a *analyzer) semFile(nameLoc ast.Node, name string, args ast.FromArgs) dag.Op {
 	if _, err := os.Stat(name); err != nil {
-		a.error(nameLoc, fmt.Errorf("%q: not such file", name))
+		a.error(nameLoc, fmt.Errorf("%q: no such file", name))
 		return badOp()
 	}
 	formatArg, err := asFileArgs(args)

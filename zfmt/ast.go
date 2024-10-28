@@ -622,8 +622,7 @@ func (c *canon) fromEntity(e ast.FromEntity) {
 	case *ast.Name:
 		c.write(zson.QuotedName(e.Text))
 	default:
-		c.open("unknown from expression: %T", e)
-		c.close()
+		panic(fmt.Sprintf("unknown from expression: %T", e))
 	}
 }
 
@@ -688,7 +687,7 @@ func (c *canon) pattern(p ast.FromEntity) {
 	case *ast.Regexp:
 		c.write("/" + p.Pattern + "/")
 	default:
-		c.write(fmt.Sprintf("(unknown pattern type %T)", p))
+		panic(fmt.Sprintf("(unknown pattern type %T)", p))
 	}
 }
 
@@ -795,6 +794,6 @@ func (c *canon) fromArgs(args ast.FromArgs) {
 	case *ast.FormatArg:
 		c.formatArg(args)
 	default:
-		c.write("unknown argument type in from operaetor: %T", args)
+		panic(fmt.Sprintf("unknown argument type in from operaetor: %T", args))
 	}
 }
