@@ -238,7 +238,7 @@ func (o *Optimizer) optimizeSourcePaths(seq dag.Seq) (dag.Seq, error) {
 			}
 			lister.KeyPruner = maybeNewRangePruner(filter, sortKeys)
 			seq = dag.Seq{lister}
-			_, _, orderRequired, _, err := o.concurrentPath(chain, sortKeys)
+			_, _, orderRequired, err := o.concurrentPath(chain, sortKeys)
 			if err != nil {
 				return nil, err
 			}
