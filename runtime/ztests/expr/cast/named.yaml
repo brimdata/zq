@@ -1,0 +1,19 @@
+zed: cast(this, "named")
+
+vector: true
+
+input: |
+  {x:1}
+  {x:2}
+  "foo"
+  "bar"
+  error("missing")
+  error("foo")
+
+output: |
+  {x:1}(=named)
+  {x:2}(=named)
+  "foo"(=named)
+  "bar"(=named)
+  error("missing")
+  error("foo")

@@ -6,6 +6,7 @@ import (
 
 	"github.com/brimdata/super/compiler/dag"
 	"github.com/brimdata/super/pkg/field"
+	"github.com/brimdata/super/runtime/sam/expr/function"
 	vamexpr "github.com/brimdata/super/runtime/vam/expr"
 	vamfunction "github.com/brimdata/super/runtime/vam/expr/function"
 	"github.com/brimdata/super/zson"
@@ -157,6 +158,9 @@ func (b *Builder) compileVamExprs(in []dag.Expr) ([]vamexpr.Evaluator, error) {
 }
 
 func (b *Builder) compileVamCall(call *dag.Call) (vamexpr.Evaluator, error) {
+	if call.Name == "cast" {
+		return b.compileVamCast(call.Args)
+	}
 	fn, path, err := vamfunction.New(b.zctx(), call.Name, len(call.Args))
 	if err != nil {
 		return nil, err
@@ -171,6 +175,21 @@ func (b *Builder) compileVamCall(call *dag.Call) (vamexpr.Evaluator, error) {
 		return nil, err
 	}
 	return vamexpr.NewCall(fn, exprs), nil
+}
+
+func (b *Builder) compileVamCast(args []dag.Expr) (vamexpr.Evaluator, error) {
+	if err := function.CheckArgCount(len(args), 2, 2); err != nil {
+		return nil, err
+	}
+	exprs, err := b.compileVamExprs(args)
+	if err != nil {
+		return nil, err
+	}
+	literal, ok := exprs[1].(*vamexpr.Literal)
+	if !ok {
+		return nil, errors.New("cast: vector runtime only supports casts on constant values at this time")
+	}
+	return vamexpr.NewLiteralCast(b.zctx(), exprs[0], literal)
 }
 
 func (b *Builder) compileVamRecordExpr(e *dag.RecordExpr) (vamexpr.Evaluator, error) {
