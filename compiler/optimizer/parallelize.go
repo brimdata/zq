@@ -8,14 +8,6 @@ import (
 	"github.com/brimdata/super/order"
 )
 
-// XXX Remove this and use native order.Direction in group-by.  See Issue #4505.
-func orderAsDirection(which order.Which) int {
-	if which == order.Asc {
-		return 1
-	}
-	return -1
-}
-
 func (o *Optimizer) parallelizeScan(ops []dag.Op, replicas int) ([]dag.Op, error) {
 	// For now we parallelize only pool scans and no metadata scans.
 	// We can do the latter when we want to scale the performance of metadata.

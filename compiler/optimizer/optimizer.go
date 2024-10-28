@@ -347,7 +347,7 @@ func (o *Optimizer) propagateSortKeyOp(op dag.Op, parents []order.SortKeys) ([]o
 				rhsExpr := k.RHS
 				rhs := fieldOf(rhsExpr)
 				if rhs.Equal(sortKey.Key) || orderPreservingCall(rhsExpr, groupByKey) {
-					op.InputSortDir = orderAsDirection(sortKey.Order)
+					op.InputSortDir = int(sortKey.Order.Direction())
 					// Currently, the groupby operator will sort its
 					// output according to the primary key, but we
 					// should relax this and do an analysis here as
