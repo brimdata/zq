@@ -1773,6 +1773,7 @@ MultiLineComment
 
 SingleLineComment
   = "//" (!LineTerminator SourceCharacter)*
+  / "--" (!LineTerminator SourceCharacter)*
 
 EOL = WhiteSpace* LineTerminator
 

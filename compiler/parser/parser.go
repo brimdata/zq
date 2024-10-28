@@ -12765,30 +12765,65 @@ var g = &grammar{
 		{
 			name: "SingleLineComment",
 			pos:  position{line: 1774, col: 1, offset: 57322},
-			expr: &seqExpr{
+			expr: &choiceExpr{
 				pos: position{line: 1775, col: 5, offset: 57344},
-				exprs: []any{
-					&litMatcher{
-						pos:        position{line: 1775, col: 5, offset: 57344},
-						val:        "//",
-						ignoreCase: false,
-						want:       "\"//\"",
-					},
-					&zeroOrMoreExpr{
-						pos: position{line: 1775, col: 10, offset: 57349},
-						expr: &seqExpr{
-							pos: position{line: 1775, col: 11, offset: 57350},
-							exprs: []any{
-								&notExpr{
+				alternatives: []any{
+					&seqExpr{
+						pos: position{line: 1775, col: 5, offset: 57344},
+						exprs: []any{
+							&litMatcher{
+								pos:        position{line: 1775, col: 5, offset: 57344},
+								val:        "//",
+								ignoreCase: false,
+								want:       "\"//\"",
+							},
+							&zeroOrMoreExpr{
+								pos: position{line: 1775, col: 10, offset: 57349},
+								expr: &seqExpr{
 									pos: position{line: 1775, col: 11, offset: 57350},
-									expr: &ruleRefExpr{
-										pos:  position{line: 1775, col: 12, offset: 57351},
-										name: "LineTerminator",
+									exprs: []any{
+										&notExpr{
+											pos: position{line: 1775, col: 11, offset: 57350},
+											expr: &ruleRefExpr{
+												pos:  position{line: 1775, col: 12, offset: 57351},
+												name: "LineTerminator",
+											},
+										},
+										&ruleRefExpr{
+											pos:  position{line: 1775, col: 27, offset: 57366},
+											name: "SourceCharacter",
+										},
 									},
 								},
-								&ruleRefExpr{
-									pos:  position{line: 1775, col: 27, offset: 57366},
-									name: "SourceCharacter",
+							},
+						},
+					},
+					&seqExpr{
+						pos: position{line: 1776, col: 5, offset: 57388},
+						exprs: []any{
+							&litMatcher{
+								pos:        position{line: 1776, col: 5, offset: 57388},
+								val:        "--",
+								ignoreCase: false,
+								want:       "\"--\"",
+							},
+							&zeroOrMoreExpr{
+								pos: position{line: 1776, col: 10, offset: 57393},
+								expr: &seqExpr{
+									pos: position{line: 1776, col: 11, offset: 57394},
+									exprs: []any{
+										&notExpr{
+											pos: position{line: 1776, col: 11, offset: 57394},
+											expr: &ruleRefExpr{
+												pos:  position{line: 1776, col: 12, offset: 57395},
+												name: "LineTerminator",
+											},
+										},
+										&ruleRefExpr{
+											pos:  position{line: 1776, col: 27, offset: 57410},
+											name: "SourceCharacter",
+										},
+									},
 								},
 							},
 						},
@@ -12800,19 +12835,19 @@ var g = &grammar{
 		},
 		{
 			name: "EOL",
-			pos:  position{line: 1777, col: 1, offset: 57385},
+			pos:  position{line: 1778, col: 1, offset: 57429},
 			expr: &seqExpr{
-				pos: position{line: 1777, col: 7, offset: 57391},
+				pos: position{line: 1778, col: 7, offset: 57435},
 				exprs: []any{
 					&zeroOrMoreExpr{
-						pos: position{line: 1777, col: 7, offset: 57391},
+						pos: position{line: 1778, col: 7, offset: 57435},
 						expr: &ruleRefExpr{
-							pos:  position{line: 1777, col: 7, offset: 57391},
+							pos:  position{line: 1778, col: 7, offset: 57435},
 							name: "WhiteSpace",
 						},
 					},
 					&ruleRefExpr{
-						pos:  position{line: 1777, col: 19, offset: 57403},
+						pos:  position{line: 1778, col: 19, offset: 57447},
 						name: "LineTerminator",
 					},
 				},
@@ -12822,16 +12857,16 @@ var g = &grammar{
 		},
 		{
 			name: "EOT",
-			pos:  position{line: 1779, col: 1, offset: 57419},
+			pos:  position{line: 1780, col: 1, offset: 57463},
 			expr: &choiceExpr{
-				pos: position{line: 1779, col: 7, offset: 57425},
+				pos: position{line: 1780, col: 7, offset: 57469},
 				alternatives: []any{
 					&ruleRefExpr{
-						pos:  position{line: 1779, col: 7, offset: 57425},
+						pos:  position{line: 1780, col: 7, offset: 57469},
 						name: "_",
 					},
 					&ruleRefExpr{
-						pos:  position{line: 1779, col: 11, offset: 57429},
+						pos:  position{line: 1780, col: 11, offset: 57473},
 						name: "EOF",
 					},
 				},
@@ -12841,11 +12876,11 @@ var g = &grammar{
 		},
 		{
 			name: "EOF",
-			pos:  position{line: 1781, col: 1, offset: 57434},
+			pos:  position{line: 1782, col: 1, offset: 57478},
 			expr: &notExpr{
-				pos: position{line: 1781, col: 7, offset: 57440},
+				pos: position{line: 1782, col: 7, offset: 57484},
 				expr: &anyMatcher{
-					line: 1781, col: 8, offset: 57441,
+					line: 1782, col: 8, offset: 57485,
 				},
 			},
 			leader:        false,
@@ -12853,11 +12888,11 @@ var g = &grammar{
 		},
 		{
 			name: "EOKW",
-			pos:  position{line: 1783, col: 1, offset: 57444},
+			pos:  position{line: 1784, col: 1, offset: 57488},
 			expr: &notExpr{
-				pos: position{line: 1783, col: 8, offset: 57451},
+				pos: position{line: 1784, col: 8, offset: 57495},
 				expr: &ruleRefExpr{
-					pos:  position{line: 1783, col: 9, offset: 57452},
+					pos:  position{line: 1784, col: 9, offset: 57496},
 					name: "KeyWordChars",
 				},
 			},
