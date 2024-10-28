@@ -1,7 +1,6 @@
 script: |
   super compile -C "join (file test.jsup) on x=x p:=a"
   echo ===
-  touch test.jsup
   super compile -C -dag "join (file test.jsup) on x=x p:=a"
 
 outputs:

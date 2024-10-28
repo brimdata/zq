@@ -9,6 +9,4 @@ inputs:
 outputs:
   - name: stderr
     regexp: |
-      "a.jsup": no such file in query.spq at line 1, column 6:
-      file a.jsup
-           ~~~~~~
+      a.jsup: file:///.*/a.jsup: file does not exist.*

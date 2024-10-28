@@ -3,7 +3,5 @@ script: |
 
 outputs:
   - name: stderr
-    data: |
-      super: "a": no such file at line 1, column 13:
-      from ( pool a )
-                  ~
+    regexp: |
+      a: file:///.*/a: file does not exist

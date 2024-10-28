@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
-	"os"
 	"path/filepath"
 	"regexp"
 	"slices"
@@ -152,10 +151,6 @@ func asFileArgs(args ast.FromArgs) (*ast.FormatArg, error) {
 }
 
 func (a *analyzer) semFile(nameLoc ast.Node, name string, args ast.FromArgs) dag.Op {
-	if _, err := os.Stat(name); err != nil {
-		a.error(nameLoc, fmt.Errorf("%q: no such file", name))
-		return badOp()
-	}
 	formatArg, err := asFileArgs(args)
 	if err != nil {
 		a.error(args, err)

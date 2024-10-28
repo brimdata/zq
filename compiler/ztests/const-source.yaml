@@ -4,7 +4,6 @@ script: |
   super db create -q test
   super db compile -dag -C 'const POOL = "test" from [POOL]' | sed -e "s/[a-zA-Z0-9]\{27\}/XXX/"
   echo "==="
-  touch A.zson
   super compile -dag -C 'const FILE = "A.zson" from [FILE]'
   echo "==="
   super db compile -dag -C 'const URL = "http://brimdata.io" get [URL]'
