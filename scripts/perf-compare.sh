@@ -82,18 +82,18 @@ do
     echo -e "### $DESC\n" | tee "$MD"
     echo "|**<br>Tool**|**<br>Arguments**|**Input<br>Format**|**Output<br>Format**|**<br>Real**|**<br>User**|**<br>Sys**|" | tee -a "$MD"
     echo "|:----------:|:---------------:|:-----------------:|:------------------:|-----------:|-----------:|----------:|" | tee -a "$MD"
-    for INPUT in zeek zng zng-uncompressed zson json ; do
-      for OUTPUT in zeek zng zng-uncompressed zson json ; do
+    for INPUT in zeek bsup bsup-uncompressed jsup json ; do
+      for OUTPUT in zeek bsup bsup-uncompressed jsup json ; do
         superpipe_query=${SUPERPIPE_QUERIES[$n]}
         echo -n "|\`super\`|\`$superpipe_query\`|$INPUT|$OUTPUT|" | tee -a "$MD"
         case $INPUT in
           json ) super_flags="-i json -I $shaper" superpipe_query="| $superpipe_query" ;;
-          zng-uncompressed ) super_flags="-i zng" ;;
+          bsup-uncompressed ) super_flags="-i bsup" ;;
           * ) super_flags="-i $INPUT" ;;
         esac
         case $OUTPUT in
           json ) super_flags="$super_flags -f json" ;;
-          zng-uncompressed ) super_flags="$super_flags -f zng -zng.compress=false" ;;
+          bsup-uncompressed ) super_flags="$super_flags -f bsup -bsup.compress=false" ;;
           * ) super_flags="$super_flags -f $OUTPUT" ;;
         esac
         ALL_TIMES=$(time -p (super $super_flags -c "$superpipe_query" $DATA/$INPUT/* > /dev/null) 2>&1)
