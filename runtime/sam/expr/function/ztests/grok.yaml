@@ -1,5 +1,5 @@
 script: |
-  super -z -c 'grok(pattern, field)' simple.zson
+  super -z -c 'grok(pattern, field)' simple.jsup
   echo "// ==="
   echo '"0-1-2"' | super -z -I patterns.zed -
   echo "// ==="
@@ -13,7 +13,7 @@ script: |
   echo '"string value"' | super -z -c 'grok("%{INT:int}", this)' -
 
 inputs:
-  - name: simple.zson
+  - name: simple.jsup
     data: |
       {
         field: "2020-09-16T04:20:42.45+01:00 DEBUG This is a sample debug log message",

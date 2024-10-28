@@ -381,7 +381,7 @@ Start with this [Super JSON](jsup.md)):
 
 To convert to VNG format:
 ```
-super -f vng hello.jsup > hello.vng
+super -f csup hello.jsup > hello.csup
 ```
 
 Segments in the VNG format would be laid out like this:

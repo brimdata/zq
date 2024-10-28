@@ -1,5 +1,5 @@
 script: |
-  ! super -i zng -z -
+  ! super -i bsup -z -
 
 inputs:
   - name: stdin
@@ -9,4 +9,4 @@ inputs:
 outputs:
   - name: stderr
     data: |
-      stdio:stdin: malformed zng record
+      stdio:stdin: malformed bsup record

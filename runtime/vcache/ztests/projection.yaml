@@ -1,14 +1,14 @@
 script: |
-  super -f vng -o test.vng -
-  super dev vector project -z test.vng x y z
+  super -f csup -o test.csup -
+  super dev vector project -z test.csup x y z
   echo ===
-  super dev vector project -z test.vng s
+  super dev vector project -z test.csup s
   echo ===
-  super dev vector project -z test.vng x s
+  super dev vector project -z test.csup x s
   echo ===
-  super dev vector project -z test.vng s x
+  super dev vector project -z test.csup s x
   echo ===
-  super dev vector project -z test.vng y w.y
+  super dev vector project -z test.csup y w.y
 inputs:
   - name: stdin
     data: |

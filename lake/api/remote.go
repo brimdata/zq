@@ -110,7 +110,7 @@ func (r *remote) Load(ctx context.Context, _ *super.Context, poolID ksuid.KSUID,
 		}
 		pw.CloseWithError(err)
 	}()
-	res, err := r.conn.Load(ctx, poolID, branchName, api.MediaTypeZNG, pr, commit)
+	res, err := r.conn.Load(ctx, poolID, branchName, api.MediaTypeBSUP, pr, commit)
 	return res.Commit, err
 }
 

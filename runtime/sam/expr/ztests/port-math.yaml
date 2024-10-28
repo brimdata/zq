@@ -1,12 +1,12 @@
 script: |
-  super -z -c "put x:=p1+1" in.zson
+  super -z -c "put x:=p1+1" in.jsup
   echo ===
-  super -z -c "put x:=p1>p2" in.zson
+  super -z -c "put x:=p1>p2" in.jsup
   echo ===
-  super -z -c "put x:=a+p1+p2" in.zson
+  super -z -c "put x:=a+p1+p2" in.jsup
 
 inputs:
-  - name: in.zson
+  - name: in.jsup
     data: |
       {a:1(int32),p1:100(port=uint16),p2:200(port)}
 

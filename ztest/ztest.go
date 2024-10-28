@@ -353,7 +353,7 @@ func (z *ZTest) RunInternal(path string) error {
 	if err := z.check(); err != nil {
 		return fmt.Errorf("bad yaml format: %w", err)
 	}
-	outputFlags := append([]string{"-f", "zson", "-pretty=0"}, strings.Fields(z.OutputFlags)...)
+	outputFlags := append([]string{"-f", "jsup", "-pretty=0"}, strings.Fields(z.OutputFlags)...)
 	inputFlags := strings.Fields(z.InputFlags)
 	if z.Vector {
 		if z.InputFlags != "" {

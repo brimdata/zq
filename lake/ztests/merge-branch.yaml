@@ -2,10 +2,10 @@ script: |
   export SUPER_DB_LAKE=test
   super db init -q
   super db create -use -q -orderby k POOL
-  super db load -q -message "initial load of a.zson into main" a.zson
+  super db load -q -message "initial load of a.jsup into main" a.jsup
   super db branch -q child
   super db use -q @child
-  super db load -q -message "initial load of b.zson into child" b.zson
+  super db load -q -message "initial load of b.jsup into child" b.jsup
   echo === main ===
   super db query -z "from POOL"
   echo === child ===
@@ -16,23 +16,23 @@ script: |
   echo === main after merge ===
   super db query -z "from POOL"
   echo === main after load c ===
-  super db load -q -use POOL c.zson
+  super db load -q -use POOL c.jsup
   super db query -z "from POOL"
   echo === child after main load c ===
   super db query -z "from POOL@child"
   echo === main after child load a and merge ===
-  super db load -q a.zson
+  super db load -q a.jsup
   super db merge -q main
   super db query -z "from POOL"
 
 inputs:
-  - name: a.zson
+  - name: a.jsup
     data: |
       {k:0,a:1}
-  - name: b.zson
+  - name: b.jsup
     data: |
       {k:1,b:1}
-  - name: c.zson
+  - name: c.jsup
     data: |
       {k:2,c:1}
 

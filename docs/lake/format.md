@@ -92,9 +92,9 @@ Immutable objects are named as follows:
 
 |object type|name|
 |-----------|----|
-|vector data|`<pool-id>/data/<id>.vng`|
-|sequence data|`<pool-id>/data/<id>.zng`|
-|sequence seek index|`<pool-id>/data/<id>-seek.zng`|
+|vector data|`<pool-id>/data/<id>.csup`|
+|sequence data|`<pool-id>/data/<id>.bsup`|
+|sequence seek index|`<pool-id>/data/<id>-seek.bsup`|
 
 `<id>` is the KSUID of the data object.
 
@@ -158,7 +158,7 @@ adding a commit object to a pool changes nothing until a branch pointer
 is mutated to point at that object.
 
 Each atomic journal commit object is a ZNG file numbered 1 to the end of journal (HEAD),
-e.g., `1.zng`, `2.zng`, etc., each number corresponding to a journal ID.
+e.g., `1.bsup`, `2.bsup`, etc., each number corresponding to a journal ID.
 The 0 value is reserved as the null journal ID.
 The journal's TAIL begins at 1 and is increased as journal entries are purged.
 Entries are added at the HEAD and removed from the TAIL.
@@ -249,23 +249,23 @@ do not overlap.  This is just the basic LSM algorithm at work.
 
 ```
 <lake-path>/
-  lake.zng
+  lake.bsup
   pools/
     HEAD
     TAIL
-    1.zng
-    2.zng
+    1.bsup
+    2.bsup
     ...
   <pool-id-1>/
     branches/
       HEAD
       TAIL
-      1.zng
-      2.zng
+      1.bsup
+      2.bsup
       ...
     commits/
-      <id1>.zng
-      <id2>.zng
+      <id1>.bsup
+      <id2>.bsup
       ...
     data/
       <id1>.{zng,vng}

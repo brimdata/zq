@@ -196,7 +196,7 @@ The output format defaults to either ZSON or ZNG and may be specified
 with the `-f` option.
 
 Since ZSON is a common format choice, the `-z` flag is a shortcut for
-`-f zson`.  Also, `-Z` is a shortcut for `-f zson` with `-pretty 4` as
+`-f jsup`.  Also, `-Z` is a shortcut for `-f jsup` with `-pretty 4` as
 [described below](#pretty-printing).
 
 And since JSON is another common format choice, the `-j` flag is a shortcut for
@@ -212,11 +212,11 @@ in a scripted test that works fine on the command line but fails in CI),
 we felt that the design of having a uniform default had worse consequences:
 * If the default format were ZSON, it would be very easy to create pipelines
 and deploy to production systems that were accidentally using ZSON instead of
-the much more efficient ZNG format because the `-f zng` had been mistakenly
+the much more efficient ZNG format because the `-f bsup` had been mistakenly
 omitted from some command.  The beauty of Zed is that all of this "just works"
 but it would otherwise perform poorly.
 * If the default format were ZNG, then users would be endlessly annoyed by
-binary output to their terminal when forgetting to type `-f zson`.
+binary output to their terminal when forgetting to type `-f jsup`.
 
 In practice, we have found that the output defaults
 "just do the right thing" almost all of the time.
@@ -225,7 +225,7 @@ In practice, we have found that the output defaults
 
 ZSON and JSON text may be "pretty printed" with the `-pretty` option, which takes
 the number of spaces to use for indentation.  As this is a common option,
-the `-Z` option is a shortcut for `-f zson -pretty 4` and `-J` is a shortcut
+the `-Z` option is a shortcut for `-f jsup -pretty 4` and `-J` is a shortcut
 for `-f json -pretty 4`.
 
 For example,
@@ -247,7 +247,7 @@ produces
 ```
 and
 ```mdtest-command
-echo '{a:{b:1,c:[1,2]},d:"foo"}' | super -f zson -pretty 2 -
+echo '{a:{b:1,c:[1,2]},d:"foo"}' | super -f jsup -pretty 2 -
 ```
 produces
 ```mdtest-output
@@ -278,9 +278,9 @@ or register schemas or "protos" with the downstream entities.
 
 In particular, ZNG data can simply be concatenated together, e.g.,
 ```mdtest-command
-super -f zng -c 'yield 1,[1,2,3]' > a.zng
-super -f zng -c 'yield {s:"hello"},{s:"world"}' > b.zng
-cat a.zng b.zng | super -z -
+super -f bsup -c 'yield 1,[1,2,3]' > a.bsup
+super -f bsup -c 'yield {s:"hello"},{s:"world"}' > b.bsup
+cat a.bsup b.bsup | super -z -
 ```
 produces
 ```mdtest-output
@@ -291,8 +291,8 @@ produces
 ```
 And while this ZSON output is human readable, the ZNG files are binary, e.g.,
 ```mdtest-command
-super -f zng -c 'yield 1,[1,2,3]' > a.zng
-hexdump -C a.zng
+super -f bsup -c 'yield 1,[1,2,3]' > a.bsup
+hexdump -C a.bsup
 ```
 produces
 ```mdtest-output
@@ -441,9 +441,9 @@ it's rare to request it explicitly via `-f`.  However, since it's possible for
 the `lake` format is useful to reverse this.
 
 For example, imagine you'd executed a [meta-query](zed.md#meta-queries) via
-`zed query -Z "from :pools"` and saved the output in this file `pools.zson`.
+`zed query -Z "from :pools"` and saved the output in this file `pools.jsup`.
 
-```mdtest-input pools.zson
+```mdtest-input pools.jsup
 {
     ts: 2024-07-19T19:28:22.893089Z,
     name: "MyPool",
@@ -465,7 +465,7 @@ Using `zq -f lake`, this can be rendered in the same pretty-printed form as it
 would have originally appeared in the output of `zed ls`, e.g.,
 
 ```mdtest-command
-super -f lake pools.zson
+super -f lake pools.jsup
 ```
 produces
 ```mdtest-output
@@ -691,9 +691,9 @@ where we used a semi-structured Zeek "conn" log from the `zeek-default` director
 It is easy to convert the Zeek logs to a local ZNG file using
 `zq`'s built-in [`get` operator](../language/operators/get.md):
 ```
-super -o conn.zng -c 'get https://raw.githubusercontent.com/brimdata/zed-sample-data/main/zeek-default/conn.log.gz'
+super -o conn.bsup -c 'get https://raw.githubusercontent.com/brimdata/zed-sample-data/main/zeek-default/conn.log.gz'
 ```
-This creates a new file `conn.zng` from the Zeek log file fetched from GitHub.
+This creates a new file `conn.bsup` from the Zeek log file fetched from GitHub.
 
 Note that this data is a gzip'd file in the Zeek format and `zq`'s auto-detector
 figures out both that it is gzip'd and that the uncompressed format is Zeek.
@@ -701,7 +701,7 @@ There's no need to specify flags for this.
 
 Next, a JSON file can be converted from ZNG using:
 ```
-super -f json conn.zng > conn.json
+super -f json conn.bsup > conn.json
 ```
 Note here that we lose information in this conversion because the rich data types
 of Zed (that were [translated from the Zeek format](../integrations/zeek/data-type-compatibility.md)) are lost.
@@ -720,10 +720,10 @@ loading the JSON into SQLite.)
 
 Note the resulting file sizes:
 ```
-% du -h conn.json conn.db conn.zng
+% du -h conn.json conn.db conn.bsup
 416M	conn.json
 192M	conn.db
- 38M	conn.zng
+ 38M	conn.bsup
 ```
 Much of the performance of ZNG derives from an efficient, parallelizable
 structure where frames of data are compressed
@@ -750,14 +750,14 @@ The command lines for the `count` test were:
 ```
 jq -s length conn.json
 sqlite3 conn.db 'select count(*) from conn'
-super -c 'count()' conn.zng
+super -c 'count()' conn.bsup
 super -c 'count()' conn.json
 ```
 The command lines for the `search` test were:
 ```
 jq 'select(.id.orig_h=="10.47.23.5")' conn.json
 sqlite3 conn.db 'select * from conn where json_extract(id, "$.orig_h")=="10.47.23.5"'
-super -c 'id.orig_h==10.47.23.5' conn.zng
+super -c 'id.orig_h==10.47.23.5' conn.bsup
 super -c 'id.orig_h==10.47.23.5' conn.json
 ```
 Here, we look for an IP address (10.47.23.5) in a specific
@@ -770,7 +770,7 @@ The command lines for the `agg` test were:
 ```
 jq -n -f agg.jq conn.json
 sqlite3 conn.db 'select sum(orig_bytes),json_extract(id, "$.orig_h") as orig_h from conn group by orig_h'
-super -c "sum(orig_bytes) by id.orig_h" conn.zng
+super -c "sum(orig_bytes) by id.orig_h" conn.bsup
 super -c "sum(orig_bytes) by id.orig_h" conn.json
 ```
 where the `agg.jq` script is:

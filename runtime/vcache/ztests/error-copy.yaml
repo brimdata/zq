@@ -1,6 +1,6 @@
 script: |
-  super -f vng -o test.vng -
-  super dev vector copy -z test.vng
+  super -f csup -o test.csup -
+  super dev vector copy -z test.csup
 
 inputs:
   - name: stdin

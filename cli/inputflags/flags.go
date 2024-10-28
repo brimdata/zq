@@ -28,7 +28,7 @@ func (f *Flags) Options() anyio.ReaderOpts {
 }
 
 func (f *Flags) SetFlags(fs *flag.FlagSet, validate bool) {
-	fs.StringVar(&f.Format, "i", "auto", "format of input data [auto,arrows,csv,json,line,parquet,tsv,vng,zeek,zjson,zng,zson]")
+	fs.StringVar(&f.Format, "i", "auto", "format of input data [auto,arrows,bsup,csup,csv,json,jsup,line,parquet,tsv,zeek,zjson]")
 	f.CSV.Delim = ','
 	fs.Func("csv.delim", `CSV field delimiter (default ",")`, func(s string) error {
 		if len(s) != 1 {
@@ -38,12 +38,12 @@ func (f *Flags) SetFlags(fs *flag.FlagSet, validate bool) {
 		return nil
 
 	})
-	fs.BoolVar(&f.ZNG.Validate, "zng.validate", validate, "validate format when reading ZNG")
-	fs.IntVar(&f.ZNG.Threads, "zng.threads", 0, "number of ZNG read threads (0=GOMAXPROCS)")
+	fs.BoolVar(&f.ZNG.Validate, "bsup.validate", validate, "validate format when reading Super Binary")
+	fs.IntVar(&f.ZNG.Threads, "bsup.threads", 0, "number of Super Binary read threads (0=GOMAXPROCS)")
 	f.ReadMax = auto.NewBytes(zngio.MaxSize)
-	fs.Var(&f.ReadMax, "zng.readmax", "maximum ZNG read buffer size in MiB, MB, etc.")
+	fs.Var(&f.ReadMax, "bsup.readmax", "maximum Super Binary read buffer size in MiB, MB, etc.")
 	f.ReadSize = auto.NewBytes(zngio.ReadSize)
-	fs.Var(&f.ReadSize, "zng.readsize", "target ZNG read buffer size in MiB, MB, etc.")
+	fs.Var(&f.ReadSize, "bsup.readsize", "target Super Binary read buffer size in MiB, MB, etc.")
 }
 
 // Init is called after flags have been parsed.

@@ -1,8 +1,8 @@
 script: |
-  ! yes ' ' | head -c $((11 * 1024 * 1024)) > huge.zson
-  echo 0 >> huge.zson
-  super -z huge.zson
-  ! cat huge.zson | super -z -
+  ! yes ' ' | head -c $((11 * 1024 * 1024)) > huge.jsup
+  echo 0 >> huge.jsup
+  super -z huge.jsup
+  ! cat huge.jsup | super -z -
 
 outputs:
   - name: stdout
@@ -17,8 +17,8 @@ outputs:
       	line: auto-detection not supported
       	parquet: auto-detection requires seekable input
       	tsv: line 1: delimiter '\t' not found
-      	vng: auto-detection requires seekable input
+      	csup: auto-detection requires seekable input
       	zeek: line 1: bad types/fields definition in zeek header
       	zjson: line 1: malformed ZJSON: bad type object: "": unpacker error parsing JSON: unexpected end of JSON input
-      	zng: buffer exceeded max size trying to infer input format
-      	zson: buffer exceeded max size trying to infer input format
+      	bsup: buffer exceeded max size trying to infer input format
+      	jsup: buffer exceeded max size trying to infer input format

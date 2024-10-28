@@ -60,10 +60,10 @@ func NewReaderWithOpts(zctx *super.Context, r io.Reader, demandOut demand.Demand
 			vngErr = err
 		}
 		parquetErr = fmt.Errorf("parquet: %w", parquetErr)
-		vngErr = fmt.Errorf("vng: %w", vngErr)
+		vngErr = fmt.Errorf("csup: %w", vngErr)
 	} else {
 		parquetErr = errors.New("parquet: auto-detection requires seekable input")
-		vngErr = errors.New("vng: auto-detection requires seekable input")
+		vngErr = errors.New("csup: auto-detection requires seekable input")
 	}
 
 	track := NewTrack(r)
@@ -97,7 +97,7 @@ func NewReaderWithOpts(zctx *super.Context, r io.Reader, demandOut demand.Demand
 	}
 	track.Reset()
 
-	zsonErr := match(zsonio.NewReader(super.NewContext(), track), "zson", 1)
+	zsonErr := match(zsonio.NewReader(super.NewContext(), track), "jsup", 1)
 	if zsonErr == nil {
 		return zio.NopReadCloser(zsonio.NewReader(zctx, track.Reader())), nil
 	}
@@ -109,7 +109,7 @@ func NewReaderWithOpts(zctx *super.Context, r io.Reader, demandOut demand.Demand
 	zngOpts := opts.ZNG
 	zngOpts.Validate = true
 	zngReader := zngio.NewReaderWithOpts(super.NewContext(), track, zngOpts)
-	zngErr := match(zngReader, "zng", 1)
+	zngErr := match(zngReader, "bsup", 1)
 	// Close zngReader to ensure that it does not continue to call track.Read.
 	zngReader.Close()
 	if zngErr == nil {

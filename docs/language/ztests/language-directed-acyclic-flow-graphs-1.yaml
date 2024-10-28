@@ -23,11 +23,11 @@ script: |
   export SUPER_DB_LAKE=test
   super db init -q
   super db create -q PoolOne
-  super db load -q -use PoolOne fruit.zson
+  super db load -q -use PoolOne fruit.jsup
   super db query -z -I split.spq
 
 inputs:
-  - name: fruit.zson
+  - name: fruit.jsup
     data: |
       {ts:2018-03-24T17:15:21Z,name:"apple",color:"red"}
       {ts:2018-03-24T17:16:55Z,name:"banana",color:"yellow"}

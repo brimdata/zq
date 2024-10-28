@@ -21,7 +21,7 @@ func parse(path string) (ast.Value, error) {
 	return zson.NewParser(file).ParseValue()
 }
 
-const testFile = "test.zson"
+const testFile = "test.jsup"
 
 func TestZSONParser(t *testing.T) {
 	val, err := parse(testFile)

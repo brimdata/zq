@@ -1,23 +1,23 @@
 script: |
-  super -z -c 'file a.zson | join (file b.zson) on a=b'
+  super -z -c 'file a.jsup | join (file b.jsup) on a=b'
   echo '// ==='
-  super -z -c 'file a.zson | join (file b.zson | sort -r b) on a=b'
+  super -z -c 'file a.jsup | join (file b.jsup | sort -r b) on a=b'
   echo '// ==='
-  super -z -c 'file a.zson | join (file b.zson | sort b) on a=b'
+  super -z -c 'file a.jsup | join (file b.jsup | sort b) on a=b'
   echo '// ==='
-  super -z -c 'file a.zson | sort a | join (file b.zson | sort -r b) on a=b'
+  super -z -c 'file a.jsup | sort a | join (file b.jsup | sort -r b) on a=b'
   echo '// ==='
-  super -z -c 'file a.zson | sort -r a | join (file b.zson) on a=b'
+  super -z -c 'file a.jsup | sort -r a | join (file b.jsup) on a=b'
   echo '// ==='
-  super -z -c 'file a.zson | sort -r a | join (file b.zson | sort b) on a=b'
+  super -z -c 'file a.jsup | sort -r a | join (file b.jsup | sort b) on a=b'
 
 inputs:
-  - name: a.zson
+  - name: a.jsup
     data: |
       {a:null(int64)}
       {a:1}
       {a:2}
-  - name: b.zson
+  - name: b.jsup
     data: |
       {b:2}
       {b:1}

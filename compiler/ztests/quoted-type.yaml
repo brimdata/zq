@@ -1,10 +1,10 @@
 script: |
-  super -z -c 'is(<"@foo">)' in.zson
+  super -z -c 'is(<"@foo">)' in.jsup
   echo ===
-  super -z -c 'const foo = <"@foo"={x:int64}> const yz = <"Y Z"={y:"@foo"}> is(<"Y Z">)' in.zson
+  super -z -c 'const foo = <"@foo"={x:int64}> const yz = <"Y Z"={y:"@foo"}> is(<"Y Z">)' in.jsup
 
 inputs:
-  - name: in.zson
+  - name: in.jsup
     data: |
       {x:1}
       {x:2}(="@foo")

@@ -1,8 +1,8 @@
 script: |
-  super -o t.vng -f vng -
-  super dev vector query -z "head" t.vng
+  super -o t.csup -f csup -
+  super dev vector query -z "head" t.csup
   echo //
-  super dev vector query -z "head 2" t.vng
+  super dev vector query -z "head 2" t.csup
 
 inputs:
   - name: stdin

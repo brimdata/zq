@@ -13,7 +13,7 @@ import (
 func NewReader(zctx *super.Context, r io.Reader, demandOut demand.Demand) (zio.Reader, error) {
 	ra, ok := r.(io.ReaderAt)
 	if !ok {
-		return nil, errors.New("VNG requires a seekable input")
+		return nil, errors.New("Super Columnar requires a seekable input")
 	}
 	o, err := vng.NewObject(ra)
 	if err != nil {

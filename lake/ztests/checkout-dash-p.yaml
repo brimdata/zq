@@ -3,18 +3,18 @@ script: |
   super db init -q
   super db create -q POOL
   super db use -q POOL
-  super db load -q a.zson
+  super db load -q a.jsup
   super db branch -q child
   super db use -q @child
-  super db load -q b.zson
+  super db load -q b.jsup
   super db use -q POOL
   super db query -z "*"
 
 inputs:
-  - name: a.zson
+  - name: a.jsup
     data: |
       {a:1}
-  - name: b.zson
+  - name: b.jsup
     data: |
       {b:1}
 

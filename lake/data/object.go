@@ -48,7 +48,7 @@ func (k FileKind) Description() string {
 // eliminate round-trips, especially when you are ready sub-ranges of
 // cached data files!
 
-var fileRegex = regexp.MustCompile(`([0-9A-Za-z]{27}-(data|meta)).zng$`)
+var fileRegex = regexp.MustCompile(`([0-9A-Za-z]{27}-(data|meta)).bsup$`)
 
 // XXX this won't work right until we integrate segID
 func FileMatch(s string) (kind FileKind, id ksuid.KSUID, ok bool) {
@@ -122,7 +122,7 @@ func (o Object) SequenceURI(path *storage.URI) *storage.URI {
 }
 
 func SequenceURI(path *storage.URI, id ksuid.KSUID) *storage.URI {
-	return path.JoinPath(fmt.Sprintf("%s.zng", id))
+	return path.JoinPath(fmt.Sprintf("%s.bsup", id))
 }
 
 func (o Object) SeekIndexURI(path *storage.URI) *storage.URI {
@@ -130,7 +130,7 @@ func (o Object) SeekIndexURI(path *storage.URI) *storage.URI {
 }
 
 func SeekIndexURI(path *storage.URI, id ksuid.KSUID) *storage.URI {
-	return path.JoinPath(fmt.Sprintf("%s-seek.zng", id))
+	return path.JoinPath(fmt.Sprintf("%s-seek.bsup", id))
 }
 
 func (o Object) VectorURI(path *storage.URI) *storage.URI {
@@ -138,7 +138,7 @@ func (o Object) VectorURI(path *storage.URI) *storage.URI {
 }
 
 func VectorURI(path *storage.URI, id ksuid.KSUID) *storage.URI {
-	return path.JoinPath(fmt.Sprintf("%s.vng", id))
+	return path.JoinPath(fmt.Sprintf("%s.csup", id))
 }
 
 // Remove deletes the row object and its seek index.

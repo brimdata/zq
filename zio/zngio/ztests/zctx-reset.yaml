@@ -1,12 +1,12 @@
 # Test that type contexts are properly reset and reusable after stream boundaries
 
 script: |
-  super in.zson > s.zng
-  super in.zson >> s.zng
-  super -z s.zng
+  super in.jsup > s.bsup
+  super in.jsup >> s.bsup
+  super -z s.bsup
 
 inputs:
-  - name: in.zson
+  - name: in.jsup
     data: |
       {a:"hello"}
       {b:10}

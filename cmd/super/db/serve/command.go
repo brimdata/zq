@@ -76,7 +76,7 @@ func New(parent charm.Command, f *flag.FlagSet) (charm.Command, error) {
 		c.conf.CORSAllowedOrigins = append(c.conf.CORSAllowedOrigins, s)
 		return nil
 	})
-	f.StringVar(&c.conf.DefaultResponseFormat, "defaultfmt", service.DefaultZedFormat, "default response format")
+	f.StringVar(&c.conf.DefaultResponseFormat, "defaultfmt", service.DefaultFormat, "default response format")
 	f.StringVar(&c.listenAddr, "l", ":9867", "[addr]:port to listen on")
 	f.DurationVar(&c.manage, "manage", 0, "when positive, run lake maintenance tasks at this interval")
 	f.StringVar(&c.portFile, "portfile", "", "write listen port to file")

@@ -1,9 +1,9 @@
 script: |
-  ! super -c 'file sample.zson | count('
+  ! super -c 'file sample.jsup | count('
 
 outputs:
   - name: stderr
     data: |
       super: error parsing SuperPipe at line 1, column 26:
-      file sample.zson | count(
+      file sample.jsup | count(
                            === ^ ===

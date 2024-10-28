@@ -2,15 +2,15 @@ script: |
   export SUPER_DB_LAKE=test
   super db init -q
   super db create -q test
-  super db load -q -use test 1.zson
-  super db load -q -use test 2.zson
+  super db load -q -use test 1.jsup
+  super db load -q -use test 2.jsup
   super db query -f lake "from test@main:objects"
 
 inputs:
-  - name: 1.zson
+  - name: 1.jsup
     data: |
       {x:1}
-  - name: 2.zson
+  - name: 2.jsup
     data: |
       {x:2}
 

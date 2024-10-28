@@ -1,49 +1,49 @@
 script: |
   echo === forward-sorted ===
-  super -z -c "count() by ts | sort this" in.zson
+  super -z -c "count() by ts | sort this" in.jsup
   echo === forward-sorted-with-null ===
-  super -z -c "count() by ts | sort this" in-with-null.zson
+  super -z -c "count() by ts | sort this" in-with-null.jsup
   echo === forward-sorted-every ===
-  super -z -c "count() by every(1s)| sort this" in.zson
+  super -z -c "count() by every(1s)| sort this" in.jsup
   echo === forward-sorted-every-null ===
-  super -z -c "count() by every(1s) | sort this" in-with-null.zson
+  super -z -c "count() by every(1s) | sort this" in-with-null.jsup
   echo === forward-sorted-record-key ===
-  super -z -c "count() by foo | sort this" in-record-key.zson
+  super -z -c "count() by foo | sort this" in-record-key.jsup
   echo === forward-sorted-nested-key ===
-  super -z -c "count() by foo.a | sort this" in-record-key.zson
+  super -z -c "count() by foo.a | sort this" in-record-key.jsup
   echo === forward-sorted-record-key-null ===
-  super -z -c "count() by foo | sort this" in-record-key-null.zson
+  super -z -c "count() by foo | sort this" in-record-key-null.jsup
   echo === forward-sorted-nested-key-null ===
-  super -z -c "count() by foo | sort this" in-record-key-null.zson
+  super -z -c "count() by foo | sort this" in-record-key-null.jsup
   echo === reverse-sorted ===
-  super -z -c "count() by ts | sort this" in-rev.zson
+  super -z -c "count() by ts | sort this" in-rev.jsup
   echo === reverse-sorted-null ===
-  super -z -c "count() by every(1s)  | sort this" in-rev.zson
+  super -z -c "count() by every(1s)  | sort this" in-rev.jsup
 
 inputs:
-  - name: in.zson
+  - name: in.jsup
     data: |
       {ts:1970-01-01T00:00:01Z}
       {ts:1970-01-01T00:00:01Z}
       {ts:1970-01-01T00:00:02Z}
       {ts:1970-01-01T00:00:03Z}
-  - name: in-with-null.zson
+  - name: in-with-null.jsup
     data: |
       {ts:1970-01-01T00:00:01Z}
       {ts:1970-01-01T00:00:01Z}
       {ts:1970-01-01T00:00:02Z}
       {ts:1970-01-01T00:00:03Z}
       {ts:null(time)}
-  - name: in-record-key.zson
+  - name: in-record-key.jsup
     data: |
       {foo:{a:"aaa"}}
       {foo:{a:"baa"}}
-  - name: in-record-key-null.zson
+  - name: in-record-key-null.jsup
     data: |
       {foo:{a:"aaa"}}
       {foo:{a:"baa"}}
       {foo:{a:null(string)}}
-  - name: in-rev.zson
+  - name: in-rev.jsup
     data: |
       {ts:1970-01-01T00:00:10Z}
       {ts:1970-01-01T00:00:08Z}

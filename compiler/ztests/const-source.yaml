@@ -4,7 +4,7 @@ script: |
   super db create -q test
   super db compile -dag -C 'const POOL = "test" from [POOL]' | sed -e "s/[a-zA-Z0-9]\{27\}/XXX/"
   echo "==="
-  super compile -dag -C 'const FILE = "A.zson" from [FILE]'
+  super compile -dag -C 'const FILE = "A.jsup" from [FILE]'
   echo "==="
   super db compile -dag -C 'const URL = "http://brimdata.io" get [URL]'
   ! super db compile -dag -C 'const POOL = 3.14 from [POOL]'
@@ -22,9 +22,9 @@ outputs:
       )
       ===
       (
-        const FILE = "A.zson"
+        const FILE = "A.jsup"
         
-        file A.zson
+        file A.jsup
         | output main
       )
       ===

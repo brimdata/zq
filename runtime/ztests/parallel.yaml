@@ -1,13 +1,13 @@
 script: |
-  super -z -c 'join (file B.zson) on a=b b:=b' A.zson
+  super -z -c 'join (file B.jsup) on a=b b:=b' A.jsup
 
 inputs:
-  - name: A.zson
+  - name: A.jsup
     data: |
       {a:1(int32)}
       {a:2(int32)}
       {a:3(int32)}
-  - name: B.zson
+  - name: B.jsup
     data: |
       {b:1(int32)}
       {b:2(int32)}

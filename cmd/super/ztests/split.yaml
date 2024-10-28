@@ -10,11 +10,11 @@ inputs:
       2
 
 outputs:
-  - name: dir/0.zson
+  - name: dir/0.jsup
     data: |
       1
       2
-  - name: dir/1.zson
+  - name: dir/1.jsup
     data: |
       {a:1}
       {a:2}

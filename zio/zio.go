@@ -20,14 +20,14 @@ func Extension(format string) string {
 		return ".txt"
 	case "table":
 		return ".tbl"
-	case "zng":
-		return ".zng"
-	case "zson":
-		return ".zson"
+	case "bsup":
+		return ".bsup"
+	case "jsup":
+		return ".jsup"
 	case "csv":
 		return ".csv"
-	case "vng":
-		return ".vng"
+	case "csup":
+		return ".csup"
 	case "parquet":
 		return ".parquet"
 	default:

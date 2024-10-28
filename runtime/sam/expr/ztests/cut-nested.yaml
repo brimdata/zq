@@ -1,16 +1,16 @@
 script: |
-  super -z -c "cut rec.foo" nested1.zson
+  super -z -c "cut rec.foo" nested1.jsup
   echo ===
-  super -z -c "cut rec.foo,rec['bar']" nested1.zson
+  super -z -c "cut rec.foo,rec['bar']" nested1.jsup
   echo ===
-  super -z -c "cut rec1.sub1.foo,rec1['sub2']['bar'],rec2.foo,foo" nested2.zson
+  super -z -c "cut rec1.sub1.foo,rec1['sub2']['bar'],rec2.foo,foo" nested2.jsup
 
 inputs:
-  - name: nested1.zson
+  - name: nested1.jsup
     data: |
       {rec:{foo:"foo1",bar:"bar1"}}
       {rec:{foo:"foo2",bar:"bar2"}}
-  - name: nested2.zson
+  - name: nested2.jsup
     data: |
       {foo:"outer1",rec1:{sub1:{foo:"foo1.1",bar:"bar1.1"},sub2:{foo:"foo2.1",bar:"bar2.1"}},rec2:{foo:"foo3.1"}}
       {foo:"outer2",rec1:{sub1:{foo:"foo1.2",bar:"bar1.2"},sub2:{foo:"foo2.2",bar:"bar2.2"}},rec2:{foo:"foo3.2"}}

@@ -1,12 +1,12 @@
 # Test that type names are properly reset and reusable after stream boundaries.
 
 script: |
-  super -c "head 1" in.zson > t1.zng
-  super -c "tail 2" in.zson > t2.zng
-  cat t1.zng t2.zng |super - | super -z -
+  super -c "head 1" in.jsup > t1.bsup
+  super -c "tail 2" in.jsup > t2.bsup
+  cat t1.bsup t2.bsup |super - | super -z -
 
 inputs:
-  - name: in.zson
+  - name: in.jsup
     data: |
       {ts:2015-03-05T14:25:12.963801Z}
       {ts:2015-03-05T14:25:14.419939Z,proto:"udp"(=zenum)}

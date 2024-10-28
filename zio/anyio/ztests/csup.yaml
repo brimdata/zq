@@ -1,5 +1,5 @@
 script: |
-  super -f vng -o f -
+  super -f csup -o f -
   super -z f
 
 inputs:

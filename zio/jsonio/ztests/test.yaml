@@ -1,4 +1,4 @@
-script: super -i json -f zng - | super -f json -
+script: super -i json -f bsup - | super -f json -
 
 inputs:
   - name: stdin

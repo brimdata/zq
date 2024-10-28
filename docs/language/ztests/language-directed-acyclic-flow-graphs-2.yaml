@@ -23,18 +23,18 @@ script: |
   super db init -q
   super db create -q -orderby color PoolOne
   super db create -q -orderby price PoolTwo
-  super db load -q -use PoolOne fruit.zson
-  super db load -q -use PoolTwo prices.zson
+  super db load -q -use PoolOne fruit.jsup
+  super db load -q -use PoolTwo prices.jsup
   super db query -z -I join.spq
 
 inputs:
-  - name: fruit.zson
+  - name: fruit.jsup
     data: |
       {key:"apple",color:"red"}
       {key:"banana",color:"yellow"}
       {key:"avocado",color:"green"}
       {key:"strawberry",color:"red"}
-  - name: prices.zson
+  - name: prices.jsup
     data: |
       {key:"apple",price:1.5}
       {key:"banana",price:2.1}

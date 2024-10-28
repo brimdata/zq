@@ -1,6 +1,6 @@
 zed: "*"
 
-output-flags: -f zson -pretty=4
+output-flags: -f jsup -pretty=4
 
 input: |
   {flip:%HEADS(enum(HEADS,TAILS))}

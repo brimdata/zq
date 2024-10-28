@@ -2,11 +2,11 @@ script: |
   export SUPER_DB_LAKE=test
   super db init -q
   super db create -q logs
-  super db load -q -use logs in.zson
+  super db load -q -use logs in.jsup
   super db query "from logs | cut notafield"
 
 inputs:
-  - name: in.zson
+  - name: in.jsup
     data: |
       {x:1}
       {x:2}

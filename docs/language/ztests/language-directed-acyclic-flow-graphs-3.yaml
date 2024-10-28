@@ -22,11 +22,11 @@ script: |
   export SUPER_DB_LAKE=test
   super db init -q
   super db create -q -orderby name fruit
-  super db load -q -use fruit fruit.zson
+  super db load -q -use fruit fruit.jsup
   super db query -z -I switch.spq
 
 inputs:
-  - name: fruit.zson
+  - name: fruit.jsup
     data: |
       {name:"apple",color:"red",price:1.5}
       {name:"banana",color:"yellow",price:2.1}

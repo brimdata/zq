@@ -26,9 +26,9 @@ import (
 )
 
 const (
-	Version         = 3
+	Version         = 4
 	PoolsTag        = "pools"
-	LakeMagicFile   = "lake.zng"
+	LakeMagicFile   = "lake.bsup"
 	LakeMagicString = "ZED LAKE"
 )
 

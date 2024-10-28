@@ -1,13 +1,13 @@
 script: |
-  super a.zson > c.zng
-  super b.zson >> c.zng
-  super dev dig frames -z c.zng
+  super a.jsup > c.bsup
+  super b.jsup >> c.bsup
+  super dev dig frames -z c.bsup
 
 inputs:
-  - name: a.zson
+  - name: a.jsup
     data: |
       {a:1}
-  - name: b.zson
+  - name: b.jsup
     data: |
       {b:2}
 

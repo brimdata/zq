@@ -20,7 +20,7 @@ import (
 )
 
 var spec = &charm.Spec{
-	Name:  "vng",
+	Name:  "csup",
 	Usage: "vng uri",
 	Short: "dump VNG metadata",
 	Long: `

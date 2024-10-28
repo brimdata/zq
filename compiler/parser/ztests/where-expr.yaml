@@ -1,10 +1,10 @@
 script: |
-  super -z -c "_path == 'conn' | count()" in.zson
+  super -z -c "_path == 'conn' | count()" in.jsup
   echo ===
-  super -z -c "count() where _path == 'conn'" in.zson
+  super -z -c "count() where _path == 'conn'" in.jsup
 
 inputs:
-  - name: in.zson
+  - name: in.jsup
     data: |
       {_path:"conn"}
       {_path:"dns"}

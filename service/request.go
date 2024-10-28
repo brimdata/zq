@@ -170,7 +170,7 @@ func (r *Request) BoolFromQuery(w *ResponseWriter, param string) (bool, bool) {
 }
 
 func (r *Request) Unmarshal(w *ResponseWriter, body interface{}, templates ...interface{}) bool {
-	format, ok := r.format(w, DefaultZedFormat)
+	format, ok := r.format(w, DefaultFormat)
 	if !ok {
 		return false
 	}

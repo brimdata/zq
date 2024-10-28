@@ -1,5 +1,5 @@
 script: |
-  super -z a.log b.zng
+  super -z a.log b.bsup
 
 inputs:
   - name: a.log
@@ -13,7 +13,7 @@ inputs:
       #types	port
       80
   # {src_port:81(port=uint16)}
-  - name: b.zng
+  - name: b.bsup
     data: !!binary AwEHBHBvcnQBAAEIc3JjX3BvcnQeFAAfAwJR/w==
 
 outputs:

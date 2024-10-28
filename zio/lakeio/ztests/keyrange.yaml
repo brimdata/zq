@@ -2,12 +2,12 @@ script: |
   export SUPER_DB_LAKE=test
   super db init -q
   super db create -orderby a POOL
-  super db load -q -use POOL in.zson
+  super db load -q -use POOL in.jsup
   super db query -z "from POOL@main:rawlog"
   super db log -use POOL
 
 inputs:
-  - name: in.zson
+  - name: in.jsup
     data: |
       {a:1}
       {a:2}

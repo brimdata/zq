@@ -11,4 +11,4 @@ output: |
   {a:1}
   null
   error({message:"parse_zson: string arg required",on:{}})
-  error({message:"parse_zson: ZSON syntax error",on:"!"})
+  error({message:"parse_zson: Super JSON syntax error",on:"!"})

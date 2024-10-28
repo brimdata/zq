@@ -1,6 +1,6 @@
 script: |
-  super -f vng -o out.vng -
-  super -z out.vng
+  super -f csup -o out.csup -
+  super -z out.csup
 
 inputs:
   - name: stdin

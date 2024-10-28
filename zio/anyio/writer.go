@@ -50,18 +50,18 @@ func NewWriter(w io.WriteCloser, opts WriterOpts) (zio.WriteCloser, error) {
 	case "tsv":
 		opts.CSV.Delim = '\t'
 		return csvio.NewWriter(w, opts.CSV), nil
-	case "vng":
+	case "csup":
 		return vngio.NewWriter(w), nil
 	case "zeek":
 		return zeekio.NewWriter(w), nil
 	case "zjson":
 		return zjsonio.NewWriter(w), nil
-	case "zng":
+	case "bsup":
 		if opts.ZNG == nil {
 			return zngio.NewWriter(w), nil
 		}
 		return zngio.NewWriterWithOpts(w, *opts.ZNG), nil
-	case "zson", "":
+	case "jsup", "":
 		return zsonio.NewWriter(w, opts.ZSON), nil
 	default:
 		return nil, fmt.Errorf("unknown format: %s", opts.Format)

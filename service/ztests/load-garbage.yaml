@@ -19,10 +19,10 @@ outputs:
       	line: auto-detection not supported
       	parquet: auto-detection requires seekable input
       	tsv: line 1: delimiter '\t' not found
-      	vng: auto-detection requires seekable input
+      	csup: auto-detection requires seekable input
       	zeek: line 1: bad types/fields definition in zeek header
       	zjson: line 1: malformed ZJSON: bad type object: "This file contains no records.": unpacker error parsing JSON: invalid character 'T' looking for beginning of value
-      	zng: malformed zng record
-      	zson: ZSON syntax error
+      	bsup: malformed bsup record
+      	jsup: Super JSON syntax error
       status code 400: no records in request
 

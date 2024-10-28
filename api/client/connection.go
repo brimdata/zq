@@ -61,8 +61,8 @@ func NewConnection() *Connection {
 // and a base URL derived from the hostURL argument.
 func NewConnectionTo(hostURL string) *Connection {
 	defaultHeader := http.Header{
-		"Accept":       []string{api.MediaTypeZNG},
-		"Content-Type": []string{api.MediaTypeZNG},
+		"Accept":       []string{api.MediaTypeBSUP},
+		"Content-Type": []string{api.MediaTypeBSUP},
 	}
 	return &Connection{
 		client:        &http.Client{},
@@ -409,7 +409,7 @@ func (c *Connection) doVector(ctx context.Context, pool, revision string, object
 
 func (c *Connection) SubscribeEvents(ctx context.Context) (*EventsClient, error) {
 	req := c.NewRequest(ctx, http.MethodGet, "/events", nil)
-	req.Header.Set("Accept", api.MediaTypeZSON)
+	req.Header.Set("Accept", api.MediaTypeJSUP)
 	resp, err := c.Do(req)
 	if err != nil {
 		return nil, err

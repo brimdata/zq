@@ -1,6 +1,6 @@
 script: |
-  super -o t.vng -f vng -
-  super dev vector query -z "yield not (a>1)" t.vng
+  super -o t.csup -f csup -
+  super dev vector query -z "yield not (a>1)" t.csup
 
 inputs:
   - name: stdin

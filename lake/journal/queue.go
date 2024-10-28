@@ -16,7 +16,7 @@ import (
 	"github.com/brimdata/super/zio/zngio"
 )
 
-const ext = "zng"
+const ext = "bsup"
 
 var (
 	ErrEmpty  = errors.New("empty log")

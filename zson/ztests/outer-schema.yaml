@@ -1,8 +1,8 @@
 script: |
-  super -z in.zson
+  super -z in.jsup
 
 inputs:
-  - name: in.zson
+  - name: in.jsup
     data: |
       {city:"Berkeley",state:"CA",population:121643(uint32)}(=city_schema)
       {city:"Broad Cove",state:"ME",population:806(uint32)}(=city_schema)

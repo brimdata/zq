@@ -1,40 +1,40 @@
 script: |
-  super -z -c "avg(n)" in.zson > avg.zson
-  super -z -c "count()" in.zson > count.zson
-  super -z -c "dcount(n)" in.zson in.zson > dcount.zson
+  super -z -c "avg(n)" in.jsup > avg.jsup
+  super -z -c "count()" in.jsup > count.jsup
+  super -z -c "dcount(n)" in.jsup in.jsup > dcount.jsup
   # "with -limit 1" exercises the partials paths.
-  super -z -c "dcount(n) with -limit 1" in.zson in.zson > dcount-partials.zson
-  super -z -c "any(n)" in.zson > any.zson
-  super -z -c "min(n)" in.zson > min.zson
-  super -z -c "max(n)" in.zson > max.zson
+  super -z -c "dcount(n) with -limit 1" in.jsup in.jsup > dcount-partials.jsup
+  super -z -c "any(n)" in.jsup > any.jsup
+  super -z -c "min(n)" in.jsup > min.jsup
+  super -z -c "max(n)" in.jsup > max.jsup
 
 inputs:
-  - name: in.zson
+  - name: in.jsup
     data: |
       {n:0(int32)}
       {n:5(int32)}
       {n:10(int32)}
 
 outputs:
-  - name: avg.zson
+  - name: avg.jsup
     data: |
       5.
-  - name: count.zson
+  - name: count.jsup
     data: |
       3(uint64)
-  - name: dcount.zson
+  - name: dcount.jsup
     data: |
       3(uint64)
-  - name: dcount-partials.zson
+  - name: dcount-partials.jsup
     data: |
       3(uint64)
   # Note: min/max shouldn't be int64 (especially for uint)  Issue #1506.
-  - name: any.zson
+  - name: any.jsup
     data: |
       0(int32)
-  - name: min.zson
+  - name: min.jsup
     data: |
       0
-  - name: max.zson
+  - name: max.jsup
     data: |
       10

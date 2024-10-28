@@ -41,8 +41,9 @@ See https://github.com/brimdata/super/tree/main/docs/language
 for details.
 
 Supported input formats include CSV, JSON, NDJSON, Parquet,
-VNG, ZNG, ZSON, and Zeek TSV.  Supported output formats include
-all the input formats along with a SQL-like table format.
+Super JSON, Super Binary, Super Columnar,  and Zeek TSV. 
+Supported output formats include all the input formats along with
+a SQL-like table format.
 
 "zq" must be run with at least one input.  Input files can
 be file system paths; "-" for standard input; or HTTP, HTTPS, or S3 URLs.
@@ -61,7 +62,7 @@ flag to indicate a destination directory for separate output files for each
 output type.  This flag may be used in combination with -o, which
 provides the prefix for the file path, e.g.,
 
-  zq -f parquet -split out -o example-output input.zng
+  zq -f parquet -split out -o example-output input.bsup
 
 When writing to stdout and stdout is a terminal, the default output format is ZSON.
 Otherwise, the default format is binary ZNG.  In either case, the default
@@ -85,8 +86,8 @@ The "zq" engine processes data natively in Zed so if you intend to run
 many queries over the same data, you will see substantial performance gains
 by converting your data to the efficient binary form of Zed called ZNG, e.g.,
 
-  zq -f zng input.json > fast.zng
-  zq <query> fast.zng
+  zq -f zng input.json > fast.bsup
+  zq <query> fast.bsup
   ...
 
 Please see https://github.com/brimdata/super for more information.

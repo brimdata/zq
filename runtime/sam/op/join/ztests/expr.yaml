@@ -1,19 +1,19 @@
 script: |
-  super -z -c 'left join (file B.zson) on s b' A.zson
+  super -z -c 'left join (file B.jsup) on s b' A.jsup
   echo ===
-  super -z -c 'left join (file B.zson) on s=(lower(s)) b' A.zson
+  super -z -c 'left join (file B.jsup) on s=(lower(s)) b' A.jsup
   echo ===
-  super -z -c 'left join (file B.zson) on (lower(s))=(lower(s)) b' A.zson
+  super -z -c 'left join (file B.jsup) on (lower(s))=(lower(s)) b' A.jsup
   echo ===
-  super -z -c 'left join (file B.zson) on s' A.zson
+  super -z -c 'left join (file B.jsup) on s' A.jsup
 
 inputs:
-  - name: A.zson
+  - name: A.jsup
     data: |
       {a:1(int32),s:"a"}
       {a:2(int32),s:"B"}
       {a:3(int32),s:"c"}
-  - name: B.zson
+  - name: B.jsup
     data: |
       {b:4(int32),s:"A"}
       {b:5(int32),s:"b"}

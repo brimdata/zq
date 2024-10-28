@@ -1,14 +1,14 @@
 script: |
-  super -z -c 'left join (file C.zson) on a=b hit:=sc' A.zson
+  super -z -c 'left join (file C.jsup) on a=b hit:=sc' A.jsup
 
 inputs:
-  - name: A.zson
+  - name: A.jsup
     data: |
       {a:10(int32),sa:"a0"}
       {a:20(int32),sa:"a1"}
       {a:30(int32),sa:"a2"}
       {a:40(int32),sa:"a3"}
-  - name: C.zson
+  - name: C.jsup
     data: |
       {c:20(int32),sc:"b20"}
       {c:20(int32),sc:"b20v2"}

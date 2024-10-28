@@ -28,9 +28,9 @@ type Flags struct {
 	forceBinary   bool
 	jsonShortcut  bool
 	jsonPretty    bool
-	zsonShortcut  bool
-	zsonPretty    bool
-	zsonPersist   string
+	jsupShortcut  bool
+	jsupPretty    bool
+	jsupPersist   string
 	color         bool
 	pretty        int
 	unbuffered    bool
@@ -44,12 +44,12 @@ func (f *Flags) setFlags(fs *flag.FlagSet) {
 	// zio stuff
 	fs.BoolVar(&f.color, "color", true, "enable/disable color formatting for -Z and lake text output")
 	f.ZNG = &zngio.WriterOpts{}
-	fs.BoolVar(&f.ZNG.Compress, "zng.compress", true, "compress ZNG frames")
-	fs.IntVar(&f.ZNG.FrameThresh, "zng.framethresh", zngio.DefaultFrameThresh,
-		"minimum ZNG frame size in uncompressed bytes")
+	fs.BoolVar(&f.ZNG.Compress, "bsup.compress", true, "compress Super Binary frames")
+	fs.IntVar(&f.ZNG.FrameThresh, "bsup.framethresh", zngio.DefaultFrameThresh,
+		"minimum Super Binary frame size in uncompressed bytes")
 	fs.IntVar(&f.pretty, "pretty", 4,
-		"tab size to pretty print JSON/ZSON output (0 for newline-delimited JSON/ZSON")
-	fs.StringVar(&f.zsonPersist, "persist", "",
+		"tab size to pretty print JSON and Super JSON output (0 for newline-delimited output")
+	fs.StringVar(&f.jsupPersist, "persist", "",
 		"regular expression to persist type definitions across the stream")
 
 	// emitter stuff
@@ -73,48 +73,48 @@ func (f *Flags) SetFlagsWithFormat(fs *flag.FlagSet, format string) {
 
 func (f *Flags) SetFormatFlags(fs *flag.FlagSet) {
 	if f.DefaultFormat == "" {
-		f.DefaultFormat = "zng"
+		f.DefaultFormat = "bsup"
 	}
-	fs.StringVar(&f.Format, "f", f.DefaultFormat, "format for output data [arrows,csv,json,lake,parquet,table,text,tsv,vng,zeek,zjson,zng,zson]")
+	fs.StringVar(&f.Format, "f", f.DefaultFormat, "format for output data [arrows,bsup,csup,csv,json,jsup,lake,parquet,table,text,tsv,zeek,zjson]")
 	fs.BoolVar(&f.jsonShortcut, "j", false, "use line-oriented JSON output independent of -f option")
 	fs.BoolVar(&f.jsonPretty, "J", false, "use formatted JSON output independent of -f option")
-	fs.BoolVar(&f.zsonShortcut, "z", false, "use line-oriented ZSON output independent of -f option")
-	fs.BoolVar(&f.zsonPretty, "Z", false, "use formatted ZSON output independent of -f option")
-	fs.BoolVar(&f.forceBinary, "B", false, "allow binary zng be sent to a terminal output")
+	fs.BoolVar(&f.jsupShortcut, "z", false, "use line-oriented Super JSON output independent of -f option")
+	fs.BoolVar(&f.jsupPretty, "Z", false, "use formatted Super JSON output independent of -f option")
+	fs.BoolVar(&f.forceBinary, "B", false, "allow Super Binary to be sent to a terminal output")
 }
 
 func (f *Flags) Init() error {
 	f.JSON.Pretty, f.ZSON.Pretty = f.pretty, f.pretty
-	if f.zsonPersist != "" {
-		re, err := regexp.Compile(f.zsonPersist)
+	if f.jsupPersist != "" {
+		re, err := regexp.Compile(f.jsupPersist)
 		if err != nil {
 			return err
 		}
 		f.ZSON.Persist = re
 	}
 	if f.jsonShortcut || f.jsonPretty {
-		if f.Format != f.DefaultFormat || f.zsonShortcut || f.zsonPretty {
+		if f.Format != f.DefaultFormat || f.jsupShortcut || f.jsupPretty {
 			return errors.New("cannot use -j or -J with -f, -z, or -Z")
 		}
 		f.Format = "json"
 		if !f.jsonPretty {
 			f.JSON.Pretty = 0
 		}
-	} else if f.zsonShortcut || f.zsonPretty {
+	} else if f.jsupShortcut || f.jsupPretty {
 		if f.Format != f.DefaultFormat {
 			return errors.New("cannot use -z or -Z with -f")
 		}
-		f.Format = "zson"
-		if !f.zsonPretty {
+		f.Format = "jsup"
+		if !f.jsupPretty {
 			f.ZSON.Pretty = 0
 		}
 	}
 	if f.outputFile == "-" {
 		f.outputFile = ""
 	}
-	if f.outputFile == "" && f.split == "" && f.Format == "zng" && !f.forceBinary &&
+	if f.outputFile == "" && f.split == "" && f.Format == "bsup" && !f.forceBinary &&
 		terminal.IsTerminalFile(os.Stdout) {
-		f.Format = "zson"
+		f.Format = "jsup"
 		f.ZSON.Pretty = 0
 	}
 	if f.unbuffered {

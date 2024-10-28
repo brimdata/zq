@@ -36,9 +36,9 @@ func TestZed(t *testing.T) {
 		require.NoError(t, err)
 		runAllBoomerangs(t, "arrows", data)
 		runAllBoomerangs(t, "parquet", data)
-		runAllBoomerangs(t, "vng", data)
+		runAllBoomerangs(t, "csup", data)
 		runAllBoomerangs(t, "zjson", data)
-		runAllBoomerangs(t, "zson", data)
+		runAllBoomerangs(t, "jsup", data)
 	})
 
 	for d := range dirs {

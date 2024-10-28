@@ -68,10 +68,10 @@ prs <pool_id> key created_at order desc
 ```
 
 Let's add some pull request data I've prefetched from the GitHub API
-[here](github1.zng):
+[here](github1.bsup):
 
 ```bash
-$ zed load -use prs github1.zng
+$ zed load -use prs github1.bsup
 ```
 =>
 ```
@@ -140,10 +140,10 @@ That's not a lot of data, so let's add some more.
 ## Adding additional data
 
 Additional data can be added to our pool by running `zed load` on our second
-[data set](github2.zng):
+[data set](github2.bsup):
 
 ```bash
-$ zed load github2.zng
+$ zed load github2.bsup
 ```
 
 Running our `min(created_at), max(created_at)` query, we'll see that we now have

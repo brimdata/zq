@@ -101,9 +101,9 @@ coinflips@trial
 numbers@main
 ```
 
-The following file `hello.zson` is also used.
+The following file `hello.jsup` is also used.
 
-```mdtest-input hello.zson
+```mdtest-input hello.jsup
 {greeting:"hello world!"}
 ```
 
@@ -112,7 +112,7 @@ The following file `hello.zson` is also used.
 _Source structured data from a local file_
 
 ```mdtest-command
-super -z -c 'file hello.zson | yield greeting'
+super -z -c 'file hello.jsup | yield greeting'
 ```
 =>
 ```mdtest-output
@@ -121,7 +121,7 @@ super -z -c 'file hello.zson | yield greeting'
 
 _Source data from a local file, but in line format_
 ```mdtest-command
-super -z -c 'file hello.zson format line'
+super -z -c 'file hello.jsup format line'
 ```
 =>
 ```mdtest-output

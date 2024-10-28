@@ -1,10 +1,10 @@
 script: |
-  super -o t.vng -f vng -
-  super dev vector query -z "where true" t.vng
+  super -o t.csup -f csup -
+  super dev vector query -z "where true" t.csup
   echo //
-  super dev vector query -z "where this != 2" t.vng
+  super dev vector query -z "where this != 2" t.csup
   echo //
-  super dev vector query -z "where this" t.vng
+  super dev vector query -z "where this" t.csup
 
 inputs:
   - name: stdin

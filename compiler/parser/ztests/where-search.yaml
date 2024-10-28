@@ -1,10 +1,10 @@
 script: |
-  super -z -c 'count() where grep("foo")' in.zson
+  super -z -c 'count() where grep("foo")' in.jsup
   echo ===
-  super -z -c "foo | count()" in.zson
+  super -z -c "foo | count()" in.jsup
 
 inputs:
-  - name: in.zson
+  - name: in.jsup
     data: |
       {_path:"conn"}
       {_path:"foo"}

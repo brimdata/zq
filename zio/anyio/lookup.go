@@ -38,7 +38,7 @@ func lookupReader(zctx *super.Context, r io.Reader, demandOut demand.Demand, opt
 	case "tsv":
 		opts.CSV.Delim = '\t'
 		return zio.NopReadCloser(csvio.NewReader(zctx, r, opts.CSV)), nil
-	case "vng":
+	case "csup":
 		zr, err := vngio.NewReader(zctx, r, demandOut)
 		if err != nil {
 			return nil, err
@@ -48,9 +48,9 @@ func lookupReader(zctx *super.Context, r io.Reader, demandOut demand.Demand, opt
 		return zio.NopReadCloser(zeekio.NewReader(zctx, r)), nil
 	case "zjson":
 		return zio.NopReadCloser(zjsonio.NewReader(zctx, r)), nil
-	case "zng":
+	case "bsup":
 		return zngio.NewReaderWithOpts(zctx, r, opts.ZNG), nil
-	case "zson":
+	case "jsup":
 		return zio.NopReadCloser(zsonio.NewReader(zctx, r)), nil
 	}
 	return nil, fmt.Errorf("no such format: \"%s\"", opts.Format)

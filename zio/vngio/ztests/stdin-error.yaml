@@ -1,9 +1,9 @@
 script: |
-  super -f vng -o t.vng in.zson
-  ! cat t.vng | super -i vng -
+  super -f csup -o t.csup in.jsup
+  ! cat t.csup | super -i csup -
 
 inputs:
-  - name: in.zson
+  - name: in.jsup
     data: |
       ["hello"(=bar),"world"(bar)]
       {a:["hello"(=bar),"world"(bar)]}
@@ -11,4 +11,4 @@ inputs:
 outputs:
   - name: stderr
     data: |
-      stdio:stdin: VNG requires a seekable input
+      stdio:stdin: Super Columnar requires a seekable input

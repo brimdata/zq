@@ -1,10 +1,10 @@
 script: |
-  super - | super -z -persist 'b.*' in.zson
+  super - | super -z -persist 'b.*' in.jsup
   echo ===
-  super - | super -z -persist '(foo|^bar)' in.zson
+  super - | super -z -persist '(foo|^bar)' in.jsup
 
 inputs:
-  - name: in.zson
+  - name: in.jsup
     data: |
       {a:1(baz=int8)}(=foo)
       {a:1}(foo)

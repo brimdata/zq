@@ -4,12 +4,12 @@ script: |
 inputs:
   - name: test.zed
     data: |
-      const FILE = "A.zson"
+      const FILE = "A.jsup"
       op test(path): (
         file [path] | sort a 
       )
       test(FILE)
-  - name: A.zson
+  - name: A.jsup
     data: |
       {a:5}
       {a:1}

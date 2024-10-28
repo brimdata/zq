@@ -1,10 +1,10 @@
 # If you change the test below after a change to make it pass, make sure the
 # input/output are still in sync with what's at zng/docs/zeek-compat.md.
 
-script: super -i zson -f zeek zeek_types.zson
+script: super -i jsup -f zeek zeek_types.jsup
 
 inputs:
-  - name: zeek_types.zson
+  - name: zeek_types.jsup
     data: |
       {
           my_bool: true,

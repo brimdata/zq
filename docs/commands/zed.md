@@ -476,7 +476,7 @@ pools.
 
 For example, this command
 ```
-zed load sample1.json sample2.zng sample3.zson
+zed load sample1.json sample2.bsup sample3.jsup
 ```
 loads files of varying formats in a single commit to the working branch.
 
@@ -484,13 +484,13 @@ An alternative branch may be specified with a branch reference with the
 `-use` option, i.e., `<pool>@<branch>`.  Supposing a branch
 called `live` existed, data can be committed into this branch as follows:
 ```
-zed load -use logs@live sample.zng
+zed load -use logs@live sample.bsup
 ```
 Or, as mentioned above, you can set the default branch for the load command
 via `use`:
 ```
 zed use logs@live
-zed load sample.zng
+zed load sample.bsup
 ```
 During a `load` operation, a commit is broken out into units called _data objects_
 where a target object size is configured into the pool,
@@ -537,11 +537,11 @@ data provenance and audit capabilities by embedding custom metadata in the
 commit history.
 
 Since commit objects are stored as Zed, the metadata can easily be
-queried by running the `log -f zng` to retrieve the log in ZNG format,
+queried by running the `log -f bsup` to retrieve the log in ZNG format,
 for example, and using [`zq`](zq.md) to pull the metadata out
 as in:
 ```
-zed log -f zng | zq 'has(meta) | yield {id,meta}' -
+zed log -f bsup | zq 'has(meta) | yield {id,meta}' -
 ```
 
 ### Log
@@ -689,7 +689,7 @@ zed query 'from HEAD'
 When querying data to the ZNG output format,
 output from a pool can be easily piped to other commands like `zq`, e.g.,
 ```
-zed query -f zng 'from logs' | zq -f table 'count() by field' -
+zed query -f bsup 'from logs' | zq -f table 'count() by field' -
 ```
 Of course, it's even more efficient to run the query inside of the pool traversal
 like this:

@@ -1,11 +1,11 @@
 script: |
-  super -j in.zson
-  ! super -j -f zson in.zson
-  ! super -j -z in.zson
-  ! super -j -Z in.zson
+  super -j in.jsup
+  ! super -j -f jsup in.jsup
+  ! super -j -z in.jsup
+  ! super -j -Z in.jsup
 
 inputs:
-  - name: in.zson
+  - name: in.jsup
     data: |
       {a:1}
 

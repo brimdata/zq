@@ -323,7 +323,7 @@ output them all in a single binary [ZNG](../../formats/zng.md) file as
 follows:
 
 ```
-super -I shaper.zed *.log > /tmp/all.zng
+super -I shaper.zed *.log > /tmp/all.bsup
 ```
 
 If you wish to apply the shaper and then perform additional

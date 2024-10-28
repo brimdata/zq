@@ -1,8 +1,8 @@
 script: |
-  super -z -c 'from (file in.zson file in.zson ) | fork (=> count() => count())'
+  super -z -c 'from (file in.jsup file in.jsup ) | fork (=> count() => count())'
 
 inputs:
-  - name: in.zson
+  - name: in.jsup
     data: |
       1
 

@@ -6,9 +6,9 @@ script: |
   {
     seq -f '{x: 0, y: %.0f}' 257
     seq -f '{x: 1, y: %.0f}' 257
-  } | super -o t.vng -f vng -
-  super dev vector query -z 'sum(x)' t.vng
-  super dev vector query -z 'sum(y)' t.vng
+  } | super -o t.csup -f csup -
+  super dev vector query -z 'sum(x)' t.csup
+  super dev vector query -z 'sum(y)' t.csup
 
 outputs:
   - name: stdout

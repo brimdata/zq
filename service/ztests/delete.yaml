@@ -1,9 +1,9 @@
 script: |
   source service.sh
   super db create -use -q -orderby x:desc test
-  super db load -q 1.zson
+  super db load -q 1.jsup
   id=$(super db query -f text "from test@main:objects | cut id:=ksuid(id) | tail 1")
-  super db load -q 2.zson
+  super db load -q 2.jsup
   super db query -z "*"
   echo === | tee /dev/stderr
   super db delete -q $id
@@ -13,9 +13,9 @@ script: |
 
 inputs:
   - name: service.sh
-  - name: 1.zson
+  - name: 1.jsup
     data: "{x:1}"
-  - name: 2.zson
+  - name: 2.jsup
     data: "{x:2}"
 
 outputs:

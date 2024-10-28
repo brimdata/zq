@@ -10,11 +10,11 @@ inputs:
       2
 
 outputs:
-  - name: dir/prefix-0.zson
+  - name: dir/prefix-0.jsup
     data: |
       1
       2
-  - name: dir/prefix-1.zson
+  - name: dir/prefix-1.jsup
     data: |
       {a:1}
       {a:2}

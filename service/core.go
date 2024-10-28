@@ -25,10 +25,10 @@ import (
 	"go.uber.org/zap"
 )
 
-// DefaultZedFormat is the default Zed format that the server will assume if the
+// DefaultFormat is the default Zed format that the server will assume if the
 // value for a request's "Accept" or "Content-Type" headers are not set or set
 // to "*/*".
-const DefaultZedFormat = "zson"
+const DefaultFormat = "jsup"
 
 const indexPage = `
 <!DOCTYPE html>
@@ -70,7 +70,7 @@ type Core struct {
 
 func NewCore(ctx context.Context, conf Config) (*Core, error) {
 	if conf.DefaultResponseFormat == "" {
-		conf.DefaultResponseFormat = DefaultZedFormat
+		conf.DefaultResponseFormat = DefaultFormat
 	}
 	if _, err := api.FormatToMediaType(conf.DefaultResponseFormat); err != nil {
 		return nil, fmt.Errorf("invalid default response format: %w", err)

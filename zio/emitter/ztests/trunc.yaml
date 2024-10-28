@@ -1,13 +1,13 @@
 script: |
- super - | super -z -o out.zson long.zson
- super - | super -z -o out.zson short.zson
- super -z out.zson
+ super - | super -z -o out.jsup long.jsup
+ super - | super -z -o out.jsup short.jsup
+ super -z out.jsup
 
 inputs:
-  - name: short.zson
+  - name: short.jsup
     data: |
       {a:"hello"}
-  - name: long.zson
+  - name: long.jsup
     data: |
       {a:"hello"}
       {a:"there"}

@@ -1,14 +1,14 @@
 script: |
   source service.sh
   super db create -q test
-  super db load -q -use test babble.zson
+  super db load -q -use test babble.jsup
   super db query -s -z "from test | count()"
 
 inputs:
   - name: service.sh
     source: service.sh
-  - name: babble.zson
-    source: ../../testdata/babble.zson
+  - name: babble.jsup
+    source: ../../testdata/babble.jsup
 
 outputs:
   - name: stdout

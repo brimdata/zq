@@ -819,12 +819,12 @@ First, let's get rid of the outer array and generate elements of an array
 as a sequence of Zed records that have been fused and let's filter out
 the empty records:
 ```
-super -c 'over this | len(this) != 0 | fuse' prs.json > prs1.zng
+super -c 'over this | len(this) != 0 | fuse' prs.json > prs1.bsup
 ```
 We can check that worked with count:
 ```
-super -z -c 'count()' prs1.zng
-super -z -c 'sample | count()' prs1.zng
+super -z -c 'count()' prs1.bsup
+super -z -c 'sample | count()' prs1.bsup
 ```
 produces
 ```
@@ -836,7 +836,7 @@ and exactly one shape since the data was fused.
 
 Now, let's drop the fields we aren't interested in:
 ```
-super -c 'drop head,base,_links' prs1.zng > prs2.zng
+super -c 'drop head,base,_links' prs1.bsup > prs2.bsup
 ```
 Finally, let's clean up those dates.  To track down all the candidates,
 we can run this Zed to group field names by their type and limit the output
@@ -846,7 +846,7 @@ super -z -c '
   over this
   | kind(value)=="primitive"
   | fields:=union(key[0]) by type:=typeof(value)
-' prs2.zng
+' prs2.bsup
 ```
 which gives
 ```
@@ -866,7 +866,7 @@ to be
 * `updated_at`.
 You can do a quick check of the theory by running...
 ```
-super -z -c '{closed_at,merged_at,created_at,updated_at}' prs2.zng
+super -z -c '{closed_at,merged_at,created_at,updated_at}' prs2.bsup
 ```
 and you will get strings that are all ISO dates:
 ```
@@ -876,14 +876,14 @@ and you will get strings that are all ISO dates:
 ```
 To fix those strings, we simply transform the fields in place using the
 (implied) [put operator](../language/operators/put.md) and redirect the final
-output the ZNG file `prs.zng`:
+output the ZNG file `prs.bsup`:
 ```
 super -c '
   closed_at:=time(closed_at),
   merged_at:=time(merged_at),
   created_at:=time(created_at),
   updated_at:=time(updated_at)
-' prs2.zng > prs.zng
+' prs2.bsup > prs.bsup
 ```
 We can check the result with our type analysis:
 ```mdtest-command dir=docs/tutorials
@@ -892,7 +892,7 @@ super -z -c '
   | kind(value)=="primitive"
   | fields:=union(key[0]) by type:=typeof(value)
   | sort type
-' prs.zng
+' prs.bsup
 ```
 which now gives:
 ```mdtest-output
@@ -928,13 +928,13 @@ over this                      // traverse the array of objects
 We can then put this in a file, called say `transform.zed`, and use the `-I`
 argument to run all the transformations in one fell swoop:
 ```
-super -I transform.zed prs.json > prs.zng
+super -I transform.zed prs.json > prs.bsup
 ```
 
 ## Running Analytics
 
 Now that we've cleaned up our data, we can reliably and easily run analytics
-on the finalized ZNG file `prs.zng`.
+on the finalized ZNG file `prs.bsup`.
 
 Zed gives us the best of both worlds of JSON and relational tables: we have
 the structure and clarity of the relational model while retaining the flexibility
@@ -944,7 +944,7 @@ to put your clean data into all the right places.
 Let's start with something simple.  How about we output a "PR Report" listing
 the title of each PR along with its PR number and creation date:
 ```mdtest-command dir=docs/tutorials
-super -f table -c '{DATE:created_at,NUMBER:f"PR #{number}",TITLE:title}' prs.zng
+super -f table -c '{DATE:created_at,NUMBER:f"PR #{number}",TITLE:title}' prs.bsup
 ```
 and you'll see this output...
 ```mdtest-output head
@@ -966,7 +966,7 @@ chronologically. This command retrieves the last five PRs in the dataset:
 super -f table -c '
   tail 5
   | {DATE:created_at,"NUMBER":f"PR #{number}",TITLE:title}
-' prs.zng
+' prs.bsup
 ```
 and the output is:
 ```mdtest-output
@@ -981,7 +981,7 @@ DATE                 NUMBER TITLE
 How about some aggregations?  We can count the number of PRs and sort by the
 count highest first:
 ```mdtest-command dir=docs/tutorials
-super -z -c "count() by user:=user.login | sort count desc" prs.zng
+super -z -c "count() by user:=user.login | sort count desc" prs.bsup
 ```
 produces
 ```mdtest-output
@@ -995,7 +995,7 @@ How about getting a list of all of the reviewers?  To do this, we need to
 traverse the records in the `requested_reviewers` array and collect up
 the login field from each record:
 ```mdtest-command dir=docs/tutorials
-super -z -c 'over requested_reviewers | collect(login)' prs.zng
+super -z -c 'over requested_reviewers | collect(login)' prs.bsup
 ```
 Oops, this gives us an array of the reviewer logins
 with repetitions since [collect](../language/aggregates/collect.md)
@@ -1010,7 +1010,7 @@ computes the set-wise union of its input and produces a Zed `set` type as its
 output.  In this case, the output is a set of strings, written `|[string]|`
 in the Zed language.  For example:
 ```mdtest-command dir=docs/tutorials
-super -z -c 'over requested_reviewers | reviewers:=union(login)' prs.zng
+super -z -c 'over requested_reviewers | reviewers:=union(login)' prs.bsup
 ```
 produces
 ```mdtest-output
@@ -1030,7 +1030,7 @@ Instead of computing a set-union over all the reviewers across all PRs,
 we instead want to compute the set-union over the reviewers in each PR.
 We can do this as follows:
 ```mdtest-command dir=docs/tutorials
-super -z -c 'over requested_reviewers => ( reviewers:=union(login) )' prs.zng
+super -z -c 'over requested_reviewers => ( reviewers:=union(login) )' prs.bsup
 ```
 which produces an output like this:
 ```mdtest-output head
@@ -1058,7 +1058,7 @@ super -z -c '
     | {user,reviewers}
   )
   | sort user,len(reviewers)
-' prs.zng
+' prs.bsup
 ```
 which gives us
 ```mdtest-output head
@@ -1082,7 +1082,7 @@ super -Z -c '
   )
   | groups:=union(reviewers) by user
   | sort user,len(groups)
-' prs.zng
+' prs.bsup
 ```
 and we get
 ```mdtest-output
@@ -1206,7 +1206,7 @@ super -z -c '
   )
   | avg_reviewers:=avg(len(reviewers)) by user
   | sort avg_reviewers
-' prs.zng
+' prs.bsup
 ```
 which produces
 ```mdtest-output
@@ -1227,7 +1227,7 @@ super -j -c '
   )
   | groups:=union(reviewers) by user
   | sort user,len(groups)
-' prs.zng
+' prs.bsup
 ```
 produces
 ```mdtest-output

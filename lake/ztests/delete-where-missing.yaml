@@ -2,14 +2,14 @@ script: |
   export SUPER_DB_LAKE=test
   super db init -q
   super db create -use -q test
-  super db load -q in.zson
+  super db load -q in.jsup
   ! super db delete -q -where 'uid==C3UeSqaSOFRReHD68'
   super db query -z 'count:=count()'
   super db delete -q -where 'uid=="C3UeSqaSOFRReHD68"'
   super db query -z 'count:=count()'
 
 inputs:
-  - name: in.zson
+  - name: in.jsup
     data: |
       {ts:0,uid:"C3UeSqaSOFRReHD68"}
       {ts:1,uid:null(string)}

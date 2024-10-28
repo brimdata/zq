@@ -1,13 +1,13 @@
 script: |
-  super -z -c 'file a.zson | inner join (file b.zson) on a=b'
+  super -z -c 'file a.jsup | inner join (file b.jsup) on a=b'
 
 inputs:
-  - name: a.zson
+  - name: a.jsup
     data: |
       {a:1}
       {a:2}
       {a:3}
-  - name: b.zson
+  - name: b.jsup
     data: |
       {b:1}
       {b:3}

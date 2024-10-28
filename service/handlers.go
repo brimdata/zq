@@ -431,7 +431,7 @@ func handleBranchLoad(c *Core, w *ResponseWriter, r *Request) {
 		w.Error(err)
 		return
 	}
-	if format == "parquet" || format == "vng" {
+	if format == "parquet" || format == "csup" {
 		// These formats require a reader that implements io.ReaderAt and
 		// io.Seeker.  Copy the reader to a temporary file and use that.
 		//
@@ -694,7 +694,7 @@ func handleAuthMethodGet(c *Core, w *ResponseWriter, r *Request) {
 }
 
 func handleEvents(c *Core, w *ResponseWriter, r *Request) {
-	format, err := api.MediaTypeToFormat(r.Header.Get("Accept"), "zson")
+	format, err := api.MediaTypeToFormat(r.Header.Get("Accept"), "jsup")
 	if err != nil {
 		w.Error(srverr.ErrInvalid(err))
 	}

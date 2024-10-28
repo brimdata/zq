@@ -1,14 +1,14 @@
 script: |
-  super -o out.zng in.zson
+  super -o out.bsup in.jsup
   for i in {1..7}; do
-    cat out.zng out.zng out.zng out.zng > out2.zng
-    mv out2.zng out.zng
+    cat out.bsup out.bsup out.bsup out.bsup > out2.bsup
+    mv out2.bsup out.bsup
   done
-  super -zng.compress=false -o bigrow.zng -c "collect:=collect(s)" out.zng
-  ! super  -i zng -o /dev/null -zng.readmax 10KB -c "count:=count()" bigrow.zng
+  super -bsup.compress=false -o bigrow.bsup -c "collect:=collect(s)" out.bsup
+  ! super  -i bsup -o /dev/null -bsup.readmax 10KB -c "count:=count()" bigrow.bsup
 
 inputs:
-  - name: in.zson
+  - name: in.jsup
     data: |
       {s:"big data"}
       {s:"too big"}
@@ -16,4 +16,4 @@ inputs:
 outputs:
   - name: stderr
     data: |
-      bigrow.zng: zngio: frame length (278535) exceeds maximum allowed (10000)
+      bigrow.bsup: zngio: frame length (278535) exceeds maximum allowed (10000)
