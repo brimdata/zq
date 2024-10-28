@@ -291,7 +291,7 @@ Operator
   / DebugOp
 
  ForkOp =
-   "fork" __ "(" paths:Leg+ __ ")" {
+   "fork" __ "(" paths:Path+ __ ")" {
       var seqs []ast.Seq
       for _, p := range paths.([]any) {
         seqs = append(seqs, sliceOf[ast.Op](p))
@@ -303,10 +303,10 @@ Operator
       }, nil
     }
 
-Leg = __ "=>" __ seq:Seq { return seq, nil }
+Path = __ "=>" __ seq:Seq { return seq, nil }
 
 SwitchOp
-  = "switch" _ expr:Expr _ "(" cases:SwitchLeg+ __ ")" {
+  = "switch" _ expr:Expr _ "(" cases:SwitchPath+ __ ")" {
       return &ast.Switch{
           Kind: "Switch",
           Expr: expr.(ast.Expr),
@@ -314,7 +314,7 @@ SwitchOp
           Loc: loc(c),
       }, nil
     }
-  / "switch" __ "(" cases:SwitchLeg+ __ ")" {
+  / "switch" __ "(" cases:SwitchPath+ __ ")" {
       return &ast.Switch{
           Kind: "Switch",
           Cases: sliceOf[ast.Case](cases),
@@ -322,8 +322,8 @@ SwitchOp
       }, nil
     }
 
-SwitchLeg
-  = __ expr:Case path:Leg {
+SwitchPath
+  = __ expr:Case path:Path {
       l := ast.Case{Path: sliceOf[ast.Op](path)}
       if expr != nil {
         l.Expr = expr.(ast.Expr)
@@ -336,7 +336,7 @@ Case
   / "default" { return nil, nil }
 
 FromForkOp
-  = "from" __ "(" trunks:FromLeg+ __ ")" {
+  = "from" __ "(" trunks:FromPath+ __ ")" {
       return &ast.Parallel{
           Kind: "Parallel",
           Paths: sliceOf[ast.Seq](trunks),
@@ -344,7 +344,7 @@ FromForkOp
       }, nil
     }
 
-FromLeg
+FromPath
   = __ source:FromSource seq:(__ "=>" __ s:Seq { return s, nil })? {
       ops := []any{source}
       if seq != nil {
