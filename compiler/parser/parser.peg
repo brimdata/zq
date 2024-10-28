@@ -22,11 +22,11 @@ Scope
     }
 
 Seq
-  = first:Operation rest:SeqTail* {
+  = first:LeanOp rest:SeqTail* {
       return prepend(first, rest), nil
     }
 
-SeqTail = __ Pipe __ o:Operation { return o, nil }
+SeqTail = __ Pipe __ o:LeanOp { return o, nil }
 
 Decl
   = v:(ConstDecl / FuncDecl / OpDecl / TypeDecl) _ { return v, nil }
@@ -77,87 +77,24 @@ TypeDecl
       }, nil
     }
 
-Operation
-  = "fork" __ "(" paths:Leg+ __ ")" {
-      var seqs []ast.Seq
-      for _, p := range paths.([]any) {
-        seqs = append(seqs, sliceOf[ast.Op](p))
-      }
-      return &ast.Parallel{
-          Kind: "Parallel",
-          Paths: seqs,
-          Loc: loc(c),
-      }, nil
-    }
-  / "switch" _ expr:Expr _ "(" cases:SwitchLeg+ __ ")" {
-      return &ast.Switch{
-          Kind: "Switch",
-          Expr: expr.(ast.Expr),
-          Cases: sliceOf[ast.Case](cases),
-          Loc: loc(c),
-      }, nil
-    }
-  / "switch" __ "(" cases:SwitchLeg+ __ ")" {
-      return &ast.Switch{
-          Kind: "Switch",
-          Cases: sliceOf[ast.Case](cases),
-          Loc: loc(c),
-      }, nil
-    }
-  / "from" __ "(" trunks:FromLeg+ __ ")" {
-      return &ast.Parallel{
-          Kind: "Parallel",
-          Paths: sliceOf[ast.Seq](trunks),
-          Loc: loc(c),
-      }, nil
-    }
+// A LeanOp is a SuperPipe operator along with various forms of 
+// "lean-forward" shortcuts: a scope with other LeanOps, a shortcut assignment 
+// for "put", a short-cut "summarize", a plain keyword-style search, or an implied
+// yield.
+LeanOp
+  = op:Operator
   / "(" __ scope:Scope __ ")" { return scope, nil }
-  / op:Operator
   / a:OpAssignment &EndOfOp { return a, nil }
   / !(Function EndOfOp) a:Aggregation &EndOfOp { return a, nil }
-  / "search" _ expr:SearchBoolean {
-      return &ast.Search{Kind:"Search",Expr:expr.(ast.Expr),Loc:loc(c)}, nil
-    }
   / expr:SearchBoolean {
       return &ast.OpExpr{Kind:"OpExpr",Expr:expr.(ast.Expr),Loc:loc(c)}, nil
     }
-  / expr:Cast {
-      return &ast.OpExpr{Kind:"OpExpr",Expr:expr.(ast.Expr),Loc:loc(c)}, nil
-  }
   / expr:Expr {
       return &ast.OpExpr{Kind:"OpExpr",Expr:expr.(ast.Expr),Loc:loc(c)}, nil
     }
 
 EndOfOp = __ (Pipe / SearchKeywordGuard / "=>" / ")" / EOF)
 Pipe = "|" !("{" / "[")
-
-Leg = __ "=>" __ seq:Seq { return seq, nil }
-
-SwitchLeg
-  = __ expr:Case path:Leg {
-      l := ast.Case{Path: sliceOf[ast.Op](path)}
-      if expr != nil {
-        l.Expr = expr.(ast.Expr)
-      }
-      return l, nil
-    }
-
-Case
-  = "case" _ expr:Expr { return expr, nil }
-  / "default" { return nil, nil }
-
-FromLeg
-  = __ source:FromSource seq:(__ "=>" __ s:Seq { return s, nil })? {
-      ops := []any{source}
-      if seq != nil {
-        ops = append(ops, seq.([]any)...)
-      }
-      return ast.Seq(sliceOf[ast.Op](ops)), nil
-    }
-
-FromSource
-  = FromKeyWord _ spec:FromBody { return spec, nil }
-  / PassOp
 
 ExprGuard = __ ((!"=>" Comparator) / AdditiveOperator / MultiplicativeOperator / ":" / "(" / "[" / "~")
 
@@ -324,7 +261,11 @@ AggAssignments
 /// === Operators ===
 
 Operator
-  = AssertOp
+  = ForkOp
+  / SwitchOp 
+  / FromForkOp
+  / SearchOp
+  / AssertOp
   / SortOp
   / TopOp
   / CutOp
@@ -348,6 +289,78 @@ Operator
   / LoadOp
   / OutputOp
   / DebugOp
+
+ ForkOp =
+   "fork" __ "(" paths:Leg+ __ ")" {
+      var seqs []ast.Seq
+      for _, p := range paths.([]any) {
+        seqs = append(seqs, sliceOf[ast.Op](p))
+      }
+      return &ast.Parallel{
+          Kind: "Parallel",
+          Paths: seqs,
+          Loc: loc(c),
+      }, nil
+    }
+
+Leg = __ "=>" __ seq:Seq { return seq, nil }
+
+SwitchOp
+  = "switch" _ expr:Expr _ "(" cases:SwitchLeg+ __ ")" {
+      return &ast.Switch{
+          Kind: "Switch",
+          Expr: expr.(ast.Expr),
+          Cases: sliceOf[ast.Case](cases),
+          Loc: loc(c),
+      }, nil
+    }
+  / "switch" __ "(" cases:SwitchLeg+ __ ")" {
+      return &ast.Switch{
+          Kind: "Switch",
+          Cases: sliceOf[ast.Case](cases),
+          Loc: loc(c),
+      }, nil
+    }
+
+SwitchLeg
+  = __ expr:Case path:Leg {
+      l := ast.Case{Path: sliceOf[ast.Op](path)}
+      if expr != nil {
+        l.Expr = expr.(ast.Expr)
+      }
+      return l, nil
+    }
+
+Case
+  = "case" _ expr:Expr { return expr, nil }
+  / "default" { return nil, nil }
+
+FromForkOp
+  = "from" __ "(" trunks:FromLeg+ __ ")" {
+      return &ast.Parallel{
+          Kind: "Parallel",
+          Paths: sliceOf[ast.Seq](trunks),
+          Loc: loc(c),
+      }, nil
+    }
+
+FromLeg
+  = __ source:FromSource seq:(__ "=>" __ s:Seq { return s, nil })? {
+      ops := []any{source}
+      if seq != nil {
+        ops = append(ops, seq.([]any)...)
+      }
+      return ast.Seq(sliceOf[ast.Op](ops)), nil
+    }
+
+FromSource
+  = FromKeyWord _ spec:FromBody { return spec, nil }
+  / PassOp
+
+SearchOp
+  = "search" _ expr:SearchBoolean {
+      return &ast.Search{Kind:"Search",Expr:expr.(ast.Expr),Loc:loc(c)}, nil
+    }
 
 AssertOp
   = "assert" _ expr:(e:Expr { return []any{e, string(c.text)}, nil }) {
