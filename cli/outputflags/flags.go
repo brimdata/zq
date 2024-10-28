@@ -22,17 +22,17 @@ import (
 type Flags struct {
 	anyio.WriterOpts
 	DefaultFormat string
+	color         bool
+	forceBinary   bool
+	jsonPretty    bool
+	jsonShortcut  bool
+	jsupPersist   string
+	jsupPretty    bool
+	jsupShortcut  bool
+	outputFile    string
+	pretty        int
 	split         string
 	splitSize     auto.Bytes
-	outputFile    string
-	forceBinary   bool
-	jsonShortcut  bool
-	jsonPretty    bool
-	jsupShortcut  bool
-	jsupPretty    bool
-	jsupPersist   string
-	color         bool
-	pretty        int
 	unbuffered    bool
 }
 
@@ -41,24 +41,21 @@ func (f *Flags) Options() anyio.WriterOpts {
 }
 
 func (f *Flags) setFlags(fs *flag.FlagSet) {
-	// zio stuff
-	fs.BoolVar(&f.color, "color", true, "enable/disable color formatting for -Z and lake text output")
 	f.ZNG = &zngio.WriterOpts{}
 	fs.BoolVar(&f.ZNG.Compress, "bsup.compress", true, "compress Super Binary frames")
 	fs.IntVar(&f.ZNG.FrameThresh, "bsup.framethresh", zngio.DefaultFrameThresh,
 		"minimum Super Binary frame size in uncompressed bytes")
-	fs.IntVar(&f.pretty, "pretty", 4,
-		"tab size to pretty print JSON and Super JSON output (0 for newline-delimited output")
+	fs.BoolVar(&f.color, "color", true, "enable/disable color formatting for -Z and lake text output")
 	fs.StringVar(&f.jsupPersist, "persist", "",
 		"regular expression to persist type definitions across the stream")
-
-	// emitter stuff
+	fs.IntVar(&f.pretty, "pretty", 4,
+		"tab size to pretty print JSON and Super JSON output (0 for newline-delimited output")
+	fs.StringVar(&f.outputFile, "o", "", "write data to output file")
 	fs.StringVar(&f.split, "split", "",
 		"split output into one file per data type in this directory (but see -splitsize)")
 	fs.Var(&f.splitSize, "splitsize",
 		"if >0 and -split is set, split into files at least this big rather than by data type")
 	fs.BoolVar(&f.unbuffered, "unbuffered", false, "disable output buffering")
-	fs.StringVar(&f.outputFile, "o", "", "write data to output file")
 }
 
 func (f *Flags) SetFlags(fs *flag.FlagSet) {
@@ -76,11 +73,11 @@ func (f *Flags) SetFormatFlags(fs *flag.FlagSet) {
 		f.DefaultFormat = "bsup"
 	}
 	fs.StringVar(&f.Format, "f", f.DefaultFormat, "format for output data [arrows,bsup,csup,csv,json,jsup,lake,parquet,table,text,tsv,zeek,zjson]")
-	fs.BoolVar(&f.jsonShortcut, "j", false, "use line-oriented JSON output independent of -f option")
-	fs.BoolVar(&f.jsonPretty, "J", false, "use formatted JSON output independent of -f option")
-	fs.BoolVar(&f.jsupShortcut, "z", false, "use line-oriented Super JSON output independent of -f option")
-	fs.BoolVar(&f.jsupPretty, "Z", false, "use formatted Super JSON output independent of -f option")
 	fs.BoolVar(&f.forceBinary, "B", false, "allow Super Binary to be sent to a terminal output")
+	fs.BoolVar(&f.jsonPretty, "J", false, "use formatted JSON output independent of -f option")
+	fs.BoolVar(&f.jsonShortcut, "j", false, "use line-oriented JSON output independent of -f option")
+	fs.BoolVar(&f.jsupPretty, "Z", false, "use formatted Super JSON output independent of -f option")
+	fs.BoolVar(&f.jsupShortcut, "z", false, "use line-oriented Super JSON output independent of -f option")
 }
 
 func (f *Flags) Init() error {

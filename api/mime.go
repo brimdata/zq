@@ -10,17 +10,17 @@ import (
 const (
 	MediaTypeAny         = "*/*"
 	MediaTypeArrowStream = "application/vnd.apache.arrow.stream"
+	MediaTypeBSUP        = "application/x-bsup"
+	MediaTypeCSUP        = "application/x-csup"
 	MediaTypeCSV         = "text/csv"
 	MediaTypeJSON        = "application/json"
+	MediaTypeJSUP        = "application/x-jsup"
 	MediaTypeLine        = "application/x-line"
 	MediaTypeNDJSON      = "application/x-ndjson"
 	MediaTypeParquet     = "application/x-parquet"
 	MediaTypeTSV         = "text/tab-separated-values"
-	MediaTypeCSUP        = "application/x-csup"
 	MediaTypeZeek        = "application/x-zeek"
 	MediaTypeZJSON       = "application/x-zjson"
-	MediaTypeBSUP        = "application/x-bsup"
-	MediaTypeJSUP        = "application/x-jsup"
 )
 
 type ErrUnsupportedMimeType struct {
@@ -46,10 +46,16 @@ func MediaTypeToFormat(s string, dflt string) (string, error) {
 		return dflt, nil
 	case MediaTypeArrowStream:
 		return "arrows", nil
+	case MediaTypeBSUP:
+		return "bsup", nil
+	case MediaTypeCSUP:
+		return "csup", nil
 	case MediaTypeCSV:
 		return "csv", nil
 	case MediaTypeJSON:
 		return "json", nil
+	case MediaTypeJSUP:
+		return "jsup", nil
 	case MediaTypeLine:
 		return "line", nil
 	case MediaTypeNDJSON:
@@ -58,16 +64,10 @@ func MediaTypeToFormat(s string, dflt string) (string, error) {
 		return "parquet", nil
 	case MediaTypeTSV:
 		return "tsv", nil
-	case MediaTypeCSUP:
-		return "csup", nil
 	case MediaTypeZeek:
 		return "zeek", nil
 	case MediaTypeZJSON:
 		return "zjson", nil
-	case MediaTypeBSUP:
-		return "bsup", nil
-	case MediaTypeJSUP:
-		return "jsup", nil
 	}
 	return "", &ErrUnsupportedMimeType{typ}
 }
@@ -76,10 +76,16 @@ func FormatToMediaType(format string) (string, error) {
 	switch format {
 	case "arrows":
 		return MediaTypeArrowStream, nil
+	case "bsup":
+		return MediaTypeBSUP, nil
+	case "csup":
+		return MediaTypeCSUP, nil
 	case "csv":
 		return MediaTypeCSV, nil
 	case "json":
 		return MediaTypeJSON, nil
+	case "jsup":
+		return MediaTypeJSUP, nil
 	case "line":
 		return MediaTypeLine, nil
 	case "ndjson":
@@ -88,16 +94,10 @@ func FormatToMediaType(format string) (string, error) {
 		return MediaTypeParquet, nil
 	case "tsv":
 		return MediaTypeTSV, nil
-	case "csup":
-		return MediaTypeCSUP, nil
 	case "zeek":
 		return MediaTypeZeek, nil
 	case "zjson":
 		return MediaTypeZJSON, nil
-	case "bsup":
-		return MediaTypeBSUP, nil
-	case "jsup":
-		return MediaTypeJSUP, nil
 	default:
 		return "", fmt.Errorf("unknown format type: %s", format)
 	}

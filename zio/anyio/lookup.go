@@ -23,8 +23,18 @@ func lookupReader(zctx *super.Context, r io.Reader, demandOut demand.Demand, opt
 	switch opts.Format {
 	case "arrows":
 		return arrowio.NewReader(zctx, r)
+	case "bsup":
+		return zngio.NewReaderWithOpts(zctx, r, opts.ZNG), nil
+	case "csup":
+		zr, err := vngio.NewReader(zctx, r, demandOut)
+		if err != nil {
+			return nil, err
+		}
+		return zio.NopReadCloser(zr), nil
 	case "csv":
 		return zio.NopReadCloser(csvio.NewReader(zctx, r, opts.CSV)), nil
+	case "jsup":
+		return zio.NopReadCloser(zsonio.NewReader(zctx, r)), nil
 	case "line":
 		return zio.NopReadCloser(lineio.NewReader(r)), nil
 	case "json":
@@ -38,20 +48,10 @@ func lookupReader(zctx *super.Context, r io.Reader, demandOut demand.Demand, opt
 	case "tsv":
 		opts.CSV.Delim = '\t'
 		return zio.NopReadCloser(csvio.NewReader(zctx, r, opts.CSV)), nil
-	case "csup":
-		zr, err := vngio.NewReader(zctx, r, demandOut)
-		if err != nil {
-			return nil, err
-		}
-		return zio.NopReadCloser(zr), nil
 	case "zeek":
 		return zio.NopReadCloser(zeekio.NewReader(zctx, r)), nil
 	case "zjson":
 		return zio.NopReadCloser(zjsonio.NewReader(zctx, r)), nil
-	case "bsup":
-		return zngio.NewReaderWithOpts(zctx, r, opts.ZNG), nil
-	case "jsup":
-		return zio.NopReadCloser(zsonio.NewReader(zctx, r)), nil
 	}
 	return nil, fmt.Errorf("no such format: \"%s\"", opts.Format)
 }

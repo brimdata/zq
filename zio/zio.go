@@ -10,26 +10,26 @@ import (
 
 func Extension(format string) string {
 	switch format {
-	case "zeek":
-		return ".log"
-	case "json":
-		return ".json"
-	case "zjson":
-		return ".ndjson"
-	case "text":
-		return ".txt"
-	case "table":
-		return ".tbl"
 	case "bsup":
 		return ".bsup"
-	case "jsup":
-		return ".jsup"
-	case "csv":
-		return ".csv"
 	case "csup":
 		return ".csup"
+	case "csv":
+		return ".csv"
+	case "json":
+		return ".json"
+	case "jsup":
+		return ".jsup"
 	case "parquet":
 		return ".parquet"
+	case "table":
+		return ".tbl"
+	case "text":
+		return ".txt"
+	case "zeek":
+		return ".log"
+	case "zjson":
+		return ".ndjson"
 	default:
 		return ""
 	}

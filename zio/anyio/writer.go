@@ -33,8 +33,17 @@ func NewWriter(w io.WriteCloser, opts WriterOpts) (zio.WriteCloser, error) {
 	switch opts.Format {
 	case "arrows":
 		return arrowio.NewWriter(w), nil
+	case "bsup":
+		if opts.ZNG == nil {
+			return zngio.NewWriter(w), nil
+		}
+		return zngio.NewWriterWithOpts(w, *opts.ZNG), nil
+	case "csup":
+		return vngio.NewWriter(w), nil
 	case "csv":
 		return csvio.NewWriter(w, opts.CSV), nil
+	case "jsup", "":
+		return zsonio.NewWriter(w, opts.ZSON), nil
 	case "json":
 		return jsonio.NewWriter(w, opts.JSON), nil
 	case "lake":
@@ -50,19 +59,10 @@ func NewWriter(w io.WriteCloser, opts WriterOpts) (zio.WriteCloser, error) {
 	case "tsv":
 		opts.CSV.Delim = '\t'
 		return csvio.NewWriter(w, opts.CSV), nil
-	case "csup":
-		return vngio.NewWriter(w), nil
 	case "zeek":
 		return zeekio.NewWriter(w), nil
 	case "zjson":
 		return zjsonio.NewWriter(w), nil
-	case "bsup":
-		if opts.ZNG == nil {
-			return zngio.NewWriter(w), nil
-		}
-		return zngio.NewWriterWithOpts(w, *opts.ZNG), nil
-	case "jsup", "":
-		return zsonio.NewWriter(w, opts.ZSON), nil
 	default:
 		return nil, fmt.Errorf("unknown format: %s", opts.Format)
 	}

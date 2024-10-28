@@ -35,10 +35,10 @@ func TestZed(t *testing.T) {
 		data, err := loadZTestInputsAndOutputs(dirs)
 		require.NoError(t, err)
 		runAllBoomerangs(t, "arrows", data)
-		runAllBoomerangs(t, "parquet", data)
 		runAllBoomerangs(t, "csup", data)
-		runAllBoomerangs(t, "zjson", data)
 		runAllBoomerangs(t, "jsup", data)
+		runAllBoomerangs(t, "parquet", data)
+		runAllBoomerangs(t, "zjson", data)
 	})
 
 	for d := range dirs {
