@@ -1021,9 +1021,9 @@ CaseExpr
         whens := sliceOf[ast.When](cases)
         cond := &ast.Conditional{
             Kind: "Conditional",
-            Loc: loc(c),
             Cond: whens[0].Cond,
             Then: whens[0].Then,
+            Loc: loc(c),
         }
         last := cond
         for _, when := range whens[1:] {
@@ -1031,7 +1031,7 @@ CaseExpr
                Kind: "Conditional",
                Cond: when.Cond,
                Then: when.Then,
-               Loc: loc(c),
+               Loc: when.Loc,
             }
             last.Else = next
             last = next
@@ -1060,6 +1060,7 @@ When
         Kind: "When",
         Cond: cond.(ast.Expr),
         Then: then.(ast.Expr),
+        Loc: loc(c),
       }, nil
     }
 
