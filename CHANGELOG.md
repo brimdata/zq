@@ -245,7 +245,7 @@
 * Substantial improvements to the [Zed language](docs/language/README.md)
 * Revamped [`zed` command](docs/commands/zed.md)
 * New Zed lake format (see #3634 for a migration script)
-* New version of the [ZNG format](docs/formats/zng.md) (with read-only support for the previous version)
+* New version of the [ZNG format](docs/formats/bsup.md) (with read-only support for the previous version)
 * New version of the [ZSON format](docs/formats/jsup.md)
 
 ## v0.33.0
@@ -677,7 +677,7 @@ questions.
 * zqd: Add a Python `zqd` API client for use with tools like [JupyterLab](https://jupyterlab.readthedocs.io/en/stable/) (#1564)
 
 ## v0.22.0
-* zq: Change the implementation of the `union` type to conform with the [ZNG spec](docs/formats/zng.md#3114-union-typedef) (#1245)
+* zq: Change the implementation of the `union` type to conform with the [ZNG spec](docs/formats/bsup.md#3114-union-typedef) (#1245)
 * zq: Make options/flags and version reporting consistent across CLI tools (#1249, #1254, #1256, #1296, #1323, #1334, #1328)
 * zqd: Fix an issue that was preventing flows in nanosecond pcaps from opening in Brim (#1243, #1241)
 * zq: Fix an issue where the TZNG reader did not recognize a bad record type as a syntax error (#1260)
@@ -716,7 +716,7 @@ questions.
 * zq: Fix an issue where non-adjacent record fields in Zeek TSV logs could not be read (#1225, #1218)
 * zql: Fix an issue where `cut -c` sometimes returned a "bad uvarint" error (#1227)
 * zq: Add support for empty ZNG records and empty NDJSON objects (#1228)
-* zng: Fix the tag value examples in the [ZNG spec](docs/formats/zng.md) (#1230)
+* zng: Fix the tag value examples in the [ZNG spec](docs/formats/bsup.md) (#1230)
 * zq: Update LZ4 dependency to eliminate some memory allocations (#1232)
 * zar: Add a `-sortmem` flag to allow `zar import` to use more memory to improve performance (#1203)
 * zqd: Fix an issue where file paths containing URI escape codes could not be opened in Brim (#1238)
@@ -745,7 +745,7 @@ questions.
 * zqd: Fix an issue with excess characters in Space names after upgrade (#1112)
 
 ## v0.19.0
-* zq: ZNG output is now LZ4-compressed by default (#1050, #1064, #1063, [ZNG spec](docs/formats/zng.md#313-compressed-value-message-block))
+* zq: ZNG output is now LZ4-compressed by default (#1050, #1064, #1063, [ZNG spec](docs/formats/bsup.md#313-compressed-value-message-block))
 * zar: Adjust import size threshold to account for compression (#1082)
 * zqd: Support starting `zqd` with datapath set to an S3 path (#1072)
 * zq: Fix an issue with panics during pcap import (#1090)
@@ -768,14 +768,14 @@ questions.
 * zq: Introduce spill-to-disk groupby for performing very large aggregations (#932, #963)
 * zql: Use syntax `c=count()` instead of `count() as c` for naming the field that holds the value returned by an aggregate function (#950)
 * zql: Fix an issue where attempts to `tail` too much caused a panic (#958)
-* zng: Readability improvements in the [ZNG specification](docs/formats/zng.md) (#935)
+* zng: Readability improvements in the [ZNG specification](docs/formats/bsup.md) (#935)
 * zql: Fix an issue where use of `cut`, `put`, and `cut` in the same pipeline caused a panic (#980)
 * zql: Fix an issue that was preventing the `uniq` operator from  working in the Brim app (#984)
 * zq: Fix an issue where spurious type IDs were being created (#964)
 * zql: Support renaming a field via the `cut` operator (#969)
 
 ## v0.16.0
-* zng: Readability improvements in the [ZNG specification](docs/formats/zng.md) (#897, #910, #917)
+* zng: Readability improvements in the [ZNG specification](docs/formats/bsup.md) (#897, #910, #917)
 * zq: Support directory output to S3 (#898)
 * zql: Group-by no longer emits records in "deterministic but undefined" order (#914)
 * zqd: Revise constraints on Space names (#853, #926, #944, #945)
