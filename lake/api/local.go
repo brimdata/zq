@@ -166,7 +166,7 @@ func (l *local) Delete(ctx context.Context, poolID ksuid.KSUID, branchName strin
 }
 
 func (l *local) DeleteWhere(ctx context.Context, poolID ksuid.KSUID, branchName, src string, commit api.CommitMessage) (ksuid.KSUID, error) {
-	op, sset, err := l.compiler.Parse(src)
+	op, sset, err := compiler.Parse(src)
 	if err != nil {
 		return ksuid.Nil, err
 	}

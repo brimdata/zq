@@ -13,7 +13,6 @@ import (
 )
 
 type fsCompiler struct {
-	anyCompiler
 	src *data.Source
 }
 
