@@ -268,7 +268,7 @@ providing a unified approach to row, columnar, and human-readable formats:
 
 * [Super JSON](jsup.md) is a human-readable format for super-structured data.  All JSON
 documents are Super JSON values as the Super JSON format is a strict superset of the JSON syntax.
-* [Super Binary](zng.md) is a row-based, binary representation somewhat like
+* [Super Binary](bsup.md) is a row-based, binary representation somewhat like
 Avro but leveraging the super data model to represent a sequence of arbitrarily-typed
 values.
 * [Super Columnar](vng.md) is columnar like Parquet or ORC but also
