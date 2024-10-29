@@ -8,6 +8,7 @@ import (
 	"github.com/brimdata/super/compiler/optimizer"
 	"github.com/brimdata/super/pkg/field"
 	"github.com/brimdata/super/runtime/sam/expr"
+	"github.com/brimdata/super/runtime/vam"
 	vamexpr "github.com/brimdata/super/runtime/vam/expr"
 	vamop "github.com/brimdata/super/runtime/vam/op"
 	"github.com/brimdata/super/runtime/vam/op/summarize"
@@ -118,7 +119,7 @@ func (b *Builder) compileVamLeaf(o dag.Op, parent vector.Puller) (vector.Puller,
 	case *dag.Head:
 		return vamop.NewHead(parent, o.Count), nil
 	case *dag.Output:
-		// XXX Ignore Output op for vectors for now.
+		b.channels[o.Name] = append(b.channels[o.Name], vam.NewMaterializer(parent))
 		return parent, nil
 	case *dag.Over:
 		return b.compileVamOver(o, parent)
