@@ -90,7 +90,7 @@ func (j *Job) Parallelize(n int) error {
 }
 
 func Parse(src string, filenames ...string) (ast.Seq, *parser.SourceSet, error) {
-	return parser.ParseSuperPipe(filenames, src)
+	return parser.ParseSuperSQL(filenames, src)
 }
 
 // MustParse is like Parse but panics if an error is encountered.

@@ -137,7 +137,7 @@ func (c *Command) Run(args []string) error {
 		return charm.NeedHelp
 	}
 	if c.canon {
-		flowgraph, _, err := parser.ParseSuperPipe(c.queryFlags.Includes, c.query)
+		flowgraph, _, err := parser.ParseSuperSQL(c.queryFlags.Includes, c.query)
 		if err != nil {
 			return err
 		}

@@ -57,7 +57,7 @@ func handleQuery(c *Core, w *ResponseWriter, r *Request) {
 	// The client must look at the return code and interpret the result
 	// accordingly and when it sees a ZNG error after underway,
 	// the error should be relay that to the caller/user.
-	query, sset, err := parser.ParseSuperPipe(nil, req.Query)
+	query, sset, err := parser.ParseSuperSQL(nil, req.Query)
 	if err != nil {
 		w.Error(srverr.ErrInvalid(err))
 		return

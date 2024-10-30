@@ -8,9 +8,9 @@ import (
 	"github.com/brimdata/super/compiler/ast"
 )
 
-// ParseSuperPipe calls ConcatSource followed by Parse.  If Parse returns an error,
+// ParseSuperSQL calls ConcatSource followed by Parse.  If Parse returns an error,
 // ConcatSource tries to convert it to an ErrorList.
-func ParseSuperPipe(filenames []string, src string) (ast.Seq, *SourceSet, error) {
+func ParseSuperSQL(filenames []string, src string) (ast.Seq, *SourceSet, error) {
 	sset, err := ConcatSource(filenames, src)
 	if err != nil {
 		return nil, nil, err
