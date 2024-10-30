@@ -149,9 +149,6 @@ func (c *casterDuration) Eval(ectx Context, val super.Value) super.Value {
 		}
 		return super.NewDuration(d)
 	}
-	if super.IsFloat(id) {
-		return super.NewDuration(nano.Duration(val.Float()))
-	}
 	v, ok := coerce.ToInt(val, super.TypeDuration)
 	if !ok {
 		return c.zctx.WrapError("cannot cast to duration", val)
@@ -186,7 +183,7 @@ func (c *casterTime) Eval(ectx Context, val super.Value) super.Value {
 		//XXX we call coerce on integers here to avoid unsigned/signed decode
 		v, ok := coerce.ToInt(val, super.TypeTime)
 		if !ok {
-			return c.zctx.WrapError("cannot cast to time: coerce to int failed", val)
+			return c.zctx.WrapError("cannot cast to time", val)
 		}
 		ts = nano.Ts(v)
 	default:
@@ -267,10 +264,7 @@ func (c *casterType) Eval(ectx Context, val super.Value) super.Value {
 		return c.zctx.WrapError("cannot cast to type", val)
 	}
 	typval, err := zson.ParseValue(c.zctx, val.AsString())
-	if err != nil {
-		return c.zctx.WrapError(err.Error(), val)
-	}
-	if typval.Type().ID() != super.IDType {
+	if err != nil || typval.Type().ID() != super.IDType {
 		return c.zctx.WrapError("cannot cast to type", val)
 	}
 	return typval

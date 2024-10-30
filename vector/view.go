@@ -14,7 +14,7 @@ var _ Any = (*View)(nil)
 func NewView(val Any, index []uint32) Any {
 	switch val := val.(type) {
 	case *Const:
-		return NewConst(val.val, uint32(len(index)), nullsView(val.Nulls, index))
+		return NewConst(val.val, uint32(len(index)), NullsView(val.Nulls, index))
 	case *Dict:
 		index2 := make([]byte, len(index))
 		var nulls *Bool
@@ -33,10 +33,10 @@ func NewView(val Any, index []uint32) Any {
 		}
 		return NewDict(val.Any, index2, nil, nulls)
 	case *Error:
-		return NewError(val.Typ, NewView(val.Vals, index), nullsView(val.Nulls, index))
+		return NewError(val.Typ, NewView(val.Vals, index), NullsView(val.Nulls, index))
 	case *Union:
 		tags, values := viewForUnionOrDynamic(index, val.Tags, val.TagMap.Forward, val.Values)
-		return NewUnion(val.Typ, tags, values, nullsView(val.Nulls, index))
+		return NewUnion(val.Typ, tags, values, NullsView(val.Nulls, index))
 	case *Dynamic:
 		return NewDynamic(viewForUnionOrDynamic(index, val.Tags, val.TagMap.Forward, val.Values))
 	case *View:
@@ -52,7 +52,7 @@ func NewView(val Any, index []uint32) Any {
 	return &View{val, index}
 }
 
-func nullsView(nulls *Bool, index []uint32) *Bool {
+func NullsView(nulls *Bool, index []uint32) *Bool {
 	if nulls == nil {
 		return nil
 	}

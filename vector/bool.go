@@ -38,6 +38,9 @@ func (b *Bool) Set(slot uint32) {
 }
 
 func (b *Bool) Len() uint32 {
+	if b == nil {
+		return 0
+	}
 	return b.len
 }
 
@@ -131,6 +134,8 @@ func NullsOf(v Any) *Bool {
 		return v.Nulls
 	case *Int:
 		return v.Nulls
+	case *IP:
+		return v.Nulls
 	case *Map:
 		return v.Nulls
 	case *Named:
@@ -150,7 +155,7 @@ func NullsOf(v Any) *Bool {
 	case *Union:
 		return v.Nulls
 	case *View:
-		return nullsView(NullsOf(v.Any), v.Index)
+		return NullsView(NullsOf(v.Any), v.Index)
 	}
 	panic(v)
 }
