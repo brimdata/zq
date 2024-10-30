@@ -4,9 +4,7 @@ input: |
   {a:1}
   {a:2}
 
-output: ""
-
-errorRE: |
+error: |
   const "t": cannot have variable dependency at line 1, column 1:
   const t=a put x:=t
   ~~~~~~~~~

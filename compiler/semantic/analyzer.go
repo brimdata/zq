@@ -91,10 +91,13 @@ func AddDefaultSource(ctx context.Context, seq *dag.Seq, source *data.Source, he
 	}
 	fromHead := &ast.From{
 		Kind: "From",
-		Entity: &ast.Name{
-			Kind: "Name",
-			Text: "HEAD",
-		},
+		Elems: []*ast.FromElem{{
+			Kind: "FromElem",
+			Entity: &ast.Name{
+				Kind: "Name",
+				Text: "HEAD",
+			},
+		}},
 	}
 	ops := newAnalyzer(ctx, source, head).semFrom(fromHead, nil)
 	seq.Prepend(ops[0])

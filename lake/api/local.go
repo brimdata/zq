@@ -106,7 +106,7 @@ func (l *local) Compact(ctx context.Context, poolID ksuid.KSUID, branchName stri
 }
 
 func (l *local) Query(ctx context.Context, head *lakeparse.Commitish, src string, srcfiles ...string) (zbuf.Scanner, error) {
-	flowgraph, sset, err := parser.ParseSuperPipe(srcfiles, src)
+	flowgraph, sset, err := parser.ParseSuperSQL(srcfiles, src)
 	if err != nil {
 		return nil, err
 	}
@@ -166,7 +166,7 @@ func (l *local) Delete(ctx context.Context, poolID ksuid.KSUID, branchName strin
 }
 
 func (l *local) DeleteWhere(ctx context.Context, poolID ksuid.KSUID, branchName, src string, commit api.CommitMessage) (ksuid.KSUID, error) {
-	op, sset, err := l.compiler.Parse(src)
+	op, sset, err := compiler.Parse(src)
 	if err != nil {
 		return ksuid.Nil, err
 	}

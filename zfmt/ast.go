@@ -420,10 +420,7 @@ func (c *canon) op(p ast.Op) {
 	case *ast.From:
 		c.next()
 		c.write("from ")
-		c.fromEntity(p.Entity)
-		if p.Args != nil {
-			c.fromArgs(p.Args)
-		}
+		c.fromElems(p.Elems)
 	case *ast.Summarize:
 		c.next()
 		c.open("summarize")
@@ -613,6 +610,24 @@ func (c *canon) op(p ast.Op) {
 	}
 }
 
+func (c *canon) fromElems(elems []*ast.FromElem) {
+	c.fromElem(elems[0])
+	for _, elem := range elems[1:] {
+		c.write(", ")
+		c.fromElem(elem)
+	}
+}
+
+func (c *canon) fromElem(elem *ast.FromElem) {
+	c.fromEntity(elem.Entity)
+	if elem.Args != nil {
+		c.fromArgs(elem.Args)
+	}
+	if elem.Alias != nil {
+		c.write(" %s", zson.QuotedName(elem.Alias.Text))
+	}
+}
+
 func (c *canon) fromEntity(e ast.FromEntity) {
 	switch e := e.(type) {
 	case *ast.ExprEntity:
@@ -621,6 +636,10 @@ func (c *canon) fromEntity(e ast.FromEntity) {
 		c.pattern(e)
 	case *ast.Name:
 		c.write(zson.QuotedName(e.Text))
+	case *ast.CrossJoin:
+		c.write("cross join XXX")
+	case *ast.SQLJoin:
+		c.write("sql join XXX")
 	default:
 		panic(fmt.Sprintf("unknown from expression: %T", e))
 	}

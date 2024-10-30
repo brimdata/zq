@@ -1,0 +1,37 @@
+zed: bool(this)
+
+vector: true
+
+input: |
+  1
+  0
+  24(uint8)
+  0(uint8)
+  null(uint8)
+  1.5
+  0.
+  null(float64)
+  "T"
+  "true"
+  "F"
+  "false"
+  "blah"
+  null(string)
+  "1"
+
+output: |
+  true
+  false
+  true
+  false
+  null(bool)
+  true
+  false
+  null(bool)
+  true
+  true
+  false
+  false
+  error({message:"cannot cast to bool",on:"blah"})
+  null(bool)
+  true

@@ -3,17 +3,17 @@ package vector
 import (
 	"slices"
 
-	zed "github.com/brimdata/super"
+	"github.com/brimdata/super"
 	"github.com/brimdata/super/pkg/field"
 )
 
 type RecordBuilder struct {
-	zctx   *zed.Context
+	zctx   *super.Context
 	fields field.List
 	base   *rec
 }
 
-func NewRecordBuilder(zctx *zed.Context, fields field.List) (*RecordBuilder, error) {
+func NewRecordBuilder(zctx *super.Context, fields field.List) (*RecordBuilder, error) {
 	base := &rec{}
 	for _, path := range fields {
 		if err := addPath(base, path); err != nil {
@@ -38,7 +38,7 @@ func addPath(r *rec, path field.Path) error {
 		idx := slices.Index(r.paths, name)
 		if k == len(path)-1 {
 			if idx > -1 {
-				return &zed.DuplicateFieldError{Name: path.String()}
+				return &super.DuplicateFieldError{Name: path.String()}
 			}
 			r.paths = append(r.paths, path[k])
 			r.recs = append(r.recs, nil)
@@ -50,15 +50,15 @@ func addPath(r *rec, path field.Path) error {
 			r.recs = append(r.recs, &rec{})
 		}
 		if r.recs[idx] == nil {
-			return &zed.DuplicateFieldError{Name: path[:k+1].String()}
+			return &super.DuplicateFieldError{Name: path[:k+1].String()}
 		}
 		r = r.recs[idx]
 	}
 	return nil
 }
 
-func (r *rec) build(zctx *zed.Context, leafs []Any) (*Record, []Any) {
-	var fields []zed.Field
+func (r *rec) build(zctx *super.Context, leafs []Any) (*Record, []Any) {
+	var fields []super.Field
 	var out []Any
 	for i, name := range r.paths {
 		var vec Any
@@ -67,7 +67,7 @@ func (r *rec) build(zctx *zed.Context, leafs []Any) (*Record, []Any) {
 		} else {
 			vec, leafs = leafs[0], leafs[1:]
 		}
-		fields = append(fields, zed.NewField(name, vec.Type()))
+		fields = append(fields, super.NewField(name, vec.Type()))
 		out = append(out, vec)
 	}
 	typ := zctx.MustLookupTypeRecord(fields)

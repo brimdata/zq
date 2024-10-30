@@ -8,7 +8,7 @@ sidebar_label: Zed/Zeek Data Type Compatibility
 As the [super data model](../../formats/zed.md) was in many ways inspired by the
 [Zeek TSV log format](https://docs.zeek.org/en/master/log-formats.html#zeek-tsv-format-logs),
 SuperDB's rich storage formats ([Super JSON](../../formats/jsup.md),
-[ZNG](../../formats/zng.md), etc.) maintain comprehensive interoperability
+[Super Binary](../../formats/bsup.md), etc.) maintain comprehensive interoperability
 with Zeek. When Zeek is configured to output its logs in
 JSON format, much of the rich type information is lost in translation, but
 this can be restored by following the guidance for [shaping Zeek JSON](shaping-zeek-json.md).

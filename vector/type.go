@@ -17,6 +17,15 @@ func NewTypeValue(offs []uint32, bytes []byte, nulls *Bool) *TypeValue {
 	return &TypeValue{Offsets: offs, Bytes: bytes, Nulls: nulls}
 }
 
+func NewTypeValueEmpty(length uint32, nulls *Bool) *TypeValue {
+	return NewTypeValue(make([]uint32, 1, length+1), nil, nulls)
+}
+
+func (t *TypeValue) Append(v []byte) {
+	t.Bytes = append(t.Bytes, v...)
+	t.Offsets = append(t.Offsets, uint32(len(t.Bytes)))
+}
+
 func (t *TypeValue) Type() super.Type {
 	return super.TypeType
 }

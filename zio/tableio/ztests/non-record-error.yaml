@@ -10,4 +10,5 @@ output: |
   a
   1
 
-errorRE: 'table output encountered non-record value: \[1,2]'
+error: |
+  table output encountered non-record value: [1,2]

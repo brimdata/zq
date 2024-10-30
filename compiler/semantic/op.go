@@ -36,15 +36,46 @@ func (a *analyzer) semSeq(seq ast.Seq) dag.Seq {
 }
 
 func (a *analyzer) semFrom(from *ast.From, out dag.Seq) dag.Seq {
-	sources := a.semFromEntity(from.Entity, from.Args)
-	if len(sources) == 1 {
-		return append(sources, out...)
+	if len(from.Elems) > 1 {
+		a.error(from, errors.New("cross join implied by multiple elements in from clause is not yet supported"))
+		return dag.Seq{badOp()}
 	}
-	var paths []dag.Seq
-	for _, s := range sources {
-		paths = append(paths, dag.Seq{s})
+	if len(out) > 0 {
+		a.error(from, errors.New("from operator with parent input is not yet supported"))
+		return dag.Seq{badOp()}
 	}
-	return append(out, &dag.Fork{Kind: "Fork", Paths: paths})
+	return a.semFromElem(from.Elems[0])
+}
+
+func (a *analyzer) semFromElem(elem *ast.FromElem) dag.Seq {
+	seq := a.semFromEntity(elem.Entity, elem.Args)
+	if elem.Ordinality != nil {
+		a.error(elem.Ordinality, errors.New("WITH ORDINALITY clause is not yet supported"))
+		return dag.Seq{badOp()}
+	}
+	if elem.Alias != nil {
+		seq = wrapAlias(elem.Alias.Text, seq)
+	}
+	return seq
+}
+
+func wrapAlias(alias string, seq dag.Seq) dag.Seq {
+	// Wrap the values in a single-field record with the name of the alias.
+	return append(seq, &dag.Yield{
+		Kind: "Yield",
+		Exprs: []dag.Expr{
+			&dag.RecordExpr{
+				Kind: "RecordExpr",
+				Elems: []dag.RecordElem{
+					&dag.Field{
+						Kind:  "Field",
+						Name:  alias,
+						Value: &dag.This{Kind: "This"},
+					},
+				},
+			},
+		},
+	})
 }
 
 func (a *analyzer) semFromEntity(entity ast.FromEntity, args ast.FromArgs) dag.Seq {
@@ -56,7 +87,7 @@ func (a *analyzer) semFromEntity(entity ast.FromEntity, args ast.FromArgs) dag.S
 		return dag.Seq{a.semFromFileGlob(entity, entity.Pattern, args)}
 	case *ast.Regexp:
 		if !a.source.IsLake() {
-			a.error(entity, errors.New("cannot use regular expression with from operaetor on local file system"))
+			a.error(entity, errors.New("cannot use regular expression with from operator on local file system"))
 		}
 		return a.semPoolFromRegexp(entity, entity.Pattern, entity.Pattern, "regexp", args)
 	case *ast.Name:
@@ -65,6 +96,12 @@ func (a *analyzer) semFromEntity(entity ast.FromEntity, args ast.FromArgs) dag.S
 		return a.semFromExpr(entity, args)
 	case *ast.LakeMeta:
 		return dag.Seq{a.semLakeMeta(entity)}
+	case *ast.SQLPipe:
+		//XXX pass down parents?
+		return a.semOp(entity, nil)
+	case *ast.SQLJoin:
+		//XXX pass down parents?
+		return a.semSQLJoin(entity, nil)
 	default:
 		panic(fmt.Sprintf("semFromEntity: unknown entity type: %T", entity))
 	}
@@ -117,7 +154,7 @@ func (a *analyzer) semFromName(nameLoc ast.Node, name string, args ast.FromArgs)
 		}
 		return a.semPool(nameLoc, name, poolArgs)
 	}
-	return a.semFile(nameLoc, name, args)
+	return a.semFile(name, args)
 }
 
 func asPoolArgs(args ast.FromArgs) (*ast.PoolArgs, error) {
@@ -150,7 +187,7 @@ func asFileArgs(args ast.FromArgs) (*ast.FormatArg, error) {
 	}
 }
 
-func (a *analyzer) semFile(nameLoc ast.Node, name string, args ast.FromArgs) dag.Op {
+func (a *analyzer) semFile(name string, args ast.FromArgs) dag.Op {
 	formatArg, err := asFileArgs(args)
 	if err != nil {
 		a.error(args, err)
@@ -178,11 +215,11 @@ func (a *analyzer) semFromFileGlob(globLoc ast.Node, pattern string, args ast.Fr
 		return badOp()
 	}
 	if len(names) == 1 {
-		return a.semFile(globLoc, names[0], args)
+		return a.semFile(names[0], args)
 	}
 	paths := make([]dag.Seq, 0, len(names))
 	for _, name := range names {
-		paths = append(paths, dag.Seq{a.semFile(globLoc, name, args)})
+		paths = append(paths, dag.Seq{a.semFile(name, args)})
 	}
 	return &dag.Fork{
 		Kind:  "Fork",
@@ -272,11 +309,14 @@ func (a *analyzer) semPoolFromRegexp(patternLoc ast.Node, re, orig, which string
 		a.error(args, err)
 		return dag.Seq{badOp()}
 	}
-	var sources []dag.Op
+	var paths []dag.Seq
 	for _, name := range poolNames {
-		sources = append(sources, a.semPool(patternLoc, name, poolArgs))
+		paths = append(paths, dag.Seq{a.semPool(patternLoc, name, poolArgs)})
 	}
-	return sources
+	return dag.Seq{&dag.Fork{
+		Kind:  "Fork",
+		Paths: paths,
+	}}
 }
 
 func (a *analyzer) semSortExpr(s ast.SortExpr) dag.SortExpr {
@@ -468,6 +508,8 @@ func (a *analyzer) semDebugOp(o *ast.Debug, mainAst ast.Seq, in dag.Seq) dag.Seq
 // with either a group-by or filter op based on the function's name.
 func (a *analyzer) semOp(o ast.Op, seq dag.Seq) dag.Seq {
 	switch o := o.(type) {
+	case *ast.Select, *ast.Limit, *ast.OrderBy, *ast.SQLPipe:
+		return a.semSQLOp(o, nil)
 	case *ast.From:
 		return a.semFrom(o, seq)
 	case *ast.Delete:

@@ -1,0 +1,17 @@
+zed: net(this)
+
+vector: true
+
+input: |
+  "192.168.1.0/24"
+  "2001:db8::/32"
+  null(string)
+  -35
+  34
+
+output: |
+  192.168.1.0/24
+  2001:db8::/32
+  null(net)
+  error({message:"cannot cast to net",on:-35})
+  error({message:"cannot cast to net",on:34})

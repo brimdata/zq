@@ -11,10 +11,10 @@ type View struct {
 
 var _ Any = (*View)(nil)
 
-func NewView(index []uint32, val Any) Any {
+func NewView(val Any, index []uint32) Any {
 	switch val := val.(type) {
 	case *Const:
-		return NewConst(val.val, uint32(len(index)), nullsView(val.Nulls, index))
+		return NewConst(val.val, uint32(len(index)), NullsView(val.Nulls, index))
 	case *Dict:
 		index2 := make([]byte, len(index))
 		var nulls *Bool
@@ -33,10 +33,10 @@ func NewView(index []uint32, val Any) Any {
 		}
 		return NewDict(val.Any, index2, nil, nulls)
 	case *Error:
-		return NewError(val.Typ, NewView(index, val.Vals), nullsView(val.Nulls, index))
+		return NewError(val.Typ, NewView(val.Vals, index), NullsView(val.Nulls, index))
 	case *Union:
 		tags, values := viewForUnionOrDynamic(index, val.Tags, val.TagMap.Forward, val.Values)
-		return NewUnion(val.Typ, tags, values, nullsView(val.Nulls, index))
+		return NewUnion(val.Typ, tags, values, NullsView(val.Nulls, index))
 	case *Dynamic:
 		return NewDynamic(viewForUnionOrDynamic(index, val.Tags, val.TagMap.Forward, val.Values))
 	case *View:
@@ -47,12 +47,12 @@ func NewView(index []uint32, val Any) Any {
 		return &View{val.Any, index2}
 	case *Named:
 		// Wrapped View under Named so vector.Under still works.
-		return &Named{val.Typ, NewView(index, val.Any)}
+		return &Named{val.Typ, NewView(val.Any, index)}
 	}
 	return &View{val, index}
 }
 
-func nullsView(nulls *Bool, index []uint32) *Bool {
+func NullsView(nulls *Bool, index []uint32) *Bool {
 	if nulls == nil {
 		return nil
 	}
@@ -78,7 +78,7 @@ func viewForUnionOrDynamic(index, tags, forward []uint32, values []Any) ([]uint3
 	}
 	results := make([]Any, len(values))
 	for k := range results {
-		results[k] = NewView(indexes[k], values[k])
+		results[k] = NewView(values[k], indexes[k])
 	}
 	return resultTags, results
 }

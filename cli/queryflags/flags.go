@@ -56,7 +56,7 @@ func (f *Flags) ParseSourcesAndInputs(src string, paths []string) ([]string, ast
 		}
 		return nil, nil, nil, false, errors.New("no data source found")
 	}
-	query, sset, err := parser.ParseSuperPipe(f.Includes, src)
+	query, sset, err := parser.ParseSuperSQL(f.Includes, src)
 	if err != nil {
 		return nil, nil, nil, false, err
 	}

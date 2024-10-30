@@ -1,0 +1,40 @@
+script: |
+  super -z -c 'select value this from "a.jsup" |> drop c'
+  echo ===
+  super -z -c 'select value this from "messy.jsup" |> drop s,t'
+  echo ===
+  super -z -c 'select value this from "b.jsup" |> drop b'
+
+inputs:
+  - name: a.jsup
+    data: |
+      {c:1,a:11}
+      {c:2,a:12}
+      {c:3,a:13}
+      {c:4,a:14}
+  - name: b.jsup
+    data: |
+      {b:[1,2],c:2}
+      {b:[3,4,5],c:3}
+      {b:[6,7],c:5}
+  - name: messy.jsup
+    data: |
+      {x:1,s:"foo"}
+      {x:2,s:"bar"}
+      {x:3,s:4}
+
+outputs:
+  - name: stdout
+    data: |
+      {a:11}
+      {a:12}
+      {a:13}
+      {a:14}
+      ===
+      {x:1}
+      {x:2}
+      {x:3}
+      ===
+      {c:2}
+      {c:3}
+      {c:5}

@@ -13,7 +13,7 @@ The Python client interacts with the Zed lake via the REST API served by
 [`zed serve`](../commands/zed.md#serve).
 
 This approach works adequately when high data throughput is not required.
-We will soon introduce native [ZNG](../formats/zng.md) support for
+We plan to introduce native [Super Binary](../formats/bsup.md) support for
 Python that should increase performance substantially for more
 data intensive workloads.
 

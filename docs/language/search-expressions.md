@@ -128,7 +128,7 @@ The search patterns described above can be combined with other "search terms"
 using Boolean logic to form search expressions.
 
 :::tip note
-When processing [Super Binary](../formats/zng.md) data, the SuperDB runtime performs a multi-threaded
+When processing [Super Binary](../formats/bsup.md) data, the SuperDB runtime performs a multi-threaded
 Boyer-Moore scan over decompressed data buffers before parsing any data.
 This allows large buffers of data to be efficiently discarded and skipped when
 searching for rarely occurring values.  For a [SuperDB data lake](../lake/format.md),

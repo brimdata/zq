@@ -1,0 +1,15 @@
+zed: type(this)
+
+vector: true
+
+input: |
+  "<int64>"
+  "<{x:string}>"
+  "{x:\"foo\"}"
+  "<int>"
+
+output: |
+  <int64>
+  <{x:string}>
+  error({message:"cannot cast to type",on:"{x:\"foo\"}"})
+  error({message:"cannot cast to type",on:"<int>"})

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	sortproc "github.com/brimdata/super/runtime/sam/op/sort"
+	opsort "github.com/brimdata/super/runtime/sam/op/sort"
 	"github.com/brimdata/super/ztest"
 )
 
@@ -172,10 +172,10 @@ func TestSort(t *testing.T) {
 }
 
 func TestSortExternal(t *testing.T) {
-	saved := sortproc.MemMaxBytes
-	sortproc.MemMaxBytes = 1024
+	saved := opsort.MemMaxBytes
+	opsort.MemMaxBytes = 1024
 	defer func() {
-		sortproc.MemMaxBytes = saved
+		opsort.MemMaxBytes = saved
 	}()
 
 	makeZSON := func(ss []string) string {
@@ -189,7 +189,7 @@ func TestSortExternal(t *testing.T) {
 	// Create enough strings to exceed 2 * proc.SortMemMaxBytes.
 	var n int
 	var ss []string
-	for n <= 2*sortproc.MemMaxBytes {
+	for n <= 2*opsort.MemMaxBytes {
 		s := fmt.Sprintf("%016x", rand.Uint64())
 		n += len(s)
 		ss = append(ss, s)

@@ -271,9 +271,8 @@ type ZTest struct {
 	InputFlags  string `yaml:"input-flags,omitempty"`
 	Output      string `yaml:"output,omitempty"`
 	OutputFlags string `yaml:"output-flags,omitempty"`
-	ErrorRE     string `yaml:"errorRE,omitempty"`
+	Error       string `yaml:"error,omitempty"`
 	Vector      bool   `yaml:"vector"`
-	errRegex    *regexp.Regexp
 
 	// For script-style tests.
 	Script  string   `yaml:"script,omitempty"`
@@ -302,11 +301,6 @@ func (z *ZTest) check() error {
 		}
 	} else if z.Zed == "" {
 		return errors.New("either a zed field or script field must be present")
-	}
-	if z.ErrorRE != "" {
-		var err error
-		z.errRegex, err = regexp.Compile(z.ErrorRE)
-		return err
 	}
 	return nil
 }
@@ -372,25 +366,20 @@ func (z *ZTest) RunInternal(path string) error {
 	return z.diffInternal(runzq(path, z.Zed, z.Input, outputFlags, inputFlags))
 }
 
-func (z *ZTest) diffInternal(out, errout string, err error) error {
-	if err != nil {
-		if z.errRegex != nil {
-			if !z.errRegex.MatchString(errout) {
-				return fmt.Errorf("error doesn't match expected error regex: %s %s", z.ErrorRE, errout)
-			}
-		} else {
-			if out != "" {
-				out = "\noutput:\n" + out
-			}
-			return fmt.Errorf("%w%s", err, out)
-		}
-	} else if z.errRegex != nil {
-		return fmt.Errorf("no error when expecting error regex: %s", z.ErrorRE)
-	}
+func (z *ZTest) diffInternal(out string, err error) error {
+	var outDiffErr, errDiffErr error
 	if z.Output != out {
-		return diffErr("output", z.Output, out)
+		outDiffErr = diffErr("output", z.Output, out)
 	}
-	return nil
+	var errStr string
+	if err != nil {
+		// Append newline if err doesn't end with one.
+		errStr = strings.TrimSuffix(err.Error(), "\n") + "\n"
+	}
+	if z.Error != errStr {
+		errDiffErr = diffErr("error", z.Error, errStr)
+	}
+	return errors.Join(outDiffErr, errDiffErr)
 }
 
 func (z *ZTest) Run(t *testing.T, path, filename string) {
@@ -480,69 +469,70 @@ func runsh(path, testDir, tempDir string, zt *ZTest) error {
 // is empty, the program runs in the current process.  If path is not empty, it
 // specifies a command search path used to find a zq executable to run the
 // program.
-func runzq(path, zedProgram, input string, outputFlags []string, inputFlags []string) (string, string, error) {
-	var errbuf, outbuf bytes.Buffer
+func runzq(path, zedProgram, input string, outputFlags []string, inputFlags []string) (string, error) {
+	var outbuf bytes.Buffer
 	if path != "" {
 		super, err := lookupSuper(path)
 		if err != nil {
-			return "", "", err
+			return "", err
 		}
 		flags := append(outputFlags, inputFlags...)
 		args := append(flags, []string{"-c", zedProgram, "-"}...)
 		cmd := exec.Command(super, args...)
 		cmd.Stdin = strings.NewReader(input)
 		cmd.Stdout = &outbuf
+		var errbuf bytes.Buffer
 		cmd.Stderr = &errbuf
 		err = cmd.Run()
-		return outbuf.String(), errbuf.String(), err
+		if errbuf.Len() > 0 {
+			err = errors.New(errbuf.String())
+		}
+		return outbuf.String(), err
 	}
 	proc, sset, err := compiler.Parse(zedProgram)
 	if err != nil {
-		return "", err.Error(), err
+		return "", err
 	}
 	var inflags inputflags.Flags
 	var flags flag.FlagSet
 	inflags.SetFlags(&flags, true)
 	if err := flags.Parse(inputFlags); err != nil {
-		return "", "", err
+		return "", err
 	}
 	r, err := anyio.GzipReader(strings.NewReader(input))
 	if err != nil {
-		return "", err.Error(), err
+		return "", err
 	}
 	zctx := super.NewContext()
 	zrc, err := anyio.NewReaderWithOpts(zctx, r, demand.All(), inflags.Options())
 	if err != nil {
-		return "", err.Error(), err
+		return "", err
 	}
 	defer zrc.Close()
 	var outflags outputflags.Flags
 	flags = flag.FlagSet{}
 	outflags.SetFlags(&flags)
 	if err := flags.Parse(outputFlags); err != nil {
-		return "", "", err
+		return "", err
 	}
 	if err := outflags.Init(); err != nil {
-		return "", "", err
+		return "", err
 	}
 	zw, err := anyio.NewWriter(zio.NopCloser(&outbuf), outflags.Options())
 	if err != nil {
-		return "", "", err
+		return "", err
 	}
 	q, err := runtime.CompileQuery(context.Background(), zctx, compiler.NewCompiler(), proc, sset, []zio.Reader{zrc})
 	if err != nil {
 		zw.Close()
-		return "", err.Error(), err
+		return "", err
 	}
 	defer q.Pull(true)
 	err = zbuf.CopyPuller(zw, q)
 	if err2 := zw.Close(); err == nil {
 		err = err2
 	}
-	if err != nil {
-		errbuf.WriteString(err.Error())
-	}
-	return outbuf.String(), errbuf.String(), err
+	return outbuf.String(), err
 }
 
 func lookupSuper(path string) (string, error) {
@@ -557,35 +547,32 @@ func lookupSuper(path string) (string, error) {
 	return "", err
 }
 
-func runvec(zedProgram string, input string, outputFlags []string) (string, string, error) {
-	var errbuf, outbuf bytes.Buffer
+func runvec(zedProgram string, input string, outputFlags []string) (string, error) {
 	var flags flag.FlagSet
 	var outflags outputflags.Flags
 	outflags.SetFlags(&flags)
 	if err := flags.Parse(outputFlags); err != nil {
-		return "", "", err
+		return "", err
 	}
 	object, err := createVCacheObject(input)
 	if err != nil {
-		return "", "", err
+		return "", err
 	}
 	defer object.Close()
 	puller, err := compiler.VectorCompile(runtime.DefaultContext(), zedProgram, object)
 	if err != nil {
-		return "", err.Error(), err
+		return "", err
 	}
+	var outbuf bytes.Buffer
 	zw, err := anyio.NewWriter(zio.NopCloser(&outbuf), outflags.Options())
 	if err != nil {
-		return "", "", err
+		return "", err
 	}
 	err = zbuf.CopyPuller(zw, puller)
 	if err2 := zw.Close(); err == nil {
 		err = err2
 	}
-	if err != nil {
-		errbuf.WriteString(err.Error())
-	}
-	return outbuf.String(), errbuf.String(), nil
+	return outbuf.String(), err
 }
 
 func createVCacheObject(input string) (*vcache.Object, error) {

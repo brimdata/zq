@@ -2,4 +2,7 @@ zed: count() by this
 
 vector: true
 
-errorRE: cannot assign to 'this'
+error: |
+  cannot assign to 'this' at line 1, column 12:
+  count() by this
+             ~~~~

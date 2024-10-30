@@ -1,3 +1,6 @@
 zed: yield {x:1,x:2}
 
-errorRE: 'record expression: duplicate field: "x"'
+error: |
+  record expression: duplicate field: "x" at line 1, column 12:
+  yield {x:1,x:2}
+             ~~~

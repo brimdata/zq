@@ -10,7 +10,7 @@ VNG, pronounced "ving", is a file format for columnar data based on
 VNG is the "stacked" version of Zed, where the fields from a stream of
 Zed records are stacked into vectors that form columns.
 Its purpose is to provide for efficient analytics and search over
-bounded-length sequences of [ZNG](zng.md) data that is stored in columnar form.
+bounded-length sequences of [Super Binary](bsup.md) data that is stored in columnar form.
 
 Like [Parquet](https://github.com/apache/parquet-format),
 VNG provides an efficient columnar representation for semi-structured data,
@@ -79,7 +79,7 @@ where a segment is a seek offset and byte length relative to the
 data section.  Each segment contains a sequence of
 [primitive-type Zed values](zed.md#1-primitive-types),
 encoded as counted-length byte sequences where the counted-length is
-variable-length encoded as in the [ZNG specification](zng.md).
+variable-length encoded as in the [Super Binary specification](bsup.md).
 Segments may be compressed.
 
 There is no information in the data section for how segments relate

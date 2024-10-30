@@ -319,7 +319,7 @@ produces
 
 If working in a directory containing many JSON logs, the
 reference shaper can be applied to all the records they contain and
-output them all in a single binary [ZNG](../../formats/zng.md) file as
+output them all in a single [Super Binary](../../formats/bsup.md) file as
 follows:
 
 ```

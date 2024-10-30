@@ -50,7 +50,6 @@ func (d *Dict) RebuildDropTags(tags ...uint32) ([]byte, []uint32, *Bool, []uint3
 			k++
 		}
 	}
-	//
 	var nulls *Bool
 	if d.Nulls != nil {
 		nulls = NewBoolEmpty(d.Len(), nil)
@@ -65,10 +64,11 @@ func (d *Dict) RebuildDropTags(tags ...uint32) ([]byte, []uint32, *Bool, []uint3
 			continue
 		}
 		index = append(index, byte(k))
-		counts[k]++
 		if d.Nulls.Value(uint32(i)) {
-			nulls.Set(uint32(len(index)))
+			nulls.Set(uint32(len(index) - 1))
+			continue
 		}
+		counts[k]++
 	}
 	return index, counts, nulls, dropped
 }

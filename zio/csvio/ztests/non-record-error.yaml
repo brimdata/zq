@@ -10,4 +10,5 @@ output: |
   a
   1
 
-errorRE: 'CSV output encountered non-record value: \[1,2]'
+error: |
+  CSV output encountered non-record value: [1,2]

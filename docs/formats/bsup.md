@@ -1,16 +1,16 @@
 ---
 sidebar_position: 2
-sidebar_label: ZNG
+sidebar_label: Super Binary
 ---
 
-# ZNG Specification
+# Super Binary Specification
 
 ## 1. Introduction
 
-ZNG (pronounced "zing") is an efficient, sequence-oriented serialization format for any data
+Super Binary is an efficient, sequence-oriented serialization format for any data
 conforming to the [super data model](zed.md).
 
-ZNG is "row oriented" and
+Super Binary is "row oriented" and
 analogous to [Apache Avro](https://avro.apache.org) but does not
 require schema definitions as it instead utilizes the fine-grained type system
 of the super data model.
@@ -19,32 +19,32 @@ encoding methodology inspired by Avro,
 [Parquet](https://en.wikipedia.org/wiki/Apache_Parquet), and
 [Protocol Buffers](https://developers.google.com/protocol-buffers).
 
-To this end, ZNG embeds all type information
+To this end, Super Binary embeds all type information
 in the stream itself while having a binary serialization format that
 allows "lazy parsing" of fields such that
 only the fields of interest in a stream need to be deserialized and interpreted.
-Unlike Avro, ZNG embeds its "schemas" in the data stream as types and thereby admits
+Unlike Avro, Super Binary embeds its "schemas" in the data stream as types and thereby admits
 an efficient multiplexing of heterogeneous data types by prepending to each
 data value a simple integer identifier to reference its type.
 
-Since no external schema definitions exist in ZNG, a "type context" is constructed
-on the fly by composing dynamic type definitions embedded in the ZNG format.
-ZNG can be readily adapted to systems like
+Since no external schema definitions exist in Super Binary, a "type context" is constructed
+on the fly by composing dynamic type definitions embedded in the format.
+Super Binary can be readily adapted to systems like
 [Apache Kafka](https://kafka.apache.org/) which utilize schema registries,
 by having a connector translate the schemas implied in the
-ZNG stream into registered schemas and vice versa.  Better still, Kafka could
-be used natively with ZNG obviating the need for the schema registry.
+Super Binary stream into registered schemas and vice versa.  Better still, Kafka could
+be used natively with Super Binary obviating the need for the schema registry.
 
-Multiple ZNG streams with different type contexts are easily merged because the
+Multiple Super Binary streams with different type contexts are easily merged because the
 serialization of values does not depend on the details of
 the type context.  One or more streams can be merged by simply merging the
 input contexts into an output context and adjusting the type reference of
-each value in the output ZNG sequence.  The values need not be traversed
+each value in the output sequence.  The values need not be traversed
 or otherwise rewritten to be merged in this fashion.
 
-## 2. The ZNG Format
+## 2. The Super Binary Format
 
-A ZNG stream comprises a sequence of frames where
+A Super Binary stream comprises a sequence of frames where
 each frame contains one of three types of data:
 _types_, _values_, or externally-defined _control_.
 
@@ -83,11 +83,11 @@ Each frame begins with a single-byte "frame code":
 ```
 
 Bit 7 of the frame code must be zero as it defines version 0
-of the ZNG stream format.  If a future version of ZNG
-arises, bit 7 of future ZNG frames will be 1.
-ZNG version 0 readers must ignore and skip over such frames using the
+of the Super Binary stream format.  If a future version of Super Binary
+arises, bit 7 of future Super Binary frames will be 1.
+Super Binary version 0 readers must ignore and skip over such frames using the
 `len` field, which must survive future versions.
-Any future versions of ZNG must be able to integrate version 0 frames
+Any future versions of Super Binary must be able to integrate version 0 frames
 for backward compatibility.
 
 Following the frame code is its encoded length followed by a "frame payload"
@@ -129,20 +129,22 @@ but is useful to an implementation to deterministically
 size decompression buffers in advance of decoding.
 
 Values for the `format` byte are defined in the
-[ZNG compression format specification](./compression.md).
+[Super Binary compression format specification](./compression.md).
 
-> This arrangement of frames separating types and values allows
-> for efficient scanning and parallelization.  In general, values depend
-> on type definitions but as long as all of the types are known when
-> values are used, decoding can be done in parallel.  Likewise, since
-> each block is independently compressed, the blocks can be decompressed
-> in parallel.  Moreover, efficient filtering can be carried out over
-> uncompressed data before it is deserialized into native data structures,
-> e.g., allowing entire frames to be discarded based on
-> heuristics, e.g., knowing a filtering predicate can't be true based on a
-> quick scan of the data perhaps using the Boyer-Moore algorithm to determine
-> that a comparison with a string constant would not work for any
-> value in the buffer.
+:::tip note
+This arrangement of frames separating types and values allows
+for efficient scanning and parallelization.  In general, values depend
+on type definitions but as long as all of the types are known when
+values are used, decoding can be done in parallel.  Likewise, since
+each block is independently compressed, the blocks can be decompressed
+in parallel.  Moreover, efficient filtering can be carried out over
+uncompressed data before it is deserialized into native data structures,
+e.g., allowing entire frames to be discarded based on
+heuristics, e.g., knowing a filtering predicate can't be true based on a
+quick scan of the data perhaps using the Boyer-Moore algorithm to determine
+that a comparison with a string constant would not work for any
+value in the buffer.
+:::
 
 Whether the payload was originally uncompressed or was decompressed, it is
 then interpreted according to the `T` bits of the frame code as a
@@ -187,13 +189,13 @@ Any references to a type ID in the body of a typedef are encoded as a `uvarint`,
 A record typedef creates a new type ID equal to the next stream type ID
 with the following structure:
 ```
----------------------------------------------------------
+--------------------------------------------------------
 |0x00|<nfields>|<name1><type-id-1><name2><type-id-2>...|
----------------------------------------------------------
+--------------------------------------------------------
 ```
 Record types consist of an ordered set of fields where each field consists of
 a name and its type.  Unlike JSON, the ordering of the fields is significant
-and must be preserved through any APIs that consume, process, and emit ZNG records.
+and must be preserved through any APIs that consume, process, and emit Super Binary records.
 
 A record type is encoded as a count of fields, i.e., `<nfields>` from above,
 followed by the field definitions,
@@ -204,16 +206,18 @@ The field names in a record must be unique.
 
 The `<nfields>` value is encoded as a `uvarint`.
 
-The field name is encoded as a UTF-8 string defining a "ZNG identifier".
+The field name is encoded as a UTF-8 string defining a "Super Binary identifier".
 The UTF-8 string
 is further encoded as a "counted string", which is the `uvarint` encoding
 of the length of the string followed by that many bytes of UTF-8 encoded
 string data.
 
-N.B.: As defined by [Super JSON](jsup.md), a field name can be any valid UTF-8 string much like JSON
+:::tip note
+As defined by [Super JSON](jsup.md), a field name can be any valid UTF-8 string much like JSON
 objects can be indexed with arbitrary string keys (via index operator)
 even if the field names available to the dot operator are restricted
 by language syntax for identifiers.
+:::
 
 The type ID follows the field name and is encoded as a `uvarint`.
 
@@ -414,23 +418,22 @@ key/value pair).
 A _control frame_ contains an application-defined control message.
 
 Control frames are available to higher-layer protocols and are carried
-in ZNG as a convenient signaling mechanism.  A ZNG implementation
+in Super Binary as a convenient signaling mechanism.  A Super Binary implementation
 may skip over all control frames and is guaranteed by
 this specification to decode all of the data as described herein even if such
-frames provide additional semantics on top of the base ZNG format.
+frames provide additional semantics on top of the base Super Binary format.
 
 The body of a control frame is a control message and may be JSON,
 Super JSON, Super Binary, arbitrary binary, or UTF-8 text.  The serialization of the control
-frame body is independent of the Super JSON stream containing the control
-frame.
+frame body is independent of the stream containing the control frame.
 
 Any control message not known by a Super Binary data receiver shall be ignored.
 
 The delivery order of control messages with respect to the delivery
-order of values of the ZNG stream should be preserved by an API implementing
-ZNG serialization and deserialization.
-In this way, system endpoints that communicate using ZNG can embed
-protocol directives directly into the ZNG stream as control payloads
+order of values of the Super Binary stream should be preserved by an API implementing
+Super Binary serialization and deserialization.
+In this way, system endpoints that communicate using Super Binary can embed
+protocol directives directly into the stream as control payloads
 in an order-preserving semantics rather than defining additional
 layers of encapsulation and synchronization between such layers.
 
@@ -442,36 +445,36 @@ A control frame has the following form:
 ```
 where
 * `<encoding>` is a single byte indicating whether the body is encoded
-as ZNG (0), JSON (1), Super JSON (2), an arbitrary UTF-8 string (3), or arbitrary binary data (4),
+as Super Binary (0), JSON (1), Super JSON (2), an arbitrary UTF-8 string (3), or arbitrary binary data (4),
 * `<len>` is a `uvarint` encoding the length in bytes of the body
 (exclusive of the length 1 encoding byte), and
 * `<body>` is a control message whose semantics are outside the scope of
-the base ZNG specification.
+the base Super Binary specification.
 
-If the encoding type is ZNG, the embedded ZNG data
-starts and ends a single ZNG stream independent of the outer ZNG stream.
+If the encoding type is Super Binary, the embedded Super Binary data
+starts and ends a single Super Binary stream independent of the outer Super Binary stream.
 
 ### 2.4 End of Stream
 
-A ZNG stream must be terminated by an end-of-stream marker.
-A new ZNG stream may begin immediately after an end-of-stream marker.
+A Super Binary stream must be terminated by an end-of-stream marker.
+A new Super Binary stream may begin immediately after an end-of-stream marker.
 Each such stream has its own, independent type context.
 
-In this way, the concatenation of ZNG streams (or ZNG files containing
-ZNG streams) results in a valid ZNG data sequence.
+In this way, the concatenation of Super Binary streams (or Super Binary files containing
+Super Binary streams) results in a valid Super Binary data sequence.
 
-For example, a large ZNG file can be arranged into multiple, smaller streams
+For example, a large Super Binary file can be arranged into multiple, smaller streams
 to facilitate random access at stream boundaries.
 This benefit comes at the cost of some additional overhead --
 the space consumed by stream boundary markers and repeated type definitions.
 Choosing an appropriate stream size that balances this overhead with the
 benefit of enabling random access is left up to implementations.
 
-End-of-stream markers are also useful in the context of sending ZNG over Kafka,
+End-of-stream markers are also useful in the context of sending Super Binary over Kafka,
 as a receiver can easily resynchronize with a live Kafka topic by
 discarding incomplete frames until a frame is found that is terminated
 by an end-of-stream marker (presuming the sender implementation aligns
-the ZNG frames on Kafka message boundaries).
+the Super Binary frames on Kafka message boundaries).
 
 A end-of-stream marker is encoded as follows:
 ```
@@ -489,14 +492,14 @@ be re-emitted
 
 ## 3. Primitive Types
 
-For each ZNG primitive type, the following table describes:
+For each Super Binary primitive type, the following table describes:
 * its type ID, and
 * the interpretation of a length `N` [value frame](#22-values-frame).
 
 All fixed-size multi-byte sequences representing machine words
 are serialized in little-endian format.
 
-| Type         | ID |    N     |       ZNG Value Interpretation                 |
+| Type         | ID |    N     |      Super Binary Value Interpretation         |
 |--------------|---:|:--------:|------------------------------------------------|
 | `uint8`      |  0 | variable | unsigned int of length N                       |
 | `uint16`     |  1 | variable | unsigned int of length N                       |
@@ -531,7 +534,7 @@ are serialized in little-endian format.
 
 ## 4. Type Values
 
-As the super data model supports first-class types and because the ZNG design goals
+As the super data model supports first-class types and because the Super Binary design goals
 require that value serializations cannot change across type contexts, type values
 must be encoded in a fashion that is independent of the type context.
 Thus, a serialized type value encodes the entire type in a canonical form
@@ -547,9 +550,9 @@ complex type it represents as described below.
 
 A record type value has the form:
 ```
----------------------------------------------------
+--------------------------------------------------
 |30|<nfields>|<name1><typeval><name2><typeval>...|
----------------------------------------------------
+--------------------------------------------------
 ```
 where `<nfields>` is the number of fields in the record encoded as a `uvarint`,
 `<name1>` etc. are the field names encoded as in the
@@ -629,7 +632,7 @@ A named type definition has the form:
 |37|<name><typeval>|
 --------------------
 ```
-where `<name>` is encoded as in an named type typedef
+where `<name>` is encoded as in a named type typedef
 and `<typeval>` is a recursive encoding of a type value.  This creates
 a binding between the given name and the indicated type value only within the
 scope of the encoded value and does not affect the type context.
@@ -642,5 +645,5 @@ An named type reference has the form:
 |38|<name>|
 -----------
 ```
-It is an error for an named type reference to appear in a type value with a name
+It is an error for a named type reference to appear in a type value with a name
 that has not been previously defined according to the DFS order.

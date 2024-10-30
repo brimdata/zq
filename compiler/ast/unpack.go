@@ -32,6 +32,7 @@ var unpacker = unpack.New(
 	FieldExpr{},
 	FormatArg{},
 	From{},
+	FromElem{},
 	FString{},
 	FStringExpr{},
 	FStringText{},
@@ -98,6 +99,18 @@ var unpacker = unpack.New(
 	Sample{},
 	Delete{},
 	LakeMeta{},
+	// SuperSQL
+	SQLPipe{},
+	Select{},
+	Ordinality{},
+	CrossJoin{},
+	SQLJoin{},
+	Union{},
+	OrderBy{},
+	Limit{},
+	With{},
+	JoinOn{},
+	JoinUsing{},
 )
 
 // UnmarshalOp transforms a JSON representation of an operator into an Op.

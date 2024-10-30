@@ -9,7 +9,7 @@ description: A command-line tool that uses the Zed Language for pipeline-style s
 > **TL;DR** `zq` is a command-line tool that uses the [Zed language](../language/README.md)
 for pipeline-style search and analytics.  `zq` can query a variety
 of data formats in files, over HTTP, or in [S3](../integrations/amazon-s3.md) storage.
-It is particularly fast when operating on data in the Zed-native [ZNG](../formats/zng.md) format.
+It is particularly fast when operating on data in the [Super Binary](../formats/bsup.md) format.
 >
 > The `zq` design philosophy blends the query/search-tool approach
 of `jq`, `awk`, and `grep` with the command-line, embedded database approach
@@ -34,7 +34,7 @@ an S3 URL, or standard input specified with `-`.
 For built-in command help and a listing of all available options,
 simply run `zq` with no arguments.
 
-`zq` supports a number of [input](#input-formats) and [output](#output-formats) formats, but [ZNG](../formats/zng.md)
+`zq` supports a number of [input](#input-formats) and [output](#output-formats) formats, but [Super Binary](../formats/bsup.md)
 tends to be the most space-efficient and most performant.  ZNG has efficiency similar to
 [Avro](https://avro.apache.org)
 and [Protocol Buffers](https://developers.google.com/protocol-buffers)
@@ -103,7 +103,7 @@ Note here that the query `1+1` [implies](../language/pipeline-model.md#implied-o
 | `vng`     |  yes | [VNG - Binary Columnar Format](../formats/vng.md) |
 | `zeek`    |  yes | [Zeek Logs](https://docs.zeek.org/en/master/logs/index.html) |
 | `zjson`   |  yes | [ZJSON - Zed over JSON](../formats/zjson.md) |
-| `zng`     |  yes | [ZNG - Binary Row Format](../formats/zng.md) |
+| `bsup`    |  yes | [Super Binary](../formats/bsup.md) |
 | `zson`    |  yes | [ZSON - Human-readable Format](../formats/jsup.md) |
 
 The input format is typically [detected automatically](#auto-detection) and the formats for which
@@ -189,7 +189,7 @@ typically omit quotes around field names.
 | `vng`     | [VNG - Binary Columnar Format](../formats/vng.md) |
 | `zeek`    | [Zeek Logs](https://docs.zeek.org/en/master/logs/index.html) |
 | `zjson`   | [ZJSON - Zed over JSON](../formats/zjson.md) |
-| `zng`     | [ZNG - Binary Row Format](../formats/zng.md) |
+| `bsup`    | [Super Binary](../formats/bsup.md) |
 | `zson`    | [ZSON - Human-readable Format](../formats/jsup.md) |
 
 The output format defaults to either ZSON or ZNG and may be specified

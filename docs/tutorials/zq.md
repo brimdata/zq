@@ -162,7 +162,7 @@ The human-readable format of Zed is called [ZSON](../formats/jsup.md)
 (and yes, that's a play on the acronym JSON).
 
 ZSON is nice because it has a comprehensive type system and you can
-go from ZSON to an efficient binary row format ([ZNG](../formats/zng.md))
+go from ZSON to an efficient binary row format ([Super Binary](../formats/bsup.md))
 and columnar ([VNG](../formats/vng.md)) --- and vice versa ---
 with complete fidelity and no loss of information.  In this tour,
 we'll stick to ZSON (though for large data sets,

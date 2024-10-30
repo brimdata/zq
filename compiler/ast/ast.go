@@ -161,7 +161,7 @@ type Name struct {
 
 type FromEntity interface {
 	Node
-	fromEntityAST()
+	fromEntity()
 }
 
 type ExprEntity struct {
@@ -170,11 +170,28 @@ type ExprEntity struct {
 	Loc  `json:"loc"`
 }
 
-func (*Glob) fromEntityAST()       {}
-func (*Regexp) fromEntityAST()     {}
-func (*ExprEntity) fromEntityAST() {}
-func (*LakeMeta) fromEntityAST()   {}
-func (*Name) fromEntityAST()       {}
+func (*Glob) fromEntity()       {}
+func (*Regexp) fromEntity()     {}
+func (*ExprEntity) fromEntity() {}
+func (*LakeMeta) fromEntity()   {}
+func (*Name) fromEntity()       {}
+func (*CrossJoin) fromEntity()  {}
+func (*SQLJoin) fromEntity()    {}
+func (*SQLPipe) fromEntity()    {}
+
+type FromElem struct {
+	Kind       string      `json:"kind" unpack:""`
+	Entity     FromEntity  `json:"entity"`
+	Args       FromArgs    `json:"args"`
+	Ordinality *Ordinality `json:"ordinality"`
+	Alias      *Name       `json:"alias"`
+	Loc        `json:"loc"`
+}
+
+type Ordinality struct {
+	Kind string `json:"kind" unpack:""`
+	Loc  `json:"loc"`
+}
 
 type RecordExpr struct {
 	Kind  string       `json:"kind" unpack:""`
@@ -545,10 +562,10 @@ type (
 
 type (
 	From struct {
-		Kind   string     `json:"kind" unpack:""`
-		Entity FromEntity `json:"entity"`
-		Args   FromArgs   `json:"args"`
-		Loc    `json:"loc"`
+		Kind  string      `json:"kind" unpack:""`
+		Elems []*FromElem `json:"elems"`
+		Args  FromArgs    `json:"args"`
+		Loc   `json:"loc"`
 	}
 	LakeMeta struct {
 		Kind    string `json:"kind" unpack:""`
@@ -598,6 +615,7 @@ type SortExpr struct {
 	Kind  string `json:"kind" unpack:""`
 	Expr  Expr   `json:"expr"`
 	Order *ID    `json:"order"`
+	Nulls *ID    `json:"nulls"`
 	Loc   `json:"loc"`
 }
 
