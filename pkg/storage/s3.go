@@ -27,12 +27,12 @@ func NewS3() *S3Engine {
 
 func (s *S3Engine) Get(ctx context.Context, u *URI) (Reader, error) {
 	r, err := s3io.NewReader(ctx, u.String(), s.client)
-	return r, wrapErr(err)
+	return r, s3Err(err)
 }
 
 func (s *S3Engine) Put(ctx context.Context, u *URI) (io.WriteCloser, error) {
 	w, err := s3io.NewWriter(ctx, u.String(), s.client)
-	return w, wrapErr(err)
+	return w, s3Err(err)
 }
 
 func (s *S3Engine) PutIfNotExists(context.Context, *URI, []byte) error {
@@ -40,21 +40,21 @@ func (s *S3Engine) PutIfNotExists(context.Context, *URI, []byte) error {
 }
 
 func (s *S3Engine) Delete(ctx context.Context, u *URI) error {
-	return wrapErr(s3io.Remove(ctx, u.String(), s.client))
+	return s3Err(s3io.Remove(ctx, u.String(), s.client))
 }
 
 func (s *S3Engine) DeleteByPrefix(ctx context.Context, u *URI) error {
-	return wrapErr(s3io.RemoveAll(ctx, u.String(), s.client))
+	return s3Err(s3io.RemoveAll(ctx, u.String(), s.client))
 }
 
 func (s *S3Engine) Size(ctx context.Context, u *URI) (int64, error) {
 	info, err := s3io.Stat(ctx, u.String(), s.client)
-	return info.Size, wrapErr(err)
+	return info.Size, s3Err(err)
 }
 
 func (s *S3Engine) Exists(ctx context.Context, u *URI) (bool, error) {
 	ok, err := s3io.Exists(ctx, u.String(), s.client)
-	return ok, wrapErr(err)
+	return ok, s3Err(err)
 }
 
 func (s *S3Engine) List(ctx context.Context, uri *URI) ([]Info, error) {
@@ -72,7 +72,7 @@ func (s *S3Engine) List(ctx context.Context, uri *URI) ([]Info, error) {
 	return infos, nil
 }
 
-func wrapErr(err error) error {
+func s3Err(err error) error {
 	var reqerr awserr.RequestFailure
 	if errors.As(err, &reqerr) && reqerr.StatusCode() == http.StatusNotFound {
 		return fs.ErrNotExist

@@ -146,7 +146,7 @@ func (c *Command) Run(args []string) error {
 	}
 	paths, ast, null, err := c.queryFlags.ParseSourcesAndInputs(c.query, args)
 	if err != nil {
-		return fmt.Errorf("super: %w", err)
+		return err
 	}
 	zctx := super.NewContext()
 	local := storage.NewLocalEngine()

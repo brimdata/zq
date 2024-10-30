@@ -3,7 +3,6 @@ package storage
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"io"
 	"io/fs"
 	"os"
@@ -31,26 +30,26 @@ func NewFileSystem() *FileSystem {
 
 func (f *FileSystem) Get(ctx context.Context, u *URI) (Reader, error) {
 	r, err := pkgfs.Open(u.Filepath())
-	return &fileSizer{r, u}, wrapfileError(u, err)
+	return &fileSizer{r, u}, fileErr(err)
 }
 
 func (f *FileSystem) Put(_ context.Context, u *URI) (io.WriteCloser, error) {
 	path := u.Filepath()
 	if err := f.checkPath(path); err != nil {
-		return nil, wrapfileError(u, err)
+		return nil, fileErr(err)
 	}
 	w, err := pkgfs.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, f.perm)
-	return w, wrapfileError(u, err)
+	return w, fileErr(err)
 }
 
 func (f *FileSystem) PutIfNotExists(_ context.Context, u *URI, b []byte) error {
 	path := u.Filepath()
 	if err := f.checkPath(path); err != nil {
-		return wrapfileError(u, err)
+		return fileErr(err)
 	}
 	file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC|os.O_EXCL, f.perm)
 	if err != nil {
-		return wrapfileError(u, err)
+		return fileErr(err)
 	}
 	_, err = io.Copy(file, bytes.NewReader(b))
 	if err != nil {
@@ -62,7 +61,7 @@ func (f *FileSystem) PutIfNotExists(_ context.Context, u *URI, b []byte) error {
 }
 
 func (f *FileSystem) Delete(_ context.Context, u *URI) error {
-	return wrapfileError(u, os.Remove(u.Filepath()))
+	return fileErr(os.Remove(u.Filepath()))
 }
 
 func (f *FileSystem) DeleteByPrefix(_ context.Context, u *URI) error {
@@ -72,7 +71,7 @@ func (f *FileSystem) DeleteByPrefix(_ context.Context, u *URI) error {
 func (f *FileSystem) Size(_ context.Context, u *URI) (int64, error) {
 	info, err := os.Stat(u.Filepath())
 	if err != nil {
-		return 0, wrapfileError(u, err)
+		return 0, fileErr(err)
 	}
 	return info.Size(), nil
 }
@@ -83,7 +82,7 @@ func (f *FileSystem) Exists(_ context.Context, u *URI) (bool, error) {
 		return false, nil
 	}
 	if err != nil {
-		return false, wrapfileError(u, err)
+		return false, fileErr(err)
 	}
 	return true, nil
 }
@@ -91,7 +90,7 @@ func (f *FileSystem) Exists(_ context.Context, u *URI) (bool, error) {
 func (f *FileSystem) List(ctx context.Context, u *URI) ([]Info, error) {
 	entries, err := os.ReadDir(u.Filepath())
 	if err != nil {
-		return nil, wrapfileError(u, err)
+		return nil, fileErr(err)
 	}
 	infos := make([]Info, len(entries))
 	for i, e := range entries {
@@ -127,9 +126,9 @@ func (f *FileSystem) checkPath(path string) error {
 	return nil
 }
 
-func wrapfileError(uri *URI, err error) error {
+func fileErr(err error) error {
 	if os.IsNotExist(err) {
-		return fmt.Errorf("%s: %w", uri, fs.ErrNotExist)
+		return fs.ErrNotExist
 	}
 	return err
 }
@@ -144,7 +143,7 @@ var _ Sizer = (*fileSizer)(nil)
 func (f *fileSizer) Size() (int64, error) {
 	info, err := os.Stat(f.uri.Filepath())
 	if err != nil {
-		return 0, wrapfileError(f.uri, err)
+		return 0, fileErr(err)
 	}
 	return info.Size(), nil
 }

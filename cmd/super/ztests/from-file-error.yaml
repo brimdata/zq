@@ -9,4 +9,4 @@ inputs:
 outputs:
   - name: stderr
     regexp: |
-      a.jsup: file:///.*/a.jsup: file does not exist.*
+      a.jsup: file does not exist.*

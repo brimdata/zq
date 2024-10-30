@@ -4,4 +4,4 @@ script: |
 outputs:
   - name: stderr
     regexp: |
-      a: file:///.*/a: file does not exist
+      a: file does not exist

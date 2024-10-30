@@ -1,9 +1,9 @@
 script: |
-  ! super -z -c doesnotexist
+  ! super -z doesnotexist
 
 outputs:
   - name: stdout
     data: ""
   - name: stderr
     data: |
-      super: no data source found
+      doesnotexist: file does not exist

@@ -8,6 +8,6 @@ inputs:
 outputs:
   - name: stderr
     data: |
-      super: parse error at line 1, column 12:
+      parse error at line 1, column 12:
       count() by ,x,y
              === ^ ===

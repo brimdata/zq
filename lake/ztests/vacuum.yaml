@@ -16,5 +16,5 @@ outputs:
       would vacuum 1 object
       vacuumed 1 object
   - name: stderr
-    regexp:
-      file:.*file does not exist
+    regexp: |
+      file:///.*file does not exist
