@@ -58,7 +58,7 @@ func (s *Scope) DefineConst(zctx *super.Context, name *ast.ID, def dag.Expr) err
 	}
 	if val.IsError() {
 		if val.IsMissing() {
-			return fmt.Errorf("const %q: cannot have variable dependency", name)
+			return fmt.Errorf("const %q: cannot have variable dependency", name.Name)
 		} else {
 			return fmt.Errorf("const %q: %q", name, string(val.Bytes()))
 		}
