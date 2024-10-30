@@ -154,7 +154,7 @@ func (a *analyzer) semSQLOp(op ast.Op, seq dag.Seq) dag.Seq {
 		}
 		return append(a.semSQLOp(op.Op, seq), head)
 	default:
-		panic(fmt.Sprintf("semSQLOp: unknown op: %T", op))
+		panic(fmt.Sprintf("semSQLOp: unknown op: %#v", op))
 	}
 }
 
