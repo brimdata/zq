@@ -9,30 +9,30 @@ import (
 	"github.com/brimdata/super/compiler/dag"
 	"github.com/brimdata/super/compiler/data"
 	"github.com/brimdata/super/compiler/parser"
+	"github.com/brimdata/super/compiler/srcfiles"
 	"github.com/brimdata/super/lakeparse"
 )
 
 // Analyze performs a semantic analysis of the AST, translating it from AST
 // to DAG form, resolving syntax ambiguities, and performing constant propagation.
 // After semantic analysis, the DAG is ready for either optimization or compilation.
-func Analyze(ctx context.Context, seq ast.Seq, source *data.Source, head *lakeparse.Commitish) (dag.Seq, error) {
-	a := newAnalyzer(ctx, source, head)
-	s := a.semSeq(seq)
+func Analyze(ctx context.Context, ast *parser.AST, source *data.Source, head *lakeparse.Commitish) (dag.Seq, error) {
+	files := ast.Files()
+	a := newAnalyzer(ctx, files, source, head)
+	s := a.semSeq(ast.Copy())
 	s = a.checkOutputs(true, s)
-	if a.errors != nil {
-		return nil, a.errors
-	}
-	return s, nil
+	return s, files.Error() //XXX
 }
 
 // AnalyzeAddSource is the same as Analyze but it adds a default source if the
 // DAG does not have one.
-func AnalyzeAddSource(ctx context.Context, seq ast.Seq, source *data.Source, head *lakeparse.Commitish) (dag.Seq, error) {
-	a := newAnalyzer(ctx, source, head)
-	s := a.semSeq(seq)
+func AnalyzeAddSource(ctx context.Context, ast *parser.AST, source *data.Source, head *lakeparse.Commitish) (dag.Seq, error) {
+	files := ast.Files()
+	a := newAnalyzer(ctx, files, source, head)
+	s := a.semSeq(ast.Copy())
 	s = a.checkOutputs(true, s)
-	if a.errors != nil {
-		return nil, a.errors
+	if err := files.Error(); err != nil {
+		return nil, err
 	}
 	if !HasSource(s) {
 		if err := AddDefaultSource(ctx, &s, source, head); err != nil {
@@ -44,7 +44,7 @@ func AnalyzeAddSource(ctx context.Context, seq ast.Seq, source *data.Source, hea
 
 type analyzer struct {
 	ctx     context.Context
-	errors  parser.ErrorList
+	files   *srcfiles.List
 	head    *lakeparse.Commitish
 	opStack []*ast.OpDecl
 	outputs map[*dag.Output]ast.Node
@@ -53,9 +53,10 @@ type analyzer struct {
 	zctx    *super.Context
 }
 
-func newAnalyzer(ctx context.Context, source *data.Source, head *lakeparse.Commitish) *analyzer {
+func newAnalyzer(ctx context.Context, files *srcfiles.List, source *data.Source, head *lakeparse.Commitish) *analyzer {
 	return &analyzer{
 		ctx:     ctx,
+		files:   files,
 		head:    head,
 		outputs: make(map[*dag.Output]ast.Node),
 		source:  source,
@@ -99,7 +100,7 @@ func AddDefaultSource(ctx context.Context, seq *dag.Seq, source *data.Source, he
 			},
 		}},
 	}
-	ops := newAnalyzer(ctx, source, head).semFrom(fromHead, nil)
+	ops := newAnalyzer(ctx, &srcfiles.List{}, source, head).semFrom(fromHead, nil)
 	seq.Prepend(ops[0])
 	return nil
 }
@@ -150,7 +151,7 @@ func badOp() dag.Op {
 }
 
 func (a *analyzer) error(n ast.Node, err error) {
-	a.errors.Append(err.Error(), n.Pos(), n.End())
+	a.files.AddError(err.Error(), n.Pos(), n.End())
 }
 
 func (a *analyzer) checkOutputs(isLeaf bool, seq dag.Seq) dag.Seq {

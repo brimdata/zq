@@ -7,6 +7,7 @@ import (
 
 	"github.com/brimdata/super"
 	"github.com/brimdata/super/compiler"
+	"github.com/brimdata/super/compiler/parser"
 	"github.com/brimdata/super/runtime"
 	"github.com/brimdata/super/runtime/sam/expr"
 	"github.com/brimdata/super/zcode"
@@ -51,9 +52,9 @@ func runCasesHelper(t *testing.T, record string, cases []testcase, expectBufferF
 	for _, c := range cases {
 		t.Run(c.filter, func(t *testing.T) {
 			t.Helper()
-			p, _, err := compiler.Parse(c.filter)
+			ast, err := parser.ParseQuery(c.filter)
 			require.NoError(t, err, "filter: %q", c.filter)
-			job, err := compiler.NewJob(runtime.DefaultContext(), p, nil, nil)
+			job, err := compiler.NewJob(runtime.DefaultContext(), ast, nil, nil)
 			require.NoError(t, err, "filter: %q", c.filter)
 			err = job.Optimize()
 			require.NoError(t, err, "filter: %q", c.filter)
@@ -401,6 +402,6 @@ func TestFilters(t *testing.T) {
 
 func TestBadFilter(t *testing.T) {
 	t.Parallel()
-	_, _, err := compiler.Parse(`s matches \xa8*`)
+	_, err := parser.ParseQuery(`s matches \xa8*`)
 	require.Error(t, err)
 }

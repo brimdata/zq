@@ -7,7 +7,6 @@ import (
 	"github.com/brimdata/super/cli/outputflags"
 	"github.com/brimdata/super/cli/poolflags"
 	"github.com/brimdata/super/cmd/super/db"
-	"github.com/brimdata/super/compiler/parser"
 	"github.com/brimdata/super/pkg/charm"
 	"github.com/brimdata/super/pkg/storage"
 	"github.com/brimdata/super/zbuf"
@@ -75,9 +74,6 @@ func (c *Command) Run(args []string) error {
 	defer w.Close()
 	q, err := lake.Query(ctx, nil, query)
 	if err != nil {
-		if list := (parser.ErrorList)(nil); errors.As(err, &list) && len(list) == 1 {
-			return errors.New(list[0].Msg)
-		}
 		return err
 	}
 	defer q.Pull(true)

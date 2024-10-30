@@ -137,14 +137,14 @@ func (c *Command) Run(args []string) error {
 		return charm.NeedHelp
 	}
 	if c.canon {
-		flowgraph, _, err := parser.ParseSuperSQL(c.queryFlags.Includes, c.query)
+		ast, err := parser.ParseQuery(c.query, c.queryFlags.Includes...)
 		if err != nil {
 			return err
 		}
-		fmt.Println(zfmt.AST(flowgraph))
+		fmt.Println(zfmt.AST(ast.Parsed()))
 		return nil
 	}
-	paths, flowgraph, sset, null, err := c.queryFlags.ParseSourcesAndInputs(c.query, args)
+	paths, ast, null, err := c.queryFlags.ParseSourcesAndInputs(c.query, args)
 	if err != nil {
 		return fmt.Errorf("super: %w", err)
 	}
@@ -165,7 +165,7 @@ func (c *Command) Run(args []string) error {
 		return err
 	}
 	comp := compiler.NewFileSystemCompiler(local)
-	query, err := runtime.CompileQuery(ctx, zctx, comp, flowgraph, sset, readers)
+	query, err := runtime.CompileQuery(ctx, zctx, comp, ast, readers)
 	if err != nil {
 		return err
 	}

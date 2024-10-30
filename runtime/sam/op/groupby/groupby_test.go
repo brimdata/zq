@@ -11,7 +11,7 @@ import (
 
 	"github.com/brimdata/super"
 	"github.com/brimdata/super/compiler"
-	"github.com/brimdata/super/compiler/ast"
+	"github.com/brimdata/super/compiler/parser"
 	"github.com/brimdata/super/order"
 	"github.com/brimdata/super/pkg/field"
 	"github.com/brimdata/super/pkg/nano"
@@ -103,7 +103,7 @@ func TestGroupbyStreamingSpill(t *testing.T) {
 	}
 
 	runOne := func(inputSortKey string) []string {
-		proc, _, err := compiler.Parse("count() by every(1s), ip")
+		ast, err := parser.ParseQuery("count() by every(1s), ip")
 		assert.NoError(t, err)
 
 		zctx := super.NewContext()
@@ -122,7 +122,7 @@ func TestGroupbyStreamingSpill(t *testing.T) {
 			},
 		}
 		sortKey := order.NewSortKey(order.Asc, field.Path{inputSortKey})
-		query, err := newQueryOnOrderedReader(context.Background(), zctx, proc, cr, sortKey)
+		query, err := newQueryOnOrderedReader(context.Background(), zctx, ast, cr, sortKey)
 		require.NoError(t, err)
 		defer query.Pull(true)
 		err = zbuf.CopyPuller(checker, query)
@@ -137,9 +137,9 @@ func TestGroupbyStreamingSpill(t *testing.T) {
 	require.Equal(t, res, resStreaming)
 }
 
-func newQueryOnOrderedReader(ctx context.Context, zctx *super.Context, program ast.Seq, reader zio.Reader, sortKey order.SortKey) (runtime.Query, error) {
+func newQueryOnOrderedReader(ctx context.Context, zctx *super.Context, ast *parser.AST, reader zio.Reader, sortKey order.SortKey) (runtime.Query, error) {
 	rctx := runtime.NewContext(ctx, zctx)
-	q, err := compiler.CompileWithSortKey(rctx, program, reader, sortKey)
+	q, err := compiler.CompileWithSortKey(rctx, ast, reader, sortKey)
 	if err != nil {
 		rctx.Cancel()
 		return nil, err

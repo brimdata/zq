@@ -54,15 +54,12 @@ type Channel struct {
 }
 
 func Analyze(ctx context.Context, query string, src *data.Source, head *lakeparse.Commitish) (*Info, error) {
-	seq, sset, err := parser.ParseSuperSQL(nil, query)
+	ast, err := parser.ParseQuery(query)
 	if err != nil {
 		return nil, err
 	}
-	entry, err := semantic.Analyze(ctx, seq, src, head)
+	entry, err := semantic.Analyze(ctx, ast, src, head)
 	if err != nil {
-		if list, ok := err.(parser.ErrorList); ok {
-			list.SetSourceSet(sset)
-		}
 		return nil, err
 	}
 	return AnalyzeDAG(ctx, entry, src, head)

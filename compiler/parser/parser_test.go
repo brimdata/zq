@@ -10,7 +10,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/brimdata/super/compiler"
 	"github.com/brimdata/super/compiler/parser"
 	"github.com/brimdata/super/pkg/fs"
 	"github.com/brimdata/super/ztest"
@@ -40,11 +39,11 @@ func searchForZed() ([]string, error) {
 }
 
 func parseOp(z string) ([]byte, error) {
-	o, _, err := compiler.Parse(z)
+	ast, err := parser.ParseQuery(z)
 	if err != nil {
 		return nil, err
 	}
-	return json.Marshal(o)
+	return json.Marshal(ast.Parsed())
 }
 
 func parsePigeon(z string) ([]byte, error) {

@@ -1,139 +1,66 @@
 package parser
 
 import (
-	"fmt"
-	"os"
-	"strings"
+	"errors"
 
 	"github.com/brimdata/super/compiler/ast"
+	"github.com/brimdata/super/compiler/srcfiles"
 )
 
-// ParseSuperSQL calls ConcatSource followed by Parse.  If Parse returns an error,
-// ConcatSource tries to convert it to an ErrorList.
-func ParseSuperSQL(filenames []string, src string) (ast.Seq, *SourceSet, error) {
-	sset, err := ConcatSource(filenames, src)
-	if err != nil {
-		return nil, nil, err
-	}
-	p, err := Parse("", []byte(sset.Text), Recover(false))
-	if err != nil {
-		return nil, nil, convertErrList(err, sset)
-	}
-	return sliceOf[ast.Op](p), sset, nil
+type AST struct {
+	seq   ast.Seq
+	files *srcfiles.List
 }
 
-// ConcatSource concatenates the source files in filenames followed by src,
-// returning a SourceSet.
-func ConcatSource(filenames []string, src string) (*SourceSet, error) {
-	var b strings.Builder
-	var sis []*SourceInfo
-	for _, f := range filenames {
-		bb, err := os.ReadFile(f)
-		if err != nil {
+func (a *AST) Parsed() ast.Seq {
+	return a.seq
+}
+
+func (a *AST) Copy() ast.Seq {
+	return ast.CopySeq(a.seq)
+}
+
+func (a *AST) Files() *srcfiles.List {
+	return a.files
+}
+
+func (a *AST) ConvertToDeleteWhere() error {
+	if len(a.seq) == 0 {
+		return errors.New("internal error: AST seq cannot be empty")
+	}
+	a.seq.Prepend(&ast.Delete{Kind: "Delete"})
+	return nil
+}
+
+// ParseQuery parses a query text and an optional set of include files and
+// tracks include file names and line numbers for error reporting.
+func ParseQuery(query string, filenames ...string) (*AST, error) {
+	files, err := srcfiles.Concat(filenames, query)
+	if err != nil {
+		return nil, err
+	}
+	p, err := Parse("", []byte(files.Text), Recover(false))
+	if err != nil {
+		if err := convertParseErrs(err, files); err != nil {
 			return nil, err
 		}
-		sis = append(sis, newSourceInfo(f, b.Len(), bb))
-		b.Write(bb)
-		b.WriteByte('\n')
+		return nil, files.Error()
 	}
-	if b.Len() == 0 && src == "" {
-		src = "*"
-	}
-	sis = append(sis, newSourceInfo("", b.Len(), []byte(src)))
-	b.WriteString(src)
-	return &SourceSet{b.String(), sis}, nil
+	return &AST{sliceOf[ast.Op](p), files}, nil
 }
 
-func convertErrList(err error, sset *SourceSet) error {
+func convertParseErrs(err error, files *srcfiles.List) error {
 	errs, ok := err.(errList)
 	if !ok {
 		return err
 	}
-	var out ErrorList
 	for _, e := range errs {
 		pe, ok := e.(*parserError)
 		if !ok {
 			return err
 		}
-		out.Append("error parsing SuperPipe", pe.pos.offset, -1)
+		files.AddError("error parsing SuperPipe", pe.pos.offset, -1)
+		//files.AddError("parse error", pe.pos.offset, -1)
 	}
-	out.SetSourceSet(sset)
-	return out
-}
-
-// ErrList is a list of Errors.
-type ErrorList []*Error
-
-// Append appends an Error to e.
-func (e *ErrorList) Append(msg string, pos, end int) {
-	*e = append(*e, &Error{msg, pos, end, nil})
-}
-
-// Error concatenates the errors in e with a newline between each.
-func (e ErrorList) Error() string {
-	var b strings.Builder
-	for i, err := range e {
-		if i > 0 {
-			b.WriteByte('\n')
-		}
-		b.WriteString(err.Error())
-	}
-	return b.String()
-}
-
-// SetSourceSet sets the SourceSet for every Error in e.
-func (e ErrorList) SetSourceSet(sset *SourceSet) {
-	for i := range e {
-		e[i].sset = sset
-	}
-}
-
-type Error struct {
-	Msg  string
-	Pos  int
-	End  int
-	sset *SourceSet
-}
-
-func (e *Error) Error() string {
-	if e.sset == nil {
-		return e.Msg
-	}
-	src := e.sset.SourceOf(e.Pos)
-	start := src.Position(e.Pos)
-	end := src.Position(e.End)
-	var b strings.Builder
-	b.WriteString(e.Msg)
-	if src.Filename != "" {
-		fmt.Fprintf(&b, " in %s", src.Filename)
-	}
-	line := src.LineOfPos(e.sset.Text, e.Pos)
-	fmt.Fprintf(&b, " at line %d, column %d:\n%s\n", start.Line, start.Column, line)
-	if end.IsValid() {
-		formatSpanError(&b, line, start, end)
-	} else {
-		formatPointError(&b, start)
-	}
-	return b.String()
-}
-
-func formatSpanError(b *strings.Builder, line string, start, end Position) {
-	b.WriteString(strings.Repeat(" ", start.Column-1))
-	n := end.Column - start.Column + 1
-	if start.Line != end.Line {
-		n = len(line) - start.Column + 1
-	}
-	b.WriteString(strings.Repeat("~", n))
-}
-
-func formatPointError(b *strings.Builder, start Position) {
-	col := start.Column - 1
-	for k := 0; k < col; k++ {
-		if k >= col-4 && k != col-1 {
-			b.WriteByte('=')
-		} else {
-			b.WriteByte(' ')
-		}
-	}
-	b.WriteString("^ ===")
+	return nil
 }

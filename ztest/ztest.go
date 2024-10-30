@@ -138,6 +138,7 @@ import (
 	"github.com/brimdata/super/cli/outputflags"
 	"github.com/brimdata/super/compiler"
 	"github.com/brimdata/super/compiler/optimizer/demand"
+	"github.com/brimdata/super/compiler/parser"
 	"github.com/brimdata/super/runtime"
 	"github.com/brimdata/super/runtime/vcache"
 	"github.com/brimdata/super/vng"
@@ -489,7 +490,7 @@ func runzq(path, zedProgram, input string, outputFlags []string, inputFlags []st
 		}
 		return outbuf.String(), err
 	}
-	proc, sset, err := compiler.Parse(zedProgram)
+	ast, err := parser.ParseQuery(zedProgram)
 	if err != nil {
 		return "", err
 	}
@@ -522,7 +523,7 @@ func runzq(path, zedProgram, input string, outputFlags []string, inputFlags []st
 	if err != nil {
 		return "", err
 	}
-	q, err := runtime.CompileQuery(context.Background(), zctx, compiler.NewCompiler(), proc, sset, []zio.Reader{zrc})
+	q, err := runtime.CompileQuery(context.Background(), zctx, compiler.NewCompiler(), ast, []zio.Reader{zrc})
 	if err != nil {
 		zw.Close()
 		return "", err

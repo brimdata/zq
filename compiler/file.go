@@ -3,8 +3,8 @@ package compiler
 import (
 	"errors"
 
-	"github.com/brimdata/super/compiler/ast"
 	"github.com/brimdata/super/compiler/data"
+	"github.com/brimdata/super/compiler/parser"
 	"github.com/brimdata/super/lakeparse"
 	"github.com/brimdata/super/pkg/storage"
 	"github.com/brimdata/super/runtime"
@@ -20,8 +20,8 @@ func NewFileSystemCompiler(engine storage.Engine) runtime.Compiler {
 	return &fsCompiler{src: data.NewSource(engine, nil)}
 }
 
-func (f *fsCompiler) NewQuery(rctx *runtime.Context, seq ast.Seq, readers []zio.Reader) (runtime.Query, error) {
-	job, err := NewJob(rctx, seq, f.src, nil)
+func (f *fsCompiler) NewQuery(rctx *runtime.Context, ast *parser.AST, readers []zio.Reader) (runtime.Query, error) {
+	job, err := NewJob(rctx, ast, f.src, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -44,11 +44,11 @@ func (f *fsCompiler) NewQuery(rctx *runtime.Context, seq ast.Seq, readers []zio.
 	return optimizeAndBuild(job, readers)
 }
 
-func (*fsCompiler) NewLakeQuery(_ *runtime.Context, program ast.Seq, parallelism int, head *lakeparse.Commitish) (runtime.Query, error) {
+func (*fsCompiler) NewLakeQuery(_ *runtime.Context, ast *parser.AST, parallelism int, head *lakeparse.Commitish) (runtime.Query, error) {
 	panic("NewLakeQuery called on compiler.fsCompiler")
 }
 
-func (*fsCompiler) NewLakeDeleteQuery(_ *runtime.Context, program ast.Seq, head *lakeparse.Commitish) (runtime.DeleteQuery, error) {
+func (*fsCompiler) NewLakeDeleteQuery(_ *runtime.Context, ast *parser.AST, head *lakeparse.Commitish) (runtime.DeleteQuery, error) {
 	panic("NewLakeDeleteQuery called on compiler.fsCompiler")
 }
 

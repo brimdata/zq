@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/brimdata/super"
-	"github.com/brimdata/super/compiler/ast"
+	"github.com/brimdata/super/compiler/parser"
 	"github.com/brimdata/super/lake/branches"
 	"github.com/brimdata/super/lake/commits"
 	"github.com/brimdata/super/lake/data"
@@ -128,7 +128,7 @@ func (b *Branch) Delete(ctx context.Context, ids []ksuid.KSUID, author, message 
 	})
 }
 
-func (b *Branch) DeleteWhere(ctx context.Context, c runtime.Compiler, program ast.Seq, author, message, meta string) (ksuid.KSUID, error) {
+func (b *Branch) DeleteWhere(ctx context.Context, c runtime.Compiler, ast *parser.AST, author, message, meta string) (ksuid.KSUID, error) {
 	zctx := super.NewContext()
 	appMeta, err := loadMeta(zctx, meta)
 	if err != nil {
@@ -145,7 +145,7 @@ func (b *Branch) DeleteWhere(ctx context.Context, c runtime.Compiler, program as
 			Pool:   b.pool.Name,
 			Branch: parent.Commit.String(),
 		}
-		query, err := c.NewLakeDeleteQuery(rctx, program, commitish)
+		query, err := c.NewLakeDeleteQuery(rctx, ast, commitish)
 		if err != nil {
 			return nil, err
 		}

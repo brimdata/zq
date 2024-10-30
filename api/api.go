@@ -3,7 +3,7 @@ package api
 import (
 	"context"
 
-	"github.com/brimdata/super/compiler/parser"
+	"github.com/brimdata/super/compiler/srcfiles"
 	"github.com/brimdata/super/lakeparse"
 	"github.com/brimdata/super/order"
 	"github.com/brimdata/super/pkg/field"
@@ -22,10 +22,10 @@ func RequestIDFromContext(ctx context.Context) string {
 }
 
 type Error struct {
-	Type              string           `json:"type"`
-	Kind              string           `json:"kind"`
-	Message           string           `json:"error"`
-	CompilationErrors parser.ErrorList `json:"compilation_errors,omitempty"`
+	Type              string             `json:"type"`
+	Kind              string             `json:"kind"`
+	Message           string             `json:"error"`
+	CompilationErrors srcfiles.ErrorList `json:"compilation_errors,omitempty"`
 }
 
 func (e Error) Error() string {

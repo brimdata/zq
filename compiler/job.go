@@ -3,7 +3,6 @@ package compiler
 import (
 	"errors"
 
-	"github.com/brimdata/super/compiler/ast"
 	"github.com/brimdata/super/compiler/dag"
 	"github.com/brimdata/super/compiler/data"
 	"github.com/brimdata/super/compiler/kernel"
@@ -29,8 +28,7 @@ type Job struct {
 	entry     dag.Seq
 }
 
-func NewJob(rctx *runtime.Context, in ast.Seq, src *data.Source, head *lakeparse.Commitish) (*Job, error) {
-	seq := ast.CopySeq(in)
+func NewJob(rctx *runtime.Context, ast *parser.AST, src *data.Source, head *lakeparse.Commitish) (*Job, error) {
 	// An AST always begins with a Sequential op with at least one
 	// operator.  If the first op is a From or a Parallel whose branches
 	// are Sequentials with a leading From, then we presume there is
@@ -41,10 +39,10 @@ func NewJob(rctx *runtime.Context, in ast.Seq, src *data.Source, head *lakeparse
 	// caller via runtime.readers.  In most cases, the AST is left
 	// with an ast.From at the entry point, and hence a dag.From for the
 	// DAG's entry point.
-	if len(seq) == 0 {
+	if len(ast.Parsed()) == 0 {
 		return nil, errors.New("internal error: AST seq cannot be empty")
 	}
-	entry, err := semantic.AnalyzeAddSource(rctx.Context, seq, src, head)
+	entry, err := semantic.AnalyzeAddSource(rctx.Context, ast, src, head)
 	if err != nil {
 		return nil, err
 	}
@@ -89,21 +87,6 @@ func (j *Job) Parallelize(n int) error {
 	return err
 }
 
-// Parse concatenates the source files in filenames followed by src and parses
-// the resulting program.
-func Parse(src string, filenames ...string) (ast.Seq, *parser.SourceSet, error) {
-	return parser.ParseSuperSQL(filenames, src)
-}
-
-// MustParse is like Parse but panics if an error is encountered.
-func MustParse(query string) ast.Seq {
-	seq, _, err := Parse(query)
-	if err != nil {
-		panic(err)
-	}
-	return seq
-}
-
 func (j *Job) Builder() *kernel.Builder {
 	return j.builder
 }
@@ -143,16 +126,13 @@ type anyCompiler struct{}
 // nor does it compute the demand of the query to prune the projection
 // from the vcache.
 func VectorCompile(rctx *runtime.Context, query string, object *vcache.Object) (zbuf.Puller, error) {
-	seq, sset, err := Parse(query)
+	ast, err := parser.ParseQuery(query)
 	if err != nil {
 		return nil, err
 	}
 	src := &data.Source{}
-	entry, err := semantic.Analyze(rctx.Context, seq, src, nil)
+	entry, err := semantic.Analyze(rctx.Context, ast, src, nil)
 	if err != nil {
-		if list := (parser.ErrorList)(nil); errors.As(err, &list) {
-			list.SetSourceSet(sset)
-		}
 		return nil, err
 	}
 	puller := vam.NewVectorProjection(rctx.Zctx, object, nil) //XXX project all
@@ -183,15 +163,12 @@ func VectorFilterCompile(rctx *runtime.Context, query string, src *data.Source, 
 	if err != nil {
 		return nil, err
 	}
-	seq, sset, err := Parse(query)
+	ast, err := parser.ParseQuery(query)
 	if err != nil {
 		return nil, err
 	}
-	entry, err := semantic.Analyze(rctx.Context, seq, src, nil)
+	entry, err := semantic.Analyze(rctx.Context, ast, src, nil)
 	if err != nil {
-		if list := (parser.ErrorList)(nil); errors.As(err, &list) {
-			list.SetSourceSet(sset)
-		}
 		return nil, err
 	}
 	if len(entry) != 2 {

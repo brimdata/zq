@@ -14,6 +14,7 @@ import (
 	"github.com/brimdata/super"
 	"github.com/brimdata/super/compiler"
 	"github.com/brimdata/super/compiler/optimizer/demand"
+	"github.com/brimdata/super/compiler/parser"
 	"github.com/brimdata/super/runtime"
 	"github.com/brimdata/super/zio"
 	"github.com/brimdata/super/zio/anyio"
@@ -139,10 +140,10 @@ func runOneBoomerang(t *testing.T, format, data string) {
 	dataReader := zio.Reader(dataReadCloser)
 	if format == "parquet" {
 		// Fuse for formats that require uniform values.
-		proc, _, err := compiler.Parse("fuse")
+		ast, err := parser.ParseQuery("fuse")
 		require.NoError(t, err)
 		rctx := runtime.NewContext(context.Background(), zctx)
-		q, err := compiler.NewCompiler().NewQuery(rctx, proc, []zio.Reader{dataReadCloser})
+		q, err := compiler.NewCompiler().NewQuery(rctx, ast, []zio.Reader{dataReadCloser})
 		require.NoError(t, err)
 		defer q.Pull(true)
 		dataReader = runtime.AsReader(q)

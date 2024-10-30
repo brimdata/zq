@@ -4,11 +4,11 @@ import (
 	"errors"
 	goruntime "runtime"
 
-	"github.com/brimdata/super/compiler/ast"
 	"github.com/brimdata/super/compiler/dag"
 	"github.com/brimdata/super/compiler/data"
 	"github.com/brimdata/super/compiler/kernel"
 	"github.com/brimdata/super/compiler/optimizer"
+	"github.com/brimdata/super/compiler/parser"
 	"github.com/brimdata/super/compiler/semantic"
 	"github.com/brimdata/super/lake"
 	"github.com/brimdata/super/lakeparse"
@@ -31,8 +31,8 @@ func NewLakeCompiler(r *lake.Root) runtime.Compiler {
 	return &lakeCompiler{src: data.NewSource(storage.NewRemoteEngine(), r)}
 }
 
-func (l *lakeCompiler) NewLakeQuery(rctx *runtime.Context, program ast.Seq, parallelism int, head *lakeparse.Commitish) (runtime.Query, error) {
-	job, err := NewJob(rctx, program, l.src, head)
+func (l *lakeCompiler) NewLakeQuery(rctx *runtime.Context, ast *parser.AST, parallelism int, head *lakeparse.Commitish) (runtime.Query, error) {
+	job, err := NewJob(rctx, ast, l.src, head)
 	if err != nil {
 		return nil, err
 	}
@@ -56,8 +56,8 @@ func (l *lakeCompiler) NewLakeQuery(rctx *runtime.Context, program ast.Seq, para
 	return exec.NewQuery(job.rctx, job.Puller(), job.builder.Meter()), nil
 }
 
-func (l *lakeCompiler) NewLakeDeleteQuery(rctx *runtime.Context, program ast.Seq, head *lakeparse.Commitish) (runtime.DeleteQuery, error) {
-	job, err := newDeleteJob(rctx, program, l.src, head)
+func (l *lakeCompiler) NewLakeDeleteQuery(rctx *runtime.Context, ast *parser.AST, head *lakeparse.Commitish) (runtime.DeleteQuery, error) {
+	job, err := newDeleteJob(rctx, ast, l.src, head)
 	if err != nil {
 		return nil, err
 	}
@@ -76,16 +76,15 @@ func (InvalidDeleteWhereQuery) Error() string {
 	return "invalid delete where query: must be a single filter operation"
 }
 
-func newDeleteJob(rctx *runtime.Context, in ast.Seq, src *data.Source, head *lakeparse.Commitish) (*Job, error) {
-	seq := ast.CopySeq(in)
-	if len(seq) == 0 {
-		return nil, errors.New("internal error: AST seq cannot be empty")
+func newDeleteJob(rctx *runtime.Context, parsed *parser.AST, src *data.Source, head *lakeparse.Commitish) (*Job, error) {
+	if err := parsed.ConvertToDeleteWhere(); err != nil {
+		return nil, err
 	}
-	if len(seq) != 1 {
+	seq := parsed.Parsed()
+	if len(seq) != 2 {
 		return nil, &InvalidDeleteWhereQuery{}
 	}
-	seq.Prepend(&ast.Delete{Kind: "Delete"})
-	entry, err := semantic.Analyze(rctx.Context, seq, src, head)
+	entry, err := semantic.Analyze(rctx.Context, parsed, src, head)
 	if err != nil {
 		return nil, err
 	}

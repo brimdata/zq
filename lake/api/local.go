@@ -106,11 +106,11 @@ func (l *local) Compact(ctx context.Context, poolID ksuid.KSUID, branchName stri
 }
 
 func (l *local) Query(ctx context.Context, head *lakeparse.Commitish, src string, srcfiles ...string) (zbuf.Scanner, error) {
-	flowgraph, sset, err := parser.ParseSuperSQL(srcfiles, src)
+	ast, err := parser.ParseQuery(src, srcfiles...)
 	if err != nil {
 		return nil, err
 	}
-	q, err := runtime.CompileLakeQuery(ctx, super.NewContext(), l.compiler, flowgraph, sset, head)
+	q, err := runtime.CompileLakeQuery(ctx, super.NewContext(), l.compiler, ast, head)
 	if err != nil {
 		return nil, err
 	}
@@ -166,7 +166,7 @@ func (l *local) Delete(ctx context.Context, poolID ksuid.KSUID, branchName strin
 }
 
 func (l *local) DeleteWhere(ctx context.Context, poolID ksuid.KSUID, branchName, src string, commit api.CommitMessage) (ksuid.KSUID, error) {
-	op, sset, err := compiler.Parse(src)
+	ast, err := parser.ParseQuery(src)
 	if err != nil {
 		return ksuid.Nil, err
 	}
@@ -174,11 +174,7 @@ func (l *local) DeleteWhere(ctx context.Context, poolID ksuid.KSUID, branchName,
 	if err != nil {
 		return ksuid.Nil, err
 	}
-	commitID, err := branch.DeleteWhere(ctx, l.compiler, op, commit.Author, commit.Body, commit.Meta)
-	if list, ok := err.(parser.ErrorList); ok {
-		list.SetSourceSet(sset)
-	}
-	return commitID, err
+	return branch.DeleteWhere(ctx, l.compiler, ast, commit.Author, commit.Body, commit.Meta)
 }
 
 func (l *local) Revert(ctx context.Context, poolID ksuid.KSUID, branchName string, commitID ksuid.KSUID, message api.CommitMessage) (ksuid.KSUID, error) {

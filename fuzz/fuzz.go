@@ -16,6 +16,7 @@ import (
 	"github.com/brimdata/super/compiler/data"
 	"github.com/brimdata/super/compiler/optimizer"
 	"github.com/brimdata/super/compiler/optimizer/demand"
+	"github.com/brimdata/super/compiler/parser"
 	"github.com/brimdata/super/compiler/semantic"
 	"github.com/brimdata/super/pkg/nano"
 	"github.com/brimdata/super/pkg/storage/mock"
@@ -95,11 +96,11 @@ func RunQuery(t testing.TB, zctx *super.Context, readers []zio.Reader, querySour
 	// Compile query
 	engine := mock.NewMockEngine(gomock.NewController(t))
 	comp := compiler.NewFileSystemCompiler(engine)
-	ast, sset, err := compiler.Parse(querySource)
+	ast, err := parser.ParseQuery(querySource)
 	if err != nil {
 		t.Skipf("%v", err)
 	}
-	query, err := runtime.CompileQuery(ctx, zctx, comp, ast, sset, readers)
+	query, err := runtime.CompileQuery(ctx, zctx, comp, ast, readers)
 	if err != nil {
 		t.Skipf("%v", err)
 	}

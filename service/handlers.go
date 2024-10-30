@@ -57,12 +57,12 @@ func handleQuery(c *Core, w *ResponseWriter, r *Request) {
 	// The client must look at the return code and interpret the result
 	// accordingly and when it sees a ZNG error after underway,
 	// the error should be relay that to the caller/user.
-	query, sset, err := parser.ParseSuperSQL(nil, req.Query)
+	ast, err := parser.ParseQuery(req.Query)
 	if err != nil {
 		w.Error(srverr.ErrInvalid(err))
 		return
 	}
-	flowgraph, err := runtime.CompileLakeQuery(r.Context(), super.NewContext(), c.compiler, query, sset, &req.Head)
+	flowgraph, err := runtime.CompileLakeQuery(r.Context(), super.NewContext(), c.compiler, ast, &req.Head)
 	if err != nil {
 		w.Error(srverr.ErrInvalid(err))
 		return
@@ -168,12 +168,12 @@ func handleCompile(c *Core, w *ResponseWriter, r *Request) {
 	if !r.Unmarshal(w, &req) {
 		return
 	}
-	ast, _, err := compiler.Parse(req.Query)
+	ast, err := parser.ParseQuery(req.Query)
 	if err != nil {
 		w.Error(srverr.ErrInvalid(err))
 		return
 	}
-	w.Respond(http.StatusOK, ast)
+	w.Respond(http.StatusOK, ast.Parsed())
 }
 
 func handleQueryDescribe(c *Core, w *ResponseWriter, r *Request) {
@@ -577,15 +577,12 @@ func handleDelete(c *Core, w *ResponseWriter, r *Request) {
 			w.Error(srverr.ErrInvalid("either object_ids or where must be set"))
 			return
 		}
-		program, sset, err2 := compiler.Parse(payload.Where)
+		ast, err2 := parser.ParseQuery(payload.Where)
 		if err != nil {
 			w.Error(srverr.ErrInvalid(err2))
 			return
 		}
-		commit, err = branch.DeleteWhere(r.Context(), c.compiler, program, message.Author, message.Body, message.Meta)
-		if list, ok := err.(parser.ErrorList); ok {
-			list.SetSourceSet(sset)
-		}
+		commit, err = branch.DeleteWhere(r.Context(), c.compiler, ast, message.Author, message.Body, message.Meta)
 		if errors.Is(err, commits.ErrEmptyTransaction) ||
 			errors.Is(err, &compiler.InvalidDeleteWhereQuery{}) {
 			err = srverr.ErrInvalid(err)

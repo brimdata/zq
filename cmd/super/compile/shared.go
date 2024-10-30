@@ -62,7 +62,7 @@ func (s *Shared) Run(ctx context.Context, args []string, lakeFlags *lakeflags.Fl
 	if len(args) == 1 {
 		query = args[0]
 	}
-	seq, sset, err := compiler.Parse(query, s.includes...)
+	ast, err := parser.ParseQuery(query, s.includes...)
 	if err != nil {
 		return err
 	}
@@ -71,16 +71,13 @@ func (s *Shared) Run(ctx context.Context, args []string, lakeFlags *lakeflags.Fl
 	}
 	if !s.dag {
 		if s.query {
-			fmt.Println(zfmt.AST(seq))
+			fmt.Println(zfmt.AST(ast.Parsed()))
 			return nil
 		}
-		return s.writeValue(ctx, seq)
+		return s.writeValue(ctx, ast.Parsed())
 	}
-	runtime, err := compiler.NewJob(runtime.DefaultContext(), seq, data.NewSource(nil, lk), nil)
+	runtime, err := compiler.NewJob(runtime.DefaultContext(), ast, data.NewSource(nil, lk), nil)
 	if err != nil {
-		if list, ok := err.(parser.ErrorList); ok {
-			list.SetSourceSet(sset)
-		}
 		return err
 	}
 	if desc {

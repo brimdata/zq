@@ -14,7 +14,7 @@ import (
 	"github.com/brimdata/super"
 	"github.com/brimdata/super/api"
 	"github.com/brimdata/super/compiler/optimizer/demand"
-	"github.com/brimdata/super/compiler/parser"
+	"github.com/brimdata/super/compiler/srcfiles"
 	"github.com/brimdata/super/lake"
 	"github.com/brimdata/super/lake/branches"
 	"github.com/brimdata/super/lake/commits"
@@ -303,7 +303,7 @@ func errorResponse(e error) (status int, ae *api.Error) {
 	status = http.StatusInternalServerError
 	ae = &api.Error{Type: "Error"}
 
-	if list := (parser.ErrorList)(nil); errors.As(e, &list) {
+	if list := (srcfiles.ErrorList)(nil); errors.As(e, &list) {
 		ae.CompilationErrors = list
 	}
 
