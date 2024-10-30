@@ -88,7 +88,7 @@ func (s *Strftime) slowPath(fvec vector.Any, tvec vector.Any) vector.Any {
 		out.Append(f.FormatString(nano.Ts(t).Time()))
 	}
 	if len(errIndex) > 0 {
-		errVec := vector.NewVecWrappedError(s.zctx, errMsgs, vector.NewView(errIndex, fvec))
+		errVec := vector.NewVecWrappedError(s.zctx, errMsgs, vector.NewView(fvec, errIndex))
 		return vector.Combine(out, errIndex, errVec)
 	}
 	return out

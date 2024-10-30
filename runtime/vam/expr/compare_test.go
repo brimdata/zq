@@ -21,12 +21,12 @@ func TestCompareOpsAndForms(t *testing.T) {
 	// These are all [0, 1, 2].
 	lhsFlat := vector.NewUint(super.TypeUint64, []uint64{0, 1, 2}, nil)
 	lhsDict := vector.NewDict(lhsFlat, []byte{0, 1, 2}, nil, nil)
-	lhsView := vector.NewView([]uint32{0, 1, 2}, lhsFlat)
+	lhsView := vector.NewView(lhsFlat, []uint32{0, 1, 2})
 
 	// These are all [1, 1, 1].
 	rhsFlat := vector.NewUint(super.TypeUint64, []uint64{1, 1, 1}, nil)
 	rhsDict := vector.NewDict(rhsFlat, []byte{0, 0, 0}, nil, nil)
-	rhsView := vector.NewView([]uint32{0, 1, 2}, rhsFlat)
+	rhsView := vector.NewView(rhsFlat, []uint32{0, 1, 2})
 	Const := vector.NewConst(super.NewUint64(1), 3, nil)
 
 	cases := []struct {

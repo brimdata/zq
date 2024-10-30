@@ -56,7 +56,7 @@ func (s *superTable) update(keys []vector.Any, args []vector.Any) {
 		}
 		for i, arg := range args {
 			if len(m) > 1 {
-				arg = vector.NewView(index, arg)
+				arg = vector.NewView(arg, index)
 			}
 			row.funcs[i].Consume(arg)
 		}

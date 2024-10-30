@@ -44,5 +44,5 @@ func applyMask(vec, mask vector.Any) (vector.Any, bool) {
 	if len(index) == int(n) {
 		return vec, true
 	}
-	return vector.NewView(index, vec), true
+	return vector.NewView(vec, index), true
 }

@@ -51,5 +51,5 @@ func (a *Aggregator) apply(args ...vector.Any) vector.Any {
 			}
 		}
 	}
-	return vector.NewView(tags, vec)
+	return vector.NewView(vec, tags)
 }

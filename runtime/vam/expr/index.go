@@ -61,7 +61,7 @@ func indexArrayOrSet(zctx *super.Context, offsets []uint32, vals, index vector.A
 		}
 		errs = append(errs, uint32(i))
 	}
-	out := vector.Deunion(vector.NewView(viewIndexes, vals))
+	out := vector.Deunion(vector.NewView(vals, viewIndexes))
 	if len(errs) > 0 {
 		return vector.Combine(out, errs, vector.NewMissing(zctx, uint32(len(errs))))
 	}
@@ -90,7 +90,7 @@ func indexRecord(zctx *super.Context, record *vector.Record, index vector.Any) v
 	out := make([]vector.Any, n+1)
 	out[n] = vector.NewMissing(zctx, errcnt)
 	for i, field := range record.Fields {
-		out[i] = vector.NewView(viewIndexes[i], field)
+		out[i] = vector.NewView(field, viewIndexes[i])
 	}
 	return vector.NewDynamic(tags, out)
 }

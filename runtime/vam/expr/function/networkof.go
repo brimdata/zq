@@ -57,7 +57,7 @@ func (n *NetworkOf) singleIP(vec vector.Any) vector.Any {
 		nets = vector.NewDict(netVals, index, counts, nulls)
 	}
 	if len(errs) > 0 {
-		return vector.Combine(nets, errs, errNotIP4(n.zctx, vector.NewView(errs, vec)))
+		return vector.Combine(nets, errs, errNotIP4(n.zctx, vector.NewView(vec, errs)))
 	}
 	return nets
 }
@@ -153,7 +153,7 @@ func (n *NetworkOf) intMask(ipvec, maskvec vector.Any) vector.Any {
 		out = vector.NewNet(nets, nil)
 	}
 	if len(errs) > 0 {
-		m := vector.NewView(errs, addressAndMask(n.zctx, ipvec, maskvec))
+		m := vector.NewView(addressAndMask(n.zctx, ipvec, maskvec), errs)
 		err := vector.NewWrappedError(n.zctx, "network_of: CIDR bit count out of range", m)
 		return vector.Combine(out, errs, err)
 	}

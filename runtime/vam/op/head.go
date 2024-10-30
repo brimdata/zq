@@ -57,5 +57,5 @@ again:
 	for k := range index {
 		index[k] = uint32(k)
 	}
-	return vector.NewView(index, vec), nil
+	return vector.NewView(vec, index), nil
 }
