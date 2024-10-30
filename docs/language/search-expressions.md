@@ -132,7 +132,7 @@ When processing [Super Binary](../formats/bsup.md) data, the SuperDB runtime per
 Boyer-Moore scan over decompressed data buffers before parsing any data.
 This allows large buffers of data to be efficiently discarded and skipped when
 searching for rarely occurring values.  For a [SuperDB data lake](../lake/format.md),
-a planned feature will use [Super Columnar](../formats/vng.md) files to further accelerate searches.
+a planned feature will use [Super Columnar](../formats/csup.md) files to further accelerate searches.
 :::
 
 ### Search Terms

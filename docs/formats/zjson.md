@@ -9,7 +9,7 @@ sidebar_label: ZJSON
 
 The [super data model](zed.md)
 is based on richly typed records with a deterministic field order,
-as is implemented by the [Super JSON](jsup.md), [Super Binary](bsup.md), and [Super Columnar](vng.md) formats.
+as is implemented by the [Super JSON](jsup.md), [Super Binary](bsup.md), and [Super Columnar](csup.md) formats.
 Given the ubiquity of JSON, it is desirable to also be able to serialize
 super data into the JSON format.   However, encoding super data values
 directly as JSON values would not work without loss of information.

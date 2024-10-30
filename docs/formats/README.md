@@ -271,7 +271,7 @@ documents are Super JSON values as the Super JSON format is a strict superset of
 * [Super Binary](bsup.md) is a row-based, binary representation somewhat like
 Avro but leveraging the super data model to represent a sequence of arbitrarily-typed
 values.
-* [Super Columnar](vng.md) is columnar like Parquet or ORC but also
+* [Super Columnar](csup.md) is columnar like Parquet or ORC but also
 embodies the super data model for heterogeneous and self-describing schemas.
 * [Super JSON over JSON](zjson.md) defines a format for encapsulating Super JSON
 inside plain JSON for easy decoding by JSON-based clients, e.g.,

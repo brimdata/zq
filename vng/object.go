@@ -1,5 +1,5 @@
 // Package vng implements the reading and writing of VNG serialization objects.
-// The VNG format is described at https://github.com/brimdata/super/blob/main/docs/formats/vng.md.
+// The VNG format is described at https://github.com/brimdata/super/blob/main/docs/formats/csup.md.
 //
 // A VNG object is created by allocating an Encoder for any top-level Zed type
 // via NewEncoder, which recursively descends into the Zed type, allocating an Encoder

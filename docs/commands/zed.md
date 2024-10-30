@@ -118,7 +118,7 @@ replication easy to support and deploy.
 The cloud objects that comprise a lake, e.g., data objects,
 commit history, transaction journals, partial aggregations, etc.,
 are stored as Zed data, i.e., either as [row-based Super Binary](../formats/bsup.md)
-or [columnar VNG](../formats/vng.md).
+or [Super Columnar](../formats/csup.md).
 This makes introspection of the lake structure straightforward as many key
 lake data structures can be queried with metadata queries and presented
 to a client as Zed data for further processing by downstream tooling.

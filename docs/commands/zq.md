@@ -100,7 +100,7 @@ Note here that the query `1+1` [implies](../language/pipeline-model.md#implied-o
 | `line`    |  no  | One string value per input line |
 | `parquet` |  yes | [Apache Parquet](https://github.com/apache/parquet-format) |
 | `tsv`     |  yes | [TSV - Tab-Separated Values](https://en.wikipedia.org/wiki/Tab-separated_values) |
-| `vng`     |  yes | [VNG - Binary Columnar Format](../formats/vng.md) |
+| `csup`    |  yes | [Super Columnar](../formats/csup.md) |
 | `zeek`    |  yes | [Zeek Logs](https://docs.zeek.org/en/master/logs/index.html) |
 | `zjson`   |  yes | [ZJSON - Zed over JSON](../formats/zjson.md) |
 | `bsup`    |  yes | [Super Binary](../formats/bsup.md) |
@@ -158,7 +158,7 @@ JSON any number that appears without a decimal point as an integer type.
 
 :::tip note
 The reason `zq` is not particularly performant for ZSON is that the ZNG or
-[VNG](../formats/vng.md) formats are semantically equivalent to ZSON but much more efficient and
+[Super Columnar](../formats/csup.md) formats are semantically equivalent to ZSON but much more efficient and
 the design intent is that these efficient binary formats should be used in
 use cases where performance matters.  ZSON is typically used only when
 data needs to be human-readable in interactive settings or in automated tests.
@@ -186,7 +186,7 @@ typically omit quotes around field names.
 | `table`   | (described [below](#simplified-text-outputs)) |
 | `text`    | (described [below](#simplified-text-outputs)) |
 | `tsv`     | [TSV - Tab-Separated Values](https://en.wikipedia.org/wiki/Tab-separated_values) |
-| `vng`     | [VNG - Binary Columnar Format](../formats/vng.md) |
+| `csup`    | [Super Columnar](../formats/csup.md) |
 | `zeek`    | [Zeek Logs](https://docs.zeek.org/en/master/logs/index.html) |
 | `zjson`   | [ZJSON - Zed over JSON](../formats/zjson.md) |
 | `bsup`    | [Super Binary](../formats/bsup.md) |

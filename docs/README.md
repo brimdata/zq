@@ -41,7 +41,7 @@ that underlie the super-structured data formats.
 * The [super data formats](formats/README.md) are a family of
 [human-readable (Super JSON, JSUP)](formats/jsup.md),
 [sequential (Super Binary, BSUP)](formats/bsup.md), and
-[columnar (Super Columnar, CSUP)](formats/vng.md) formats that all adhere to the
+[columnar (Super Columnar, CSUP)](formats/csup.md) formats that all adhere to the
 same abstract super data model.
 * The [SuperPipe language](language/README.md) is the system's pipeline language for performing
 queries, searches, analytics, transformations, or any of the above combined together.

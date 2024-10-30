@@ -165,7 +165,7 @@
 > [specific guidance for users of the Zed CLI tools](https://github.com/brimdata/zed-lake-migration#zed-cli-tools).
 
 * Zed lake storage format is now at version 3 (#4386, #4415)
-* Allow loading and responses in [VNG](docs/formats/vng.md) format over the lake API (#4345)
+* Allow loading and responses in [VNG](docs/formats/csup.md) format over the lake API (#4345)
 * Fix an issue where [record spread expressions](docs/language/expressions.md#record-expressions) could cause a crash (#4359)
 * Fix an issue where the Zed service `/version` endpoint returned "unknown" if it had been built via `go install` (#4371)
 * Branch-level [meta-queries](docs/commands/zed.md#meta-queries) on the `main` branch no longer require an explicit `@main` reference (#4377, #4394)
@@ -177,7 +177,7 @@
 
 ## v1.5.0
 * Add `float16` primitive type (#4301)
-* Add segment compression to the [VNG](docs/formats/vng.md) format (#4299)
+* Add segment compression to the [VNG](docs/formats/csup.md) format (#4299)
 * Add `-unbuffered` flag to `zed` and `zq` (#4320)
 * Add `-csv.delim` flag to `zed` and `zq` for reading CSV with non-comma delimiter (#4325)
 * Add `csv.delim` query parameter to lake API for reading CSV with non-comma delimiter (#4333)
@@ -186,7 +186,7 @@
 * Fix an issue where type decorators of union values were leaking into CSV output (#4338)
 
 ## v1.4.0
-* The ZST format is now called [VNG](docs/formats/vng.md) (#4256)
+* The ZST format is now called [VNG](docs/formats/csup.md) (#4256)
 * Allow loading of "line" format over the lake API (#4229)
 * Allow loading of Parquet format over the lake API (#4235)
 * Allow loading of Zeek TSV format over the lake API (#4246)
@@ -629,7 +629,7 @@ questions.
 ## v0.23.0
 * zql: Add `week` as a unit for [time grouping with `every`](docs/language/functions/every.md) (#1374)
 * zq: Fix an issue where a `null` value in a [JSON type definition](docs/integrations/zeek/README.md) caused a failure without an error message (#1377)
-* zq: Add [`zst` format](docs/formats/vng.md) to `-i` and `-f` command-line help (#1384)
+* zq: Add [`zst` format](docs/formats/csup.md) to `-i` and `-f` command-line help (#1384)
 * zq: ZNG spec and `zq` updates to introduce the beta ZNG storage format (#1375, #1415, #1394, #1457, #1512, #1523, #1529), also addressing the following:
    * New data type `bytes` for storing sequences of bytes encoded as base64 (#1315)
    * Improvements to the `enum` data type (#1314)
@@ -693,7 +693,7 @@ questions.
 * zqd: Fix an issue where starting `zqd listen` created excess error messages when subdirectories were present (#1303)
 * zql: Add the [`fuse` operator](docs/language/operators/fuse.md) for unifying records under a single schema (#1310, #1319, #1324)
 * zql: Fix broken links in documentation (#1321, #1339)
-* zst: Introduce the [ZST format](docs/formats/vng.md) for columnar data based on ZNG (#1268, #1338)
+* zst: Introduce the [ZST format](docs/formats/csup.md) for columnar data based on ZNG (#1268, #1338)
 * pcap: Fix an issue where certain pcapng files could fail import with a `bad option length` error (#1341)
 * zql: [Document the `**` operator](docs/language/README.md#search-syntax) for type-specific searches that look within nested records (#1337)
 * zar: Change the archive data file layout to prepare for handing chunk files with overlapping ranges and improved S3 support (#1330)
