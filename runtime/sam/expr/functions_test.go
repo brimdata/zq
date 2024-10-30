@@ -8,7 +8,7 @@ import (
 )
 
 func TestBadFunction(t *testing.T) {
-	testError(t, "notafunction()", function.ErrNoSuchFunction, "calling nonexistent function")
+	testError(t, "notafunction()", function.ErrNoSuchFunction)
 }
 
 func TestAbs(t *testing.T) {
@@ -20,8 +20,8 @@ func TestAbs(t *testing.T) {
 	testSuccessful(t, "abs(3.2)", record, "3.2")
 	testSuccessful(t, "abs(u)", record, "50(uint64)")
 
-	testError(t, "abs()", function.ErrTooFewArgs, "abs with no args")
-	testError(t, "abs(1, 2)", function.ErrTooManyArgs, "abs with too many args")
+	testError(t, "abs()", function.ErrTooFewArgs)
+	testError(t, "abs(1, 2)", function.ErrTooManyArgs)
 	testSuccessful(t, `abs("hello")`, record, `error({message:"abs: not a number",on:"hello"})`)
 }
 
@@ -32,8 +32,8 @@ func TestSqrt(t *testing.T) {
 	testSuccessful(t, "sqrt(f)", record, "2.5")
 	testSuccessful(t, "sqrt(i)", record, "3.")
 
-	testError(t, "sqrt()", function.ErrTooFewArgs, "sqrt with no args")
-	testError(t, "sqrt(1, 2)", function.ErrTooManyArgs, "sqrt with too many args")
+	testError(t, "sqrt()", function.ErrTooFewArgs)
+	testError(t, "sqrt(1, 2)", function.ErrTooManyArgs)
 	testSuccessful(t, "sqrt(-1)", record, "NaN")
 }
 
@@ -72,12 +72,12 @@ func TestCeilFloorRound(t *testing.T) {
 	testSuccessful(t, "floor(5)", "", "5")
 	testSuccessful(t, "round(5)", "", "5")
 
-	testError(t, "ceil()", function.ErrTooFewArgs, "ceil() with no args")
-	testError(t, "ceil(1, 2)", function.ErrTooManyArgs, "ceil() with too many args")
-	testError(t, "floor()", function.ErrTooFewArgs, "floor() with no args")
-	testError(t, "floor(1, 2)", function.ErrTooManyArgs, "floor() with too many args")
-	testError(t, "round()", function.ErrTooFewArgs, "round() with no args")
-	testError(t, "round(1, 2)", function.ErrTooManyArgs, "round() with too many args")
+	testError(t, "ceil()", function.ErrTooFewArgs)
+	testError(t, "ceil(1, 2)", function.ErrTooManyArgs)
+	testError(t, "floor()", function.ErrTooFewArgs)
+	testError(t, "floor(1, 2)", function.ErrTooManyArgs)
+	testError(t, "round()", function.ErrTooFewArgs)
+	testError(t, "round(1, 2)", function.ErrTooManyArgs)
 }
 
 func TestLogPow(t *testing.T) {
@@ -90,33 +90,33 @@ func TestLogPow(t *testing.T) {
 	testSuccessful(t, "pow(10, 2)", "", "100.")
 	testSuccessful(t, "pow(4.0, 1.5)", "", "8.")
 
-	testError(t, "log()", function.ErrTooFewArgs, "log() with no args")
-	testError(t, "log(2, 3)", function.ErrTooManyArgs, "log() with too many args")
+	testError(t, "log()", function.ErrTooFewArgs)
+	testError(t, "log(2, 3)", function.ErrTooManyArgs)
 	testSuccessful(t, "log(0)", "", `error({message:"log: illegal argument",on:0})`)
 	testSuccessful(t, "log(-1)", "", `error({message:"log: illegal argument",on:-1})`)
 
-	testError(t, "pow()", function.ErrTooFewArgs, "pow() with no args")
-	testError(t, "pow(2, 3, r)", function.ErrTooManyArgs, "pow() with too many args")
+	testError(t, "pow()", function.ErrTooFewArgs)
+	testError(t, "pow(2, 3, r)", function.ErrTooManyArgs)
 	testSuccessful(t, "pow(-1, 0.5)", "", "NaN")
 }
 
 func TestOtherStrFuncs(t *testing.T) {
 	testSuccessful(t, `replace("bann", "n", "na")`, "", `"banana"`)
-	testError(t, `replace("foo", "bar")`, function.ErrTooFewArgs, "replace() with too few args")
-	testError(t, `replace("foo", "bar", "baz", "blort")`, function.ErrTooManyArgs, "replace() with too many args")
+	testError(t, `replace("foo", "bar")`, function.ErrTooFewArgs)
+	testError(t, `replace("foo", "bar", "baz", "blort")`, function.ErrTooManyArgs)
 	testSuccessful(t, `replace("foo", "o", 5)`, "", `error({message:"replace: string arg required",on:5})`)
 
 	testSuccessful(t, `lower("BOO")`, "", `"boo"`)
-	testError(t, `lower()`, function.ErrTooFewArgs, "toLower() with no args")
-	testError(t, `lower("BOO", "HOO")`, function.ErrTooManyArgs, "toLower() with too many args")
+	testError(t, `lower()`, function.ErrTooFewArgs)
+	testError(t, `lower("BOO", "HOO")`, function.ErrTooManyArgs)
 
 	testSuccessful(t, `upper("boo")`, "", `"BOO"`)
-	testError(t, `upper()`, function.ErrTooFewArgs, "toUpper() with no args")
-	testError(t, `upper("boo", "hoo")`, function.ErrTooManyArgs, "toUpper() with too many args")
+	testError(t, `upper()`, function.ErrTooFewArgs)
+	testError(t, `upper("boo", "hoo")`, function.ErrTooManyArgs)
 
 	testSuccessful(t, `trim("  hi  there   ")`, "", `"hi  there"`)
-	testError(t, `trim()`, function.ErrTooFewArgs, "trim() with no args")
-	testError(t, `trim("  hi  ", "  there  ")`, function.ErrTooManyArgs, "trim() with too many args")
+	testError(t, `trim()`, function.ErrTooFewArgs)
+	testError(t, `trim("  hi  ", "  there  ")`, function.ErrTooManyArgs)
 }
 
 func TestLen(t *testing.T) {
@@ -125,8 +125,8 @@ func TestLen(t *testing.T) {
 	testSuccessful(t, "len(s)", record, "3")
 	testSuccessful(t, "len(a)", record, "3")
 
-	testError(t, "len()", function.ErrTooFewArgs, "len() with no args")
-	testError(t, `len("foo", "bar")`, function.ErrTooManyArgs, "len() with too many args")
+	testError(t, "len()", function.ErrTooFewArgs)
+	testError(t, `len("foo", "bar")`, function.ErrTooManyArgs)
 	testSuccessful(t, "len(5)", record, `error({message:"len: bad type",on:5})`)
 
 	record = `{s:"🍺",bs:0xf09f8dba}`
@@ -142,11 +142,11 @@ func TestLen(t *testing.T) {
 func TestCast(t *testing.T) {
 	// Constant type argument
 	testSuccessful(t, "cast(1, <uint64>)", "", "1(uint64)")
-	testError(t, "cast(1, 2)", errors.New("shaper type argument is not a type: 2"), "cast() argument is not a type")
+	testError(t, "cast(1, 2)", errors.New("shaper type argument is not a type: 2"))
 
 	// Constant name argument
 	testSuccessful(t, `cast(1, "my_int64")`, "", "1(=my_int64)")
-	testError(t, `cast(1, "uint64")`, errors.New(`bad type name "uint64": primitive type name`), "cast() argument is a primitve type name")
+	testError(t, `cast(1, "uint64")`, errors.New(`bad type name "uint64": primitive type name`))
 
 	// Variable type argument
 	testSuccessful(t, "cast(1, type)", "{type:<uint64>}", "1(uint64)")
@@ -156,6 +156,6 @@ func TestCast(t *testing.T) {
 	testSuccessful(t, "cast(1, name)", `{name:"my_int64"}`, "1(=my_int64)")
 	testSuccessful(t, "cast(1, name)", `{name:"uint64"}`, `error("bad type name \"uint64\": primitive type name")`)
 
-	testError(t, "cast()", function.ErrTooFewArgs, "cast() with no args")
-	testError(t, "cast(1, 2, 3)", function.ErrTooManyArgs, "cast() with no args")
+	testError(t, "cast()", function.ErrTooFewArgs)
+	testError(t, "cast(1, 2, 3)", function.ErrTooManyArgs)
 }

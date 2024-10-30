@@ -24,7 +24,7 @@ func testSuccessful(t *testing.T, e, input, expected string) {
 	}
 }
 
-func testError(t *testing.T, e string, expectErr error, description string) {
+func testError(t *testing.T, e string, expectErr error) {
 	t.Helper()
 	zt := ztest.ZTest{
 		Zed:     fmt.Sprintf("yield %s", e),
