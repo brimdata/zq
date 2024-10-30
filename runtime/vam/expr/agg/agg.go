@@ -3,13 +3,13 @@ package agg
 import (
 	"fmt"
 
-	zed "github.com/brimdata/super"
+	"github.com/brimdata/super"
 	"github.com/brimdata/super/vector"
 )
 
 type Func interface {
 	Consume(vector.Any)
-	Result() zed.Value
+	Result() super.Value
 }
 
 type Pattern func() Func
@@ -84,6 +84,6 @@ func (a *aggCount) Consume(vec vector.Any) {
 	a.count += uint64(vec.Len())
 }
 
-func (a *aggCount) Result() zed.Value {
-	return zed.NewUint64(a.count)
+func (a *aggCount) Result() super.Value {
+	return super.NewUint64(a.count)
 }

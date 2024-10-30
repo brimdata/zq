@@ -7,7 +7,7 @@ import (
 	"github.com/brimdata/super/compiler/dag"
 	"github.com/brimdata/super/pkg/field"
 	vamexpr "github.com/brimdata/super/runtime/vam/expr"
-	vamfunc "github.com/brimdata/super/runtime/vam/expr/function"
+	vamfunction "github.com/brimdata/super/runtime/vam/expr/function"
 	"github.com/brimdata/super/zson"
 )
 
@@ -157,7 +157,7 @@ func (b *Builder) compileVamExprs(in []dag.Expr) ([]vamexpr.Evaluator, error) {
 }
 
 func (b *Builder) compileVamCall(call *dag.Call) (vamexpr.Evaluator, error) {
-	fn, path, err := vamfunc.New(b.zctx(), call.Name, len(call.Args))
+	fn, path, err := vamfunction.New(b.zctx(), call.Name, len(call.Args))
 	if err != nil {
 		return nil, err
 	}

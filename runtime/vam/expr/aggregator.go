@@ -1,7 +1,7 @@
 package expr
 
 import (
-	zed "github.com/brimdata/super"
+	"github.com/brimdata/super"
 	"github.com/brimdata/super/runtime/vam/expr/agg"
 	"github.com/brimdata/super/vector"
 )
@@ -21,7 +21,7 @@ func NewAggregator(name string, expr Evaluator, where Evaluator) (*Aggregator, e
 	if expr == nil {
 		// Count is the only that has no argument so we just return
 		// true so it counts each value encountered.
-		expr = NewLiteral(zed.True)
+		expr = NewLiteral(super.True)
 	}
 	return &Aggregator{
 		Pattern: pattern,
@@ -43,7 +43,7 @@ func (a *Aggregator) apply(args ...vector.Any) vector.Any {
 	vec, where := args[0], args[1]
 	var tags []uint32
 	// If type is not bool then we want to filter everything.
-	if where.Type().ID() == zed.IDBool {
+	if where.Type().ID() == super.IDBool {
 		for slot := uint32(0); slot < where.Len(); slot++ {
 			// XXX Feels like we should have a optimzed version of this.
 			if vector.BoolValue(where, slot) {

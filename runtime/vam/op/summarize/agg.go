@@ -3,15 +3,15 @@ package summarize
 import (
 	"fmt"
 
-	zed "github.com/brimdata/super"
+	"github.com/brimdata/super"
 	"github.com/brimdata/super/runtime/vam/expr"
 	"github.com/brimdata/super/runtime/vam/expr/agg"
 	"github.com/brimdata/super/vector"
 	"github.com/brimdata/super/zcode"
 )
 
-// XXX use zed.Value for slow path stuff, e.g., when the group-by key is
-// a complex type.  when we improve the zed.Value impl this will get better.
+// XXX use super.Value for slow path stuff, e.g., when the group-by key is
+// a complex type.  when we improve the super.Value impl this will get better.
 
 // one aggTable per fixed set of types of aggs and keys.
 type aggTable interface {
@@ -28,7 +28,7 @@ type superTable struct {
 var _ aggTable = (*superTable)(nil)
 
 type aggRow struct {
-	keys  []zed.Value
+	keys  []super.Value
 	funcs []agg.Func
 }
 
@@ -72,7 +72,7 @@ func (s *superTable) newRow(keys []vector.Any, index []uint32) aggRow {
 	for _, key := range keys {
 		b.Reset()
 		key.Serialize(&b, index[0])
-		row.keys = append(row.keys, zed.NewValue(key.Type(), b.Bytes().Body()))
+		row.keys = append(row.keys, super.NewValue(key.Type(), b.Bytes().Body()))
 	}
 	return row
 }
@@ -160,7 +160,7 @@ func (c *countByString) countDict(vec *vector.String, counts []uint32, nulls *ve
 func (c *countByString) countFixed(vec *vector.Const) {
 	val := vec.Value()
 	switch val.Type().ID() {
-	case zed.IDString:
+	case super.IDString:
 		var nullCnt uint64
 		if vec.Nulls != nil {
 			for k := range vec.Len() {
@@ -170,8 +170,8 @@ func (c *countByString) countFixed(vec *vector.Const) {
 			}
 			c.nulls += nullCnt
 		}
-		c.table[zed.DecodeString(val.Bytes())] += uint64(vec.Len()) - nullCnt
-	case zed.IDNull:
+		c.table[super.DecodeString(val.Bytes())] += uint64(vec.Len()) - nullCnt
+	case super.IDNull:
 		c.nulls += uint64(vec.Len())
 	}
 }
@@ -198,20 +198,20 @@ func (c *countByString) materialize() vector.Any {
 		nulls.Set(uint32(length - 1))
 	}
 	keyVec := vector.NewString(offs, bytes, nulls)
-	countVec := vector.NewUint(zed.TypeUint64, counts, nil)
+	countVec := vector.NewUint(super.TypeUint64, counts, nil)
 	return c.builder.New([]vector.Any{keyVec, countVec})
 }
 
 type Sum struct {
 	parent vector.Puller
-	zctx   *zed.Context
+	zctx   *super.Context
 	field  expr.Evaluator
 	name   string
 	sum    int64
 	done   bool
 }
 
-func NewSum(zctx *zed.Context, parent vector.Puller, name string) *Sum {
+func NewSum(zctx *super.Context, parent vector.Puller, name string) *Sum {
 	return &Sum{
 		parent: parent,
 		zctx:   zctx,
@@ -274,9 +274,9 @@ func (c *Sum) update(vec vector.Any) {
 	}
 }
 
-func (c *Sum) materialize(zctx *zed.Context, name string) *vector.Record {
-	typ := zctx.MustLookupTypeRecord([]zed.Field{
-		{Type: zed.TypeInt64, Name: "sum"},
+func (c *Sum) materialize(zctx *super.Context, name string) *vector.Record {
+	typ := zctx.MustLookupTypeRecord([]super.Field{
+		{Type: super.TypeInt64, Name: "sum"},
 	})
-	return vector.NewRecord(typ, []vector.Any{vector.NewInt(zed.TypeInt64, []int64{c.sum}, nil)}, 1, nil)
+	return vector.NewRecord(typ, []vector.Any{vector.NewInt(super.TypeInt64, []int64{c.sum}, nil)}, 1, nil)
 }

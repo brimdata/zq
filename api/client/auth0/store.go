@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
-	zedfs "github.com/brimdata/super/pkg/fs"
+	pkgfs "github.com/brimdata/super/pkg/fs"
 	"github.com/brimdata/super/pkg/storage"
 )
 
@@ -77,7 +77,7 @@ func (s Store) save(creds *Credentials) error {
 	if err := os.MkdirAll(filepath.Dir(s.path), 0700); err != nil {
 		return err
 	}
-	return zedfs.MarshalJSONFile(creds, s.path, 0600)
+	return pkgfs.MarshalJSONFile(creds, s.path, 0600)
 }
 
 type Credentials struct {

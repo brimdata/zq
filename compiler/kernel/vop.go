@@ -7,7 +7,7 @@ import (
 	"github.com/brimdata/super/compiler/dag"
 	"github.com/brimdata/super/compiler/optimizer"
 	"github.com/brimdata/super/pkg/field"
-	samexpr "github.com/brimdata/super/runtime/sam/expr"
+	"github.com/brimdata/super/runtime/sam/expr"
 	vamexpr "github.com/brimdata/super/runtime/vam/expr"
 	vamop "github.com/brimdata/super/runtime/vam/op"
 	"github.com/brimdata/super/runtime/vam/op/summarize"
@@ -142,13 +142,13 @@ func (b *Builder) compileVamLeaf(o dag.Op, parent vector.Puller) (vector.Puller,
 		return vamop.NewYield(b.zctx(), parent, []vamexpr.Evaluator{renamer}), nil
 	case *dag.Sort:
 		b.resetResetters()
-		var sortExprs []samexpr.SortEvaluator
+		var sortExprs []expr.SortEvaluator
 		for _, s := range o.Args {
 			k, err := b.compileExpr(s.Key)
 			if err != nil {
 				return nil, err
 			}
-			sortExprs = append(sortExprs, samexpr.NewSortEvaluator(k, s.Order))
+			sortExprs = append(sortExprs, expr.NewSortEvaluator(k, s.Order))
 		}
 		return vamop.NewSort(b.rctx, parent, sortExprs, o.NullsFirst, o.Reverse, b.resetters), nil
 	case *dag.Summarize:

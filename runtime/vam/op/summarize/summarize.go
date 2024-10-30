@@ -1,7 +1,7 @@
 package summarize
 
 import (
-	zed "github.com/brimdata/super"
+	"github.com/brimdata/super"
 	"github.com/brimdata/super/pkg/field"
 	"github.com/brimdata/super/runtime/vam/expr"
 	"github.com/brimdata/super/vector"
@@ -9,22 +9,22 @@ import (
 
 type Summarize struct {
 	parent vector.Puller
-	zctx   *zed.Context
+	zctx   *super.Context
 	// XX Abstract this runtime into a generic table computation.
 	// Then the generic interface can execute fast paths for simple scenarios.
 	aggs      []*expr.Aggregator
 	aggNames  field.List
 	keyExprs  []expr.Evaluator
 	keyNames  field.List
-	typeTable *zed.TypeVectorTable
+	typeTable *super.TypeVectorTable
 	builder   *vector.RecordBuilder
 
-	types   []zed.Type
+	types   []super.Type
 	tables  map[int]aggTable
 	results []aggTable
 }
 
-func New(parent vector.Puller, zctx *zed.Context, aggPaths field.List, aggs []*expr.Aggregator, keyNames []field.Path, keyExprs []expr.Evaluator) (*Summarize, error) {
+func New(parent vector.Puller, zctx *super.Context, aggPaths field.List, aggs []*expr.Aggregator, keyNames []field.Path, keyExprs []expr.Evaluator) (*Summarize, error) {
 	builder, err := vector.NewRecordBuilder(zctx, append(keyNames, aggPaths...))
 	if err != nil {
 		return nil, err
@@ -34,8 +34,8 @@ func New(parent vector.Puller, zctx *zed.Context, aggPaths field.List, aggs []*e
 		aggs:      aggs,
 		keyExprs:  keyExprs,
 		tables:    make(map[int]aggTable),
-		typeTable: zed.NewTypeVectorTable(),
-		types:     make([]zed.Type, len(keyExprs)),
+		typeTable: super.NewTypeVectorTable(),
+		types:     make([]super.Type, len(keyExprs)),
 		builder:   builder,
 	}, nil
 }
@@ -72,13 +72,13 @@ func (s *Summarize) Pull(done bool) (vector.Any, error) {
 			s.consume(args[:len(keys)], args[len(keys):])
 			// XXX Perhaps there should be a "consume" version of Apply where
 			// no return value is expected.
-			return vector.NewConst(zed.Null, args[0].Len(), nil)
+			return vector.NewConst(super.Null, args[0].Len(), nil)
 		}, append(keys, vals...)...)
 	}
 }
 
 func (s *Summarize) consume(keys []vector.Any, vals []vector.Any) {
-	var keyTypes []zed.Type
+	var keyTypes []super.Type
 	for _, k := range keys {
 		keyTypes = append(keyTypes, k.Type())
 	}
@@ -91,7 +91,7 @@ func (s *Summarize) consume(keys []vector.Any, vals []vector.Any) {
 	table.update(keys, vals)
 }
 
-func (s *Summarize) newAggTable(keyTypes []zed.Type) aggTable {
+func (s *Summarize) newAggTable(keyTypes []super.Type) aggTable {
 	// Check if we can us an optimized table, else go slow path.
 	if s.isCountByString(keyTypes) {
 		return newCountByString(s.builder)
@@ -103,9 +103,9 @@ func (s *Summarize) newAggTable(keyTypes []zed.Type) aggTable {
 	}
 }
 
-func (s *Summarize) isCountByString(keyTypes []zed.Type) bool {
+func (s *Summarize) isCountByString(keyTypes []super.Type) bool {
 	return len(s.aggs) == 1 && len(keyTypes) == 1 && s.aggs[0].Name == "count" &&
-		keyTypes[0].ID() == zed.IDString
+		keyTypes[0].ID() == super.IDString
 }
 
 func (s *Summarize) next() vector.Any {

@@ -39,7 +39,7 @@ import (
 	"github.com/brimdata/super/runtime/sam/op/uniq"
 	"github.com/brimdata/super/runtime/sam/op/yield"
 	"github.com/brimdata/super/runtime/vam"
-	vop "github.com/brimdata/super/runtime/vam/op"
+	vamop "github.com/brimdata/super/runtime/vam/op"
 	"github.com/brimdata/super/vector"
 	"github.com/brimdata/super/zbuf"
 	"github.com/brimdata/super/zio"
@@ -120,7 +120,7 @@ func (b *Builder) BuildVamToSeqFilter(filter dag.Expr, poolID, commitID ksuid.KS
 	}
 	cache := b.source.Lake().VectorCache()
 	project, _ := optimizer.FieldsOf(filter)
-	search, err := vop.NewSearcher(b.rctx, cache, l, pool, e, project)
+	search, err := vamop.NewSearcher(b.rctx, cache, l, pool, e, project)
 	if err != nil {
 		return nil, err
 	}
@@ -356,7 +356,7 @@ func (b *Builder) compileLeaf(o dag.Op, parent zbuf.Puller) (zbuf.Puller, error)
 				if len(outputs) == 1 {
 					puller = outputs[0]
 				} else {
-					puller = vop.NewCombine(b.rctx, outputs)
+					puller = vamop.NewCombine(b.rctx, outputs)
 				}
 			}
 			return vam.NewMaterializer(puller), nil
