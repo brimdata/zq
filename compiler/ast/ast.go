@@ -615,8 +615,8 @@ type SortExpr struct {
 	Kind  string `json:"kind" unpack:""`
 	Expr  Expr   `json:"expr"`
 	Order *ID    `json:"order"`
+	Nulls *ID    `json:"nulls"`
 	Loc   `json:"loc"`
-	Nulls *ID `json:"nulls"`
 }
 
 type Case struct {

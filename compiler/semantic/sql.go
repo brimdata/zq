@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	zed "github.com/brimdata/super"
+	"github.com/brimdata/super"
 	"github.com/brimdata/super/compiler/ast"
 	"github.com/brimdata/super/compiler/dag"
 	"github.com/brimdata/super/compiler/kernel"
@@ -140,7 +140,7 @@ func (a *analyzer) semSQLOp(op ast.Op, seq dag.Seq) dag.Seq {
 			a.error(op.Count, err)
 			return append(seq, badOp())
 		}
-		if !zed.IsInteger(val.Type().ID()) {
+		if !super.IsInteger(val.Type().ID()) {
 			a.error(op.Count, fmt.Errorf("expression value must be an integer value: %s", zson.FormatValue(val)))
 			return append(seq, badOp())
 		}
@@ -346,8 +346,7 @@ func (a *analyzer) convertSQLGroupBy(groupByKeys []ast.Expr, selection sqlSelect
 // A sqlPick is one column of a select statement.  We bookkeep here whether
 // a column is a scalar expression or an aggregation by looking up the function
 // name and seeing if it's an aggregator or not.  We also infer the column
-// names so we can do SQL error checking relating the selections to the group-by
-// keys, something that is not needed in Zed.
+// names so we can do SQL error checking relating the selections to the group-by keys.
 type sqlPick struct {
 	name       field.Path
 	agg        *dag.Agg

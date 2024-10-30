@@ -624,8 +624,7 @@ func (c *canon) fromElem(elem *ast.FromElem) {
 		c.fromArgs(elem.Args)
 	}
 	if elem.Alias != nil {
-		c.write(" ")
-		c.write(zson.QuotedName(elem.Alias.Text))
+		c.write(" %s", zson.QuotedName(elem.Alias.Text))
 	}
 }
 

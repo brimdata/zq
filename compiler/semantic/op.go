@@ -37,7 +37,7 @@ func (a *analyzer) semSeq(seq ast.Seq) dag.Seq {
 
 func (a *analyzer) semFrom(from *ast.From, out dag.Seq) dag.Seq {
 	if len(from.Elems) > 1 {
-		a.error(from, errors.New("cross join implied from multiple elements in from clause is not yet supported"))
+		a.error(from, errors.New("cross join implied by multiple elements in from clause is not yet supported"))
 		return dag.Seq{badOp()}
 	}
 	if len(out) > 0 {
