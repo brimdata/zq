@@ -27,12 +27,21 @@ func testSuccessful(t *testing.T, e, input, expected string) {
 func testError(t *testing.T, e string, expectErr error) {
 	t.Helper()
 	zt := ztest.ZTest{
-		Zed:     fmt.Sprintf("yield %s", e),
-		ErrorRE: expectErr.Error(),
+		Zed:   fmt.Sprintf("yield %s", e),
+		Error: expectErr.Error() + "\n",
 	}
 	if err := zt.RunInternal(""); err != nil {
 		t.Fatal(err)
 	}
+}
+
+func testCompilationError(t *testing.T, e string, expectErr error) {
+	t.Helper()
+	err := fmt.Errorf(`%s at line 1, column 7:
+yield %s
+      %s`,
+		expectErr, e, strings.Repeat("~", len(e)))
+	testError(t, e, err)
 }
 
 func TestPrimitives(t *testing.T) {

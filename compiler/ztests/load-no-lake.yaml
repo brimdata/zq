@@ -1,3 +1,6 @@
 zed: "load test"
 
-errorRE: "load operator cannot be used without a lake"
+error: |
+  load operator cannot be used without a lake at line 1, column 1:
+  load test
+  ~~~~~~~~~

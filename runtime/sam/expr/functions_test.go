@@ -8,7 +8,7 @@ import (
 )
 
 func TestBadFunction(t *testing.T) {
-	testError(t, "notafunction()", function.ErrNoSuchFunction)
+	testCompilationError(t, "notafunction()", function.ErrNoSuchFunction)
 }
 
 func TestAbs(t *testing.T) {
@@ -20,8 +20,8 @@ func TestAbs(t *testing.T) {
 	testSuccessful(t, "abs(3.2)", record, "3.2")
 	testSuccessful(t, "abs(u)", record, "50(uint64)")
 
-	testError(t, "abs()", function.ErrTooFewArgs)
-	testError(t, "abs(1, 2)", function.ErrTooManyArgs)
+	testCompilationError(t, "abs()", function.ErrTooFewArgs)
+	testCompilationError(t, "abs(1, 2)", function.ErrTooManyArgs)
 	testSuccessful(t, `abs("hello")`, record, `error({message:"abs: not a number",on:"hello"})`)
 }
 
@@ -32,8 +32,8 @@ func TestSqrt(t *testing.T) {
 	testSuccessful(t, "sqrt(f)", record, "2.5")
 	testSuccessful(t, "sqrt(i)", record, "3.")
 
-	testError(t, "sqrt()", function.ErrTooFewArgs)
-	testError(t, "sqrt(1, 2)", function.ErrTooManyArgs)
+	testCompilationError(t, "sqrt()", function.ErrTooFewArgs)
+	testCompilationError(t, "sqrt(1, 2)", function.ErrTooManyArgs)
 	testSuccessful(t, "sqrt(-1)", record, "NaN")
 }
 
@@ -72,12 +72,12 @@ func TestCeilFloorRound(t *testing.T) {
 	testSuccessful(t, "floor(5)", "", "5")
 	testSuccessful(t, "round(5)", "", "5")
 
-	testError(t, "ceil()", function.ErrTooFewArgs)
-	testError(t, "ceil(1, 2)", function.ErrTooManyArgs)
-	testError(t, "floor()", function.ErrTooFewArgs)
-	testError(t, "floor(1, 2)", function.ErrTooManyArgs)
-	testError(t, "round()", function.ErrTooFewArgs)
-	testError(t, "round(1, 2)", function.ErrTooManyArgs)
+	testCompilationError(t, "ceil()", function.ErrTooFewArgs)
+	testCompilationError(t, "ceil(1, 2)", function.ErrTooManyArgs)
+	testCompilationError(t, "floor()", function.ErrTooFewArgs)
+	testCompilationError(t, "floor(1, 2)", function.ErrTooManyArgs)
+	testCompilationError(t, "round()", function.ErrTooFewArgs)
+	testCompilationError(t, "round(1, 2)", function.ErrTooManyArgs)
 }
 
 func TestLogPow(t *testing.T) {
@@ -90,33 +90,33 @@ func TestLogPow(t *testing.T) {
 	testSuccessful(t, "pow(10, 2)", "", "100.")
 	testSuccessful(t, "pow(4.0, 1.5)", "", "8.")
 
-	testError(t, "log()", function.ErrTooFewArgs)
-	testError(t, "log(2, 3)", function.ErrTooManyArgs)
+	testCompilationError(t, "log()", function.ErrTooFewArgs)
+	testCompilationError(t, "log(2, 3)", function.ErrTooManyArgs)
 	testSuccessful(t, "log(0)", "", `error({message:"log: illegal argument",on:0})`)
 	testSuccessful(t, "log(-1)", "", `error({message:"log: illegal argument",on:-1})`)
 
-	testError(t, "pow()", function.ErrTooFewArgs)
-	testError(t, "pow(2, 3, r)", function.ErrTooManyArgs)
+	testCompilationError(t, "pow()", function.ErrTooFewArgs)
+	testCompilationError(t, "pow(2, 3, r)", function.ErrTooManyArgs)
 	testSuccessful(t, "pow(-1, 0.5)", "", "NaN")
 }
 
 func TestOtherStrFuncs(t *testing.T) {
 	testSuccessful(t, `replace("bann", "n", "na")`, "", `"banana"`)
-	testError(t, `replace("foo", "bar")`, function.ErrTooFewArgs)
-	testError(t, `replace("foo", "bar", "baz", "blort")`, function.ErrTooManyArgs)
+	testCompilationError(t, `replace("foo", "bar")`, function.ErrTooFewArgs)
+	testCompilationError(t, `replace("foo", "bar", "baz", "blort")`, function.ErrTooManyArgs)
 	testSuccessful(t, `replace("foo", "o", 5)`, "", `error({message:"replace: string arg required",on:5})`)
 
 	testSuccessful(t, `lower("BOO")`, "", `"boo"`)
-	testError(t, `lower()`, function.ErrTooFewArgs)
-	testError(t, `lower("BOO", "HOO")`, function.ErrTooManyArgs)
+	testCompilationError(t, `lower()`, function.ErrTooFewArgs)
+	testCompilationError(t, `lower("BOO", "HOO")`, function.ErrTooManyArgs)
 
 	testSuccessful(t, `upper("boo")`, "", `"BOO"`)
-	testError(t, `upper()`, function.ErrTooFewArgs)
-	testError(t, `upper("boo", "hoo")`, function.ErrTooManyArgs)
+	testCompilationError(t, `upper()`, function.ErrTooFewArgs)
+	testCompilationError(t, `upper("boo", "hoo")`, function.ErrTooManyArgs)
 
 	testSuccessful(t, `trim("  hi  there   ")`, "", `"hi  there"`)
-	testError(t, `trim()`, function.ErrTooFewArgs)
-	testError(t, `trim("  hi  ", "  there  ")`, function.ErrTooManyArgs)
+	testCompilationError(t, `trim()`, function.ErrTooFewArgs)
+	testCompilationError(t, `trim("  hi  ", "  there  ")`, function.ErrTooManyArgs)
 }
 
 func TestLen(t *testing.T) {
@@ -125,8 +125,8 @@ func TestLen(t *testing.T) {
 	testSuccessful(t, "len(s)", record, "3")
 	testSuccessful(t, "len(a)", record, "3")
 
-	testError(t, "len()", function.ErrTooFewArgs)
-	testError(t, `len("foo", "bar")`, function.ErrTooManyArgs)
+	testCompilationError(t, "len()", function.ErrTooFewArgs)
+	testCompilationError(t, `len("foo", "bar")`, function.ErrTooManyArgs)
 	testSuccessful(t, "len(5)", record, `error({message:"len: bad type",on:5})`)
 
 	record = `{s:"🍺",bs:0xf09f8dba}`
@@ -156,6 +156,6 @@ func TestCast(t *testing.T) {
 	testSuccessful(t, "cast(1, name)", `{name:"my_int64"}`, "1(=my_int64)")
 	testSuccessful(t, "cast(1, name)", `{name:"uint64"}`, `error("bad type name \"uint64\": primitive type name")`)
 
-	testError(t, "cast()", function.ErrTooFewArgs)
-	testError(t, "cast(1, 2, 3)", function.ErrTooManyArgs)
+	testCompilationError(t, "cast()", function.ErrTooFewArgs)
+	testCompilationError(t, "cast(1, 2, 3)", function.ErrTooManyArgs)
 }

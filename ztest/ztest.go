@@ -271,9 +271,8 @@ type ZTest struct {
 	InputFlags  string `yaml:"input-flags,omitempty"`
 	Output      string `yaml:"output,omitempty"`
 	OutputFlags string `yaml:"output-flags,omitempty"`
-	ErrorRE     string `yaml:"errorRE,omitempty"`
+	Error       string `yaml:"error,omitempty"`
 	Vector      bool   `yaml:"vector"`
-	errRegex    *regexp.Regexp
 
 	// For script-style tests.
 	Script  string   `yaml:"script,omitempty"`
@@ -302,11 +301,6 @@ func (z *ZTest) check() error {
 		}
 	} else if z.Zed == "" {
 		return errors.New("either a zed field or script field must be present")
-	}
-	if z.ErrorRE != "" {
-		var err error
-		z.errRegex, err = regexp.Compile(z.ErrorRE)
-		return err
 	}
 	return nil
 }
@@ -373,24 +367,19 @@ func (z *ZTest) RunInternal(path string) error {
 }
 
 func (z *ZTest) diffInternal(out string, err error) error {
-	if err != nil {
-		if z.errRegex != nil {
-			if !z.errRegex.MatchString(err.Error()) {
-				return fmt.Errorf("error doesn't match expected error regex: %s %w", z.ErrorRE, err)
-			}
-		} else {
-			if out != "" {
-				out = "\noutput:\n" + out
-			}
-			return fmt.Errorf("%w%s", err, out)
-		}
-	} else if z.errRegex != nil {
-		return fmt.Errorf("no error when expecting error regex: %s", z.ErrorRE)
-	}
+	var outDiffErr, errDiffErr error
 	if z.Output != out {
-		return diffErr("output", z.Output, out)
+		outDiffErr = diffErr("output", z.Output, out)
 	}
-	return nil
+	var errStr string
+	if err != nil {
+		// Append newline if err doesn't end with one.
+		errStr = strings.TrimSuffix(err.Error(), "\n") + "\n"
+	}
+	if z.Error != errStr {
+		errDiffErr = diffErr("error", z.Error, errStr)
+	}
+	return errors.Join(outDiffErr, errDiffErr)
 }
 
 func (z *ZTest) Run(t *testing.T, path, filename string) {

@@ -6,4 +6,7 @@ input: |
 
 output: ""
 
-errorRE: const .* cannot have variable dependency
+error: |
+  const &{"ID" "t" {'\x06' '\x06'}}: cannot have variable dependency at line 1, column 1:
+  const t=a put x:=t
+  ~~~~~~~~~

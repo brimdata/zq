@@ -3,4 +3,7 @@ zed: |
   type myport=int32 
   put b:=type(myport)
 
-errorRE: 'symbol "myport" redefined'
+error: |
+  symbol "myport" redefined at line 2, column 6:
+  type myport=int32 
+       ~~~~~~

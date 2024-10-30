@@ -4,4 +4,5 @@ zed: foo | merge x
 
 input: null
 
-errorRE: TBD
+error: |
+  TBD
