@@ -425,8 +425,7 @@ frames provide additional semantics on top of the base Super Binary format.
 
 The body of a control frame is a control message and may be JSON,
 Super JSON, Super Binary, arbitrary binary, or UTF-8 text.  The serialization of the control
-frame body is independent of the Super Binary stream containing the control
-frame.
+frame body is independent of the stream containing the control frame.
 
 Any control message not known by a Super Binary data receiver shall be ignored.
 
