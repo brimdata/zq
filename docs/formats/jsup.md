@@ -149,7 +149,7 @@ conforming to any floating point representation that cannot be
 interpreted as an integer, e.g., `1.` or `1.0` instead of
 `1` or `1e3` instead of `1000`.  Unlike JSON, a floating point number can
 also be one of:
-`Inf`, `+Inf`, `-Inf`, or `NaN`.
+`+Inf`, `-Inf`, or `NaN`.
 
 A floating point value may be expressed with an integer string provided
 a type decorator is applied, e.g., `123 (float64)`.
