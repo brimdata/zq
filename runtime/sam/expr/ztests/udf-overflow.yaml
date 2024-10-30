@@ -7,4 +7,5 @@ zed: |
 input: |
   3
 
-errorRE: "stack overflow"
+output: |
+  error("stack overflow in function \"overflow\"")

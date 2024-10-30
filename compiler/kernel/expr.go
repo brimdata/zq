@@ -344,7 +344,7 @@ func (b *Builder) compileUDFCall(name string, body dag.Expr) (expr.Function, err
 	if fn, ok := b.compiledUDFs[name]; ok {
 		return fn, nil
 	}
-	fn := &expr.UDF{}
+	fn := &expr.UDF{Name: name, Zctx: b.zctx()}
 	// We store compiled UDF calls here so as to avoid stack overflows on
 	// recursive calls.
 	b.compiledUDFs[name] = fn

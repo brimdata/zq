@@ -23,7 +23,7 @@ Super JSON values.
 A Super JSON text is a sequence of UTF-8 characters organized either as a bounded input
 or an unbounded stream.
 
-The input text is organized as a sequence of one or more Zed values optionally
+The input text is organized as a sequence of one or more values optionally
 separated by and interspersed with whitespace.
 Single-line (`//`) and multi-line (`/* ... */`) comments are
 treated as whitespace and ignored.
@@ -39,7 +39,7 @@ A name is either an _identifier_ or a [quoted string](#231-strings).
 Names are referred to as `<name>` below.
 
 An _identifier_ is case-sensitive and can contain Unicode letters, `$`, `_`,
-and digits (0-9), but may not start with a digit.  An identifier cannot be
+and digits `[0-9]`, but may not start with a digit.  An identifier cannot be
 `true`, `false`, or `null`.
 
 ### 2.2 Type Decorators
@@ -75,7 +75,7 @@ which declares a new type with the indicated type name using the
 implied type of the value.  Type names may not be numeric, where a
 numeric is a sequence of one or more characters in the set `[0-9]`.
 
-A decorator may also defined a temporary numeric reference of the form:
+A decorator may also define a temporary numeric reference of the form:
 ```
 <value> ( =<numeric> )
 ```
@@ -149,7 +149,7 @@ conforming to any floating point representation that cannot be
 interpreted as an integer, e.g., `1.` or `1.0` instead of
 `1` or `1e3` instead of `1000`.  Unlike JSON, a floating point number can
 also be one of:
-`Inf`, `+Inf`, `-Inf`, or `Nan`.
+`+Inf`, `-Inf`, or `NaN`.
 
 A floating point value may be expressed with an integer string provided
 a type decorator is applied, e.g., `123 (float64)`.

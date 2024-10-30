@@ -168,7 +168,7 @@ func handleCompile(c *Core, w *ResponseWriter, r *Request) {
 	if !r.Unmarshal(w, &req) {
 		return
 	}
-	ast, _, err := c.compiler.Parse(req.Query)
+	ast, _, err := compiler.Parse(req.Query)
 	if err != nil {
 		w.Error(srverr.ErrInvalid(err))
 		return
@@ -577,7 +577,7 @@ func handleDelete(c *Core, w *ResponseWriter, r *Request) {
 			w.Error(srverr.ErrInvalid("either object_ids or where must be set"))
 			return
 		}
-		program, sset, err2 := c.compiler.Parse(payload.Where)
+		program, sset, err2 := compiler.Parse(payload.Where)
 		if err != nil {
 			w.Error(srverr.ErrInvalid(err2))
 			return

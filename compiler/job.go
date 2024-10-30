@@ -89,13 +89,15 @@ func (j *Job) Parallelize(n int) error {
 	return err
 }
 
+// Parse concatenates the source files in filenames followed by src and parses
+// the resulting program.
 func Parse(src string, filenames ...string) (ast.Seq, *parser.SourceSet, error) {
 	return parser.ParseSuperPipe(filenames, src)
 }
 
 // MustParse is like Parse but panics if an error is encountered.
 func MustParse(query string) ast.Seq {
-	seq, _, err := (*anyCompiler)(nil).Parse(query)
+	seq, _, err := Parse(query)
 	if err != nil {
 		panic(err)
 	}
@@ -135,12 +137,6 @@ func (j *Job) Puller() zbuf.Puller {
 }
 
 type anyCompiler struct{}
-
-// Parse concatenates the source files in filenames followed by src and parses
-// the resulting program.
-func (*anyCompiler) Parse(src string, filenames ...string) (ast.Seq, *parser.SourceSet, error) {
-	return Parse(src, filenames...)
-}
 
 // VectorCompile is used for testing queries over single VNG object scans
 // where the entire query is vectorizable.  It does not call optimize
