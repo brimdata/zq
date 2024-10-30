@@ -1,6 +1,7 @@
 package vector
 
 import (
+	"math/bits"
 	"strings"
 
 	"github.com/brimdata/super"
@@ -64,6 +65,17 @@ func (b *Bool) AppendKey(bytes []byte, slot uint32) []byte {
 		v = 1
 	}
 	return append(bytes, v)
+}
+
+func (b *Bool) TrueCount() uint32 {
+	if b == nil {
+		return 0
+	}
+	var n uint32
+	for _, bs := range b.Bits {
+		n += uint32(bits.OnesCount64(bs))
+	}
+	return n
 }
 
 // helpful to have around for debugging

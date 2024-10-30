@@ -1,6 +1,8 @@
 zed: |
   by a:=a[0], b:=b.c | sort this
 
+vector: true
+
 input: |
   {a:"a",b:"b"}
   {a:[]([null]),b:{c:1}}

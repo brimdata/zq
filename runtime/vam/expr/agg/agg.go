@@ -27,10 +27,10 @@ func NewPattern(op string, hasarg bool) (Pattern, error) {
 	// 	pattern = func() AggFunc {
 	// 		return &Any{}
 	// 	}
-	// case "avg":
-	// 	pattern = func() AggFunc {
-	// 		return &Avg{}
-	// 	}
+	case "avg":
+		pattern = func() Func {
+			return &avg{}
+		}
 	// case "dcount":
 	// 	pattern = func() AggFunc {
 	// 		return NewDCount()
@@ -39,18 +39,18 @@ func NewPattern(op string, hasarg bool) (Pattern, error) {
 	// 	pattern = func() AggFunc {
 	// 		return newFuse()
 	// 	}
-	// case "sum":
-	// 	pattern = func() Func {
-	// 		return newAggSum()
-	// 	}
-	// case "min":
-	// 	pattern = func() AggFunc {
-	// 		return newMathReducer(anymath.Min)
-	// 	}
-	// case "max":
-	// 	pattern = func() AggFunc {
-	// 		return newMathReducer(anymath.Max)
-	// 	}
+	case "sum":
+		pattern = func() Func {
+			return newMathReducer(mathSum)
+		}
+	case "min":
+		pattern = func() Func {
+			return newMathReducer(mathMin)
+		}
+	case "max":
+		pattern = func() Func {
+			return newMathReducer(mathMax)
+		}
 	// case "union":
 	// 	panic("TBD")
 	// case "collect":

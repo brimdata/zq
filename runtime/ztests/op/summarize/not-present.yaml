@@ -1,5 +1,7 @@
 zed: max(val) by key | sort
 
+vector: true
+
 input: |
   {key:"key1"}
 
