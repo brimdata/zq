@@ -34,8 +34,7 @@ brews:
       email: bot@brimdata.io
     homepage: https://github.com/brimdata/super
     description: |
-      SuperSQL or SuperPipe querying of common file formats
-      (CSV/JSON/Parquet/etc.) or SuperDB data lakes
+      An analytics database that puts JSON and relational tables on equal footing
     install: |
       bin.install "super"
 checksum:
