@@ -31,7 +31,7 @@ Decl
   = v:(ConstDecl / FuncDecl / OpDecl / TypeDecl) _ { return v, nil }
 
 ConstDecl
-  = "const" _ name:Identifier __ "=" __ expr:Expr {
+  = CONST _ name:Identifier __ "=" __ expr:Expr {
       return &ast.ConstDecl{
           Kind: "ConstDecl",
           Name: name.(*ast.ID),
@@ -41,7 +41,7 @@ ConstDecl
     }
 
 FuncDecl
-  = "func" _ name:Identifier __ "(" __ params:Identifiers? __ ")" __ ":" __ "(" __ expr:Expr __ ")" {
+  = FUNC _ name:Identifier __ "(" __ params:Identifiers? __ ")" __ ":" __ "(" __ expr:Expr __ ")" {
       return &ast.FuncDecl{
         Kind: "FuncDecl",
         Name: name.(*ast.ID),
@@ -52,7 +52,7 @@ FuncDecl
     }
 
 OpDecl
-  = "op" _ name:Identifier __ "(" __ params:Identifiers? __ ")" __ ":" __ "(" __ body:OpDeclBody __ ")" {
+  = OP _ name:Identifier __ "(" __ params:Identifiers? __ ")" __ ":" __ "(" __ body:OpDeclBody __ ")" {
       return &ast.OpDecl{
         Kind: "OpDecl",
         Name: name.(*ast.ID),
@@ -67,7 +67,7 @@ OpDeclBody
   / seq:Seq { return seq, nil }
 
 TypeDecl
-  = "type" _ name:Identifier __ "=" __ typ:Type {
+  = TYPE _ name:Identifier __ "=" __ typ:Type {
       return &ast.TypeDecl{
         Kind: "TypeDecl",
         Name: name.(*ast.ID),
@@ -104,11 +104,11 @@ SearchBoolean
       return makeBinaryExprChain(first, rest, c), nil
     }
 
-SearchOrTerm = _ OrToken _ t:SearchAnd { return []any{"or", t}, nil }
+SearchOrTerm = _ OR _ t:SearchAnd { return []any{"or", t}, nil }
 
 SearchAnd
   = first:SearchFactor
-    rest:((_ AndToken)? _ !(OrToken / SearchKeywordGuard) expr:SearchFactor { return []any{"and", expr}, nil })* {
+    rest:((_ AND)? _ !(OR / SearchKeywordGuard) expr:SearchFactor { return []any{"and", expr}, nil })* {
       return makeBinaryExprChain(first, rest, c), nil
     }
 
@@ -117,7 +117,7 @@ SearchKeywordGuard
   / Case __
 
 SearchFactor
-  = (NotToken _ / "!" __) e:SearchFactor {
+  = (NOT _ / "!" __) e:SearchFactor {
       return &ast.UnaryExpr{
           Kind: "UnaryExpr",
           Op: "!",
@@ -196,13 +196,13 @@ Aggregation
       return s, nil
     }
 
-Summarize = KW_AGGREGATE _ / ("summarize" _)?
+Summarize = AGGREGATE _ / (SUMMARIZE _)?
 
 GroupByKeys
-  = (KW_GROUP _)? ByToken _ columns:FlexAssignments { return columns, nil }
+  = (GROUP _)? BY _ columns:FlexAssignments { return columns, nil }
 
 LimitArg
-  = _ "with" _ "-limit" _ limit:UInt { return limit, nil }
+  = _ WITH _ "-limit" _ limit:UInt { return limit, nil }
   / "" { return 0, nil }
 
 // A FlexAssignment is like an Assignment but it can optionally omit the lhs,
@@ -243,10 +243,10 @@ Agg
 
 AggName
   = IdentifierName
-  / AndToken
-  / OrToken
+  / AND
+  / OR
 
-WhereClause = _ "where" _ expr:LogicalOrExpr { return expr, nil }
+WhereClause = _ WHERE _ expr:LogicalOrExpr { return expr, nil }
 
 AggAssignments
   = first:AggAssignment rest:(__ "," __ AggAssignment)* {
@@ -291,7 +291,7 @@ Operator
   / DebugOp
 
  ForkOp =
-   "fork" __ "(" paths:Path+ __ ")" {
+   FORK __ "(" paths:Path+ __ ")" {
       var seqs []ast.Seq
       for _, p := range paths.([]any) {
         seqs = append(seqs, sliceOf[ast.Op](p))
@@ -306,7 +306,7 @@ Operator
 Path = __ "=>" __ seq:Seq { return seq, nil }
 
 SwitchOp
-  = "switch" _ expr:Expr _ "(" cases:SwitchPath+ __ ")" {
+  = SWITCH _ expr:Expr _ "(" cases:SwitchPath+ __ ")" {
       return &ast.Switch{
           Kind: "Switch",
           Expr: expr.(ast.Expr),
@@ -314,7 +314,7 @@ SwitchOp
           Loc: loc(c),
       }, nil
     }
-  / "switch" __ "(" cases:SwitchPath+ __ ")" {
+  / SWITCH __ "(" cases:SwitchPath+ __ ")" {
       return &ast.Switch{
           Kind: "Switch",
           Cases: sliceOf[ast.Case](cases),
@@ -332,11 +332,11 @@ SwitchPath
     }
 
 Case
-  = "case" _ expr:Expr { return expr, nil }
-  / "default" { return nil, nil }
+  = CASE _ expr:Expr { return expr, nil }
+  / DEFAULT { return nil, nil }
 
 FromForkOp
-  = "from" __ "(" trunks:FromPath+ __ ")" {
+  = FROM __ "(" trunks:FromPath+ __ ")" {
       return &ast.Parallel{
           Kind: "Parallel",
           Paths: sliceOf[ast.Seq](trunks),
@@ -364,12 +364,12 @@ FromSource
   / PassOp
 
 SearchOp
-  = "search" _ expr:SearchBoolean {
+  = SEARCH _ expr:SearchBoolean {
       return &ast.Search{Kind:"Search",Expr:expr.(ast.Expr),Loc:loc(c)}, nil
     }
 
 AssertOp
-  = "assert" _ expr:(e:Expr { return []any{e, string(c.text)}, nil }) {
+  = ASSERT _ expr:(e:Expr { return []any{e, string(c.text)}, nil }) {
       return &ast.Assert{
           Kind: "Assert",
           Expr: expr.([]any)[0].(ast.Expr),
@@ -379,7 +379,7 @@ AssertOp
     }
 
 SortOp
-  = "sort" &EOKW args:SortArgs exprs:(__ e:SortExprs { return e, nil })? {
+  = SORT &EOKW args:SortArgs exprs:(__ e:SortExprs { return e, nil })? {
       o := &ast.Sort{
         Kind: "Sort",
         Args: sliceOf[ast.SortExpr](exprs),
@@ -404,7 +404,7 @@ SortArg
       }
 
 TopOp
-  = "top" &EOKW limit:(_ e:Expr { return e, nil })? flush:(_ "-flush")? fields:(_ f:Lvals { return f, nil })? {
+  = TOP &EOKW limit:(_ e:Expr { return e, nil })? flush:(_ "-flush")? fields:(_ f:Lvals { return f, nil })? {
       op := &ast.Top{
         Kind: "Top",
         Loc: loc(c),
@@ -422,7 +422,7 @@ TopOp
     }
 
 CutOp
-  = "cut" _ args:FlexAssignments {
+  = CUT _ args:FlexAssignments {
       return &ast.Cut{
         Kind: "Cut",
         Args: sliceOf[ast.Assignment](args),
@@ -431,7 +431,7 @@ CutOp
     }
 
 DropOp
-  = "drop" _ args:Lvals {
+  = DROP _ args:Lvals {
       return &ast.Drop{
           Kind: "Drop",
           Args: sliceOf[ast.Expr](args),
@@ -440,14 +440,14 @@ DropOp
     }
 
 HeadOp
-  = "head" _ !EndOfOp count:Expr {
+  = HEAD _ !EndOfOp count:Expr {
       return &ast.Head{
         Kind: "Head",
         Count: count.(ast.Expr),
         Loc: loc(c),
       }, nil
     }
-  / "head" !(__ "(") &EOKW {
+  / HEAD !(__ "(") &EOKW {
       return &ast.Head{
         Kind: "Head",
         Loc: loc(c),
@@ -455,14 +455,14 @@ HeadOp
     }
 
 TailOp
-  = "tail" _ !EndOfOp count:Expr {
+  = TAIL _ !EndOfOp count:Expr {
       return &ast.Tail{
         Kind: "Tail",
         Count: count.(ast.Expr),
         Loc: loc(c),
       }, nil
     }
-  / "tail" !(__ "(") &EOKW {
+  / TAIL !(__ "(") &EOKW {
       return &ast.Tail{
         Kind: "Tail",
         Loc: loc(c),
@@ -470,7 +470,7 @@ TailOp
     }
 
 WhereOp
-  = "where" _ expr:Expr {
+  = WHERE _ expr:Expr {
       return &ast.Where{
         Kind: "Where",
         Expr: expr.(ast.Expr),
@@ -479,15 +479,15 @@ WhereOp
     }
 
 UniqOp
-  = "uniq" _ "-c" {
+  = UNIQ _ "-c" {
       return &ast.Uniq{Kind: "Uniq", Cflag: true, Loc: loc(c)}, nil
     }
-  / "uniq" !(__ "(") &EOKW {
+  / UNIQ !(__ "(") &EOKW {
       return &ast.Uniq{Kind: "Uniq", Loc: loc(c)}, nil
     }
 
 PutOp
-  = "put" _ args:Assignments {
+  = PUT _ args:Assignments {
       return &ast.Put{
           Kind: "Put",
           Args: sliceOf[ast.Assignment](args),
@@ -496,7 +496,7 @@ PutOp
     }
 
 RenameOp
-  = "rename" _ first:Assignment rest:(__ "," __ cl:Assignment { return cl, nil })* {
+  = RENAME _ first:Assignment rest:(__ "," __ cl:Assignment { return cl, nil })* {
       args := append([]any{first}, rest.([]any)...)
       return &ast.Rename{
         Kind: "Rename",
@@ -510,17 +510,17 @@ RenameOp
 // (https://github.com/brimdata/super/issues/2114) for the fuse op and
 // aggregator, at which point we may no longer need this.
 FuseOp
-  = "fuse" !(__ "(") &EOKW {
+  = FUSE !(__ "(") &EOKW {
       return &ast.Fuse{Kind: "Fuse", Loc: loc(c)}, nil
     }
 
 ShapeOp
-  = "shape" !(__ "(") &EOKW {
+  = SHAPE !(__ "(") &EOKW {
       return &ast.Shape{Kind: "Shape", Loc: loc(c)}, nil
     }
 
 JoinOp
-  = style:JoinStyle "join" rightInput:JoinRightInput "on" _ key:JoinKey optKey:(__ "=" __ JoinKey)? optArgs:(_ FlexAssignments)? {
+  = style:JoinStyle JOIN rightInput:JoinRightInput ON _ key:JoinKey optKey:(__ "=" __ JoinKey)? optArgs:(_ FlexAssignments)? {
       o := &ast.Join{
         Kind: "Join",
         Style: style.(string),
@@ -540,10 +540,10 @@ JoinOp
     }
 
 JoinStyle
-  = "anti" _  { return "anti", nil }
-  / "inner" _ { return "inner", nil }
-  / "left"  _ { return "left", nil }
-  / "right" _ { return "right", nil }
+  = ANTI _  { return "anti", nil }
+  / INNER _ { return "inner", nil }
+  / LEFT  _ { return "left", nil }
+  / RIGHT _ { return "right", nil }
   / ""        { return "inner", nil }
 
 JoinRightInput
@@ -555,7 +555,7 @@ JoinKey
   / "(" expr:Expr ")" { return expr, nil }
 
 SampleOp
-  = "sample" &EOKW expr:(_ e:Lval { return e, nil })? {
+  = SAMPLE &EOKW expr:(_ e:Lval { return e, nil })? {
       o := &ast.Sample{Kind: "Sample", Loc: loc(c)}
       if expr != nil {
         o.Expr = expr.(ast.Expr)
@@ -578,7 +578,7 @@ OpAssignment
     }
 
 LoadOp
-  = "load" _ pool:Name branch:PoolBranch? author:AuthorArg? message:MessageArg? meta:MetaArg? {
+  = LOAD _ pool:Name branch:PoolBranch? author:AuthorArg? message:MessageArg? meta:MetaArg? {
       return &ast.Load{
         Kind: "Load",
         Pool: nullableName(pool),
@@ -591,19 +591,19 @@ LoadOp
     }
 
 AuthorArg
-  = _ "author" _ n:Name { return n, nil }
+  = _ AUTHOR _ n:Name { return n, nil }
 
 MessageArg
-  = _ "message" _ n:Name { return n, nil }
+  = _ MESSAGE _ n:Name { return n, nil }
 
 MetaArg
-  = _ "meta" _ n:Name { return n, nil }
+  = _ META _ n:Name { return n, nil }
 
 PoolBranch
   = "@" branch:Name { return branch, nil }
 
 OutputOp
-  = "output" _ name:Identifier {
+  = OUTPUT _ name:Identifier {
       return &ast.Output{
         Kind: "Output",
         Name: name.(*ast.ID),
@@ -612,7 +612,7 @@ OutputOp
     }
 
 DebugOp
-  = "debug" &EOKW expr:(_ e:Expr { return e, nil })? {
+  = DEBUG &EOKW expr:(_ e:Expr { return e, nil })? {
       d := &ast.Debug{
         Kind: "Debug",
         Loc: loc(c),
@@ -633,7 +633,7 @@ FromOp
   }
 
 FromKeyWord
-  = "from"
+  = FROM
   / DeprecatedFroms
 
 DeprecatedFroms = "get" / "file" / "pool"
@@ -689,7 +689,7 @@ FromEntity
     }
   / join:JoinOperation !AliasClause {return join, nil}
   / "(" __ join:JoinOperation __ ")" { return join, nil }
-  / "(" __ s:SQLPipe __ ")" { 
+  / "(" __ s:SQLPipe __ ")" {
       return s, nil
     }
    / name:Name    { return name, nil }
@@ -713,7 +713,7 @@ FromArgs
         Loc: loc(c),
       }, nil
     }
-  / format:FormatArg !(_ ("method" / "header" / "body")) {
+  / format:FormatArg !(_ (METHOD / HEADERS / BODY)) {
       return &ast.FormatArg{
         Kind: "FormatArg",
         Format: nullableName(format),
@@ -737,13 +737,13 @@ FromArgs
       return h, nil
     }
 
-FormatArg = _ "format" _ n:Name { return n, nil }
+FormatArg = _ FORMAT _ n:Name { return n, nil }
 
-MethodArg = _ "method" _ n:Name { return n, nil }
+MethodArg = _ METHOD _ n:Name { return n, nil }
 
-HeadersArg = _ "headers" _ v:Record { return v, nil }
+HeadersArg = _ HEADERS _ v:Record { return v, nil }
 
-BodyArg = _ "body" _ n:Name { return n, nil }
+BodyArg = _ BODY _ n:Name { return n, nil }
 
 UnquotedURL = ("http://" / "https://") URLChar+ { return string(c.text), nil }
 
@@ -751,7 +751,7 @@ URLChar = [0-9a-zA-Z!@$%&_=,./?:[\]~+-]
 
 //XXX this should be a timestamp
 PoolAt
-  = _ "at" _ id:KSUID { return id, nil }
+  = _ AT _ id:KSUID { return id, nil }
 
 //XXX this should allow 0x bytes format
 KSUID = ([0-9a-zA-Z])+ { return string(c.text), nil }
@@ -761,11 +761,6 @@ PoolCommit
 
 PoolMeta
   = ":" n:Name { return n, nil }
-
-OrderArg
-  = _ "order" _ exprs:SortExprs {
-      return exprs, nil
-    }
 
 SortExprs
   = first:SortExpr rest:(__ "," __ s:SortExpr { return s, nil })* {
@@ -782,23 +777,23 @@ SortExpr
     }
 
 OrderSpec
-  = ("asc" / "desc") {
-      return &ast.ID{Kind: "ID", Name: string(c.text), Loc: loc(c)}, nil
+  = o:(ASC / DESC) {
+      return &ast.ID{Kind: "ID", Name: o.(string), Loc: loc(c)}, nil
     }
 
 TapArg
-  = _ "tap" { return true, nil }
+  = _ TAP { return true, nil }
   / "" { return false, nil }
 
 PassOp
-  = "pass" !(__ "(") &EOKW {
+  = PASS !(__ "(") &EOKW {
       return &ast.Pass{Kind: "Pass", Loc: loc(c)}, nil
     }
 
 // Currently we support only "explode by type" but this will be generalized
 // to explode arbitrary arrays, records, etc.
 ExplodeOp
-  = "explode" _ args:Exprs typ:TypeArg as:AsArg? {
+  = EXPLODE _ args:Exprs typ:TypeArg as:AsArg? {
       o := &ast.Explode{
         Kind: "Explode",
         Args: sliceOf[ast.Expr](args),
@@ -812,7 +807,7 @@ ExplodeOp
     }
 
 MergeOp
-  = "merge" _ expr:Expr {
+  = MERGE _ expr:Expr {
       return &ast.Merge{
         Kind: "Merge",
         Expr: expr.(ast.Expr),
@@ -821,7 +816,7 @@ MergeOp
     }
 
 OverOp
-  = "over" _ exprs:Exprs locals:Locals? body:Lateral? {
+  = OVER _ exprs:Exprs locals:Locals? body:Lateral? {
       o := &ast.Over{
         Kind: "Over",
         Exprs: sliceOf[ast.Expr](exprs),
@@ -845,7 +840,7 @@ Lateral
     }
 
 Locals
-  = _ "with" _ first:LocalsAssignment rest:(__ "," __ a:LocalsAssignment { return a, nil })* {
+  = _ WITH _ first:LocalsAssignment rest:(__ "," __ a:LocalsAssignment { return a, nil })* {
       return prepend(first, rest), nil
     }
 
@@ -863,7 +858,7 @@ LocalsAssignment
     }
 
 YieldOp
-  = "yield" _ exprs:Exprs {
+  = YIELD _ exprs:Exprs {
       return &ast.Yield{
           Kind: "Yield",
           Exprs: sliceOf[ast.Expr](exprs),
@@ -872,10 +867,10 @@ YieldOp
     }
 
 TypeArg
-  = _ "by" _ typ:Type { return typ, nil }
+  = _ BY _ typ:Type { return typ, nil }
 
 AsArg
-  = _ "as" _ lhs:Lval { return lhs, nil }
+  = _ AS _ lhs:Lval { return lhs, nil }
 
 /// === Expressions ===
 
@@ -920,13 +915,13 @@ ConditionalExpr
 
 LogicalOrExpr
   = first:LogicalAndExpr
-    rest:(__ op:OrToken __ expr:LogicalAndExpr { return []any{op, expr}, nil })* {
+    rest:(__ op:OR __ expr:LogicalAndExpr { return []any{op, expr}, nil })* {
         return makeBinaryExprChain(first, rest, c), nil
     }
 
 LogicalAndExpr
   = first:ComparisonExpr
-    rest:(__ op:AndToken __ expr:ComparisonExpr { return []any{op, expr}, nil })* {
+    rest:(__ op:AND __ expr:ComparisonExpr { return []any{op, expr}, nil })* {
         return makeBinaryExprChain(first, rest, c), nil
     }
 
@@ -961,7 +956,7 @@ MultiplicativeExpr
 MultiplicativeOperator = ("*" / "/" / "%") { return string(c.text), nil }
 
 NotExpr
-  = (NotToken _ / "!" __) e:NotExpr {
+  = (NOT _ / "!" __) e:NotExpr {
       return &ast.UnaryExpr{
           Kind: "UnaryExpr",
           Op: "!",
@@ -1031,8 +1026,8 @@ FuncExpr
 FuncGuard = NotFuncs __ "("
 
 NotFuncs
-  = "not"
-  / "select"
+  = NOT
+  / SELECT
 
 Cast
   = typ:TypeLiteral __ "(" __ expr:(OverExpr / Expr) __ ")" {
@@ -1055,7 +1050,7 @@ Function
     }
 
 CaseExpr
-  = "case"i cases:When+ else_:(_ "else" _ Expr)? _ "end"i (_ "case"i)? {
+  = CASE cases:When+ else_:(_ "else" _ Expr)? _ "end"i (_ "case"i)? {
         whens := sliceOf[ast.When](cases)
         cond := &ast.Conditional{
             Kind: "Conditional",
@@ -1079,7 +1074,7 @@ CaseExpr
         }
         return cond, nil
     }
-  / "case"i _ expr:Expr whens:When+ else_:(_ "else" _ Expr)? _ "end"i (_ "case"i)? {
+  / CASE _ expr:Expr whens:When+ else_:(_ "else" _ Expr)? _ "end"i (_ "case"i)? {
         cond := &ast.CaseExpr{
             Kind: "CaseExpr",
             Expr: expr.(ast.Expr),
@@ -1093,7 +1088,7 @@ CaseExpr
     }
 
 When
-  = _ "when"i __ cond:Expr _ "then"i _ then:Expr {
+  = _ WHEN _ cond:Expr _ THEN _ then:Expr {
       return ast.When{
         Kind: "When",
         Cond: cond.(ast.Expr),
@@ -1142,7 +1137,7 @@ Primary
   / "(" __ expr:Expr __ ")" { return expr, nil }
 
 OverExpr
-  = "over" _ exprs:Exprs locals:Locals? __ Pipe __ body:Seq {
+  = OVER _ exprs:Exprs locals:Locals? __ Pipe __ body:Seq {
       return &ast.OverExpr{
           Kind: "OverExpr",
           Locals: sliceOf[ast.Def](locals),
@@ -1283,11 +1278,11 @@ IntegerLiteral
     }
 
 BooleanLiteral
-  = TrueToken  { return newPrimitive(c, "bool", "true"), nil }
-  / FalseToken { return newPrimitive(c, "bool", "false"), nil }
+  = TRUE  { return newPrimitive(c, "bool", "true"), nil }
+  / FALSE { return newPrimitive(c, "bool", "false"), nil }
 
 NullLiteral
-  = NullToken { return newPrimitive(c, "null", ""), nil }
+  = NULL { return newPrimitive(c, "null", ""), nil }
 
 BytesLiteral
   = "0x" HexDigit* {
@@ -1309,7 +1304,7 @@ Type
 
 AmbiguousType
   = name:PrimitiveType !IdentifierRest { return name, nil }
-  / "error" __ "(" __ t:Type __ ")" {
+  / ERROR __ "(" __ t:Type __ ")" {
       return &ast.TypeError{
           Kind: "TypeError",
           Type: t.(ast.Type),
@@ -1463,15 +1458,6 @@ Name
 
 DottedIDs
   = (IdentifierStart / ".") (IdentifierRest / ".")* { return string(c.text), nil }
-
-AndToken = ("and" / "AND") !IdentifierRest { return "and", nil }
-ByToken = "by" !IdentifierRest
-FalseToken = "false" !IdentifierRest
-InToken = "in" !IdentifierRest
-NotToken = ("not" / "NOT") !IdentifierRest { return "not", nil }
-NullToken = "null" !IdentifierRest
-OrToken = ("or" / "OR") !IdentifierRest { return "or", nil }
-TrueToken = "true" !IdentifierRest
 
 Identifier
   = id:IdentifierName {
@@ -1848,7 +1834,7 @@ SelectExpr
     }
 
 Select 
-  = KW_SELECT 
+  = SELECT 
     distinct:OptDistinct
     value:OptSelectValue
     //XXX for whitespace in front of target need it only if it begins with 
@@ -1884,13 +1870,13 @@ Select
     }
 
 OptDistinct
-  = _ KW_ALL        { return false, nil }
-  / _ KW_DISTINCT   { return true, nil }
+  = _ ALL        { return false, nil }
+  / _ DISTINCT   { return true, nil }
   / ""              { return false, nil }
 
 OptSelectValue
-  = _ KW_AS _ KW_VALUE  { return true, nil }
-  / _ KW_VALUE          { return true, nil } // SQL++ form XXX decide which
+  = _ AS _ VALUE  { return true, nil }
+  / _ VALUE          { return true, nil } // SQL++ form XXX decide which
   / ""                  { return false, nil }
 
 OptWithClause 
@@ -1898,7 +1884,7 @@ OptWithClause
   / ""          { return nil, nil }
 
 WithClause 
-  = _ KW_WITH r:OptRecursive _ ctes:CteList {
+  = _ WITH r:OptRecursive _ ctes:CteList {
         return &ast.With{
             Kind: "With",
             Recursive: r.(bool), 
@@ -1908,7 +1894,7 @@ WithClause
     }
 
 OptRecursive 
-  = _ KW_RECURSIVE  { return true, nil }
+  = _ RECURSIVE  { return true, nil }
   / ""              { return false, nil }
 
 CteList = first:Cte rest:( __ "," __ cte:Cte { return cte, nil} )* {
@@ -1916,7 +1902,7 @@ CteList = first:Cte rest:( __ "," __ cte:Cte { return cte, nil} )* {
 }
 
 Cte
-  = name:AliasName _ KW_AS m:OptMaterialized __ "(" __ s:SQLPipe __ ")" {
+  = name:AliasName _ AS m:OptMaterialized __ "(" __ s:SQLPipe __ ")" {
         return ast.CTE{
             Name: name.(string),
             Materialized: m.(*bool),
@@ -1928,12 +1914,12 @@ Cte
 AliasName = Identifier
 
 OptMaterialized 
-  = _ KW_MATERIALIZED _             { return true, nil }
-  / _ KW_NOT _ KW_MATERIALIZED _    { return false, nil }
+  = _ MATERIALIZED _             { return true, nil }
+  / _ NOT _ MATERIALIZED _    { return false, nil }
   / ""                              { return false, nil }
 
 OptAllClause
-  = _ KW_ALL 
+  = _ ALL 
   / ""
 
 OptFromClause
@@ -1951,7 +1937,7 @@ OptGroupClause
   / ""                  { return nil, nil }
 
 GroupClause
-  = KW_GROUP _ KW_BY _ list:GroupByList { return list, nil }
+  = GROUP _ BY _ list:GroupByList { return list, nil }
 
 GroupByList 
   = first:GroupByItem rest:( __ "," __ g:GroupByItem { return g, nil } )* {
@@ -1965,7 +1951,7 @@ OptHavingClause
   / "" { return nil, nil }
 
 HavingClause
-  = KW_HAVING _ e:Expr { return e, nil }
+  = HAVING _ e:Expr { return e, nil }
 
 JoinOperation
   = CrossJoin
@@ -1983,7 +1969,7 @@ CrossJoin
 
 CrossJoinOp 
   = __ "," __ 
-  / _ KW_CROSS _ KW_JOIN _ 
+  / _ CROSS _ JOIN _ 
 
 ConditionJoin
   = left:FromElem style:SQLJoinStyle _ right:FromElem e:JoinExpr {
@@ -1998,19 +1984,19 @@ ConditionJoin
     }
 
 SQLJoinStyle 
-  = (_ KW_INNER)? _ KW_JOIN             { return "inner", nil }
-  / _ KW_FULL (_ KW_OUTER)? _ KW_JOIN   { return "full", nil }
-  / _ KW_LEFT (_ KW_OUTER)? _ KW_JOIN   { return "left", nil }
-  / _ KW_RIGHT (_ KW_OUTER)? _ KW_JOIN   { return "right", nil }
+  = (_ INNER)? _ JOIN             { return "inner", nil }
+  / _ FULL (_ OUTER)? _ JOIN   { return "full", nil }
+  / _ LEFT (_ OUTER)? _ JOIN   { return "left", nil }
+  / _ RIGHT (_ OUTER)? _ JOIN   { return "right", nil }
 
 JoinExpr 
-  = _ KW_ON _ e:Expr { 
+  = _ ON _ e:Expr { 
         return &ast.JoinOn{
             Kind: "JoinOn", 
             Expr: e.(ast.Expr),
         }, nil
     }
-  / _ KW_USING __ "(" __ fields:FieldExprs __ ")" {
+  / _ USING __ "(" __ fields:FieldExprs __ ")" {
         return &ast.JoinUsing{
             Kind: "JoinUsing",
             Fields: sliceOf[ast.Expr](fields),
@@ -2018,7 +2004,7 @@ JoinExpr
     }
 
 OptOrdinality 
-  = _ KW_WITH _ KW_ORDINALITY   {
+  = _ WITH _ ORDINALITY   {
         return &ast.Ordinality{
             Kind: "Ordinality",
             Loc: loc(c),
@@ -2031,7 +2017,7 @@ OptAlias
   / ""              { return nil, nil }
 
 AliasClause 
-  = (KW_AS _)? !(SQLGuard / DeprecatedFroms) name:IdentifierName { // optional column defs no types
+  = (AS _)? !(SQLGuard / DeprecatedFroms) name:IdentifierName { // optional column defs no types
       return &ast.Name{Kind: "Name", Text: name.(string), Loc: loc(c)}, nil
     }
 
@@ -2055,11 +2041,11 @@ SelectElem
     }
 
 OptAsClause 
-  = _ KW_AS _ id:Identifier { return id, nil }
+  = _ AS _ id:Identifier { return id, nil }
   / ""  { return nil, nil }
 
 OptOrderByClause 
-  = _ KW_ORDER _ KW_BY _ list:OrderByList { 
+  = _ ORDER _ BY _ list:OrderByList { 
         return &ast.OrderBy{
           Kind: "OrderBy",
           Exprs: list.([]ast.SortExpr),
@@ -2086,13 +2072,13 @@ OrderByItem
     }
 
 OptAscDesc
-  = _ KW_ASC   { return &ast.ID{Kind: "ID", Name: "asc", Loc: loc(c)}, nil }
-  / _ KW_DESC  { return &ast.ID{Kind: "ID", Name: "desc", Loc: loc(c)}, nil }
+  = _ ASC   { return &ast.ID{Kind: "ID", Name: "asc", Loc: loc(c)}, nil }
+  / _ DESC { return &ast.ID{Kind: "ID", Name: "desc", Loc: loc(c)}, nil }
   / ""         { return nil, nil }
 
 OptNullsOrder
-  = _ KW_NULLS _ KW_FIRST   { return &ast.ID{Kind: "ID", Name: "first", Loc: loc(c)}, nil }
-  / _ KW_NULLS _ KW_LAST    { return &ast.ID{Kind: "ID", Name: "last", Loc: loc(c)}, nil }
+  = _ NULLS _ FIRST   { return &ast.ID{Kind: "ID", Name: "first", Loc: loc(c)}, nil }
+  / _ NULLS _ LAST    { return &ast.ID{Kind: "ID", Name: "last", Loc: loc(c)}, nil }
   / ""                      { return nil, nil }
 
 SelectLimit
@@ -2121,8 +2107,8 @@ OptLimitClause
   / ""              { return nil, nil }
 
 LimitClause 
-  = KW_LIMIT _ KW_ALL { return &ast.Limit{Kind:"Limit", Loc: loc(c)}, nil }
-  / KW_LIMIT _ e:Expr {
+  = LIMIT _ ALL { return &ast.Limit{Kind:"Limit", Loc: loc(c)}, nil }
+  / LIMIT _ e:Expr {
       return &ast.Limit{
         Kind: "Limit",
         Count: e.(ast.Expr),
@@ -2135,7 +2121,7 @@ OptOffsetClause
   / ""  { return nil, nil }
 
 OffsetClause 
-  = KW_OFFSET _ e:Expr  { return e, nil }
+  = OFFSET _ e:Expr  { return e, nil }
 
 SetOperation
   = left:SelectExpr distinct:SetOp _ right:SelectExpr {
@@ -2149,66 +2135,103 @@ SetOperation
     }
 
 SetOp 
-  = _ KW_UNION _ KW_ALL       { return false, nil }
-  / _ KW_UNION _ KW_DISTINCT  { return true, nil }
+  = _ UNION _ ALL       { return false, nil }
+  / _ UNION _ DISTINCT  { return true, nil }
   / ""                      { return true, nil}
 
 // XXX incomplete
 SQLGuard =
-    KW_FROM / KW_GROUP / KW_HAVING / KW_SELECT / KW_RECURSIVE
-  / KW_INNER / KW_LEFT / KW_RIGHT / KW_OUTER / KW_CROSS / KW_JOIN
-  / KW_UNION
-  / KW_ORDER
-  / KW_LIMIT
-  / KW_WHERE 
-  / KW_WITH
-  / KW_USING
-  / KW_ON
+    FROM / GROUP / HAVING / SELECT / RECURSIVE
+  / INNER / LEFT / RIGHT / OUTER / CROSS / JOIN
+  / UNION
+  / ORDER
+  / LIMIT
+  / WHERE 
+  / WITH
+  / USING
+  / ON
 
-KW_AGGREGATE  = "AGGREGATE"i    !IdentifierStart
-
-KW_NULLS    = "NULLS"i  !IdentifierStart
-KW_NULL     = "NULL"i   !IdentifierStart
-KW_FIRST    = "FIRST"i  !IdentifierStart
-KW_LAST     = "LAST"i   !IdentifierStart
-
-KW_SELECT   = "SELECT"i     !IdentifierStart
-KW_RECURSIVE= "RECURSIVE"   !IdentifierStart
-
-KW_FROM     = "FROM"i       !IdentifierStart
-
-KW_AS       = "AS"i         !IdentifierStart
-
-KW_ON       = "ON"i       !IdentifierStart
-KW_LEFT     = "LEFT"i     !IdentifierStart
-KW_RIGHT    = "RIGHT"i    !IdentifierStart
-KW_FULL     = "FULL"i     !IdentifierStart
-KW_INNER    = "INNER"i    !IdentifierStart
-KW_CROSS    = "CROSS"i    !IdentifierStart
-KW_JOIN     = "JOIN"i     !IdentifierStart
-KW_OUTER    = "OUTER"i    !IdentifierStart
-KW_UNION    = "UNION"i    !IdentifierStart
-
-KW_VALUE    = "VALUE"i    !IdentifierStart
-KW_USING    = "USING"i    !IdentifierStart
-
-KW_WHERE    = "WHERE"i      !IdentifierStart
-KW_WITH     = "WITH"i       !IdentifierStart
-
-KW_GROUP    = "GROUP"i      !IdentifierStart
-KW_BY       = "BY"i         !IdentifierStart
-KW_ORDER    = "ORDER"i      !IdentifierStart
-KW_HAVING   = "HAVING"i     !IdentifierStart
-KW_ORDINALITY  = "ORDINALITY"i !IdentifierStart
-
-KW_LIMIT    = "LIMIT"i      !IdentifierStart
-KW_OFFSET   = "OFFSET"i     !IdentifierStart
-
-KW_ASC      = "ASC"i        !IdentifierStart 
-KW_DESC     = "DESC"i       !IdentifierStart 
-
-KW_ALL      = "ALL"i        !IdentifierStart
-KW_DISTINCT = "DISTINCT"i   !IdentifierStart
-
-KW_NOT      = "NOT"i        !IdentifierStart
-
+AGGREGATE  = "AGGREGATE"i       !IdentifierRest
+ALL        = "ALL"i             !IdentifierRest
+AND        = "AND"i             !IdentifierRest { return "and", nil }
+ANTI       = "ANTI"i            !IdentifierRest
+AS         = "AS"i              !IdentifierRest
+ASC        = "ASC"i             !IdentifierRest { return "asc", nil }
+ASSERT     = "ASSERT"i          !IdentifierRest
+AT         = "AT"i              !IdentifierRest
+AUTHOR     = "AUTHOR"i          !IdentifierRest
+BODY       = "BODY"i            !IdentifierRest
+BY         = "BY"i              !IdentifierRest
+CASE       = "CASE"i            !IdentifierRest
+CONST      = "CONST"i           !IdentifierRest
+CROSS      = "CROSS"i           !IdentifierRest
+CUT        = "CUT"i             !IdentifierRest
+DEBUG      = "DEBUG"i           !IdentifierRest
+DEFAULT    = "DEFAULT"i         !IdentifierRest
+DESC       = "DESC"i            !IdentifierRest { return "desc", nil }
+DISTINCT   = "DISTINCT"i        !IdentifierRest
+DROP       = "DROP"i            !IdentifierRest 
+ERROR      = "ERROR"i           !IdentifierRest
+EXPLODE    = "EXPLODE"i         !IdentifierRest
+FALSE      = "FALSE"i           !IdentifierRest
+FIRST      = "FIRST"i           !IdentifierRest
+FORK       = "FORK"i            !IdentifierRest
+FORMAT     = "FORMAT"i          !IdentifierRest
+FROM       = "FROM"i            !IdentifierRest
+FULL       = "FULL"i            !IdentifierRest
+FUNC       = "FUNC"i            !IdentifierRest
+FUSE       = "FUSE"i            !IdentifierRest
+GROUP      = "GROUP"i           !IdentifierRest
+HAVING     = "HAVING"i          !IdentifierRest
+HEAD       = "HEAD"i            !IdentifierRest 
+HEADERS    = "HEADERS"i         !IdentifierRest
+IN         = "IN"i              !IdentifierRest
+INNER      = "INNER"i           !IdentifierRest
+JOIN       = "JOIN"i            !IdentifierRest
+LAST       = "LAST"i            !IdentifierRest
+LEFT       = "LEFT"i            !IdentifierRest
+LIMIT      = "LIMIT"i           !IdentifierRest
+LOAD       = "LOAD"i            !IdentifierRest
+MATERIALIZED = "MATERIALIZED"i  !IdentifierRest
+MERGE      = "MERGE"i           !IdentifierRest
+MESSAGE    = "MESSAGE"i         !IdentifierRest
+META       = "META"i            !IdentifierRest
+METHOD     = "METHOD"i          !IdentifierRest
+NOT        = "NOT"i             !IdentifierRest
+NULL       = "NULL"i            !IdentifierRest
+NULLS      = "NULLS"i           !IdentifierRest
+OFFSET     = "OFFSET"i          !IdentifierRest
+ON         = "ON"i              !IdentifierRest
+OP         = "OP"i              !IdentifierRest
+OR         = "OR"i              !IdentifierRest { return "or", nil }
+ORDER      = "ORDER"i           !IdentifierRest
+ORDINALITY = "ORDINALITY"i      !IdentifierRest
+OUTER      = "OUTER"i           !IdentifierRest
+OUTPUT     = "OUTPUT"i          !IdentifierRest
+OVER       = "OVER"i            !IdentifierRest
+PASS       = "PASS"i            !IdentifierRest
+PUT        = "PUT"i             !IdentifierRest
+RECURSIVE  = "RECURSIVE"        !IdentifierRest
+RENAME     = "RENAME"i          !IdentifierRest
+RIGHT      = "RIGHT"i           !IdentifierRest
+SAMPLE     = "SAMPLE"i          !IdentifierRest
+SEARCH     = "SEARCH"i          !IdentifierRest
+SELECT     = "SELECT"i          !IdentifierRest
+SHAPE      = "SHAPE"i           !IdentifierRest
+SORT       = "SORT"i            !IdentifierRest
+SUMMARIZE  = "SUMMARIZE"i       !IdentifierRest
+SWITCH     = "SWITCH"i          !IdentifierRest
+TAIL       = "TAIL"i            !IdentifierRest 
+TAP        = "TAP"i             !IdentifierRest
+THEN       = "THEN"i            !IdentifierRest
+TOP        = "TOP"i             !IdentifierRest
+TRUE       = "TRUE"i            !IdentifierRest
+TYPE       = "TYPE"i            !IdentifierRest
+UNION      = "UNION"i           !IdentifierRest
+UNIQ       = "UNIQ"i            !IdentifierRest 
+USING      = "USING"i           !IdentifierRest
+VALUE      = "VALUE"i           !IdentifierRest
+WHEN       = "WHEN"i            !IdentifierRest
+WHERE      = "WHERE"i           !IdentifierRest
+WITH       = "WITH"i            !IdentifierRest
+YIELD      = "YIELD"i           !IdentifierRest
