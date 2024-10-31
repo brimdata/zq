@@ -237,7 +237,7 @@ produces
 ```mdtest-output
 super: error parsing SuperPipe at line 1, column 8:
 Defunct=
-   === ^ ===
+    === ^ ===
 ```
 However, wrapping in quotes to performa a string-literal search
 gives the desired result:
