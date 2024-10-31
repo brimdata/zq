@@ -204,17 +204,17 @@ func parallelPaths(op dag.Op) ([]dag.Seq, bool) {
 	return nil, false
 }
 
-// concurrentPath returns the largest path within ops from front to end that can
+// concurrentPath returns the largest path within seq from front to end that can
 // be parallelized and run concurrently while preserving its semantics where
-// the input to ops is known to have an order defined by sortKey (or order.Nil
+// the input to seq is known to have an order defined by sortKey (or order.Nil
 // if unknown).
 // The length of the concurrent path is returned and the sort order at
 // exit from that path is returned.  If sortKey is zero, then the
 // concurrent path is allowed to include operators that do not guarantee
 // an output order.
-func (o *Optimizer) concurrentPath(ops []dag.Op, sortKeys order.SortKeys) (length int, outputKeys order.SortKeys, orderRequired bool, err error) {
-	for k := range ops {
-		switch op := ops[k].(type) {
+func (o *Optimizer) concurrentPath(seq dag.Seq, sortKeys order.SortKeys) (length int, outputKeys order.SortKeys, orderRequired bool, err error) {
+	for k := range seq {
+		switch op := seq[k].(type) {
 		// This should be a boolean in op.go that defines whether
 		// function can be parallelized... need to think through
 		// what the meaning is here exactly.  This is all still a bit
@@ -256,5 +256,5 @@ func (o *Optimizer) concurrentPath(ops []dag.Op, sortKeys order.SortKeys) (lengt
 			sortKeys = next
 		}
 	}
-	return len(ops), sortKeys, true, nil
+	return len(seq), sortKeys, true, nil
 }
