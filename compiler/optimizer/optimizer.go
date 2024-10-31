@@ -189,7 +189,7 @@ func (o *Optimizer) OptimizeDeleter(seq dag.Seq, replicas int) (dag.Seq, error) 
 	lister.KeyPruner = maybeNewRangePruner(filter.Expr, sortKeys)
 	scatter := &dag.Scatter{Kind: "Scatter"}
 	for k := 0; k < replicas; k++ {
-		scatter.Paths = append(scatter.Paths, copyOps(dag.Seq{deleter}))
+		scatter.Paths = append(scatter.Paths, copySeq(dag.Seq{deleter}))
 	}
 	var merge dag.Op
 	if sortKeys.IsNil() {
@@ -281,7 +281,7 @@ func (o *Optimizer) optimizeSourcePaths(seq dag.Seq) (dag.Seq, error) {
 }
 
 func (o *Optimizer) SortKeys(seq dag.Seq) ([]order.SortKeys, error) {
-	return o.propagateSortKey(copyOps(seq), []order.SortKeys{nil})
+	return o.propagateSortKey(copySeq(seq), []order.SortKeys{nil})
 }
 
 // propagateSortKey analyzes a Seq and attempts to push the scan order of the data source
@@ -463,8 +463,7 @@ func (o *Optimizer) Parallelize(seq dag.Seq, n int) (dag.Seq, error) {
 		if len(seq) == 0 {
 			return seq, nil
 		}
-		var front dag.Seq
-		var tail []dag.Op
+		var front, tail dag.Seq
 		if lister, slicer, rest := matchSource(seq); lister != nil {
 			// We parallelize the scanning to achieve the desired concurrency,
 			// then the step below pulls downstream operators into the parallel
@@ -509,34 +508,34 @@ func (o *Optimizer) lookupPool(id ksuid.KSUID) (*lake.Pool, error) {
 	return o.lake.OpenPool(o.ctx, id)
 }
 
-func matchSource(ops []dag.Op) (*dag.Lister, *dag.Slicer, []dag.Op) {
-	lister, ok := ops[0].(*dag.Lister)
+func matchSource(seq dag.Seq) (*dag.Lister, *dag.Slicer, dag.Seq) {
+	lister, ok := seq[0].(*dag.Lister)
 	if !ok {
 		return nil, nil, nil
 	}
-	ops = ops[1:]
-	slicer, ok := ops[0].(*dag.Slicer)
+	seq = seq[1:]
+	slicer, ok := seq[0].(*dag.Slicer)
 	if ok {
-		ops = ops[1:]
+		seq = seq[1:]
 	}
-	if _, ok := ops[0].(*dag.SeqScan); !ok {
+	if _, ok := seq[0].(*dag.SeqScan); !ok {
 		panic("parseSource: no SeqScan")
 	}
-	return lister, slicer, ops
+	return lister, slicer, seq
 }
 
-// matchFilter attempts to find a filter from the front of op chain
-// and returns the filter's expression (and the modified chain) so
+// matchFilter attempts to find a filter from the front seq
+// and returns the filter's expression (and the modified seq) so
 // we can lift the filter predicate into the scanner.
-func matchFilter(in []dag.Op) (dag.Expr, []dag.Op) {
-	if len(in) == 0 {
-		return nil, in
+func matchFilter(seq dag.Seq) (dag.Expr, dag.Seq) {
+	if len(seq) == 0 {
+		return nil, seq
 	}
-	filter, ok := in[0].(*dag.Filter)
+	filter, ok := seq[0].(*dag.Filter)
 	if !ok {
-		return nil, in
+		return nil, seq
 	}
-	return filter.Expr, in[1:]
+	return filter.Expr, seq[1:]
 }
 
 // newRangePruner returns a new predicate based on the input predicate pred

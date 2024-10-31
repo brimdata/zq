@@ -221,9 +221,9 @@ func fieldOf(e dag.Expr) field.Path {
 	return nil
 }
 
-func copyOps(ops []dag.Op) []dag.Op {
-	var copies []dag.Op
-	for _, o := range ops {
+func copySeq(seq dag.Seq) dag.Seq {
+	var copies dag.Seq
+	for _, o := range seq {
 		copies = append(copies, copyOp(o))
 	}
 	return copies

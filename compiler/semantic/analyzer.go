@@ -100,8 +100,8 @@ func AddDefaultSource(ctx context.Context, seq *dag.Seq, source *data.Source, he
 			},
 		}},
 	}
-	ops := newAnalyzer(ctx, &srcfiles.List{}, source, head).semFrom(fromHead, nil)
-	seq.Prepend(ops[0])
+	headSeq := newAnalyzer(ctx, &srcfiles.List{}, source, head).semFrom(fromHead, nil)
+	seq.Prepend(headSeq[0])
 	return nil
 }
 

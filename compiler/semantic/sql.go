@@ -71,7 +71,7 @@ func (a *analyzer) semSelect(sel *ast.Select, seq dag.Seq) dag.Seq {
 		}
 	}
 	if len(seq) == 0 {
-		seq = []dag.Op{dag.PassOp}
+		seq = dag.Seq{dag.PassOp}
 	}
 	if sel.Distinct {
 		seq = a.semDistinct(seq)

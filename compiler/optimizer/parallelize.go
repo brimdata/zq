@@ -8,20 +8,20 @@ import (
 	"github.com/brimdata/super/order"
 )
 
-func (o *Optimizer) parallelizeScan(ops []dag.Op, replicas int) ([]dag.Op, error) {
+func (o *Optimizer) parallelizeScan(seq dag.Seq, replicas int) (dag.Seq, error) {
 	// For now we parallelize only pool scans and no metadata scans.
 	// We can do the latter when we want to scale the performance of metadata.
 	if replicas < 2 {
 		return nil, fmt.Errorf("internal error: parallelizeScan: bad replicas: %d", replicas)
 	}
-	if scan, ok := ops[0].(*dag.SeqScan); ok {
-		return o.parallelizeSeqScan(scan, ops, replicas)
+	if scan, ok := seq[0].(*dag.SeqScan); ok {
+		return o.parallelizeSeqScan(scan, seq, replicas)
 	}
 	return nil, errors.New("parallelization of non-pool queries is not yet supported")
 }
 
-func (o *Optimizer) parallelizeSeqScan(scan *dag.SeqScan, ops []dag.Op, replicas int) ([]dag.Op, error) {
-	if len(ops) == 1 && scan.Filter == nil {
+func (o *Optimizer) parallelizeSeqScan(scan *dag.SeqScan, seq dag.Seq, replicas int) (dag.Seq, error) {
+	if len(seq) == 1 && scan.Filter == nil {
 		// We don't try to parallelize the path if it's simply scanning and does no
 		// other work.  We might want to revisit this down the road if
 		// the system would benefit for parallel reading and merging.
@@ -37,7 +37,7 @@ func (o *Optimizer) parallelizeSeqScan(scan *dag.SeqScan, ops []dag.Op, replicas
 	}
 	// concurrentPath will check that the path consisting of the original source
 	// sequence and any lifted sequence is still parallelizable.
-	n, outputKeys, _, needMerge, err := o.concurrentPath(ops[1:], srcSortKeys)
+	n, outputKeys, _, needMerge, err := o.concurrentPath(seq[1:], srcSortKeys)
 	if err != nil {
 		return nil, err
 	}
@@ -45,14 +45,14 @@ func (o *Optimizer) parallelizeSeqScan(scan *dag.SeqScan, ops []dag.Op, replicas
 	if len(outputKeys) > 1 {
 		return nil, nil
 	}
-	head := ops[:n+1]
-	tail := ops[n+1:]
+	head := seq[:n+1]
+	tail := seq[n+1:]
 	scatter := &dag.Scatter{
 		Kind:  "Scatter",
 		Paths: make([]dag.Seq, replicas),
 	}
 	for k := 0; k < replicas; k++ {
-		scatter.Paths[k] = copyOps(head)
+		scatter.Paths[k] = copySeq(head)
 	}
 	var merge dag.Op
 	if needMerge {
@@ -70,7 +70,7 @@ func (o *Optimizer) parallelizeSeqScan(scan *dag.SeqScan, ops []dag.Op, replicas
 	} else {
 		merge = &dag.Combine{Kind: "Combine"}
 	}
-	return append([]dag.Op{scatter, merge}, tail...), nil
+	return append(dag.Seq{scatter, merge}, tail...), nil
 }
 
 func (o *Optimizer) optimizeParallels(seq dag.Seq) {
@@ -82,31 +82,31 @@ func (o *Optimizer) optimizeParallels(seq dag.Seq) {
 	})
 }
 
-// liftIntoParPaths examines a sequence of Ops to see if there's an opportunity to
-// lift operations downstream from a parallel Op into its parallel paths to
+// liftIntoParPaths examines seq to see if there's an opportunity to
+// lift operations downstream from a parallel op into its parallel paths to
 // enhance concurrency.  If so, we modify the sequential ops in place.
-func (o *Optimizer) liftIntoParPaths(ops []dag.Op) {
-	if len(ops) < 2 {
+func (o *Optimizer) liftIntoParPaths(seq dag.Seq) {
+	if len(seq) < 2 {
 		// Need a parallel, an optional merge/combine, and something downstream.
 		return
 	}
-	paths, ok := parallelPaths(ops[0])
+	paths, ok := parallelPaths(seq[0])
 	if !ok {
 		return
 	}
 	egress := 1
 	var merge *dag.Merge
-	switch op := ops[1].(type) {
+	switch op := seq[1].(type) {
 	case *dag.Merge:
 		merge = op
 		egress = 2
 	case *dag.Combine:
 		egress = 2
 	}
-	if egress >= len(ops) {
+	if egress >= len(seq) {
 		return
 	}
-	switch op := ops[egress].(type) {
+	switch op := seq[egress].(type) {
 	case *dag.Summarize:
 		// To decompose the groupby, we split the flowgraph into branches that run up to and including a groupby,
 		// followed by a post-merge groupby that composes the results.
@@ -155,15 +155,15 @@ func (o *Optimizer) liftIntoParPaths(ops []dag.Op) {
 				Order: op.Args[0].Order,
 			}
 			if egress == 2 {
-				ops[1] = merge
-				ops[2] = dag.PassOp
+				seq[1] = merge
+				seq[2] = dag.PassOp
 			} else {
-				ops[egress] = merge
+				seq[egress] = merge
 			}
 		} else {
 			// There already was an appropriate merge.
 			// Smash the sort into a nop.
-			ops[egress] = dag.PassOp
+			seq[egress] = dag.PassOp
 		}
 	case *dag.Head, *dag.Tail:
 		// Copy the head or tail into the parallel path and leave the original in
@@ -190,7 +190,7 @@ func (o *Optimizer) liftIntoParPaths(ops []dag.Op) {
 			paths[k].Append(copyOp(op))
 		}
 		// this will get removed later
-		ops[egress] = dag.PassOp
+		seq[egress] = dag.PassOp
 	}
 }
 
