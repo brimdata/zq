@@ -3,6 +3,7 @@ package semantic
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/brimdata/super"
 	"github.com/brimdata/super/compiler/ast"
@@ -437,7 +438,8 @@ func (a *analyzer) isAgg(e ast.Expr) (*dag.Agg, error) {
 		//XXX this doesn't work for aggs inside of expressions, sum(x)+sum(y)
 		return nil, nil
 	}
-	if _, err := agg.NewPattern(call.Name.Name, true); err != nil {
+	nameLower := strings.ToLower(call.Name.Name)
+	if _, err := agg.NewPattern(nameLower, true); err != nil {
 		return nil, nil
 	}
 	var arg ast.Expr
@@ -453,7 +455,7 @@ func (a *analyzer) isAgg(e ast.Expr) (*dag.Agg, error) {
 	}
 	return &dag.Agg{
 		Kind: "Agg",
-		Name: call.Name.Name,
+		Name: nameLower,
 		Expr: dagArg,
 	}, nil
 }
