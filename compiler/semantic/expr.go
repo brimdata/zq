@@ -380,17 +380,6 @@ func isStringConst(zctx *super.Context, e dag.Expr) (field string, ok bool) {
 	return "", false
 }
 
-func (a *analyzer) semSlice(slice *ast.BinaryExpr) *dag.BinaryExpr {
-	sliceFrom := a.semExprNullable(slice.LHS)
-	sliceTo := a.semExprNullable(slice.RHS)
-	return &dag.BinaryExpr{
-		Kind: "BinaryExpr",
-		Op:   ":",
-		LHS:  sliceFrom,
-		RHS:  sliceTo,
-	}
-}
-
 func (a *analyzer) semExprNullable(e ast.Expr) dag.Expr {
 	if e == nil {
 		return nil
