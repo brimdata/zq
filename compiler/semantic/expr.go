@@ -3,6 +3,7 @@ package semantic
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/brimdata/super"
 	"github.com/brimdata/super/compiler/ast"
@@ -146,14 +147,15 @@ func (a *analyzer) semExpr(e ast.Expr) dag.Expr {
 		}
 	case *ast.Agg:
 		expr := a.semExprNullable(e.Expr)
-		if expr == nil && e.Name != "count" {
+		nameLower := strings.ToLower(e.Name)
+		if expr == nil && nameLower != "count" {
 			a.error(e, fmt.Errorf("aggregator '%s' requires argument", e.Name))
 			return badExpr()
 		}
 		where := a.semExprNullable(e.Where)
 		return &dag.Agg{
 			Kind:  "Agg",
-			Name:  e.Name,
+			Name:  nameLower,
 			Expr:  expr,
 			Where: where,
 		}
@@ -406,6 +408,7 @@ func (a *analyzer) semCall(call *ast.Call) dag.Expr {
 	}
 	exprs := a.semExprs(call.Args)
 	name, nargs := call.Name.Name, len(call.Args)
+	nameLower := strings.ToLower(name)
 	// Call could be to a user defined func. Check if we have a matching func in
 	// scope.
 	udf, err := a.scope.LookupExpr(name)
@@ -425,6 +428,11 @@ func (a *analyzer) semCall(call *ast.Call) dag.Expr {
 			a.error(call, fmt.Errorf("call expects %d argument(s)", len(f.Params)))
 			return badExpr()
 		}
+		return &dag.Call{
+			Kind: "Call",
+			Name: name,
+			Args: exprs,
+		}
 	case super.LookupPrimitive(name) != nil:
 		// Primitive function call, change this to a cast.
 		if err := function.CheckArgCount(nargs, 1, 1); err != nil {
@@ -433,7 +441,8 @@ func (a *analyzer) semCall(call *ast.Call) dag.Expr {
 		}
 		exprs = append(exprs, &dag.Literal{Kind: "Literal", Value: "<" + name + ">"})
 		name = "cast"
-	case expr.NewShaperTransform(name) != 0:
+		nameLower = name
+	case expr.NewShaperTransform(nameLower) != 0:
 		if err := function.CheckArgCount(nargs, 1, 2); err != nil {
 			a.error(call, err)
 			return badExpr()
@@ -441,7 +450,7 @@ func (a *analyzer) semCall(call *ast.Call) dag.Expr {
 		if nargs == 1 {
 			exprs = append([]dag.Expr{&dag.This{Kind: "This"}}, exprs...)
 		}
-	case name == "map":
+	case nameLower == "map":
 		if err := function.CheckArgCount(nargs, 2, 2); err != nil {
 			a.error(call, err)
 			return badExpr()
@@ -462,14 +471,14 @@ func (a *analyzer) semCall(call *ast.Call) dag.Expr {
 			Inner: inner,
 		}
 	default:
-		if _, _, err = function.New(a.zctx, name, nargs); err != nil {
+		if _, _, err = function.New(a.zctx, nameLower, nargs); err != nil {
 			a.error(call, err)
 			return badExpr()
 		}
 	}
 	return &dag.Call{
 		Kind: "Call",
-		Name: name,
+		Name: nameLower,
 		Args: exprs,
 	}
 }
@@ -531,7 +540,7 @@ func deriveLHSPath(rhs dag.Expr) ([]string, error) {
 	case *dag.Agg:
 		return []string{rhs.Name}, nil
 	case *dag.Call:
-		switch rhs.Name {
+		switch strings.ToLower(rhs.Name) {
 		case "every":
 			// If LHS is nil and the call is every() make the LHS field ts since
 			// field ts assumed with every.
@@ -578,12 +587,13 @@ func (a *analyzer) semField(f ast.Expr) dag.Expr {
 
 func (a *analyzer) maybeConvertAgg(call *ast.Call) dag.Expr {
 	name := call.Name.Name
-	if _, err := agg.NewPattern(name, true); err != nil {
+	nameLower := strings.ToLower(name)
+	if _, err := agg.NewPattern(nameLower, true); err != nil {
 		return nil
 	}
 	var e dag.Expr
 	if err := function.CheckArgCount(len(call.Args), 0, 1); err != nil {
-		if name == "min" || name == "max" {
+		if nameLower == "min" || nameLower == "max" {
 			// min and max are special cases as they are also functions. If the
 			// number of args is greater than 1 they're probably a function so do not
 			// return an error.
@@ -597,7 +607,7 @@ func (a *analyzer) maybeConvertAgg(call *ast.Call) dag.Expr {
 	}
 	return &dag.Agg{
 		Kind:  "Agg",
-		Name:  name,
+		Name:  nameLower,
 		Expr:  e,
 		Where: a.semExprNullable(call.Where),
 	}

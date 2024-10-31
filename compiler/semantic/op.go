@@ -1182,7 +1182,7 @@ func (a *analyzer) semCallOp(call *ast.Call, seq dag.Seq) dag.Seq {
 		}
 		return append(append(seq, summarize), yield)
 	}
-	if !function.HasBoolResult(name) {
+	if !function.HasBoolResult(strings.ToLower(name)) {
 		return nil
 	}
 	c := a.semCall(call)

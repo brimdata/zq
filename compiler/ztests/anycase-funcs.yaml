@@ -1,0 +1,52 @@
+script: |
+  super -z -c 'c:=COUNT(),d:=Count(),Collect(LoweR(s)) by key | sort key' in.jsup
+  echo ===
+  super -z -c 'yield LOWER(s),Collect(LoweR(s))' in.jsup
+  echo ===
+  super -z -c 'Grep(G*)' in.jsup
+  echo ===
+  super -z -c 'yield {s,match:RegEXP("(f|B).*", s)}' in.jsup
+  echo ===
+  super -z -c 'yield {s,match:RegEXP_REPLACE(s, "(f|B).*", "smash")}' in.jsup
+
+
+inputs:
+  - name: in.jsup
+    data: |
+      {s:"foo",key:1}
+      {s:"Bar",key:2}
+      {s:"baz",key:3}
+      {s:"Gar",key:2}
+      {s:"goo",key:1}
+
+outputs:
+  - name: stdout
+    data: |
+      {key:1,c:2(uint64),d:2(uint64),collect:["foo","goo"]}
+      {key:2,c:2(uint64),d:2(uint64),collect:["bar","gar"]}
+      {key:3,c:1(uint64),d:1(uint64),collect:["baz"]}
+      ===
+      "foo"
+      ["foo"]
+      "bar"
+      ["foo","bar"]
+      "baz"
+      ["foo","bar","baz"]
+      "gar"
+      ["foo","bar","baz","gar"]
+      "goo"
+      ["foo","bar","baz","gar","goo"]
+      ===
+      {s:"Gar",key:2}
+      ===
+      {s:"foo",match:["foo","f"]}
+      {s:"Bar",match:["Bar","B"]}
+      {s:"baz",match:null([string])}
+      {s:"Gar",match:null([string])}
+      {s:"goo",match:null([string])}
+      ===
+      {s:"foo",match:"smash"}
+      {s:"Bar",match:"smash"}
+      {s:"baz",match:"baz"}
+      {s:"Gar",match:"Gar"}
+      {s:"goo",match:"goo"}

@@ -1039,11 +1039,11 @@ Cast
 Function
   = Grep
   // Special case to handle `regexp(/x/, y)` and `regexp_replace(x, /y/, z)`.
-  / "regexp" __ "(" __ arg0:RegexpPrimitive __ "," __ arg1:Expr __ ")" where:WhereClause? {
+  / REGEXP __ "(" __ arg0:RegexpPrimitive __ "," __ arg1:Expr __ ")" where:WhereClause? {
       id := &ast.ID{Kind: "ID", Name: "regexp", Loc: ast.NewLoc(c.pos.offset, c.pos.offset+6)}
       return newCall(c, id, []any{arg0, arg1}, where), nil
     }
-  / "regexp_replace" __ "(" __ arg0:Expr __ "," __ arg1:RegexpPrimitive __ "," __ arg2:Expr __ ")" where:WhereClause? {
+  / REGEXP_REPLACE __ "(" __ arg0:Expr __ "," __ arg1:RegexpPrimitive __ "," __ arg2:Expr __ ")" where:WhereClause? {
       id := &ast.ID{Kind: "ID", Name: "regexp_replace", Loc: ast.NewLoc(c.pos.offset, c.pos.offset+14)}
       return newCall(c, id, []any{arg0, arg1, arg2}, where), nil
     }
@@ -1107,7 +1107,7 @@ FunctionArgs
   / OptionalExprs
 
 Grep
-  = "grep" __ "(" __ pattern:(Regexp / Glob / Expr) __ opt:("," __ e:(OverExpr / Expr) __ { return e, nil })? ")" {
+  = GREP __ "(" __ pattern:(Regexp / Glob / Expr) __ opt:("," __ e:(OverExpr / Expr) __ { return e, nil })? ")" {
       g := &ast.Grep{
           Kind: "Grep",
           Pattern: pattern.(ast.Expr),
@@ -2183,6 +2183,7 @@ FROM       = "FROM"i            !IdentifierRest
 FULL       = "FULL"i            !IdentifierRest
 FUNC       = "FUNC"i            !IdentifierRest
 FUSE       = "FUSE"i            !IdentifierRest
+GREP       = "GREP"i            !IdentifierRest
 GROUP      = "GROUP"i           !IdentifierRest
 HAVING     = "HAVING"i          !IdentifierRest
 HEAD       = "HEAD"i            !IdentifierRest 
@@ -2214,6 +2215,8 @@ OVER       = "OVER"i            !IdentifierRest
 PASS       = "PASS"i            !IdentifierRest
 PUT        = "PUT"i             !IdentifierRest
 RECURSIVE  = "RECURSIVE"        !IdentifierRest
+REGEXP     = "REGEXP"i          !IdentifierRest
+REGEXP_REPLACE = "REGEXP_REPLACE"i !IdentifierRest
 RENAME     = "RENAME"i          !IdentifierRest
 RIGHT      = "RIGHT"i           !IdentifierRest
 SAMPLE     = "SAMPLE"i          !IdentifierRest
@@ -2237,3 +2240,5 @@ WHEN       = "WHEN"i            !IdentifierRest
 WHERE      = "WHERE"i           !IdentifierRest
 WITH       = "WITH"i            !IdentifierRest
 YIELD      = "YIELD"i           !IdentifierRest
+
+
