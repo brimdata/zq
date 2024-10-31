@@ -2240,5 +2240,3 @@ WHEN       = "WHEN"i            !IdentifierRest
 WHERE      = "WHERE"i           !IdentifierRest
 WITH       = "WITH"i            !IdentifierRest
 YIELD      = "YIELD"i           !IdentifierRest
-
-
