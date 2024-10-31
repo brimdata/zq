@@ -235,7 +235,7 @@ super -z -c 'Defunct=' *.jsup
 ```
 produces
 ```mdtest-output
-super: error parsing SuperPipe at line 1, column 9:
+super: parse error at line 1, column 9:
 Defunct=
     === ^ ===
 ```

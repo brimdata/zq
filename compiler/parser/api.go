@@ -59,7 +59,7 @@ func convertParseErrs(err error, files *srcfiles.List) error {
 		if !ok {
 			return err
 		}
-		files.AddError("error parsing SuperPipe", pe.pos.offset, -1)
+		files.AddError("parse error", pe.pos.offset, -1)
 	}
 	return nil
 }

@@ -8,4 +8,4 @@ inputs:
 outputs:
   - name: stdout
     data: |
-      {compilation_errors:[{Msg:"error parsing SuperPipe",Pos:6,End:-1}]}
+      {compilation_errors:[{Msg:"parse error",Pos:6,End:-1}]}
