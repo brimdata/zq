@@ -14,6 +14,7 @@ import (
 	"github.com/brimdata/super/runtime/sam/expr/agg"
 	"github.com/brimdata/super/runtime/sam/expr/function"
 	"github.com/brimdata/super/zson"
+	"github.com/shellyln/go-sql-like-expr/likeexpr"
 )
 
 func (a *analyzer) semExpr(e ast.Expr) dag.Expr {
@@ -334,7 +335,7 @@ func (a *analyzer) semBinary(e *ast.BinaryExpr) dag.Expr {
 	if e := a.semRegexp(e); e != nil {
 		return e
 	}
-	op := e.Op
+	op := strings.ToLower(e.Op)
 	if op == "." {
 		lhs := a.semExpr(e.LHS)
 		id, ok := e.RHS.(*ast.ID)
@@ -354,8 +355,24 @@ func (a *analyzer) semBinary(e *ast.BinaryExpr) dag.Expr {
 	}
 	lhs := a.semExpr(e.LHS)
 	rhs := a.semExpr(e.RHS)
+	if op == "like" {
+		s, ok := isStringConst(a.zctx, rhs)
+		if !ok {
+			a.error(e.RHS, errors.New("non-constant pattern for LIKE not supported"))
+			return badExpr()
+		}
+		pattern := likeexpr.ToRegexp(s, '\\', false)
+		return &dag.RegexpSearch{
+			Kind:    "RegexpSearch",
+			Pattern: pattern,
+			Expr:    lhs,
+		}
+	}
 	if op == "=" {
 		op = "=="
+	}
+	if op == "||" {
+		op = "+"
 	}
 	return &dag.BinaryExpr{
 		Kind: "BinaryExpr",

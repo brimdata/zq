@@ -947,7 +947,7 @@ AdditiveExpr
         return makeBinaryExprChain(first, rest, c), nil
     }
 
-AdditiveOperator = ("+" / "-") { return string(c.text), nil }
+AdditiveOperator = ("+" / "-" / "||" / LIKE) { return string(c.text), nil }
 
 MultiplicativeExpr
   = first:NotExpr
@@ -2195,6 +2195,7 @@ INNER      = "INNER"i           !IdentifierRest
 JOIN       = "JOIN"i            !IdentifierRest
 LAST       = "LAST"i            !IdentifierRest
 LEFT       = "LEFT"i            !IdentifierRest
+LIKE       = "LIKE"i           !IdentifierRest
 LIMIT      = "LIMIT"i           !IdentifierRest
 LOAD       = "LOAD"i            !IdentifierRest
 MATERIALIZED = "MATERIALIZED"i  !IdentifierRest
