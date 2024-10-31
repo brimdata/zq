@@ -2043,6 +2043,10 @@ SelectElem
       }
       return elem, nil
     }
+  / "*" {
+      // empty assignment is star (for now)
+      return ast.Assignment{Kind: "Assignment"}, nil
+    }
 
 OptAsClause 
   = _ AS _ id:Identifier { return id, nil }
