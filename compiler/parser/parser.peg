@@ -7,8 +7,10 @@
 }
 
 start
-  = __ scope:Scope __ EOF { return []any{scope}, nil }
-  / __ seq:Seq __ EOF { return seq, nil }
+  = __ scope:Scope EndQuery { return []any{scope}, nil }
+  / __ seq:Seq EndQuery { return seq, nil }
+
+EndQuery = __ ";"? __ EOF
 
 Scope
   = decls:Decl+ body:Seq {
