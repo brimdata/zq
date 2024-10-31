@@ -51,7 +51,7 @@ required.
 ## Quick Tests
 
 `super` is easy to test as it's a completely self-contained
-command-line tool and requires no external dependencies to run.
+command-line tool and requires no external dependencies.
 
 ### Test `super`
 
