@@ -19,9 +19,9 @@ import (
 func Analyze(ctx context.Context, ast *parser.AST, source *data.Source, head *lakeparse.Commitish) (dag.Seq, error) {
 	files := ast.Files()
 	a := newAnalyzer(ctx, files, source, head)
-	s := a.semSeq(ast.Copy())
+	s := a.semSeq(ast.Parsed())
 	s = a.checkOutputs(true, s)
-	return s, files.Error() //XXX
+	return s, files.Error()
 }
 
 // AnalyzeAddSource is the same as Analyze but it adds a default source if the
@@ -29,7 +29,7 @@ func Analyze(ctx context.Context, ast *parser.AST, source *data.Source, head *la
 func AnalyzeAddSource(ctx context.Context, ast *parser.AST, source *data.Source, head *lakeparse.Commitish) (dag.Seq, error) {
 	files := ast.Files()
 	a := newAnalyzer(ctx, files, source, head)
-	s := a.semSeq(ast.Copy())
+	s := a.semSeq(ast.Parsed())
 	s = a.checkOutputs(true, s)
 	if err := files.Error(); err != nil {
 		return nil, err

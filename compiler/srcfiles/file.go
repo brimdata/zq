@@ -66,8 +66,8 @@ func searchLine(lines []int, offset int) int {
 }
 
 type Position struct {
-	Pos    int `json:"pos"`    // Offset relative to SourceSet.
-	Offset int `json:"offset"` // Offset relative to file start.
+	Pos    int `json:"pos"`    // Offset relative to entire source text in List.Text.
+	Offset int `json:"offset"` // Offset relative to local source text in this File.
 	Line   int `json:"line"`   // 1-based line number.
 	Column int `json:"column"` // 1-based column number.
 }
