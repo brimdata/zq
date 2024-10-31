@@ -48,7 +48,6 @@ If you don't have Go installed, download and install it from the
 required.
 :::
 
-
 ## Quick Tests
 
 `super` is easy to test as it's a completely self-contained
