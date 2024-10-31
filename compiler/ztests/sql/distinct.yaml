@@ -1,0 +1,26 @@
+script: |
+  super -z -c 'select distinct value this from "d.json" | sort this'
+  echo ===
+  super -z -c 'select distinct a,c from "d.json" | sort this'
+
+inputs:
+  - name: d.json
+    data: |
+      {"a":11,"c":1}
+      {"a":12,"c":2}
+      {"a":12,"c":2}
+      {"a":13,"c":3}
+      {"a":11,"c":1,"d":0}
+      {"a":11,"c":1}
+
+outputs:
+  - name: stdout
+    data: |
+      {a:11,c:1}
+      {a:12,c:2}
+      {a:13,c:3}
+      {a:11,c:1,d:0}
+      ===
+      {a:11,c:1}
+      {a:12,c:2}
+      {a:13,c:3}

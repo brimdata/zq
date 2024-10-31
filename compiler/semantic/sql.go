@@ -17,10 +17,6 @@ import (
 // Analyze a SQL select expression which may have arbitrary nested subqueries
 // and may or may not have its sources embedded.
 func (a *analyzer) semSelect(sel *ast.Select, seq dag.Seq) dag.Seq {
-	if sel.Distinct {
-		a.error(sel, errors.New("SELECT DISTINCT not yet supported"))
-		return dag.Seq{badOp()}
-	}
 	from := sel.From
 	if len(seq) > 0 {
 		if from != nil {
@@ -76,6 +72,9 @@ func (a *analyzer) semSelect(sel *ast.Select, seq dag.Seq) dag.Seq {
 	if len(seq) == 0 {
 		seq = []dag.Op{dag.PassOp}
 	}
+	if sel.Distinct {
+		seq = a.semDistinct(seq)
+	}
 	return seq
 }
 
@@ -102,7 +101,25 @@ func (a *analyzer) semSelectValue(sel *ast.Select, seq dag.Seq) dag.Seq {
 	if sel.Where != nil {
 		seq = append(seq, dag.NewFilter(a.semExpr(sel.Where)))
 	}
+	if sel.Distinct {
+		seq = a.semDistinct(seq)
+	}
 	return seq
+}
+
+func (a *analyzer) semDistinct(seq dag.Seq) dag.Seq {
+	seq = append(seq, &dag.Sort{
+		Kind: "Sort",
+		Args: []dag.SortExpr{
+			{
+				Key:   &dag.This{Kind: "This"},
+				Order: order.Asc,
+			},
+		},
+	})
+	return append(seq, &dag.Uniq{
+		Kind: "Uniq",
+	})
 }
 
 func (a *analyzer) semSQLOp(op ast.Op, seq dag.Seq) dag.Seq {
