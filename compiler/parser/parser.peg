@@ -99,7 +99,7 @@ Pipe = "|>" / "|" !("{" / "[")
 
 ExprGuard = __ ((!"=>" Comparator) / AdditiveOperator / MultiplicativeOperator / ":" / "(" / "[" / "~")
 
-Comparator = ("==" / "!=" / ("in" !IdentifierRest) / "<=" / "<" / ">=" / ">") { return string(c.text), nil }
+Comparator = ("==" / "=" / "!=" / ("in" !IdentifierRest) / "<=" / "<" / ">=" / ">") { return string(c.text), nil }
 
 SearchBoolean
   = first:SearchAnd rest:SearchOrTerm* {
@@ -262,7 +262,7 @@ AggAssignments
 /// === Operators ===
 
 Operator
-  = SelectExpr
+  = SelectOp
   / ForkOp
   / SwitchOp 
   / FromForkOp
@@ -522,7 +522,7 @@ ShapeOp
     }
 
 JoinOp
-  = style:JoinStyle JOIN rightInput:JoinRightInput ON _ key:JoinKey optKey:(__ "=" __ JoinKey)? optArgs:(_ FlexAssignments)? {
+  = style:JoinStyle JOIN rightInput:JoinRightInput ON _ key:JoinKey optKey:(__ ("==" / "=") __ JoinKey)? optArgs:(_ FlexAssignments)? {
       o := &ast.Join{
         Kind: "Join",
         Style: style.(string),
@@ -1806,6 +1806,8 @@ SQLPipe
             Loc: loc(c),
         }, nil
     }
+
+SelectOp = !"(" op:SelectExpr { return op, nil}
 
 SelectExpr 
   = with:OptWithClause

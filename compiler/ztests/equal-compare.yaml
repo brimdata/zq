@@ -1,0 +1,26 @@
+script: |
+  super -z -c 'yield a=11' d.json
+  echo ===
+  super -z -c 'select distinct a,c from "d.json" where c=1 | sort this'
+
+inputs:
+  - name: d.json
+    data: |
+      {"a":11,"c":1}
+      {"a":12,"c":2}
+      {"a":12,"c":2}
+      {"a":13,"c":3}
+      {"a":11,"c":1,"d":0}
+      {"a":11,"c":1}
+
+outputs:
+  - name: stdout
+    data: |
+      true
+      false
+      false
+      false
+      true
+      true
+      ===
+      {a:11,c:1}

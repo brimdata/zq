@@ -354,9 +354,12 @@ func (a *analyzer) semBinary(e *ast.BinaryExpr) dag.Expr {
 	}
 	lhs := a.semExpr(e.LHS)
 	rhs := a.semExpr(e.RHS)
+	if op == "=" {
+		op = "=="
+	}
 	return &dag.BinaryExpr{
 		Kind: "BinaryExpr",
-		Op:   e.Op,
+		Op:   op,
 		LHS:  lhs,
 		RHS:  rhs,
 	}
