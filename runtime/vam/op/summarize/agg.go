@@ -20,9 +20,12 @@ type aggTable interface {
 }
 
 type superTable struct {
-	table   map[string]aggRow
-	aggs    []*expr.Aggregator
-	builder *vector.RecordBuilder
+	aggs        []*expr.Aggregator
+	builder     *vector.RecordBuilder
+	partialsIn  bool
+	partialsOut bool
+	table       map[string]aggRow
+	zctx        *super.Context
 }
 
 var _ aggTable = (*superTable)(nil)
@@ -58,7 +61,11 @@ func (s *superTable) update(keys []vector.Any, args []vector.Any) {
 			if len(m) > 1 {
 				arg = vector.NewView(arg, index)
 			}
-			row.funcs[i].Consume(arg)
+			if s.partialsIn {
+				row.funcs[i].ConsumeAsPartial(arg)
+			} else {
+				row.funcs[i].Consume(arg)
+			}
 		}
 	}
 }
@@ -95,23 +102,37 @@ func (s *superTable) materializeRow(row aggRow) vector.Any {
 		vecs = append(vecs, vector.NewConst(key, 1, nil))
 	}
 	for _, fn := range row.funcs {
-		val := fn.Result()
+		var val super.Value
+		if s.partialsOut {
+			val = fn.ResultAsPartial(s.zctx)
+		} else {
+			val = fn.Result(s.zctx)
+		}
 		vecs = append(vecs, vector.NewConst(val, 1, nil))
 	}
 	return s.builder.New(vecs)
 }
 
 type countByString struct {
-	nulls   uint64
-	table   map[string]uint64
-	builder *vector.RecordBuilder
+	nulls      uint64
+	table      map[string]uint64
+	builder    *vector.RecordBuilder
+	partialsIn bool
 }
 
-func newCountByString(b *vector.RecordBuilder) aggTable {
-	return &countByString{builder: b, table: make(map[string]uint64)}
+func newCountByString(b *vector.RecordBuilder, partialsIn bool) aggTable {
+	return &countByString{
+		builder:    b,
+		table:      make(map[string]uint64),
+		partialsIn: partialsIn,
+	}
 }
 
-func (c *countByString) update(keys []vector.Any, _ []vector.Any) {
+func (c *countByString) update(keys, vals []vector.Any) {
+	if c.partialsIn {
+		c.updatePartial(keys[0], vals[0])
+		return
+	}
 	switch val := keys[0].(type) {
 	case *vector.String:
 		c.count(val)
@@ -121,6 +142,27 @@ func (c *countByString) update(keys []vector.Any, _ []vector.Any) {
 		c.countFixed(val)
 	default:
 		panic(fmt.Sprintf("UNKNOWN %T", val))
+	}
+}
+
+func (c *countByString) updatePartial(keyvec, valvec vector.Any) {
+	key, ok1 := keyvec.(*vector.String)
+	val, ok2 := valvec.(*vector.Uint)
+	if !ok1 || !ok2 {
+		panic("count by string: invalid partials in")
+	}
+	if val.Nulls != nil {
+		for i := range key.Len() {
+			if val.Nulls.Value(i) {
+				c.nulls++
+			} else {
+				c.table[key.Value(i)] += val.Values[i]
+			}
+		}
+	} else {
+		for i := range key.Len() {
+			c.table[key.Value(i)] += val.Values[i]
+		}
 	}
 }
 

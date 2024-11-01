@@ -12,31 +12,35 @@ type Summarize struct {
 	zctx   *super.Context
 	// XX Abstract this runtime into a generic table computation.
 	// Then the generic interface can execute fast paths for simple scenarios.
-	aggs      []*expr.Aggregator
-	aggNames  field.List
-	keyExprs  []expr.Evaluator
-	keyNames  field.List
-	typeTable *super.TypeVectorTable
-	builder   *vector.RecordBuilder
+	aggs        []*expr.Aggregator
+	aggNames    field.List
+	keyExprs    []expr.Evaluator
+	keyNames    field.List
+	typeTable   *super.TypeVectorTable
+	builder     *vector.RecordBuilder
+	partialsIn  bool
+	partialsOut bool
 
 	types   []super.Type
 	tables  map[int]aggTable
 	results []aggTable
 }
 
-func New(parent vector.Puller, zctx *super.Context, aggPaths field.List, aggs []*expr.Aggregator, keyNames []field.Path, keyExprs []expr.Evaluator) (*Summarize, error) {
+func New(parent vector.Puller, zctx *super.Context, aggPaths field.List, aggs []*expr.Aggregator, keyNames []field.Path, keyExprs []expr.Evaluator, partialsIn, partialsOut bool) (*Summarize, error) {
 	builder, err := vector.NewRecordBuilder(zctx, append(keyNames, aggPaths...))
 	if err != nil {
 		return nil, err
 	}
 	return &Summarize{
-		parent:    parent,
-		aggs:      aggs,
-		keyExprs:  keyExprs,
-		tables:    make(map[int]aggTable),
-		typeTable: super.NewTypeVectorTable(),
-		types:     make([]super.Type, len(keyExprs)),
-		builder:   builder,
+		parent:      parent,
+		aggs:        aggs,
+		keyExprs:    keyExprs,
+		tables:      make(map[int]aggTable),
+		typeTable:   super.NewTypeVectorTable(),
+		types:       make([]super.Type, len(keyExprs)),
+		builder:     builder,
+		partialsIn:  partialsIn,
+		partialsOut: partialsOut,
 	}, nil
 }
 
@@ -94,12 +98,15 @@ func (s *Summarize) consume(keys []vector.Any, vals []vector.Any) {
 func (s *Summarize) newAggTable(keyTypes []super.Type) aggTable {
 	// Check if we can us an optimized table, else go slow path.
 	if s.isCountByString(keyTypes) {
-		return newCountByString(s.builder)
+		return newCountByString(s.builder, s.partialsIn)
 	}
 	return &superTable{
-		table:   make(map[string]aggRow),
-		aggs:    s.aggs,
-		builder: s.builder,
+		aggs:        s.aggs,
+		builder:     s.builder,
+		partialsIn:  s.partialsIn,
+		partialsOut: s.partialsOut,
+		table:       make(map[string]aggRow),
+		zctx:        s.zctx,
 	}
 }
 

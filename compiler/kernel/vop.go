@@ -265,7 +265,7 @@ func (b *Builder) compileVamSummarize(s *dag.Summarize, parent vector.Puller) (v
 		keyNames = append(keyNames, lhs.Path)
 		keyExprs = append(keyExprs, rhs)
 	}
-	return summarize.New(parent, b.zctx(), aggNames, aggs, keyNames, keyExprs)
+	return summarize.New(parent, b.zctx(), aggNames, aggs, keyNames, keyExprs, s.PartialsIn, s.PartialsOut)
 }
 
 func (b *Builder) compileVamAgg(agg *dag.Agg) (*vamexpr.Aggregator, error) {

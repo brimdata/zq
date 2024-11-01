@@ -27,7 +27,7 @@ func newMathReducer(f *mathFunc) *mathReducer {
 
 var _ Func = (*mathReducer)(nil)
 
-func (m *mathReducer) Result() super.Value {
+func (m *mathReducer) Result(*super.Context) super.Value {
 	if !m.hasval {
 		if m.math == nil {
 			return super.Null
@@ -76,6 +76,14 @@ func (m *mathReducer) Consume(vec vector.Any) {
 	}
 	m.hasval = true
 	m.math.consume(vec)
+}
+
+func (m *mathReducer) ConsumeAsPartial(vec vector.Any) {
+	m.Consume(vec)
+}
+
+func (m *mathReducer) ResultAsPartial(*super.Context) super.Value {
+	return m.Result(nil)
 }
 
 func isNull(vec vector.Any) bool {

@@ -9,7 +9,9 @@ import (
 
 type Func interface {
 	Consume(vector.Any)
-	Result() super.Value
+	ConsumeAsPartial(vector.Any)
+	Result(*super.Context) super.Value
+	ResultAsPartial(*super.Context) super.Value
 }
 
 type Pattern func() Func
@@ -21,7 +23,7 @@ func NewPattern(op string, hasarg bool) (Pattern, error) {
 	case "count":
 		needarg = false
 		pattern = func() Func {
-			return newAggCount()
+			return &count{}
 		}
 	// case "any":
 	// 	pattern = func() AggFunc {
@@ -70,20 +72,4 @@ func NewPattern(op string, hasarg bool) (Pattern, error) {
 		return nil, fmt.Errorf("%s: argument required", op)
 	}
 	return pattern, nil
-}
-
-type aggCount struct {
-	count uint64
-}
-
-func newAggCount() *aggCount {
-	return &aggCount{}
-}
-
-func (a *aggCount) Consume(vec vector.Any) {
-	a.count += uint64(vec.Len())
-}
-
-func (a *aggCount) Result() super.Value {
-	return super.NewUint64(a.count)
 }
