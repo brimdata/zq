@@ -105,16 +105,6 @@ func AddDefaultSource(ctx context.Context, seq *dag.Seq, source *data.Source, he
 	return nil
 }
 
-func StartsWithYield(seq dag.Seq) bool {
-	switch op := seq[0].(type) {
-	case *dag.Yield:
-		return true
-	case *dag.Scope:
-		return StartsWithYield(op.Body)
-	}
-	return false
-}
-
 func (a *analyzer) enterScope() {
 	a.scope = NewScope(a.scope)
 }
