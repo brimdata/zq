@@ -99,7 +99,7 @@ Pipe = "|>" / "|" !("{" / "[")
 
 ExprGuard = __ ((!"=>" Comparator) / AdditiveOperator / MultiplicativeOperator / ":" / "(" / "[" / "~")
 
-Comparator = ("==" / "=" / "!=" / ("in" !IdentifierRest) / "<=" / "<" / ">=" / ">") { return string(c.text), nil }
+Comparator = ("==" / "=" / "!=" / IN / "<=" / "<" / ">=" / ">") { return string(c.text), nil }
 
 SearchBoolean
   = first:SearchAnd rest:SearchOrTerm* {
