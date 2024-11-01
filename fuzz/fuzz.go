@@ -109,7 +109,7 @@ func RunQuery(t testing.TB, zctx *super.Context, readers []zio.Reader, querySour
 	// Infer demand
 	// TODO This is a hack and should be replaced by a cleaner interface in CompileQuery.
 	source := data.NewSource(engine, nil)
-	dag, err := semantic.AnalyzeAddSource(ctx, ast, source, nil)
+	dag, err := semantic.Analyze(ctx, ast, source, true)
 	if err != nil {
 		t.Skipf("%v", err)
 	}

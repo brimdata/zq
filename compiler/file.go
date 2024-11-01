@@ -23,7 +23,7 @@ func NewFileSystemCompiler(engine storage.Engine) runtime.Compiler {
 }
 
 func (f *fsCompiler) NewQuery(rctx *runtime.Context, ast *parser.AST, readers []zio.Reader) (runtime.Query, error) {
-	job, err := NewJob(rctx, ast, f.src, nil)
+	job, err := NewJob(rctx, ast, f.src, len(readers) > 0)
 	if err != nil {
 		return nil, err
 	}
@@ -45,7 +45,7 @@ func (f *fsCompiler) NewQuery(rctx *runtime.Context, ast *parser.AST, readers []
 	return optimizeAndBuild(job, readers)
 }
 
-func (*fsCompiler) NewLakeQuery(_ *runtime.Context, ast *parser.AST, parallelism int, head *lakeparse.Commitish) (runtime.Query, error) {
+func (*fsCompiler) NewLakeQuery(_ *runtime.Context, ast *parser.AST, parallelism int) (runtime.Query, error) {
 	panic("NewLakeQuery called on compiler.fsCompiler")
 }
 

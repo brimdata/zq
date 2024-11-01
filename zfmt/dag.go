@@ -505,6 +505,9 @@ func (c *canonDAG) op(p dag.Op) {
 			c.expr(p.Filter, "")
 			c.write(")")
 		}
+	case *dag.NullScan:
+		c.next()
+		c.write("null")
 	case *dag.FileScan:
 		c.next()
 		c.write("file %s", p.Path)
@@ -548,7 +551,7 @@ func (c *canonDAG) op(p dag.Op) {
 		c.write("output %s", p.Name)
 	default:
 		c.next()
-		c.open("unknown proc: %T", p)
+		c.open("unknown operator: %T", p)
 		c.close()
 	}
 }

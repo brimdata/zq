@@ -19,7 +19,6 @@ import (
 	"github.com/brimdata/super/compiler/srcfiles"
 	"github.com/brimdata/super/lake"
 	"github.com/brimdata/super/lake/branches"
-	"github.com/brimdata/super/lakeparse"
 	"github.com/brimdata/super/runtime/exec"
 	"github.com/brimdata/super/zio/zngio"
 	"github.com/brimdata/super/zson"
@@ -296,15 +295,12 @@ func (c *Connection) Revert(ctx context.Context, poolID ksuid.KSUID, branchName 
 //
 // As for Connection.Do, if the returned error is nil, the user is expected to
 // call Response.Body.Close.
-func (c *Connection) Query(ctx context.Context, head *lakeparse.Commitish, src string, filenames ...string) (*Response, error) {
+func (c *Connection) Query(ctx context.Context, src string, filenames ...string) (*Response, error) {
 	files, err := srcfiles.Concat(filenames, src)
 	if err != nil {
 		return nil, err
 	}
 	body := api.QueryRequest{Query: string(files.Text)}
-	if head != nil {
-		body.Head = *head
-	}
 	req := c.NewRequest(ctx, http.MethodPost, "/query?ctrl=T", body)
 	res, err := c.Do(req)
 	if ae := (*api.Error)(nil); errors.As(err, &ae) && len(ae.CompilationErrors) > 0 {

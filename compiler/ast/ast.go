@@ -574,8 +574,10 @@ type (
 		Loc     `json:"loc"`
 	}
 	Delete struct {
-		Kind string       `json:"kind" unpack:""`
-		Loc  `json:"loc"` // dummy field, not needed except to implement Node
+		Kind   string       `json:"kind" unpack:""`
+		Pool   string       `json:"pool"`
+		Branch string       `json:"branch"`
+		Loc    `json:"loc"` // dummy field, not needed except to implement Node
 	}
 )
 

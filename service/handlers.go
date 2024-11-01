@@ -62,7 +62,7 @@ func handleQuery(c *Core, w *ResponseWriter, r *Request) {
 		w.Error(srverr.ErrInvalid(err))
 		return
 	}
-	flowgraph, err := runtime.CompileLakeQuery(r.Context(), super.NewContext(), c.compiler, ast, &req.Head)
+	flowgraph, err := runtime.CompileLakeQuery(r.Context(), super.NewContext(), c.compiler, ast)
 	if err != nil {
 		w.Error(srverr.ErrInvalid(err))
 		return
@@ -182,7 +182,7 @@ func handleQueryDescribe(c *Core, w *ResponseWriter, r *Request) {
 		return
 	}
 	src := data.NewSource(storage.NewRemoteEngine(), c.root)
-	info, err := describe.Analyze(r.Context(), req.Query, src, &req.Head)
+	info, err := describe.Analyze(r.Context(), req.Query, src)
 	if err != nil {
 		w.Error(srverr.ErrInvalid(err))
 		return

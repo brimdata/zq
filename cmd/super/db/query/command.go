@@ -5,7 +5,6 @@ import (
 	"os"
 
 	"github.com/brimdata/super/cli/outputflags"
-	"github.com/brimdata/super/cli/poolflags"
 	"github.com/brimdata/super/cli/queryflags"
 	"github.com/brimdata/super/cli/runtimeflags"
 	"github.com/brimdata/super/cmd/super/db"
@@ -33,7 +32,6 @@ func init() {
 type Command struct {
 	*db.Command
 	outputFlags  outputflags.Flags
-	poolFlags    poolflags.Flags
 	queryFlags   queryflags.Flags
 	runtimeFlags runtimeflags.Flags
 }
@@ -41,7 +39,6 @@ type Command struct {
 func New(parent charm.Command, f *flag.FlagSet) (charm.Command, error) {
 	c := &Command{Command: parent.(*db.Command)}
 	c.outputFlags.SetFlags(f)
-	c.poolFlags.SetFlags(f)
 	c.queryFlags.SetFlags(f)
 	c.runtimeFlags.SetFlags(f)
 	return c, nil
@@ -68,8 +65,7 @@ func (c *Command) Run(args []string) error {
 	if err != nil {
 		return err
 	}
-	head, _ := c.poolFlags.HEAD()
-	query, err := lake.Query(ctx, head, src, c.queryFlags.Includes...)
+	query, err := lake.Query(ctx, src, c.queryFlags.Includes...)
 	if err != nil {
 		w.Close()
 		return err

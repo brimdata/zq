@@ -6,6 +6,6 @@ outputs:
   - name: stdout
     data: |
       search is(<foo>) and bar
-      reader
+      null
       | where is(<(uint16,ip)>) and search(80)
       | output main

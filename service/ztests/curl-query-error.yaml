@@ -13,11 +13,11 @@ inputs:
 outputs:
   - name: stdout
     data: |
-      {"type":"Error","kind":"invalid operation","error":"no pool name given"}
+      {"type":"Error","kind":"invalid operation","error":"query text is missing"}
       code 400
-      {"type":"Error","kind":"invalid operation","error":"no pool name given"}
+      {"type":"Error","kind":"invalid operation","error":"query text is missing"}
       code 400
-      {"type":"Error","kind":"invalid operation","error":"cannot resolve unknown HEAD at line 1, column 6:\nfrom HEAD\n     ~~~~","compilation_errors":[{"Msg":"cannot resolve unknown HEAD","Pos":5,"End":8}]}
+      {"type":"Error","kind":"invalid operation","error":"HEAD: pool not found at line 1, column 6:\nfrom HEAD\n     ~~~~","compilation_errors":[{"Msg":"HEAD: pool not found","Pos":5,"End":8}]}
       code 400
       {"type":"Error","kind":"invalid operation","error":"unknown lake metadata type \"unknownmeta\" in from operator at line 1, column 6:\nfrom :unknownmeta\n     ~~~~~~~~~~~~","compilation_errors":[{"Msg":"unknown lake metadata type \"unknownmeta\" in from operator","Pos":5,"End":16}]}
       code 400

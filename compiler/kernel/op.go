@@ -287,6 +287,9 @@ func (b *Builder) compileLeaf(o dag.Op, parent zbuf.Puller) (zbuf.Puller, error)
 			scanners = append(scanners, scanner)
 		}
 		return zbuf.MultiScanner(scanners...), nil
+	case *dag.NullScan:
+		//XXX we need something that implements the done protocol and restarst
+		return zbuf.NewPuller(zbuf.NewArray([]super.Value{super.Null})), nil
 	case *dag.Lister:
 		if parent != nil {
 			return nil, errors.New("internal error: data source cannot have a parent operator")
@@ -744,7 +747,7 @@ func isEntry(seq dag.Seq) bool {
 		return false
 	}
 	switch op := seq[0].(type) {
-	case *dag.Lister, *dag.DefaultScan, *dag.FileScan, *dag.HTTPScan, *dag.PoolScan, *dag.LakeMetaScan, *dag.PoolMetaScan, *dag.CommitMetaScan:
+	case *dag.Lister, *dag.DefaultScan, *dag.FileScan, *dag.HTTPScan, *dag.PoolScan, *dag.LakeMetaScan, *dag.PoolMetaScan, *dag.CommitMetaScan, *dag.NullScan:
 		return true
 	case *dag.Scope:
 		return isEntry(op.Body)

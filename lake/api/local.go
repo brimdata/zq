@@ -105,12 +105,12 @@ func (l *local) Compact(ctx context.Context, poolID ksuid.KSUID, branchName stri
 	return exec.Compact(ctx, l.root, pool, branchName, objects, writeVectors, commit.Author, commit.Body, commit.Meta)
 }
 
-func (l *local) Query(ctx context.Context, head *lakeparse.Commitish, src string, srcfiles ...string) (zbuf.Scanner, error) {
+func (l *local) Query(ctx context.Context, src string, srcfiles ...string) (zbuf.Scanner, error) {
 	ast, err := parser.ParseQuery(src, srcfiles...)
 	if err != nil {
 		return nil, err
 	}
-	q, err := runtime.CompileLakeQuery(ctx, super.NewContext(), l.compiler, ast, head)
+	q, err := runtime.CompileLakeQuery(ctx, super.NewContext(), l.compiler, ast)
 	if err != nil {
 		return nil, err
 	}

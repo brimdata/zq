@@ -339,14 +339,6 @@ func (a *analyzer) semPool(nameLoc ast.Node, poolName string, args *ast.PoolArgs
 		meta = nullableName(args.Meta)
 		tap = args.Tap
 	}
-	if poolName == "HEAD" {
-		if a.head == nil || a.head.Pool == "" {
-			a.error(nameLoc, errors.New("cannot resolve unknown HEAD"))
-			return badOp()
-		}
-		poolName = a.head.Pool
-		commit = a.head.Branch
-	}
 	poolID, err := a.source.PoolID(a.ctx, poolName)
 	if err != nil {
 		a.error(nameLoc, err)
@@ -422,20 +414,16 @@ func (a *analyzer) semDelete(op *ast.Delete) dag.Op {
 		a.error(op, errors.New("deletion requires data lake"))
 		return badOp()
 	}
-	// delete-where only supports deleting at head
-	pool := a.head.Pool
-	commit := a.head.Branch
-
-	poolID, err := a.source.PoolID(a.ctx, pool)
+	poolID, err := a.source.PoolID(a.ctx, op.Pool)
 	if err != nil {
 		a.error(op, err)
 		return badOp()
 	}
 	var commitID ksuid.KSUID
-	if commit != "" {
+	if op.Branch != "" {
 		var err error
-		if commitID, err = lakeparse.ParseID(commit); err != nil {
-			commitID, err = a.source.CommitObject(a.ctx, poolID, commit)
+		if commitID, err = lakeparse.ParseID(op.Branch); err != nil {
+			commitID, err = a.source.CommitObject(a.ctx, poolID, op.Branch)
 			if err != nil {
 				a.error(op, err)
 				return badOp()

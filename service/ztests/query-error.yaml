@@ -12,8 +12,8 @@ inputs:
 outputs:
   - name: stderr
     data: |
-      status code 400: no pool name given
-      cannot resolve unknown HEAD at line 1, column 6:
+      status code 400: query text is missing
+      HEAD: pool not found at line 1, column 6:
       from HEAD
            ~~~~
       unknown lake metadata type "unknownmeta" in from operator at line 1, column 6:

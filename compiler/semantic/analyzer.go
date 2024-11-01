@@ -10,42 +10,36 @@ import (
 	"github.com/brimdata/super/compiler/data"
 	"github.com/brimdata/super/compiler/parser"
 	"github.com/brimdata/super/compiler/srcfiles"
-	"github.com/brimdata/super/lakeparse"
 )
 
 // Analyze performs a semantic analysis of the AST, translating it from AST
 // to DAG form, resolving syntax ambiguities, and performing constant propagation.
 // After semantic analysis, the DAG is ready for either optimization or compilation.
-func Analyze(ctx context.Context, ast *parser.AST, source *data.Source, head *lakeparse.Commitish) (dag.Seq, error) {
+func Analyze(ctx context.Context, ast *parser.AST, source *data.Source, extInput bool) (dag.Seq, error) {
 	files := ast.Files()
-	a := newAnalyzer(ctx, files, source, head)
-	s := a.semSeq(ast.Parsed())
-	s = a.checkOutputs(true, s)
-	return s, files.Error()
-}
-
-// AnalyzeAddSource is the same as Analyze but it adds a default source if the
-// DAG does not have one.
-func AnalyzeAddSource(ctx context.Context, ast *parser.AST, source *data.Source, head *lakeparse.Commitish) (dag.Seq, error) {
-	files := ast.Files()
-	a := newAnalyzer(ctx, files, source, head)
-	s := a.semSeq(ast.Parsed())
-	s = a.checkOutputs(true, s)
-	if err := files.Error(); err != nil {
-		return nil, err
-	}
-	if !HasSource(s) {
-		if err := AddDefaultSource(ctx, &s, source, head); err != nil {
-			return nil, err
+	a := newAnalyzer(ctx, files, source)
+	seq := a.semSeq(ast.Parsed())
+	if !HasSource(seq) {
+		if a.source.IsLake() {
+			if len(seq) == 0 {
+				return nil, errors.New("query text is missing")
+			}
+			seq.Prepend(&dag.NullScan{Kind: "NullScan"})
+		} else if extInput {
+			seq.Prepend(&dag.DefaultScan{Kind: "DefaultScan"})
+		} else {
+			// This is a local query and there's not external input
+			// (i.e., no command-line file args)
+			seq.Prepend(&dag.NullScan{Kind: "NullScan"})
 		}
 	}
-	return s, nil
+	seq = a.checkOutputs(true, seq)
+	return seq, files.Error()
 }
 
 type analyzer struct {
 	ctx     context.Context
 	files   *srcfiles.List
-	head    *lakeparse.Commitish
 	opStack []*ast.OpDecl
 	outputs map[*dag.Output]ast.Node
 	source  *data.Source
@@ -53,11 +47,10 @@ type analyzer struct {
 	zctx    *super.Context
 }
 
-func newAnalyzer(ctx context.Context, files *srcfiles.List, source *data.Source, head *lakeparse.Commitish) *analyzer {
+func newAnalyzer(ctx context.Context, files *srcfiles.List, source *data.Source) *analyzer {
 	return &analyzer{
 		ctx:     ctx,
 		files:   files,
-		head:    head,
 		outputs: make(map[*dag.Output]ast.Node),
 		source:  source,
 		scope:   NewScope(nil),
@@ -66,8 +59,11 @@ func newAnalyzer(ctx context.Context, files *srcfiles.List, source *data.Source,
 }
 
 func HasSource(seq dag.Seq) bool {
+	if len(seq) == 0 {
+		return false
+	}
 	switch op := seq[0].(type) {
-	case *dag.FileScan, *dag.HTTPScan, *dag.PoolScan, *dag.LakeMetaScan, *dag.PoolMetaScan, *dag.CommitMetaScan, *dag.DeleteScan:
+	case *dag.FileScan, *dag.HTTPScan, *dag.PoolScan, *dag.LakeMetaScan, *dag.PoolMetaScan, *dag.CommitMetaScan, *dag.DeleteScan, *dag.NullScan:
 		return true
 	case *dag.Fork:
 		return HasSource(op.Paths[0])
@@ -75,34 +71,6 @@ func HasSource(seq dag.Seq) bool {
 		return HasSource(op.Body)
 	}
 	return false
-}
-
-func AddDefaultSource(ctx context.Context, seq *dag.Seq, source *data.Source, head *lakeparse.Commitish) error {
-	if HasSource(*seq) {
-		return nil
-	}
-	// No from so add a source.
-	if head == nil {
-		seq.Prepend(&dag.DefaultScan{Kind: "DefaultScan"})
-		return nil
-	}
-	// Verify pool exists for HEAD
-	if _, err := source.PoolID(ctx, head.Pool); err != nil {
-		return err
-	}
-	fromHead := &ast.From{
-		Kind: "From",
-		Elems: []*ast.FromElem{{
-			Kind: "FromElem",
-			Entity: &ast.Name{
-				Kind: "Name",
-				Text: "HEAD",
-			},
-		}},
-	}
-	headSeq := newAnalyzer(ctx, &srcfiles.List{}, source, head).semFrom(fromHead, nil)
-	seq.Prepend(headSeq[0])
-	return nil
 }
 
 func (a *analyzer) enterScope() {

@@ -20,18 +20,18 @@ outputs:
       yield |{"foo":1,"bar":2}|
       yield <(int64,string)>(1)
       ===
-      reader
+      null
       | yield {x:1,...y}
       | output main
-      reader
+      null
       | yield [1,2,3]
       | output main
-      reader
+      null
       | yield |["foo","bar"]|
       | output main
-      reader
+      null
       | yield |{"foo":1,"bar":2}|
       | output main
-      reader
+      null
       | yield cast(1, <(int64,string)>)
       | output main

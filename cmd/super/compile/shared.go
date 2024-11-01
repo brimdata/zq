@@ -76,12 +76,12 @@ func (s *Shared) Run(ctx context.Context, args []string, lakeFlags *lakeflags.Fl
 		}
 		return s.writeValue(ctx, ast.Parsed())
 	}
-	runtime, err := compiler.NewJob(runtime.DefaultContext(), ast, data.NewSource(nil, lk), nil)
+	runtime, err := compiler.NewJob(runtime.DefaultContext(), ast, data.NewSource(nil, lk), false)
 	if err != nil {
 		return err
 	}
 	if desc {
-		description, err := describe.AnalyzeDAG(ctx, runtime.Entry(), data.NewSource(nil, lk), nil)
+		description, err := describe.AnalyzeDAG(ctx, runtime.Entry(), data.NewSource(nil, lk))
 		if err != nil {
 			return err
 		}

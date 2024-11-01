@@ -42,9 +42,6 @@ func Concat(filenames []string, query string) (*List, error) {
 		b.Write(bb)
 		b.WriteByte('\n')
 	}
-	if b.Len() == 0 && query == "" {
-		query = "*"
-	}
 	// Empty string is the unnamed query text while the included files all
 	// have names.
 	files = append(files, newFile("", b.Len(), []byte(query)))

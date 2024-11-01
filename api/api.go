@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/brimdata/super/compiler/srcfiles"
-	"github.com/brimdata/super/lakeparse"
 	"github.com/brimdata/super/order"
 	"github.com/brimdata/super/pkg/field"
 	"github.com/brimdata/super/pkg/nano"
@@ -98,8 +97,7 @@ type EventBranch struct {
 }
 
 type QueryRequest struct {
-	Query string              `json:"query"`
-	Head  lakeparse.Commitish `json:"head"`
+	Query string `json:"query"`
 }
 
 type QueryChannelSet struct {

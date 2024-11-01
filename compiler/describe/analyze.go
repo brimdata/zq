@@ -10,7 +10,6 @@ import (
 	"github.com/brimdata/super/compiler/parser"
 	"github.com/brimdata/super/compiler/semantic"
 	"github.com/brimdata/super/lake"
-	"github.com/brimdata/super/lakeparse"
 	"github.com/brimdata/super/order"
 	"github.com/brimdata/super/pkg/field"
 	"github.com/segmentio/ksuid"
@@ -31,21 +30,23 @@ type (
 		Meta string `json:"meta"`
 	}
 	Pool struct {
-		Kind     string      `json:"kind"`
-		Name     string      `json:"name"`
-		ID       ksuid.KSUID `json:"id"`
-		Inferred bool        `json:"inferred"`
+		Kind string      `json:"kind"`
+		Name string      `json:"name"`
+		ID   ksuid.KSUID `json:"id"`
 	}
 	Path struct {
-		Kind     string `json:"kind"`
-		URI      string `json:"uri"`
-		Inferred bool   `json:"inferred"`
+		Kind string `json:"kind"`
+		URI  string `json:"uri"`
+	}
+	Null struct {
+		Kind string `json:"kind"`
 	}
 )
 
 func (*LakeMeta) Source() {}
 func (*Pool) Source()     {}
 func (*Path) Source()     {}
+func (*Null) Source()     {}
 
 type Channel struct {
 	Name            string         `json:"name"`
@@ -53,26 +54,22 @@ type Channel struct {
 	Sort            order.SortKeys `json:"sort"`
 }
 
-func Analyze(ctx context.Context, query string, src *data.Source, head *lakeparse.Commitish) (*Info, error) {
+func Analyze(ctx context.Context, query string, src *data.Source) (*Info, error) {
 	ast, err := parser.ParseQuery(query)
 	if err != nil {
 		return nil, err
 	}
-	entry, err := semantic.Analyze(ctx, ast, src, head)
+	entry, err := semantic.Analyze(ctx, ast, src, false)
 	if err != nil {
 		return nil, err
 	}
-	return AnalyzeDAG(ctx, entry, src, head)
+	return AnalyzeDAG(ctx, entry, src)
 }
 
-func AnalyzeDAG(ctx context.Context, entry dag.Seq, src *data.Source, head *lakeparse.Commitish) (*Info, error) {
-	srcInferred := !semantic.HasSource(entry)
-	if err := semantic.AddDefaultSource(ctx, &entry, src, head); err != nil {
-		return nil, err
-	}
+func AnalyzeDAG(ctx context.Context, entry dag.Seq, src *data.Source) (*Info, error) {
 	var err error
 	var info Info
-	if info.Sources, err = describeSources(ctx, src.Lake(), entry[0], srcInferred); err != nil {
+	if info.Sources, err = describeSources(ctx, src.Lake(), entry[0]); err != nil {
 		return nil, err
 	}
 	sortKeys, err := optimizer.New(ctx, src).SortKeys(entry)
@@ -102,14 +99,14 @@ func AnalyzeDAG(ctx context.Context, entry dag.Seq, src *data.Source, head *lake
 	return &info, nil
 }
 
-func describeSources(ctx context.Context, lk *lake.Root, o dag.Op, inferred bool) ([]Source, error) {
+func describeSources(ctx context.Context, lk *lake.Root, o dag.Op) ([]Source, error) {
 	switch o := o.(type) {
 	case *dag.Scope:
-		return describeSources(ctx, lk, o.Body[0], inferred)
+		return describeSources(ctx, lk, o.Body[0])
 	case *dag.Fork:
 		var s []Source
 		for _, p := range o.Paths {
-			out, err := describeSources(ctx, lk, p[0], inferred)
+			out, err := describeSources(ctx, lk, p[0])
 			if err != nil {
 				return nil, err
 			}
@@ -117,19 +114,21 @@ func describeSources(ctx context.Context, lk *lake.Root, o dag.Op, inferred bool
 		}
 		return s, nil
 	case *dag.DefaultScan:
-		return []Source{&Path{Kind: "Path", URI: "stdio://stdin", Inferred: inferred}}, nil
+		return []Source{&Path{Kind: "Path", URI: "stdio://stdin"}}, nil
+	case *dag.NullScan:
+		return []Source{&Null{Kind: "Null"}}, nil
 	case *dag.FileScan:
-		return []Source{&Path{Kind: "Path", URI: o.Path, Inferred: inferred}}, nil
+		return []Source{&Path{Kind: "Path", URI: o.Path}}, nil
 	case *dag.HTTPScan:
-		return []Source{&Path{Kind: "Path", URI: o.URL, Inferred: inferred}}, nil
+		return []Source{&Path{Kind: "Path", URI: o.URL}}, nil
 	case *dag.PoolScan:
-		return sourceOfPool(ctx, lk, o.ID, inferred)
+		return sourceOfPool(ctx, lk, o.ID)
 	case *dag.Lister:
-		return sourceOfPool(ctx, lk, o.Pool, inferred)
+		return sourceOfPool(ctx, lk, o.Pool)
 	case *dag.SeqScan:
-		return sourceOfPool(ctx, lk, o.Pool, inferred)
+		return sourceOfPool(ctx, lk, o.Pool)
 	case *dag.CommitMetaScan:
-		return sourceOfPool(ctx, lk, o.Pool, inferred)
+		return sourceOfPool(ctx, lk, o.Pool)
 	case *dag.LakeMetaScan:
 		return []Source{&LakeMeta{Kind: "LakeMeta", Meta: o.Meta}}, nil
 	default:
@@ -137,16 +136,15 @@ func describeSources(ctx context.Context, lk *lake.Root, o dag.Op, inferred bool
 	}
 }
 
-func sourceOfPool(ctx context.Context, lk *lake.Root, id ksuid.KSUID, inferred bool) ([]Source, error) {
+func sourceOfPool(ctx context.Context, lk *lake.Root, id ksuid.KSUID) ([]Source, error) {
 	p, err := lk.OpenPool(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 	return []Source{&Pool{
-		Kind:     "Pool",
-		ID:       id,
-		Name:     p.Name,
-		Inferred: inferred,
+		Kind: "Pool",
+		ID:   id,
+		Name: p.Name,
 	}}, nil
 }
 

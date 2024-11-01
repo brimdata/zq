@@ -9,11 +9,11 @@ script: |
 outputs:
   - name: stdout
     data: |
-      reader
+      null
       | head 1
       | output main
       ===
-      reader
+      null
       | (
         const x = 1
         

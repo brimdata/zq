@@ -2,6 +2,7 @@ package compiler
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/brimdata/super/compiler/dag"
 	"github.com/brimdata/super/compiler/data"
@@ -28,7 +29,7 @@ type Job struct {
 	entry     dag.Seq
 }
 
-func NewJob(rctx *runtime.Context, ast *parser.AST, src *data.Source, head *lakeparse.Commitish) (*Job, error) {
+func NewJob(rctx *runtime.Context, ast *parser.AST, src *data.Source, extInput bool) (*Job, error) {
 	// An AST always begins with a Sequential op with at least one
 	// operator.  If the first op is a From or a Parallel whose branches
 	// are Sequentials with a leading From, then we presume there is
@@ -39,10 +40,7 @@ func NewJob(rctx *runtime.Context, ast *parser.AST, src *data.Source, head *lake
 	// caller via runtime.readers.  In most cases, the AST is left
 	// with an ast.From at the entry point, and hence a dag.From for the
 	// DAG's entry point.
-	if len(ast.Parsed()) == 0 {
-		return nil, errors.New("internal error: AST seq cannot be empty")
-	}
-	entry, err := semantic.AnalyzeAddSource(rctx.Context, ast, src, head)
+	entry, err := semantic.Analyze(rctx.Context, ast, src, extInput)
 	if err != nil {
 		return nil, err
 	}
@@ -131,10 +129,14 @@ func VectorCompile(rctx *runtime.Context, query string, object *vcache.Object) (
 		return nil, err
 	}
 	src := &data.Source{}
-	entry, err := semantic.Analyze(rctx.Context, ast, src, nil)
+	entry, err := semantic.Analyze(rctx.Context, ast, src, true)
 	if err != nil {
 		return nil, err
 	}
+	if _, ok := entry[0].(*dag.DefaultScan); !ok {
+		panic("DAG assumptions violated")
+	}
+	entry = entry[1:]
 	puller := vam.NewVectorProjection(rctx.Zctx, object, nil) //XXX project all
 	builder := kernel.NewBuilder(rctx, src)
 	outputs, err := builder.BuildWithPuller(entry, puller)
@@ -153,7 +155,7 @@ func VectorFilterCompile(rctx *runtime.Context, query string, src *data.Source, 
 	// Eventually the semantic analyzer + kernel will resolve the pool but
 	// for now just do this manually.
 	if !src.IsLake() {
-		return nil, errors.New("non-lake searches not supported")
+		return nil, errors.New("non-lake vectorized search not supported")
 	}
 	poolID, err := src.PoolID(rctx.Context, head.Pool)
 	if err != nil {
@@ -163,18 +165,23 @@ func VectorFilterCompile(rctx *runtime.Context, query string, src *data.Source, 
 	if err != nil {
 		return nil, err
 	}
-	ast, err := parser.ParseQuery(query)
+	spec, err := head.FromSpec("")
 	if err != nil {
 		return nil, err
 	}
-	entry, err := semantic.Analyze(rctx.Context, ast, src, nil)
+	ast, err := parser.ParseQuery(fmt.Sprintf("%s | %s", spec, query))
 	if err != nil {
 		return nil, err
 	}
-	if len(entry) != 2 {
+	entry, err := semantic.Analyze(rctx.Context, ast, src, false)
+	if err != nil {
+		return nil, err
+	}
+	// from -> filter -> output
+	if len(entry) != 3 {
 		return nil, errors.New("filter query must have a single op")
 	}
-	f, ok := entry[0].(*dag.Filter)
+	f, ok := entry[1].(*dag.Filter)
 	if !ok {
 		return nil, errors.New("filter query must be a single filter op")
 	}

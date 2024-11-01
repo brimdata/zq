@@ -246,6 +246,9 @@ type (
 		Kind string `json:"kind" unpack:""`
 		Meta string `json:"meta"`
 	}
+	NullScan struct {
+		Kind string `json:"kind" unpack:""`
+	}
 )
 
 var LakeMetas = map[string]struct{}{
@@ -273,6 +276,7 @@ func (*DeleteScan) OpNode()     {}
 func (*LakeMetaScan) OpNode()   {}
 func (*PoolMetaScan) OpNode()   {}
 func (*CommitMetaScan) OpNode() {}
+func (*NullScan) OpNode()       {}
 
 func (*Lister) OpNode()  {}
 func (*Slicer) OpNode()  {}

@@ -10,7 +10,7 @@ outputs:
         from "test.jsup"
       ) on x=x p:=a
       ===
-      reader
+      null
       | fork (
         =>
           pass

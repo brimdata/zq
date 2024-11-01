@@ -7,7 +7,7 @@ outputs:
     data: |
       debug f"debug: {this}"
       | head 1
-      reader
+      null
       | mirror (
         =>
           yield "debug: "+cast(this, <string>)

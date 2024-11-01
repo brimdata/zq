@@ -605,7 +605,7 @@ func (c *canon) op(p ast.Op) {
 			c.expr(p.Expr, "")
 		}
 	default:
-		c.open("unknown proc: %T", p)
+		c.open("unknown operator: %T", p)
 		c.close()
 	}
 }

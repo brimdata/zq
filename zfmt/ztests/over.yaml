@@ -42,7 +42,7 @@ outputs:
         search g
       )
       ===
-      reader
+      null
       | yield (
         over a
         | where search("b")

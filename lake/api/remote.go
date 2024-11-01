@@ -119,8 +119,8 @@ func (r *remote) Revert(ctx context.Context, poolID ksuid.KSUID, branchName stri
 	return res.Commit, err
 }
 
-func (r *remote) Query(ctx context.Context, head *lakeparse.Commitish, src string, srcfiles ...string) (zbuf.Scanner, error) {
-	res, err := r.conn.Query(ctx, head, src, srcfiles...)
+func (r *remote) Query(ctx context.Context, src string, srcfiles ...string) (zbuf.Scanner, error) {
+	res, err := r.conn.Query(ctx, src, srcfiles...)
 	if err != nil {
 		return nil, err
 	}

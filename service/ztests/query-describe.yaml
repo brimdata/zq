@@ -20,10 +20,10 @@ inputs:
       ) | put foo := "bar"
   - name: agg.spq
     data: |
-      count() by key1:=v1, key2
+      from test1 | count() by key1:=v1, key2
   - name: agg-no-keys.spq
     data: |
-      sum(this)
+      from test1 | sum(this)
   - name: two-channels.spq
     data: |
       fork (
@@ -32,7 +32,7 @@ inputs:
       )
   - name: agg-sort.spq
     data: |
-      sum(this) by foo | sort x
+      from test1 | sum(this) by foo | sort x
   - name: scope.spq
     data: |
       type port = uint16
@@ -50,14 +50,12 @@ outputs:
               {
                   "kind": "Pool",
                   "name": "test1",
-                  "id": "XXX",
-                  "inferred": false
+                  "id": "XXX"
               },
               {
                   "kind": "Pool",
                   "name": "test2",
-                  "id": "XXX",
-                  "inferred": false
+                  "id": "XXX"
               }
           ],
           "channels": [
@@ -80,8 +78,7 @@ outputs:
           "sources": {
               "kind": "Pool",
               "name": "test1",
-              "id": "XXX",
-              "inferred": true
+              "id": "XXX"
           },
           "channels": [
               {
@@ -103,8 +100,7 @@ outputs:
           "sources": {
               "kind": "Pool",
               "name": "test1",
-              "id": "XXX",
-              "inferred": true
+              "id": "XXX"
           },
           "channels": [
               {
@@ -120,14 +116,12 @@ outputs:
               {
                   "kind": "Pool",
                   "name": "test1",
-                  "id": "XXX",
-                  "inferred": false
+                  "id": "XXX"
               },
               {
                   "kind": "Pool",
                   "name": "test2",
-                  "id": "XXX",
-                  "inferred": false
+                  "id": "XXX"
               }
           ],
           "channels": [
@@ -159,8 +153,7 @@ outputs:
           "sources": {
               "kind": "Pool",
               "name": "test1",
-              "id": "XXX",
-              "inferred": true
+              "id": "XXX"
           },
           "channels": [
               {
@@ -186,8 +179,7 @@ outputs:
           "sources": {
               "kind": "Pool",
               "name": "test1",
-              "id": "XXX",
-              "inferred": false
+              "id": "XXX"
           },
           "channels": [
               {
@@ -214,8 +206,7 @@ outputs:
           "sources": {
               "kind": "Pool",
               "name": "test1",
-              "id": "XXX",
-              "inferred": false
+              "id": "XXX"
           },
           "channels": [
               {

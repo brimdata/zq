@@ -72,7 +72,7 @@ func (c *Command) Run(args []string) error {
 		return err
 	}
 	defer w.Close()
-	q, err := lake.Query(ctx, nil, query)
+	q, err := lake.Query(ctx, query)
 	if err != nil {
 		return err
 	}

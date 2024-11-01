@@ -6,7 +6,7 @@ script: |
 outputs:
   - name: stdout
     data: |
-      reader
+      null
       | fork (
         =>
           output foo
@@ -15,7 +15,7 @@ outputs:
           | output main
       )
       // ===
-      reader
+      null
       | switch x (
           case "foo" =>
             output foo

@@ -7,10 +7,10 @@ script: |
   super db query -z "from test | sort this"
   r=$(super db revert $a | awk '{print $5}')
   echo ===
-  super db query -z "sort this"
+  super db query -z "from test | sort this"
   super db revert -q $r
   echo ===
-  super db query -z "sort this"
+  super db query -z "from test | sort this"
 
 inputs:
   - name: a.jsup

@@ -31,8 +31,8 @@ func NewLakeCompiler(r *lake.Root) runtime.Compiler {
 	return &lakeCompiler{src: data.NewSource(storage.NewRemoteEngine(), r)}
 }
 
-func (l *lakeCompiler) NewLakeQuery(rctx *runtime.Context, ast *parser.AST, parallelism int, head *lakeparse.Commitish) (runtime.Query, error) {
-	job, err := NewJob(rctx, ast, l.src, head)
+func (l *lakeCompiler) NewLakeQuery(rctx *runtime.Context, ast *parser.AST, parallelism int) (runtime.Query, error) {
+	job, err := NewJob(rctx, ast, l.src, false)
 	if err != nil {
 		return nil, err
 	}
@@ -57,7 +57,7 @@ func (l *lakeCompiler) NewLakeQuery(rctx *runtime.Context, ast *parser.AST, para
 }
 
 func (l *lakeCompiler) NewLakeDeleteQuery(rctx *runtime.Context, ast *parser.AST, head *lakeparse.Commitish) (runtime.DeleteQuery, error) {
-	job, err := newDeleteJob(rctx, ast, l.src, head)
+	job, err := newDeleteJob(rctx, ast, head.Pool, head.Branch, l.src)
 	if err != nil {
 		return nil, err
 	}
@@ -76,15 +76,15 @@ func (InvalidDeleteWhereQuery) Error() string {
 	return "invalid delete where query: must be a single filter operation"
 }
 
-func newDeleteJob(rctx *runtime.Context, parsed *parser.AST, src *data.Source, head *lakeparse.Commitish) (*Job, error) {
-	if err := parsed.ConvertToDeleteWhere(); err != nil {
+func newDeleteJob(rctx *runtime.Context, parsed *parser.AST, pool, branch string, src *data.Source) (*Job, error) {
+	if err := parsed.ConvertToDeleteWhere(pool, branch); err != nil {
 		return nil, err
 	}
 	seq := parsed.Parsed()
 	if len(seq) != 2 {
 		return nil, &InvalidDeleteWhereQuery{}
 	}
-	entry, err := semantic.Analyze(rctx.Context, parsed, src, head)
+	entry, err := semantic.Analyze(rctx.Context, parsed, src, false)
 	if err != nil {
 		return nil, err
 	}

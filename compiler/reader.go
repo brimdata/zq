@@ -21,7 +21,7 @@ func (i *anyCompiler) NewQuery(rctx *runtime.Context, ast *parser.AST, readers [
 	if len(readers) != 1 {
 		return nil, fmt.Errorf("NewQuery: Zed program expected %d readers", len(readers))
 	}
-	job, err := NewJob(rctx, ast, data.NewSource(nil, nil), nil)
+	job, err := NewJob(rctx, ast, data.NewSource(nil, nil), true)
 	if err != nil {
 		return nil, err
 	}
@@ -30,7 +30,7 @@ func (i *anyCompiler) NewQuery(rctx *runtime.Context, ast *parser.AST, readers [
 
 // XXX currently used only by group-by test, need to deprecate
 func CompileWithSortKey(rctx *runtime.Context, ast *parser.AST, r zio.Reader, sortKey order.SortKey) (*exec.Query, error) {
-	job, err := NewJob(rctx, ast, data.NewSource(nil, nil), nil)
+	job, err := NewJob(rctx, ast, data.NewSource(nil, nil), true)
 	if err != nil {
 		return nil, err
 	}
@@ -42,7 +42,7 @@ func CompileWithSortKey(rctx *runtime.Context, ast *parser.AST, r zio.Reader, so
 	return optimizeAndBuild(job, []zio.Reader{r})
 }
 
-func (*anyCompiler) NewLakeQuery(rctx *runtime.Context, ast *parser.AST, parallelism int, head *lakeparse.Commitish) (runtime.Query, error) {
+func (*anyCompiler) NewLakeQuery(rctx *runtime.Context, ast *parser.AST, parallelism int) (runtime.Query, error) {
 	panic("NewLakeQuery called on compiler.anyCompiler")
 }
 
