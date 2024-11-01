@@ -28,7 +28,7 @@ func Analyze(ctx context.Context, ast *parser.AST, source *data.Source, extInput
 		} else if extInput {
 			seq.Prepend(&dag.DefaultScan{Kind: "DefaultScan"})
 		} else {
-			// This is a local query and there's not external input
+			// This is a local query and there's no external input
 			// (i.e., no command-line file args)
 			seq.Prepend(&dag.NullScan{Kind: "NullScan"})
 		}

@@ -26,7 +26,7 @@ func (a *AST) Files() *srcfiles.List {
 
 func (a *AST) ConvertToDeleteWhere(pool, branch string) error {
 	if len(a.seq) == 0 {
-		return errors.New("delete where command requires an expression")
+		return errors.New("internal error: AST seq cannot be empty")
 	}
 	a.seq.Prepend(&ast.Delete{
 		Kind:   "Delete",
@@ -44,7 +44,7 @@ func ParseQuery(query string, filenames ...string) (*AST, error) {
 		return nil, err
 	}
 	if files.Text == "" {
-		return &AST{seq: []ast.Op{}, files: files}, nil
+		return &AST{files: files}, nil
 	}
 	p, err := Parse("", []byte(files.Text), Recover(false))
 	if err != nil {
