@@ -542,7 +542,7 @@ func (a *analyzer) semGroupByKey(in ast.Expr) (*dag.This, bool) {
 		return nil, false
 	}
 	if len(this.Path) == 0 {
-		a.error(in, errors.New("cannot use 'this' as group-by expression"))
+		a.error(in, errors.New("cannot use 'this' as GROUP BY expression"))
 		return nil, false
 	}
 	return this, true
