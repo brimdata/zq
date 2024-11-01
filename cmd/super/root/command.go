@@ -136,30 +136,24 @@ func (c *Command) Run(args []string) error {
 	if len(args) == 0 && len(c.queryFlags.Includes) == 0 && c.query == "" {
 		return charm.NeedHelp
 	}
-	if c.canon {
-		ast, err := parser.ParseQuery(c.query, c.queryFlags.Includes...)
-		if err != nil {
-			return err
-		}
-		fmt.Println(zfmt.AST(ast.Parsed()))
-		return nil
-	}
-	paths, ast, null, err := c.queryFlags.ParseSourcesAndInputs(c.query, args)
+	ast, err := parser.ParseQuery(c.query, c.queryFlags.Includes...)
 	if err != nil {
 		return err
+	}
+	if c.canon {
+		fmt.Println(zfmt.AST(ast.Parsed()))
+		return nil
 	}
 	zctx := super.NewContext()
 	local := storage.NewLocalEngine()
 	var readers []zio.Reader
-	if null {
-		readers = []zio.Reader{zbuf.NewArray([]super.Value{super.Null})}
-	} else {
-		readers, err = c.inputFlags.Open(ctx, zctx, local, paths, c.stopErr)
+	if len(args) > 0 {
+		readers, err = c.inputFlags.Open(ctx, zctx, local, args, c.stopErr)
 		if err != nil {
 			return err
 		}
+		defer zio.CloseReaders(readers)
 	}
-	defer zio.CloseReaders(readers)
 	writer, err := c.outputFlags.Open(ctx, local)
 	if err != nil {
 		return err

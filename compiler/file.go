@@ -3,12 +3,14 @@ package compiler
 import (
 	"errors"
 
+	"github.com/brimdata/super"
 	"github.com/brimdata/super/compiler/data"
 	"github.com/brimdata/super/compiler/parser"
 	"github.com/brimdata/super/lakeparse"
 	"github.com/brimdata/super/pkg/storage"
 	"github.com/brimdata/super/runtime"
 	"github.com/brimdata/super/runtime/exec"
+	"github.com/brimdata/super/zbuf"
 	"github.com/brimdata/super/zio"
 )
 
@@ -26,10 +28,9 @@ func (f *fsCompiler) NewQuery(rctx *runtime.Context, ast *parser.AST, readers []
 		return nil, err
 	}
 	if len(readers) == 0 {
-		// If there's no reader but the DAG wants an input, then
-		// flag an error.
+		// If there's no reader but the DAG wants an input, then insert a null source.
 		if _, ok := job.DefaultScan(); ok {
-			return nil, errors.New("no input specified: use a command-line file or a Zed source operator")
+			readers = []zio.Reader{zbuf.NewArray([]super.Value{super.Null})}
 		}
 	} else {
 		// If there's a reader but the DAG doesn't want an input,
