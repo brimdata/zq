@@ -181,6 +181,18 @@ func (c *canonDAG) expr(e dag.Expr, parent string) {
 			c.expr(e.Value, "")
 		}
 		c.write("}|")
+	case *dag.RegexpSearch:
+		c.write("regexp_search(/")
+		c.write(e.Pattern)
+		c.write("/, ")
+		c.expr(e.Expr, "")
+		c.write(")")
+	case *dag.RegexpMatch:
+		c.write("regexp_match(/")
+		c.write(e.Pattern)
+		c.write("/, ")
+		c.expr(e.Expr, "")
+		c.write(")")
 	default:
 		c.open("(unknown expr %T)", e)
 		c.close()

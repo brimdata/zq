@@ -104,7 +104,15 @@ func (a *analyzer) semExpr(e ast.Expr) dag.Expr {
 	case *ast.Conditional:
 		cond := a.semExpr(e.Cond)
 		thenExpr := a.semExpr(e.Then)
-		elseExpr := a.semExpr(e.Else)
+		var elseExpr dag.Expr
+		if e.Else != nil {
+			elseExpr = a.semExpr(e.Else)
+		} else {
+			elseExpr = &dag.Literal{
+				Kind:  "Literal",
+				Value: `error("missing")`,
+			}
+		}
 		return &dag.Conditional{
 			Kind: "Conditional",
 			Cond: cond,

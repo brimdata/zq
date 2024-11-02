@@ -1,0 +1,35 @@
+script: |
+  super -z -I query.sql
+  echo ===
+  super -z -c "SELECT * FROM 'data.csv' WHERE NOT Country = 'Spain';"
+  echo ===
+  super -z -c "select 'a' || 'b' | count()"
+  echo ===
+  super -z -c "SELECT - - 34 + - 26 + - 34 + - 34;"
+
+
+inputs:
+  - name: query.sql
+    data: |
+      SELECT NOT 10 BETWEEN 15 AND
+          CASE WHEN true THEN 20 END
+         AND 1+2 IN [3,4,5] OR 'foo'||'bar' IN NULL,
+       'foo' LIKE 'f' || '%' OR false,
+       CASE WHEN true THEN 'x' END || 'y'
+  - name: data.csv
+    data: |
+      Country,Language
+      Spain,Spanish
+      France,French
+
+outputs:
+  - name: stdout
+    data: |
+      {"!(10>=15 and 10<=(true) ? 20 : error(\"missing\")) and 1+2 in [3,4,5] or \"foo\"+\"bar\" in null":true,"regexp_search(/^f.*?$/, \"foo\") or false":true,"(true) ? \"x\" : error(\"missing\")+\"y\"":"xy"}
+      ===
+      {Country:"France",Language:"French"}
+      ===
+      1(uint64)
+      ===
+      {"--34+-26+-34+-34":-60}
+

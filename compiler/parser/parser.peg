@@ -99,7 +99,7 @@ Pipe = "|>" / "|" !("{" / "[")
 
 ExprGuard = __ ((!"=>" Comparator) / AdditiveOperator / MultiplicativeOperator / ":" / "(" / "[" / "~")
 
-Comparator = ("==" / "=" / "!=" / IN / "<=" / "<" / ">=" / ">") { return string(c.text), nil }
+Comparator = ("==" / "=" / "!=" / IN / LIKE / "<=" / "<" / ">=" / ">") { return string(c.text), nil }
 
 SearchBoolean
   = first:SearchAnd rest:SearchOrTerm* {
@@ -922,13 +922,24 @@ LogicalOrExpr
     }
 
 LogicalAndExpr
-  = first:BetweenExpr
-    rest:(__ op:AND __ expr:BetweenExpr { return []any{op, expr}, nil })* {
+  = first:NotExpr
+    rest:(__ op:AND __ expr:NotExpr { return []any{op, expr}, nil })* {
         return makeBinaryExprChain(first, rest, c), nil
     }
 
+NotExpr
+  = (NOT _ / "!" __) e:NotExpr {
+      return &ast.UnaryExpr{
+          Kind: "UnaryExpr",
+          Op: "!",
+          Operand: e.(ast.Expr),
+          Loc: loc(c),
+      }, nil
+    }
+  / BetweenExpr
+  
 BetweenExpr
-  = expr:ComparisonExpr _ BETWEEN _ lower:ComparisonExpr _ AND _ upper:ComparisonExpr {
+  = expr:ComparisonExpr _ BETWEEN _ lower:BetweenExpr _ AND _ upper:BetweenExpr {
       return &ast.Between{
         Kind: "Between",
         Expr: expr.(ast.Expr),
@@ -937,7 +948,7 @@ BetweenExpr
       }, nil
     }
   / ComparisonExpr
-  
+
 ComparisonExpr
   = lhs:AdditiveExpr opAndRHS:(__ Comparator __ AdditiveExpr / __ ("~" { return string(c.text), nil }) __ Regexp)? {
       if opAndRHS == nil {
@@ -958,29 +969,24 @@ AdditiveExpr
         return makeBinaryExprChain(first, rest, c), nil
     }
 
-AdditiveOperator = ("+" / "-" / "||" / LIKE) { return string(c.text), nil }
+AdditiveOperator = ("+" / "-") { return string(c.text), nil }
 
 MultiplicativeExpr
-  = first:NotExpr
-    rest:(__ op:MultiplicativeOperator __ expr:NotExpr { return []any{op, expr}, nil })* {
+  = first:ConcatExpr
+    rest:(__ op:MultiplicativeOperator __ expr:ConcatExpr { return []any{op, expr}, nil })* {
         return makeBinaryExprChain(first, rest, c), nil
     }
 
 MultiplicativeOperator = ("*" / "/" / "%") { return string(c.text), nil }
 
-NotExpr
-  = (NOT _ / "!" __) e:NotExpr {
-      return &ast.UnaryExpr{
-          Kind: "UnaryExpr",
-          Op: "!",
-          Operand: e.(ast.Expr),
-          Loc: loc(c),
-      }, nil
+ConcatExpr 
+  = first:UnaryMinusExpr
+    rest:(__ "||" __ expr:UnaryMinusExpr { return []any{"||", expr}, nil })* {
+        return makeBinaryExprChain(first, rest, c), nil
     }
-  / NegationExpr
 
-NegationExpr
-  = !Literal "-" __ e:DerefExpr {
+UnaryMinusExpr
+  = !Literal "-" __ e:UnaryMinusExpr {
       return &ast.UnaryExpr{
           Kind: "UnaryExpr",
           Op: "-",
@@ -1029,7 +1035,6 @@ DerefExpr
       }, nil
     }
   / FuncExpr
-  / CaseExpr
   / Primary
 
 FuncExpr
@@ -1062,54 +1067,6 @@ Function
       return newCall(c, fn, args, where), nil
     }
 
-CaseExpr
-  = CASE cases:When+ else_:(_ "else" _ Expr)? _ "end"i (_ "case"i)? {
-        whens := sliceOf[ast.When](cases)
-        cond := &ast.Conditional{
-            Kind: "Conditional",
-            Cond: whens[0].Cond,
-            Then: whens[0].Then,
-            Loc: loc(c),
-        }
-        last := cond
-        for _, when := range whens[1:] {
-            next := &ast.Conditional{
-               Kind: "Conditional",
-               Cond: when.Cond,
-               Then: when.Then,
-               Loc: when.Loc,
-            }
-            last.Else = next
-            last = next
-        }
-        if else_ != nil {
-            last.Else = else_.([]any)[3].(ast.Expr)
-        }
-        return cond, nil
-    }
-  / CASE _ expr:Expr whens:When+ else_:(_ "else" _ Expr)? _ "end"i (_ "case"i)? {
-        cond := &ast.CaseExpr{
-            Kind: "CaseExpr",
-            Expr: expr.(ast.Expr),
-            Whens: sliceOf[ast.When](whens),
-            Loc: loc(c),
-        }
-        if else_ != nil {
-            cond.Else = else_.([]any)[3].(ast.Expr)
-        }
-        return cond, nil
-    }
-
-When
-  = _ WHEN _ cond:Expr _ THEN _ then:Expr {
-      return ast.When{
-        Kind: "When",
-        Cond: cond.(ast.Expr),
-        Then: then.(ast.Expr),
-        Loc: loc(c),
-      }, nil
-    }
-
 RegexpPrimitive
   = pat:RegexpPattern { return newPrimitive(c, "string", pat.(string)), nil }
 
@@ -1140,7 +1097,8 @@ Exprs
     }
 
 Primary
-  = Record
+  = CaseExpr
+  / Record
   / Array
   / Set
   / Map
@@ -1149,6 +1107,54 @@ Primary
   / "(" __ expr:OverExpr __ ")" { return expr, nil }
   / "(" __ expr:Expr __ ")" { return expr, nil }
 
+CaseExpr
+  = CASE cases:When+ else_:(_ "else" _ Expr)? _ END (_ CASE)? {
+        whens := sliceOf[ast.When](cases)
+        cond := &ast.Conditional{
+            Kind: "Conditional",
+            Cond: whens[0].Cond,
+            Then: whens[0].Then,
+            Loc: loc(c),
+        }
+        last := cond
+        for _, when := range whens[1:] {
+            next := &ast.Conditional{
+               Kind: "Conditional",
+               Cond: when.Cond,
+               Then: when.Then,
+               Loc: when.Loc,
+            }
+            last.Else = next
+            last = next
+        }
+        if else_ != nil {
+            last.Else = else_.([]any)[3].(ast.Expr)
+        }
+        return cond, nil
+    }
+  / CASE _ expr:Expr whens:When+ else_:(_ "else" _ Expr)? _ END (_ CASE)?  {
+        cond := &ast.CaseExpr{
+            Kind: "CaseExpr",
+            Expr: expr.(ast.Expr),
+            Whens: sliceOf[ast.When](whens),
+            Loc: loc(c),
+        }
+        if else_ != nil {
+            cond.Else = else_.([]any)[3].(ast.Expr)
+        }
+        return cond, nil
+    }
+
+When
+  = _ WHEN _ cond:Expr _ THEN _ then:Expr {
+      return ast.When{
+        Kind: "When",
+        Cond: cond.(ast.Expr),
+        Then: then.(ast.Expr),
+        Loc: loc(c),
+      }, nil
+    }
+    
 OverExpr
   = OVER _ exprs:Exprs locals:Locals? __ Pipe __ body:Seq {
       return &ast.OverExpr{
@@ -2195,6 +2201,7 @@ DEFAULT    = "DEFAULT"i         !IdentifierRest
 DESC       = "DESC"i            !IdentifierRest { return "desc", nil }
 DISTINCT   = "DISTINCT"i        !IdentifierRest
 DROP       = "DROP"i            !IdentifierRest 
+END        = "END"i             !IdentifierRest
 ERROR      = "ERROR"i           !IdentifierRest
 EXPLODE    = "EXPLODE"i         !IdentifierRest
 FALSE      = "FALSE"i           !IdentifierRest
