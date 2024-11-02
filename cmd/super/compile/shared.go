@@ -11,12 +11,11 @@ import (
 	"github.com/brimdata/super/cli/outputflags"
 	"github.com/brimdata/super/cli/queryflags"
 	"github.com/brimdata/super/compiler"
-	"github.com/brimdata/super/compiler/data"
 	"github.com/brimdata/super/compiler/describe"
-	"github.com/brimdata/super/compiler/parser"
 	"github.com/brimdata/super/lake"
 	"github.com/brimdata/super/pkg/storage"
 	"github.com/brimdata/super/runtime"
+	"github.com/brimdata/super/runtime/exec"
 	"github.com/brimdata/super/zbuf"
 	"github.com/brimdata/super/zfmt"
 	"github.com/brimdata/super/zio"
@@ -43,7 +42,7 @@ func (s *Shared) SetFlags(fs *flag.FlagSet) {
 	s.OutputFlags.SetFlags(fs)
 }
 
-func (s *Shared) Run(ctx context.Context, args []string, lakeFlags *lakeflags.Flags, desc bool) error {
+func (s *Shared) Run(ctx context.Context, args []string, lakeFlags *lakeflags.Flags, desc, extInput bool) error {
 	if len(s.includes) == 0 && len(args) == 0 {
 		return errors.New("no query specified")
 	}
@@ -62,11 +61,16 @@ func (s *Shared) Run(ctx context.Context, args []string, lakeFlags *lakeflags.Fl
 	if len(args) == 1 {
 		query = args[0]
 	}
-	ast, err := parser.ParseQuery(query, s.includes...)
+	rctx := runtime.DefaultContext()
+	env := exec.NewEnvironment(nil, lk)
+	ast, err := compiler.Parse(query, s.includes...)
 	if err != nil {
 		return err
 	}
-	if s.optimize || s.parallel > 0 || desc {
+	if s.parallel > 0 {
+		s.optimize = true
+	}
+	if s.optimize || desc {
 		s.dag = true
 	}
 	if !s.dag {
@@ -76,34 +80,28 @@ func (s *Shared) Run(ctx context.Context, args []string, lakeFlags *lakeflags.Fl
 		}
 		return s.writeValue(ctx, ast.Parsed())
 	}
-	runtime, err := compiler.NewJob(runtime.DefaultContext(), ast, data.NewSource(nil, lk), false)
+	dag, err := compiler.Analyze(rctx, ast, env, extInput)
 	if err != nil {
 		return err
 	}
 	if desc {
-		description, err := describe.AnalyzeDAG(ctx, runtime.Entry(), data.NewSource(nil, lk))
+		description, err := describe.AnalyzeDAG(ctx, dag, env)
 		if err != nil {
 			return err
 		}
 		return s.writeValue(ctx, description)
 	}
-	if s.parallel > 0 {
-		if err := runtime.Optimize(); err != nil {
-			return err
-		}
-		if err := runtime.Parallelize(s.parallel); err != nil {
-			return err
-		}
-	} else if s.optimize {
-		if err := runtime.Optimize(); err != nil {
+	if s.optimize {
+		dag, err = compiler.Optimize(rctx, dag, env, s.parallel)
+		if err != nil {
 			return err
 		}
 	}
 	if s.query {
-		fmt.Println(zfmt.DAG(runtime.Entry()))
+		fmt.Println(zfmt.DAG(dag))
 		return nil
 	}
-	return s.writeValue(ctx, runtime.Entry())
+	return s.writeValue(ctx, dag)
 }
 
 func (s *Shared) writeValue(ctx context.Context, v any) error {

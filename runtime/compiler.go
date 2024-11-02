@@ -13,8 +13,7 @@ import (
 )
 
 type Compiler interface {
-	NewQuery(*Context, *parser.AST, []zio.Reader) (Query, error)
-	NewLakeQuery(*Context, *parser.AST, int) (Query, error)
+	NewQuery(*Context, *parser.AST, []zio.Reader, int) (Query, error)
 	NewLakeDeleteQuery(*Context, *parser.AST, *lakeparse.Commitish) (DeleteQuery, error)
 }
 
@@ -36,7 +35,7 @@ func AsReader(q Query) zio.Reader {
 
 func CompileQuery(ctx context.Context, zctx *super.Context, c Compiler, ast *parser.AST, readers []zio.Reader) (Query, error) {
 	rctx := NewContext(ctx, zctx)
-	q, err := c.NewQuery(rctx, ast, readers)
+	q, err := c.NewQuery(rctx, ast, readers, 0)
 	if err != nil {
 		rctx.Cancel()
 		return nil, err
@@ -46,7 +45,7 @@ func CompileQuery(ctx context.Context, zctx *super.Context, c Compiler, ast *par
 
 func CompileLakeQuery(ctx context.Context, zctx *super.Context, c Compiler, ast *parser.AST) (Query, error) {
 	rctx := NewContext(ctx, zctx)
-	q, err := c.NewLakeQuery(rctx, ast, 0)
+	q, err := c.NewQuery(rctx, ast, nil, 0)
 	if err != nil {
 		rctx.Cancel()
 		return nil, err

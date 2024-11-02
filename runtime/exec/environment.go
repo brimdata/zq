@@ -1,4 +1,4 @@
-package data
+package exec
 
 import (
 	"context"
@@ -18,27 +18,27 @@ import (
 	"github.com/segmentio/ksuid"
 )
 
-type Source struct {
+type Environment struct {
 	engine storage.Engine
 	lake   *lake.Root
 }
 
-func NewSource(engine storage.Engine, lake *lake.Root) *Source {
-	return &Source{
+func NewEnvironment(engine storage.Engine, lake *lake.Root) *Environment {
+	return &Environment{
 		engine: engine,
 		lake:   lake,
 	}
 }
 
-func (s *Source) IsLake() bool {
+func (s *Environment) IsLake() bool {
 	return s.lake != nil
 }
 
-func (s *Source) Lake() *lake.Root {
+func (s *Environment) Lake() *lake.Root {
 	return s.lake
 }
 
-func (s *Source) PoolID(ctx context.Context, name string) (ksuid.KSUID, error) {
+func (s *Environment) PoolID(ctx context.Context, name string) (ksuid.KSUID, error) {
 	if id, err := lakeparse.ParseID(name); err == nil {
 		if _, err := s.lake.OpenPool(ctx, id); err == nil {
 			return id, nil
@@ -47,21 +47,21 @@ func (s *Source) PoolID(ctx context.Context, name string) (ksuid.KSUID, error) {
 	return s.lake.PoolID(ctx, name)
 }
 
-func (s *Source) CommitObject(ctx context.Context, id ksuid.KSUID, name string) (ksuid.KSUID, error) {
+func (s *Environment) CommitObject(ctx context.Context, id ksuid.KSUID, name string) (ksuid.KSUID, error) {
 	if s.lake != nil {
 		return s.lake.CommitObject(ctx, id, name)
 	}
 	return ksuid.Nil, nil
 }
 
-func (s *Source) SortKeys(ctx context.Context, src dag.Op) order.SortKeys {
+func (s *Environment) SortKeys(ctx context.Context, src dag.Op) order.SortKeys {
 	if s.lake != nil {
 		return s.lake.SortKeys(ctx, src)
 	}
 	return nil
 }
 
-func (s *Source) Open(ctx context.Context, zctx *super.Context, path, format string, pushdown zbuf.Filter, demandOut demand.Demand) (zbuf.Puller, error) {
+func (s *Environment) Open(ctx context.Context, zctx *super.Context, path, format string, pushdown zbuf.Filter, demandOut demand.Demand) (zbuf.Puller, error) {
 	if path == "-" {
 		path = "stdio:stdin"
 	}
@@ -78,7 +78,7 @@ func (s *Source) Open(ctx context.Context, zctx *super.Context, path, format str
 	return &closePuller{sn, file}, nil
 }
 
-func (s *Source) OpenHTTP(ctx context.Context, zctx *super.Context, url, format, method string, headers http.Header, body io.Reader, demandOut demand.Demand) (zbuf.Puller, error) {
+func (s *Environment) OpenHTTP(ctx context.Context, zctx *super.Context, url, format, method string, headers http.Header, body io.Reader, demandOut demand.Demand) (zbuf.Puller, error) {
 	req, err := http.NewRequestWithContext(ctx, method, url, body)
 	if err != nil {
 		return nil, err

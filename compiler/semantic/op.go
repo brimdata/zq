@@ -81,12 +81,12 @@ func wrapAlias(alias string, seq dag.Seq) dag.Seq {
 func (a *analyzer) semFromEntity(entity ast.FromEntity, args ast.FromArgs) dag.Seq {
 	switch entity := entity.(type) {
 	case *ast.Glob:
-		if a.source.IsLake() {
+		if a.env.IsLake() {
 			return a.semPoolFromRegexp(entity, reglob.Reglob(entity.Pattern), entity.Pattern, "glob", args)
 		}
 		return dag.Seq{a.semFromFileGlob(entity, entity.Pattern, args)}
 	case *ast.Regexp:
-		if !a.source.IsLake() {
+		if !a.env.IsLake() {
 			a.error(entity, errors.New("cannot use regular expression with from operator on local file system"))
 		}
 		return a.semPoolFromRegexp(entity, entity.Pattern, entity.Pattern, "regexp", args)
@@ -146,7 +146,7 @@ func (a *analyzer) semFromName(nameLoc ast.Node, name string, args ast.FromArgs)
 	if isURL(name) {
 		return a.semFromURL(nameLoc, name, args)
 	}
-	if a.source.IsLake() {
+	if a.env.IsLake() {
 		poolArgs, err := asPoolArgs(args)
 		if err != nil {
 			a.error(args, err)
@@ -339,7 +339,7 @@ func (a *analyzer) semPool(nameLoc ast.Node, poolName string, args *ast.PoolArgs
 		meta = nullableName(args.Meta)
 		tap = args.Tap
 	}
-	poolID, err := a.source.PoolID(a.ctx, poolName)
+	poolID, err := a.env.PoolID(a.ctx, poolName)
 	if err != nil {
 		a.error(nameLoc, err)
 		return badOp()
@@ -347,7 +347,7 @@ func (a *analyzer) semPool(nameLoc ast.Node, poolName string, args *ast.PoolArgs
 	var commitID ksuid.KSUID
 	if commit != "" {
 		if commitID, err = lakeparse.ParseID(commit); err != nil {
-			commitID, err = a.source.CommitObject(a.ctx, poolID, commit)
+			commitID, err = a.env.CommitObject(a.ctx, poolID, commit)
 			if err != nil {
 				a.error(args.Commit, err)
 				return badOp()
@@ -357,7 +357,7 @@ func (a *analyzer) semPool(nameLoc ast.Node, poolName string, args *ast.PoolArgs
 	if meta != "" {
 		if _, ok := dag.CommitMetas[meta]; ok {
 			if commitID == ksuid.Nil {
-				commitID, err = a.source.CommitObject(a.ctx, poolID, "main")
+				commitID, err = a.env.CommitObject(a.ctx, poolID, "main")
 				if err != nil {
 					a.error(args.Commit, err)
 					return badOp()
@@ -384,7 +384,7 @@ func (a *analyzer) semPool(nameLoc ast.Node, poolName string, args *ast.PoolArgs
 	if commitID == ksuid.Nil {
 		// This trick here allows us to default to the main branch when
 		// there is a "from pool" operator with no meta query or commit object.
-		commitID, err = a.source.CommitObject(a.ctx, poolID, "main")
+		commitID, err = a.env.CommitObject(a.ctx, poolID, "main")
 		if err != nil {
 			a.error(nameLoc, err)
 			return badOp()
@@ -410,11 +410,11 @@ func (a *analyzer) semLakeMeta(entity *ast.LakeMeta) dag.Op {
 }
 
 func (a *analyzer) semDelete(op *ast.Delete) dag.Op {
-	if !a.source.IsLake() {
+	if !a.env.IsLake() {
 		a.error(op, errors.New("deletion requires data lake"))
 		return badOp()
 	}
-	poolID, err := a.source.PoolID(a.ctx, op.Pool)
+	poolID, err := a.env.PoolID(a.ctx, op.Pool)
 	if err != nil {
 		a.error(op, err)
 		return badOp()
@@ -423,7 +423,7 @@ func (a *analyzer) semDelete(op *ast.Delete) dag.Op {
 	if op.Branch != "" {
 		var err error
 		if commitID, err = lakeparse.ParseID(op.Branch); err != nil {
-			commitID, err = a.source.CommitObject(a.ctx, poolID, op.Branch)
+			commitID, err = a.env.CommitObject(a.ctx, poolID, op.Branch)
 			if err != nil {
 				a.error(op, err)
 				return badOp()
@@ -442,7 +442,7 @@ func (a *analyzer) matchPools(pattern, origPattern, patternDesc string) ([]strin
 	if err != nil {
 		return nil, err
 	}
-	pools, err := a.source.Lake().ListPools(a.ctx)
+	pools, err := a.env.Lake().ListPools(a.ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -881,13 +881,13 @@ func (a *analyzer) semOp(o ast.Op, seq dag.Seq) dag.Seq {
 			Exprs: exprs,
 		})
 	case *ast.Load:
-		if !a.source.IsLake() {
+		if !a.env.IsLake() {
 			a.error(o, errors.New("load operator cannot be used without a lake"))
 			return dag.Seq{badOp()}
 		}
 		poolID, err := lakeparse.ParseID(o.Pool.Text)
 		if err != nil {
-			poolID, err = a.source.PoolID(a.ctx, o.Pool.Text)
+			poolID, err = a.env.PoolID(a.ctx, o.Pool.Text)
 			if err != nil {
 				a.error(o, err)
 				return append(seq, badOp())

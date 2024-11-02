@@ -7,20 +7,20 @@ import (
 	"github.com/brimdata/super"
 	"github.com/brimdata/super/compiler/ast"
 	"github.com/brimdata/super/compiler/dag"
-	"github.com/brimdata/super/compiler/data"
 	"github.com/brimdata/super/compiler/parser"
 	"github.com/brimdata/super/compiler/srcfiles"
+	"github.com/brimdata/super/runtime/exec"
 )
 
 // Analyze performs a semantic analysis of the AST, translating it from AST
 // to DAG form, resolving syntax ambiguities, and performing constant propagation.
 // After semantic analysis, the DAG is ready for either optimization or compilation.
-func Analyze(ctx context.Context, ast *parser.AST, source *data.Source, extInput bool) (dag.Seq, error) {
+func Analyze(ctx context.Context, ast *parser.AST, source *exec.Environment, extInput bool) (dag.Seq, error) {
 	files := ast.Files()
 	a := newAnalyzer(ctx, files, source)
 	seq := a.semSeq(ast.Parsed())
 	if !HasSource(seq) {
-		if a.source.IsLake() {
+		if a.env.IsLake() {
 			if len(seq) == 0 {
 				return nil, errors.New("query text is missing")
 			}
@@ -42,17 +42,17 @@ type analyzer struct {
 	files   *srcfiles.List
 	opStack []*ast.OpDecl
 	outputs map[*dag.Output]ast.Node
-	source  *data.Source
+	env     *exec.Environment
 	scope   *Scope
 	zctx    *super.Context
 }
 
-func newAnalyzer(ctx context.Context, files *srcfiles.List, source *data.Source) *analyzer {
+func newAnalyzer(ctx context.Context, files *srcfiles.List, env *exec.Environment) *analyzer {
 	return &analyzer{
 		ctx:     ctx,
 		files:   files,
 		outputs: make(map[*dag.Output]ast.Node),
-		source:  source,
+		env:     env,
 		scope:   NewScope(nil),
 		zctx:    super.NewContext(),
 	}

@@ -13,7 +13,6 @@ import (
 
 	"github.com/brimdata/super"
 	"github.com/brimdata/super/compiler"
-	"github.com/brimdata/super/compiler/data"
 	"github.com/brimdata/super/compiler/optimizer"
 	"github.com/brimdata/super/compiler/optimizer/demand"
 	"github.com/brimdata/super/compiler/parser"
@@ -21,6 +20,7 @@ import (
 	"github.com/brimdata/super/pkg/nano"
 	"github.com/brimdata/super/pkg/storage/mock"
 	"github.com/brimdata/super/runtime"
+	"github.com/brimdata/super/runtime/exec"
 	"github.com/brimdata/super/zbuf"
 	"github.com/brimdata/super/zcode"
 	"github.com/brimdata/super/zio"
@@ -95,7 +95,7 @@ func RunQuery(t testing.TB, zctx *super.Context, readers []zio.Reader, querySour
 
 	// Compile query
 	engine := mock.NewMockEngine(gomock.NewController(t))
-	comp := compiler.NewFileSystemCompiler(engine)
+	comp := compiler.NewCompiler(engine)
 	ast, err := parser.ParseQuery(querySource)
 	if err != nil {
 		t.Skipf("%v", err)
@@ -108,8 +108,8 @@ func RunQuery(t testing.TB, zctx *super.Context, readers []zio.Reader, querySour
 
 	// Infer demand
 	// TODO This is a hack and should be replaced by a cleaner interface in CompileQuery.
-	source := data.NewSource(engine, nil)
-	dag, err := semantic.Analyze(ctx, ast, source, true)
+	env := exec.NewEnvironment(engine, nil)
+	dag, err := semantic.Analyze(ctx, ast, env, true)
 	if err != nil {
 		t.Skipf("%v", err)
 	}

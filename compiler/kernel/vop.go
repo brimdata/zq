@@ -64,7 +64,7 @@ func (b *Builder) compileVamScan(scan *dag.SeqScan, parent zbuf.Puller) (vector.
 		return nil, err
 	}
 	//XXX check VectorCache not nil
-	return vamop.NewScanner(b.rctx, b.source.Lake().VectorCache(), parent, pool, scan.Fields, nil, nil), nil
+	return vamop.NewScanner(b.rctx, b.env.Lake().VectorCache(), parent, pool, scan.Fields, nil, nil), nil
 }
 
 func (b *Builder) compileVamFork(fork *dag.Fork, parents []vector.Puller) ([]vector.Puller, error) {

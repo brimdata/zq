@@ -6,10 +6,10 @@ import (
 	"fmt"
 
 	"github.com/brimdata/super/compiler/dag"
-	"github.com/brimdata/super/compiler/data"
 	"github.com/brimdata/super/lake"
 	"github.com/brimdata/super/order"
 	"github.com/brimdata/super/pkg/field"
+	"github.com/brimdata/super/runtime/exec"
 	"github.com/segmentio/ksuid"
 )
 
@@ -19,10 +19,10 @@ type Optimizer struct {
 	nent int
 }
 
-func New(ctx context.Context, source *data.Source) *Optimizer {
+func New(ctx context.Context, env *exec.Environment) *Optimizer {
 	var lk *lake.Root
-	if source != nil {
-		lk = source.Lake()
+	if env != nil {
+		lk = env.Lake()
 	}
 	return &Optimizer{
 		ctx:  ctx,

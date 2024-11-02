@@ -7,9 +7,10 @@ import (
 
 	"github.com/brimdata/super"
 	"github.com/brimdata/super/compiler"
-	"github.com/brimdata/super/compiler/data"
+	"github.com/brimdata/super/compiler/dag"
 	"github.com/brimdata/super/compiler/parser"
 	"github.com/brimdata/super/runtime"
+	"github.com/brimdata/super/runtime/exec"
 	"github.com/brimdata/super/runtime/sam/expr"
 	"github.com/brimdata/super/zcode"
 	"github.com/brimdata/super/zson"
@@ -55,15 +56,17 @@ func runCasesHelper(t *testing.T, record string, cases []testcase, expectBufferF
 			t.Helper()
 			ast, err := parser.ParseQuery(c.filter)
 			require.NoError(t, err, "filter: %q", c.filter)
-			job, err := compiler.NewJob(runtime.DefaultContext(), ast, &data.Source{}, true)
+			rctx := runtime.DefaultContext()
+			env := &exec.Environment{}
+			seq, err := compiler.Analyze(rctx, ast, env, true)
 			require.NoError(t, err, "filter: %q", c.filter)
-			err = job.Optimize()
+			seq, err = compiler.Optimize(rctx, seq, env, 0)
 			require.NoError(t, err, "filter: %q", c.filter)
-			err = job.Build()
+			_, builder, err := compiler.BuildWithBuilder(rctx, seq, env, nil)
 			require.NoError(t, err, "filter: %q", c.filter)
-			scan, ok := job.DefaultScan()
+			scan, ok := seq[0].(*dag.DefaultScan)
 			require.True(t, ok)
-			filterMaker := job.Builder().PushdownOf(scan.Filter)
+			filterMaker := builder.PushdownOf(scan.Filter)
 			f, err := filterMaker.AsEvaluator()
 			assert.NoError(t, err, "filter: %q", c.filter)
 			if f != nil {

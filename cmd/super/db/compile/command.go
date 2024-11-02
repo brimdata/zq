@@ -47,5 +47,5 @@ func (c *Command) Run(args []string) error {
 		return err
 	}
 	defer cleanup()
-	return c.shared.Run(ctx, args, &c.parent.LakeFlags, c.describe)
+	return c.shared.Run(ctx, args, &c.parent.LakeFlags, c.describe, false)
 }

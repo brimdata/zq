@@ -41,10 +41,12 @@ func init() {
 type Command struct {
 	*root.Command
 	shared Shared
+	files  bool
 }
 
 func New(parent charm.Command, f *flag.FlagSet) (charm.Command, error) {
 	c := &Command{Command: parent.(*root.Command)}
+	f.BoolVar(&c.files, "files", false, "compile query as if command-line input files are present)")
 	c.shared.SetFlags(f)
 	return c, nil
 }
@@ -55,5 +57,5 @@ func (c *Command) Run(args []string) error {
 		return err
 	}
 	defer cleanup()
-	return c.shared.Run(ctx, args, nil, false)
+	return c.shared.Run(ctx, args, nil, false, c.files)
 }

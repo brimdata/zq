@@ -139,6 +139,7 @@ import (
 	"github.com/brimdata/super/compiler"
 	"github.com/brimdata/super/compiler/optimizer/demand"
 	"github.com/brimdata/super/compiler/parser"
+	"github.com/brimdata/super/pkg/storage"
 	"github.com/brimdata/super/runtime"
 	"github.com/brimdata/super/runtime/vcache"
 	"github.com/brimdata/super/vng"
@@ -523,7 +524,7 @@ func runzq(path, zedProgram, input string, outputFlags []string, inputFlags []st
 	if err != nil {
 		return "", err
 	}
-	q, err := runtime.CompileQuery(context.Background(), zctx, compiler.NewCompiler(), ast, []zio.Reader{zrc})
+	q, err := runtime.CompileQuery(context.Background(), zctx, compiler.NewCompiler(storage.NewLocalEngine()), ast, []zio.Reader{zrc})
 	if err != nil {
 		zw.Close()
 		return "", err

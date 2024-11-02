@@ -5,13 +5,13 @@ import (
 	"fmt"
 
 	"github.com/brimdata/super/compiler/dag"
-	"github.com/brimdata/super/compiler/data"
 	"github.com/brimdata/super/compiler/optimizer"
 	"github.com/brimdata/super/compiler/parser"
 	"github.com/brimdata/super/compiler/semantic"
 	"github.com/brimdata/super/lake"
 	"github.com/brimdata/super/order"
 	"github.com/brimdata/super/pkg/field"
+	"github.com/brimdata/super/runtime/exec"
 	"github.com/segmentio/ksuid"
 )
 
@@ -54,7 +54,7 @@ type Channel struct {
 	Sort            order.SortKeys `json:"sort"`
 }
 
-func Analyze(ctx context.Context, query string, src *data.Source) (*Info, error) {
+func Analyze(ctx context.Context, query string, src *exec.Environment) (*Info, error) {
 	ast, err := parser.ParseQuery(query)
 	if err != nil {
 		return nil, err
@@ -66,7 +66,7 @@ func Analyze(ctx context.Context, query string, src *data.Source) (*Info, error)
 	return AnalyzeDAG(ctx, entry, src)
 }
 
-func AnalyzeDAG(ctx context.Context, entry dag.Seq, src *data.Source) (*Info, error) {
+func AnalyzeDAG(ctx context.Context, entry dag.Seq, src *exec.Environment) (*Info, error) {
 	var err error
 	var info Info
 	if info.Sources, err = describeSources(ctx, src.Lake(), entry[0]); err != nil {

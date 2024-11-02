@@ -12,7 +12,6 @@ import (
 	"github.com/brimdata/super/api"
 	"github.com/brimdata/super/api/queryio"
 	"github.com/brimdata/super/compiler"
-	"github.com/brimdata/super/compiler/data"
 	"github.com/brimdata/super/compiler/describe"
 	"github.com/brimdata/super/compiler/optimizer/demand"
 	"github.com/brimdata/super/compiler/parser"
@@ -181,8 +180,8 @@ func handleQueryDescribe(c *Core, w *ResponseWriter, r *Request) {
 	if !r.Unmarshal(w, &req) {
 		return
 	}
-	src := data.NewSource(storage.NewRemoteEngine(), c.root)
-	info, err := describe.Analyze(r.Context(), req.Query, src)
+	env := exec.NewEnvironment(storage.NewRemoteEngine(), c.root)
+	info, err := describe.Analyze(r.Context(), req.Query, env)
 	if err != nil {
 		w.Error(srverr.ErrInvalid(err))
 		return

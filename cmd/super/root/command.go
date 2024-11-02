@@ -158,7 +158,7 @@ func (c *Command) Run(args []string) error {
 	if err != nil {
 		return err
 	}
-	comp := compiler.NewFileSystemCompiler(local)
+	comp := compiler.NewCompiler(local)
 	query, err := runtime.CompileQuery(ctx, zctx, comp, ast, readers)
 	if err != nil {
 		return err
