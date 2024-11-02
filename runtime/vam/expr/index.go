@@ -19,13 +19,11 @@ func NewIndexExpr(zctx *super.Context, container, index Evaluator) Evaluator {
 }
 
 func (i *Index) Eval(this vector.Any) vector.Any {
-	return vector.Apply(true, i.eval, this)
+	return vector.Apply(true, i.eval, i.container.Eval(this), i.index.Eval(this))
 }
 
 func (i *Index) eval(args ...vector.Any) vector.Any {
-	this := args[0]
-	container := i.container.Eval(this)
-	index := i.index.Eval(this)
+	container, index := args[0], args[1]
 	switch val := vector.Under(container).(type) {
 	case *vector.Array:
 		return indexArrayOrSet(i.zctx, val.Offsets, val.Values, index, val.Nulls)
@@ -36,7 +34,7 @@ func (i *Index) eval(args ...vector.Any) vector.Any {
 	case *vector.Map:
 		panic("vector index operations on maps not supported")
 	default:
-		return vector.NewMissing(i.zctx, this.Len())
+		return vector.NewMissing(i.zctx, container.Len())
 	}
 }
 
