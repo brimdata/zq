@@ -3,7 +3,6 @@ package semantic
 import (
 	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/brimdata/super"
 	"github.com/brimdata/super/compiler/ast"
@@ -11,31 +10,24 @@ import (
 	"github.com/brimdata/super/compiler/kernel"
 	"github.com/brimdata/super/order"
 	"github.com/brimdata/super/pkg/field"
-	"github.com/brimdata/super/runtime/sam/expr/agg"
+	"github.com/brimdata/super/zfmt"
 	"github.com/brimdata/super/zson"
 )
 
 // Analyze a SQL select expression which may have arbitrary nested subqueries
 // and may or may not have its sources embedded.
 func (a *analyzer) semSelect(sel *ast.Select, seq dag.Seq) dag.Seq {
-	from := sel.From
-	if len(seq) > 0 {
-		if from != nil {
+	if sel.From != nil {
+		if len(seq) > 0 {
 			a.error(sel, errors.New("SELECT cannot have both an embedded FROM claue and input from parents"))
 			return append(seq, badOp())
 		}
-	} else if from == nil {
-		// XXX need to insert null source here, e.g., so "select 1" query works
-		a.error(sel, errors.New("SELECT without a FROM claue not yet supported"))
-		return append(seq, badOp())
-	}
-	if from != nil {
-		seq = a.semFrom(sel.From, seq)
+		seq = a.semFrom(sel.From, nil)
 	}
 	if sel.Value {
 		return a.semSelectValue(sel, seq)
 	}
-	proj, ok := a.newProjection(sel.Args)
+	proj, ok := a.semProjection(sel.Selection.Args)
 	if !ok {
 		return dag.Seq{badOp()}
 	}
@@ -47,33 +39,19 @@ func (a *analyzer) semSelect(sel *ast.Select, seq dag.Seq) dag.Seq {
 			a.error(sel, errors.New("aggregate mixed with *-selector not yet supported"))
 			return append(seq, badOp())
 		}
-		groupby, ok := a.semGroupBy(sel.GroupBy, proj)
+		seq, ok = a.semGroupBy(sel.GroupBy, proj, seq)
 		if !ok {
-			seq = append(seq, badOp())
-		} else {
-			seq = append(seq, groupby)
-			if sel.Having != nil {
-				seq = append(seq, dag.NewFilter(a.semExpr(sel.Having)))
-			}
+			return seq
 		}
-	} else if sel.Args != nil {
+		if sel.Having != nil {
+			seq = append(seq, dag.NewFilter(a.semExpr(sel.Having)))
+		}
+	} else if sel.Selection.Args != nil {
 		if sel.Having != nil {
 			a.error(sel, errors.New("HAVING clause used without GROUP BY"))
-			seq = append(seq, badOp())
+			return append(seq, badOp())
 		}
-		// GroupBy will do the cutting but if there's no GroupBy,
-		// then we need a cut for the select expressions.
-		// For SELECT *, cutter is nil.
-		selector, err := projectSelect(proj)
-		if err != nil {
-			a.error(sel, err)
-			seq = append(seq, badOp())
-		} else {
-			seq = append(seq, selector)
-		}
-	}
-	if len(seq) == 0 {
-		seq = dag.Seq{dag.PassOp}
+		seq = a.convertProjection(sel.Selection.Loc, proj, seq)
 	}
 	if sel.Distinct {
 		seq = a.semDistinct(seq)
@@ -90,12 +68,12 @@ func (a *analyzer) semSelectValue(sel *ast.Select, seq dag.Seq) dag.Seq {
 		a.error(sel, errors.New("SELECT VALUE cannot be used with HAVING"))
 		seq = append(seq, badOp())
 	}
-	exprs := make([]dag.Expr, 0, len(sel.Args))
-	for _, assignment := range sel.Args {
-		if assignment.LHS != nil {
-			a.error(sel, errors.New("SELECT VALUE cannot AS clause in selection"))
+	exprs := make([]dag.Expr, 0, len(sel.Selection.Args))
+	for _, as := range sel.Selection.Args {
+		if as.ID != nil {
+			a.error(sel, errors.New("SELECT VALUE cannot have AS clause in selection"))
 		}
-		exprs = append(exprs, a.semExpr(assignment.RHS))
+		exprs = append(exprs, a.semExpr(as.Expr))
 	}
 	seq = append(seq, &dag.Yield{
 		Kind:  "Yield",
@@ -275,44 +253,42 @@ func hasNullsFirst(exprs []ast.SortExpr) bool {
 	return false
 }
 
-func projectSelect(selection projection) (dag.Op, error) {
+func (a *analyzer) convertProjection(loc ast.Node, proj projection, seq dag.Seq) dag.Seq {
 	// This is a straight select without a group-by.
 	// If all the expressions are aggregators, then we build a group-by.
-	// If it's mixed, we return an error.  Otherwise, we do a simple cut.
+	// If it's mixed, we return an error.  Otherwise, we yield a record.
 	var nagg int
-	for _, p := range selection {
+	for _, p := range proj {
 		if p.agg != nil {
 			nagg++
 		}
 	}
 	if nagg == 0 {
-		return selection.buildOp(), nil
+		return proj.yieldScalars(seq)
 	}
-	if nagg != len(selection) {
-		return nil, errors.New("cannot mix aggregations and non-aggregations without a GROUP BY")
+	if nagg != len(proj) {
+		a.error(loc, errors.New("cannot mix aggregations and non-aggregations without a GROUP BY"))
+		return seq
 	}
-	// Note here that we reconstruct the group-by aggregators instead of
-	// using the assignments in ast.SqlExpression.Select since the SQL peg
-	// parser does not know whether they are aggregators or function calls,
-	// but the sqlPick elements have this determined.  So we take the LHS
-	// from the original expression and mix it with the agg that was put
-	// in sqlPick.
+	// This projection has agg funcs but no group-by keys and we've
+	// confirmed that all the columns are agg funcs, so build a simple
+	// Summarize operator without group-by keys.
 	var assignments []dag.Assignment
-	for _, p := range selection {
+	for _, col := range proj {
 		a := dag.Assignment{
 			Kind: "Assignment",
-			LHS:  p.item.LHS,
-			RHS:  p.agg,
+			LHS:  &dag.This{Kind: "This", Path: field.Path{col.name}},
+			RHS:  col.agg,
 		}
 		assignments = append(assignments, a)
 	}
-	return &dag.Summarize{
+	return append(seq, &dag.Summarize{
 		Kind: "Summarize",
 		Aggs: assignments,
-	}, nil
+	})
 }
 
-func (a *analyzer) semGroupBy(exprs []ast.Expr, proj projection) (dag.Op, bool) {
+func (a *analyzer) semGroupBy(exprs []ast.Expr, proj projection, seq dag.Seq) (dag.Seq, bool) {
 	// Unlike the original zed runtime, SQL group-by elements do not have explicit
 	// keys and may just be a single identifier or an expression.  We don't quite
 	// capture the correct scoping here but this is a start before we implement
@@ -351,194 +327,88 @@ func (a *analyzer) semGroupBy(exprs []ast.Expr, proj projection) (dag.Op, bool) 
 	// key expressions from the scalars of the select and build the
 	// aggregators from the aggregation functions present in the select clause.
 	var keyExprs []dag.Assignment
-	for _, p := range scalars {
-		keyExprs = append(keyExprs, p.item)
-	}
-	var aggExprs []dag.Assignment
-	for _, p := range proj.aggs() {
-		aggExprs = append(aggExprs, dag.Assignment{
+	for _, col := range scalars {
+		keyExprs = append(keyExprs, dag.Assignment{
 			Kind: "Assignment",
-			LHS:  p.item.LHS, //XXX is this right?
-			RHS:  p.agg,
+			LHS:  &dag.This{Kind: "This", Path: field.Path{col.name}},
+			RHS:  col.scalar,
 		})
 	}
-	return &dag.Summarize{
+	var aggExprs []dag.Assignment
+	for _, col := range proj.aggs() {
+		aggExprs = append(aggExprs, dag.Assignment{
+			Kind: "Assignment",
+			LHS:  &dag.This{Kind: "This", Path: field.Path{col.name}},
+			RHS:  col.agg,
+		})
+	}
+	return append(seq, &dag.Summarize{
 		Kind: "Summarize",
 		Keys: keyExprs,
 		Aggs: aggExprs,
-	}, true
+	}), true
 }
 
-// Column of a select statement.  We bookkeep here whether
-// a column is a scalar expression or an aggregation by looking up the function
-// name and seeing if it's an aggregator or not.  We also infer the column
-// names so we can do SQL error checking relating the selections to the group-by keys.
-type column struct {
-	path field.Path
-	agg  *dag.Agg
-	item dag.Assignment
-}
-
-func (c column) isStar() bool {
-	return c.item.LHS == nil && c.item.RHS == nil
-}
-
-func isStar(a ast.Assignment) bool {
-	return a.LHS == nil && a.RHS == nil
-}
-
-type projection []column
-
-func (a *analyzer) newProjection(assignments []ast.Assignment) (projection, bool) {
+func (a *analyzer) semProjection(args []ast.AsExpr) (projection, bool) {
 	conflict := make(map[string]struct{})
 	var proj projection
-	for _, as := range assignments {
+	for _, as := range args {
 		if isStar(as) {
 			proj = append(proj, column{})
 			continue
 		}
-		// We currently support only path expressions as group-by keys and we need to
-		// get the name from the selection in case there is an as clause.
-		// must be selected by
-		path, err := a.deriveAs(as)
-		if err != nil {
-			a.error(lhsNode(as), err)
+		col, ok := a.semAs(as)
+		if !ok {
 			return nil, false
 		}
-		leaf := path.Leaf()
-		if _, ok := conflict[leaf]; ok {
-			a.error(lhsNode(as), fmt.Errorf("%q: conflicting name in projection; try an AS clause", leaf))
+		if _, ok := conflict[col.name]; ok {
+			a.error(as.ID, fmt.Errorf("%q: conflicting name in projection; try an AS clause", col.name))
 			return nil, false
 		}
-		agg, err := a.isAgg(as.RHS)
-		if err != nil {
-			a.error(as.RHS, err)
-			return nil, false
-		}
-		assignment := a.semAssignment(as)
-		proj = append(proj, column{path, agg, assignment})
+		proj = append(proj, col)
 	}
 	return proj, true
 }
 
-func lhsNode(as ast.Assignment) ast.Node {
-	n := as.LHS
-	if n == nil {
-		n = as.RHS
+func (a *analyzer) semAs(as ast.AsExpr) (column, bool) {
+	e := a.semExpr(as.Expr)
+	// If we have a name from an AS clause, use it.  Otherwise,
+	// infer a name.
+	var name string
+	if as.ID != nil {
+		name = as.ID.Name
+	} else {
+		name = inferColumnName(e)
 	}
-	return n
+	// We currently recognize only agg funcs that are top level.
+	// This means expressions with embedded agg funcs will turn
+	// into streaming aggs, which is not what we want, but we will
+	// address this later. XXX
+	if agg, ok := e.(*dag.Agg); ok {
+		// The name here was already pulled out of the Agg by inference above.
+		return column{name: name, agg: agg}, true
+	}
+	return column{name: name, scalar: e}, true
 }
 
-func (p projection) hasStar() bool {
-	for _, col := range p {
-		if col.isStar() {
-			return true
-		}
+// inferColumnName translates an expression to a column name.
+// If it's a dotted field path, we use the last element of the path.
+// Otherwise, we format the expression as text.  Pretty gross but
+// that's what SQL does!  And it seems different implementations format
+// expressions differently.  XXX we need to check ANSI SQL spec here
+func inferColumnName(e dag.Expr) string {
+	path, err := deriveLHSPath(e)
+	if err != nil {
+		return zfmt.DAGExpr(e)
 	}
-	return false
-}
-
-func (p projection) paths() field.List {
-	var fields field.List
-	for _, col := range p {
-		fields = append(fields, col.path)
-	}
-	return fields
-}
-
-func (p projection) aggs() projection {
-	var aggs projection
-	for _, col := range p {
-		if col.agg != nil {
-			aggs = append(aggs, col)
-		}
-	}
-	return aggs
-}
-
-func (p projection) scalars() projection {
-	var scalars projection
-	for _, col := range p {
-		if col.agg == nil {
-			scalars = append(scalars, col)
-		}
-	}
-	return scalars
-}
-
-func (p projection) buildOp() *dag.Yield {
-	if len(p) == 0 {
-		return nil
-	}
-	var elems []dag.RecordElem
-	for _, col := range p {
-		var elem dag.RecordElem
-		if col.isStar() {
-			elem = &dag.Spread{
-				Kind: "Spread",
-				Expr: &dag.This{Kind: "This"},
-			}
-		} else {
-			elem = &dag.Field{
-				Kind:  "Field",
-				Name:  col.path.Leaf(),
-				Value: col.item.RHS,
-			}
-		}
-		elems = append(elems, elem)
-	}
-	return &dag.Yield{
-		Kind: "Yield",
-		Exprs: []dag.Expr{
-			&dag.RecordExpr{
-				Kind:  "RecordExpr",
-				Elems: elems,
-			},
-		},
-	}
-}
-
-func (a *analyzer) isAgg(e ast.Expr) (*dag.Agg, error) {
-	call, ok := e.(*ast.Call)
-	if !ok {
-		//XXX this doesn't work for aggs inside of expressions, sum(x)+sum(y)
-		return nil, nil
-	}
-	nameLower := strings.ToLower(call.Name.Name)
-	if _, err := agg.NewPattern(nameLower, true); err != nil {
-		return nil, nil
-	}
-	var arg ast.Expr
-	if len(call.Args) > 1 {
-		return nil, fmt.Errorf("%s: wrong number of arguments", call.Name.Name)
-	}
-	if len(call.Args) == 1 {
-		arg = call.Args[0]
-	}
-	var dagArg dag.Expr
-	if arg != nil {
-		dagArg = a.semExpr(arg)
-	}
-	return &dag.Agg{
-		Kind: "Agg",
-		Name: nameLower,
-		Expr: dagArg,
-	}, nil
-}
-
-func (a *analyzer) deriveAs(as ast.Assignment) (field.Path, error) {
-	sa := a.semAssignment(as)
-	if this, ok := sa.LHS.(*dag.This); ok {
-		return this.Path, nil
-	}
-	return nil, fmt.Errorf("AS clause not a field")
+	return field.Path(path).Leaf()
 }
 
 func (a *analyzer) semGroupByKey(in ast.Expr) (*dag.This, bool) {
 	e := a.semExpr(in)
 	this, ok := e.(*dag.This)
 	if !ok {
-		a.error(in, errors.New("GROUP BY expressions are not yet supported; try expression in the selection with an AS"))
+		a.error(in, errors.New("GROUP BY expressions are not yet supported"))
 		return nil, false
 	}
 	if len(this.Path) == 0 {

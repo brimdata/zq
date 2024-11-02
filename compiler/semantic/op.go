@@ -497,7 +497,7 @@ func (a *analyzer) semDebugOp(o *ast.Debug, mainAst ast.Seq, in dag.Seq) dag.Seq
 func (a *analyzer) semOp(o ast.Op, seq dag.Seq) dag.Seq {
 	switch o := o.(type) {
 	case *ast.Select, *ast.Limit, *ast.OrderBy, *ast.SQLPipe:
-		return a.semSQLOp(o, nil)
+		return a.semSQLOp(o, seq)
 	case *ast.From:
 		return a.semFrom(o, seq)
 	case *ast.Delete:

@@ -1,15 +1,21 @@
 package ast
 
 type Select struct {
-	Kind     string      `json:"kind" unpack:""`
-	Distinct bool        `json:"distinct"`
-	Value    bool        `json:"value"`
-	Args     Assignments `json:"args"`
-	From     *From       `json:"from"`
-	Where    Expr        `json:"where"`
-	GroupBy  []Expr      `json:"group_by"`
-	Having   Expr        `json:"having"`
-	Loc      `json:"loc"`
+	Kind      string    `json:"kind" unpack:""`
+	Distinct  bool      `json:"distinct"`
+	Value     bool      `json:"value"`
+	Selection Selection `json:"selection"`
+	From      *From     `json:"from"`
+	Where     Expr      `json:"where"`
+	GroupBy   []Expr    `json:"group_by"`
+	Having    Expr      `json:"having"`
+	Loc       `json:"loc"`
+}
+
+type Selection struct {
+	Kind string   `json:"kind" unpack:""`
+	Args []AsExpr `json:"args"`
+	Loc  `json:"loc"`
 }
 
 // SQLPipe turns a Seq into an Op.  We need this to put pipes inside
@@ -108,3 +114,12 @@ func (*Union) OpAST()     {}
 func (*OrderBy) OpAST()   {}
 func (*Limit) OpAST()     {}
 func (*With) OpAST()      {}
+
+type AsExpr struct {
+	Kind string `json:"kind" unpack:""`
+	ID   *ID    `json:"id"`
+	Expr Expr   `json:"expr"`
+	Loc  `json:"loc"`
+}
+
+func (*AsExpr) ExprAST() {}

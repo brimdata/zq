@@ -1854,7 +1854,7 @@ Select
     value:OptSelectValue
     //XXX for whitespace in front of target need it only if it begins with 
     // an identifier, e.g., select(1); is ok
-    _ args:SelectList
+    _ selection:Selection
     from:OptFromClause
     where:OptWhereClause
     group:OptGroupClause
@@ -1866,7 +1866,7 @@ Select
           Kind: "Select",
           Distinct: distinct.(bool),
           Value: value.(bool),
-          Args: sliceOf[ast.Assignment](args),
+          Selection: selection.(ast.Selection),
           Loc: loc(c),
       }
       if from != nil {
@@ -2036,27 +2036,31 @@ AliasClause
       return &ast.Name{Kind: "Name", Text: name.(string), Loc: loc(c)}, nil
     }
 
-SelectList
+Selection
   = first:SelectElem rest:( __ "," __ s:SelectElem{ return s, nil })* {
-      return prepend(first, rest), nil
+      return ast.Selection{
+        Kind: "Selection",
+        Args: sliceOf[ast.AsExpr](prepend(first, rest)),
+        Loc: loc(c),
+      }, nil
   }
 
 //XXX need to add *, id.*, except, replace
 SelectElem 
   = e:Expr as:OptAsClause {
-      elem := ast.Assignment{
-        Kind: "Assignment",
-        RHS: e.(ast.Expr),
+      elem := ast.AsExpr{
+        Kind: "AsExpr",
+        Expr: e.(ast.Expr),
         Loc: loc(c),
       }
       if as != nil {
-          elem.LHS = as.(*ast.ID)
+          elem.ID = as.(*ast.ID)
       }
       return elem, nil
     }
   / "*" {
       // empty assignment is star (for now)
-      return ast.Assignment{Kind: "Assignment"}, nil
+      return ast.AsExpr{Kind: "AsExpr"}, nil
     }
 
 OptAsClause 
