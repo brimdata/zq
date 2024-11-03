@@ -29,21 +29,21 @@ var Super = &charm.Spec{
 	HiddenFlags: "cpuprofile,memprofile,pathregexp",
 	Long: `
 The "super" command provides a way to process data in diverse input formats,
-providing search, analytics, and extensive transormations using
+providing search, analytics, and extensive transformations using
 the SuperSQL query language.
 A query typically applies Boolean logic or keyword search to filter
 the input and then transforms or analyzes the filtered stream.
 Output is written to one or more files or to standard output.
 
 A query is comprised of one or more operators interconnected
-into a pipeline using the Unix pipe character "|".
-See https://github.com/brimdata/super/tree/main/docs/language
+into a pipeline using the pipe symbol "|>".
+See https://zed.brimdata.io/docs/language
 for details.  The "select" and "from" operators provide backward
-compatible with SQL. In fact, you can use SQL exclusively and 
+compatibility with SQL. In fact, you can use SQL exclusively and
 avoid pipeline operators altogether if you prefer.
 
 Supported file formats include Arrow, CSV, JSON, Parquet,
-Super JSON, Super Binary, Super Columnar,  and Zeek TSV. 
+Super JSON, Super Binary, Super Columnar, and Zeek TSV.
 
 Input files may be file system paths;
 "-" for standard input; or HTTP, HTTPS, or S3 URLs.
@@ -51,10 +51,10 @@ For most types of data, the input format is automatically detected.
 If multiple files are specified, each file format is determined independently
 so you can mix and match input types.  If multiple files are concatenated
 into a stream and presented as standard input, the files must all be of the
-same type as the beginning of stream will determine the format.
+same type as the beginning of the stream will determine the format.
 
-If no input file is specified, the default of a single null value will be
-fed to the query.  This is analogous to SQL's default input of a single 
+If no input file is specified, the default of a single null input value will be
+fed to the query.  This is analogous to SQL's default input of a single
 empty input row.
 
 Output is sent to standard output unless an output file is specified with -o.
@@ -76,7 +76,7 @@ The query text may include source files using -I, which is particularly
 convenient when a large, complex query spans multiple lines.  In this case,
 these source files are concatenated together along with the command-line query text
 in the order appearing on the command line.  Any error messages are properly
-collated to the included file in which it occurred.
+collated to the included file in which they occurred.
 
 The runtime processes input natively as super-structured data so if you intend to run
 many queries over the same data, you will see substantial performance gains
