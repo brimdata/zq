@@ -24,34 +24,38 @@ import (
 
 var Super = &charm.Spec{
 	Name:        "super",
-	Usage:       "super [options] <command> | super [ options ] [ -c [ spq/sql ] ] [ file ... ]",
-	Short:       "process data with Zed queries",
+	Usage:       "super [options] <command> | super [ options ] [ -c query ] [ file ... ]",
+	Short:       "process data with SuperSQL queries",
 	HiddenFlags: "cpuprofile,memprofile,pathregexp",
 	Long: `
-XXX "super" is a command-line tool for processing data in diverse input formats,
+The "super" command provides a way to process data in diverse input formats,
 providing search, analytics, and extensive transormations using
-the Zed query language.
+the SuperSQL query language.
 A query typically applies Boolean logic or keyword search to filter
 the input and then transforms or analyzes the filtered stream.
 Output is written to one or more files or to standard output.
 
-A Zed query is comprised of one or more operators interconnected
+A query is comprised of one or more operators interconnected
 into a pipeline using the Unix pipe character "|".
 See https://github.com/brimdata/super/tree/main/docs/language
-for details.
+for details.  The "select" and "from" operators provide backward
+compatible with SQL. In fact, you can use SQL exclusively and 
+avoid pipeline operators altogether if you prefer.
 
-Supported input formats include CSV, JSON, NDJSON, Parquet,
+Supported file formats include Arrow, CSV, JSON, Parquet,
 Super JSON, Super Binary, Super Columnar,  and Zeek TSV. 
-Supported output formats include all the input formats along with
-a SQL-like table format.
 
-"zq" must be run with at least one input.  Input files can
-be file system paths; "-" for standard input; or HTTP, HTTPS, or S3 URLs.
+Input files may be file system paths;
+"-" for standard input; or HTTP, HTTPS, or S3 URLs.
 For most types of data, the input format is automatically detected.
 If multiple files are specified, each file format is determined independently
 so you can mix and match input types.  If multiple files are concatenated
 into a stream and presented as standard input, the files must all be of the
 same type as the beginning of stream will determine the format.
+
+If no input file is specified, the default of a single null value will be
+fed to the query.  This is analogous to SQL's default input of a single 
+empty input row.
 
 Output is sent to standard output unless an output file is specified with -o.
 Some output formats like Parquet are based on schemas and require all
@@ -62,33 +66,25 @@ flag to indicate a destination directory for separate output files for each
 output type.  This flag may be used in combination with -o, which
 provides the prefix for the file path, e.g.,
 
-  zq -f parquet -split out -o example-output input.bsup
+  super -f parquet -split out -o example-output input.bsup
 
-When writing to stdout and stdout is a terminal, the default output format is ZSON.
-Otherwise, the default format is binary ZNG.  In either case, the default
+When writing to stdout and stdout is a terminal, the default output format is Super JSON.
+Otherwise, the default format is Super Binary.  In either case, the default
 may be overridden with -f, -z, or -Z.
 
-After the options, a Zed "query" string may be specified as a
-single argument conforming to the Zed language syntax;
-i.e., it should be quoted as a single string in the shell.
-
-If the first argument is a path to a valid file rather than a Zed query,
-then the Zed query is assumed to be "*", i.e., match and output all
-of the input.  If the first argument is both a valid Zed query
-and an existing file, then the file overrides.
-
-The Zed query text may include source files using -I, which is particularly
+The query text may include source files using -I, which is particularly
 convenient when a large, complex query spans multiple lines.  In this case,
 these source files are concatenated together along with the command-line query text
-in the order appearing on the command line.
+in the order appearing on the command line.  Any error messages are properly
+collated to the included file in which it occurred.
 
-The "zq" engine processes data natively in Zed so if you intend to run
+The runtime processes input natively as super-structured data so if you intend to run
 many queries over the same data, you will see substantial performance gains
-by converting your data to the efficient binary form of Zed called ZNG, e.g.,
+by converting your data to the Super Binary format, e.g.,
 
-  zq -f zng input.json > fast.bsup
-  zq <query> fast.bsup
-  ...
+  super -f bsup input.any > fast.bsup
+
+  super -c <query> fast.bsup
 
 Please see https://github.com/brimdata/super for more information.
 `,
@@ -121,7 +117,7 @@ func (c *Command) SetLeafFlags(f *flag.FlagSet) {
 	c.inputFlags.SetFlags(f, false)
 	c.queryFlags.SetFlags(f)
 	c.runtimeFlags.SetFlags(f)
-	f.BoolVar(&c.canon, "C", false, "display AST in Zed canonical format")
+	f.BoolVar(&c.canon, "C", false, "display parsed AST in a textual format")
 	f.BoolVar(&c.stopErr, "e", true, "stop upon input errors")
 	f.BoolVar(&c.quiet, "q", false, "don't display warnings")
 	f.StringVar(&c.query, "c", "", "query to execute")
