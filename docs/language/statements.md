@@ -81,7 +81,7 @@ op <id> ( [<param> [, <param> ...]] ) : (
 )
 ```
 where `<id>` is the operator identifier, `<param>` are the parameters for the
-operator, and `<sequence>` is the chain of operators (e.g., `operator | ...`)
+operator, and `<sequence>` is the chain of operators (e.g., `operator |> ...`)
 where the operator does its work.
 
 A user-defined operator can then be called with using the familiar call syntax
@@ -172,7 +172,7 @@ the data source of a [`from` operator](operators/from.md). For example, we
 quote the pool name in our program `count-pool.spq`
 ```mdtest-input count-pool.spq
 op CountPool(pool_name): (
-  from [pool_name] | count()
+  from [pool_name] |> count()
 )
 
 CountPool("example")
@@ -200,10 +200,10 @@ op add1(x): (
   x := x + 1
 )
 op add2(x): (
-  add1(x) | add1(x)
+  add1(x) |> add1(x)
 )
 op add4(x): (
-  add2(x) | add2(x)
+  add2(x) |> add2(x)
 )
 
 add4(a.b)

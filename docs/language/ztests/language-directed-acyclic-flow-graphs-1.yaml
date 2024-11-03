@@ -9,10 +9,10 @@
 # The SuperPipe being tested below has been modified from the way it appears in
 # docs/language/README.md:
 #
-#   from PoolOne | fork (
-#     => op1 | op2 | ...
-#     => op1 | op2 | ...
-#   ) | merge ts | ...
+#   from PoolOne |> fork (
+#     => op1 |> op2 |> ...
+#     => op1 |> op2 |> ...
+#   ) |> merge ts |> ...
 #
 # Specifically, the "op1", "op2", and "..." have been filled in with real
 # operations, and the "merge" has been replaced with a "sort" for now since
@@ -35,10 +35,10 @@ inputs:
       {ts:2018-03-24T17:23:29Z,name:"strawberry",color:"red"}
   - name: split.spq
     data: |
-      from PoolOne | fork (
-        => allfruit:=collect(name),allcolor:=collect(color) by every(5m) | put numfruit:=len(allfruit) | put numcolor:=len(allcolor)
-        => put color:=upper(color) | put namelen:=len(name) | put tag:="mytag"
-      ) | sort ts | rename time:=ts
+      from PoolOne |> fork (
+        => allfruit:=collect(name),allcolor:=collect(color) by every(5m) |> put numfruit:=len(allfruit) |> put numcolor:=len(allcolor)
+        => put color:=upper(color) |> put namelen:=len(name) |> put tag:="mytag"
+      ) |> sort ts |> rename time:=ts
 
 outputs:
   - name: stdout

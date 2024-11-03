@@ -95,7 +95,7 @@ LeanOp
     }
 
 EndOfOp = __ (Pipe / SearchKeywordGuard / "=>" / ")" / EOF)
-Pipe = "|>" / "|" !("{" / "[")
+Pipe = "|>"
 
 ExprGuard = __ ((!"=>" Comparator) / AdditiveOperator / MultiplicativeOperator / ":" / "(" / "[" / "~")
 

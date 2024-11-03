@@ -268,7 +268,7 @@ func (c *canonDAG) next() {
 	if c.head {
 		c.head = false
 	} else {
-		c.write("| ")
+		c.write("|> ")
 	}
 }
 

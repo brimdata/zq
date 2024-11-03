@@ -46,7 +46,7 @@ echo '1 "foo" 10.0.0.1' | super -z -c 'yield count()' -
 
 Count of values in buckets grouped by key:
 ```mdtest-command
-echo '{a:1,k:1} {a:2,k:1} {a:3,k:2}' | super -z -c 'count() by k | sort' -
+echo '{a:1,k:1} {a:2,k:1} {a:3,k:2}' | super -z -c 'count() by k |> sort' -
 ```
 =>
 ```mdtest-output
@@ -56,7 +56,7 @@ echo '{a:1,k:1} {a:2,k:1} {a:3,k:2}' | super -z -c 'count() by k | sort' -
 
 A simple count with no input values returns no output:
 ```mdtest-command
-echo '1 "foo" 10.0.0.1' | super -z -c 'where grep("bar") | count()' -
+echo '1 "foo" 10.0.0.1' | super -z -c 'where grep("bar") |> count()' -
 ```
 =>
 ```mdtest-output

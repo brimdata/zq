@@ -520,7 +520,7 @@ or trying to debug a halted program with a vague error message.
 
 For example, this query
 ```mdtest-command
-echo '1 2 0 3' |  super -z -c '10.0/this' -
+echo '1 2 0 3' | super -z -c '10.0/this' -
 ```
 produces
 ```mdtest-output
@@ -531,7 +531,7 @@ error("divide by zero")
 ```
 and
 ```mdtest-command
-echo '1 2 0 3' |  super -c '10.0/this' - | super -z -c 'is_error(this)' -
+echo '1 2 0 3' | super -c '10.0/this' - | super -z -c 'is_error(this)' -
 ```
 produces just
 ```mdtest-output
@@ -585,7 +585,7 @@ produces
 _A simple [aggregation](../language/aggregates/README.md)_
 ```mdtest-command
 echo '{key:"foo",val:1}{key:"bar",val:2}{key:"foo",val:3}' |
-  super -z -c 'sum(val) by key | sort key' -
+  super -z -c 'sum(val) by key |> sort key' -
 ```
 produces
 ```mdtest-output
@@ -644,7 +644,7 @@ values were not present in the buffer.
 
 For example, if the Zed query is
 ```
-"http error" and ipsrc==10.0.0.1 | count()
+"http error" and ipsrc==10.0.0.1 |> count()
 ```
 then the pre-search would look for the string "http error" and the Zed encoding
 of the IP address 10.0.0.1 and unless both those values are present, then the

@@ -54,7 +54,7 @@ echo '1 2 3 4' |
       case this%2==0 => {even:this}
       case this%2==1 => {odd:this}
     )
-    | sort odd,even
+    |> sort odd,even
   ' -
 ```
 =>
@@ -72,7 +72,7 @@ echo '1 2 3 4' |
       case 1 => yield "1!"
       default => yield string(this)
     )
-    | sort
+    |> sort
   ' -
 ```
 =>

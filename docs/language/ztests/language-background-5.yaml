@@ -11,7 +11,7 @@
 # test output from the aggregation.
 
 zed: |
-  summarize count() by color | sort
+  summarize count() by color |> sort
 
 input: |
   {"color":"brown","name":"kiwi","flavor":"sweet"}

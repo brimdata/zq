@@ -29,7 +29,7 @@ echo '{a:1,b:2}{a:2,b:"foo"}' | super -z -c 'fuse(this)' -
 Fuse records with a group-by key:
 ```mdtest-command
 echo '{a:1,b:"bar"}{a:2.1,b:"foo"}{a:3,b:"bar"}' |
-  super -z -c 'fuse(this) by b | sort' -
+  super -z -c 'fuse(this) by b |> sort' -
 ```
 =>
 ```mdtest-output

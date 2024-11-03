@@ -33,7 +33,7 @@ echo '"HeLlo, WoRlD!"' | super -z -c '
     => pass
     => upper(this)
     => lower(this)
-) | sort' -
+) |> sort' -
 ```
 =>
 ```mdtest-output

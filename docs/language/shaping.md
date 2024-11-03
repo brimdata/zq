@@ -217,7 +217,7 @@ apply `crop` to the output of `shape`, e.g.,
 ```mdtest-command
 super -Z -I connection.zed -c '
   shape(this, <connection>)
-  | crop(this, <connection>)
+  |> crop(this, <connection>)
   ' sample.json
 ```
 drops the `uid` field after shaping:
@@ -297,7 +297,7 @@ to debug the problem, e.g.,
 ```mdtest-command
 super -Z -I connection.zed -c '
   yield {original: this, shaped: shape(this, <connection>)}
-  | yield has_error(shaped)
+  |> yield has_error(shaped)
     ? error({
       msg: "shaper error (see inner errors for details)",
       original,
@@ -353,7 +353,7 @@ we can execute
 ```mdtest-command
 super -Z -I connection.zed -c '
   yield {original: this, cropped: crop(this, <connection>)}
-  | yield original==cropped
+  |> yield original==cropped
     ? original
     : error({msg: "data was cropped", original, cropped})
   ' sample.json
@@ -479,7 +479,7 @@ will fuse records based on their number of fields using the
 [`len` function:](functions/len.md)
 ```mdtest-command
 echo '{x:1} {x:"foo",y:"foo"} {x:2,y:"bar"}' |
-  super -z -c 'fuse(this) by len(this) | sort len' -
+  super -z -c 'fuse(this) by len(this) |> sort len' -
 ```
 which produces
 ```mdtest-output
@@ -498,7 +498,7 @@ switch len(this) (
 when we run
 ```mdtest-command
 echo '{x:1} {x:"foo",y:"foo"} {x:2,y:"bar"} {a:1,b:2,c:3}' |
-  super -z -I shape.zed -c '| sort this desc' -
+  super -z -I shape.zed -c '|> sort this desc' -
 ```
 we get
 ```mdtest-output

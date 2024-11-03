@@ -294,7 +294,7 @@ commit history.  In fact, Zed's [from operator](../language/operators/from.md)
 allows a commit object to be specified with the `@` suffix to a
 pool reference, e.g.,
 ```
-zed query 'from logs@1tRxi7zjT7oKxCBwwZ0rbaiLRxb | ...'
+zed query 'from logs@1tRxi7zjT7oKxCBwwZ0rbaiLRxb |> ...'
 ```
 In this way, a query can time-travel through the commit history.  As long as the
 underlying data has not been deleted, arbitrarily old snapshots of the Zed
@@ -670,7 +670,7 @@ zed query 'from logs'
 
 We can narrow the span of the query by specifying a filter on the pool key:
 ```
-zed query 'from logs | ts >= 2018-03-24T17:36:30.090766Z and ts <= 2018-03-24T17:36:30.090758Z'
+zed query 'from logs |> ts >= 2018-03-24T17:36:30.090766Z and ts <= 2018-03-24T17:36:30.090758Z'
 ```
 Filters on pool keys are efficiently implemented as the data is laid out
 according to the pool key and seek indexes keyed by the pool key
@@ -694,7 +694,7 @@ zed query -f bsup 'from logs' | zq -f table 'count() by field' -
 Of course, it's even more efficient to run the query inside of the pool traversal
 like this:
 ```
-zed query -f table 'from logs | count() by field'
+zed query -f table 'from logs |> count() by field'
 ```
 By default, the `query` command scans pool data in pool-key order though
 the Zed optimizer may, in general, reorder the scan to optimize searches,
@@ -739,7 +739,7 @@ zed query -Z "from logs:branches"
 Since this is all just Zed, you can filter the results just like any query,
 e.g., to look for particular branch:
 ```
-zed query -Z "from logs:branches | branch.name=='main'"
+zed query -Z "from logs:branches |> branch.name=='main'"
 ```
 
 This meta-query produces a list of the data objects in the `live` branch

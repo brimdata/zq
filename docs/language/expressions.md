@@ -81,7 +81,7 @@ produces
 You can also use this operator with a static array:
 ```mdtest-command
 echo '{accounts:[{id:1},{id:2},{id:3}]}' |
-  super -z -c 'over accounts | where id in [1,2]' -
+  super -z -c 'over accounts |> where id in [1,2]' -
 ```
 produces
 ```mdtest-output

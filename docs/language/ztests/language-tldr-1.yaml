@@ -11,7 +11,7 @@
 # test output from the aggregation.
 
 zed: |
-  color=="brown" | put characters:=len(name) | count() by flavor,characters | sort
+  color=="brown" |> put characters:=len(name) |> count() by flavor,characters |> sort
 
 input: |
   {"color":"brown","name":"kiwi","flavor":"sweet"}

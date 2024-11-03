@@ -109,8 +109,8 @@ applied to each subsequence in the subquery, where `sort`
 reads all values of the subsequence, sorts them, emits them, then
 repeats the process for the next subsequence.  For example,
 ```mdtest-command
-echo '[3,2,1] [4,1,7] [1,2,3]' | 
-  super -z -c 'over this => (sort this | collect(this))' -
+echo '[3,2,1] [4,1,7] [1,2,3]' |
+  super -z -c 'over this => (sort this |> collect(this))' -
 ```
 produces
 ```mdtest-output
@@ -124,7 +124,7 @@ produces
 Lateral subqueries can also appear in expression context using the
 parenthesized form:
 ```
-( over <expr> [, <expr>...] [with <var>=<expr> [, ... <var>[=<expr>]] | <lateral> )
+( over <expr> [, <expr>...] [with <var>=<expr> [, ... <var>[=<expr>]] |> <lateral> )
 ```
 
 :::tip
@@ -138,7 +138,7 @@ the results as inputs to the `<lateral>` pipeline.  Each time the
 lateral expression is evaluated, the lateral operators are run to completion,
 e.g.,
 ```mdtest-command
-echo '[3,2,1] [4,1,7] [1,2,3]' | super -z -c 'yield (over this | sum(this))' -
+echo '[3,2,1] [4,1,7] [1,2,3]' | super -z -c 'yield (over this |> sum(this))' -
 ```
 produces
 ```mdtest-output
@@ -152,8 +152,8 @@ and use the spread operator to tighten up the output:
 ```mdtest-command
 echo '[3,2,1] [4,1,7] [1,2,3]' |
   super -z -c '
-    {...(over this | sort this | sorted:=collect(this)),
-     ...(over this | sum:=sum(this))}' -
+    {...(over this |> sort this |> sorted:=collect(this)),
+     ...(over this |> sum:=sum(this))}' -
 ```
 produces
 ```mdtest-output
@@ -166,7 +166,7 @@ at the conclusion of the lateral pipeline, they are automatically wrapped in
 an array, e.g.,
 ```mdtest-command
 echo '{x:1} {x:[2]} {x:[3,4]}' |
-  super -z -c 'yield {s:(over x | yield this+1)}' -
+  super -z -c 'yield {s:(over x |> yield this+1)}' -
 ```
 produces
 ```mdtest-output
@@ -179,7 +179,7 @@ always receives consistently packaged values by explicitly wrapping the result
 of the lateral scope, e.g.,
 ```mdtest-command
 echo '{x:1} {x:[2]} {x:[3,4]}' |
-  super -z -c 'yield {s:(over x | yield this+1 | collect(this))}' -
+  super -z -c 'yield {s:(over x |> yield this+1 |> collect(this))}' -
 ```
 produces
 ```mdtest-output

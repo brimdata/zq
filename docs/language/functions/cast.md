@@ -88,7 +88,7 @@ echo '{x:1,y:2}{r:3}{x:4,y:5}' |
            case has(x) => cast(this, "point")
            default => cast(this, "radius")
          )
-         | sort this' -
+         |> sort this' -
 ```
 produces
 ```mdtest-output

@@ -49,7 +49,7 @@ false
 AND of values grouped by key:
 ```mdtest-command
 echo '{a:true,k:1} {a:true,k:1} {a:true,k:2} {a:false,k:2}' |
-  super -z -c 'and(a) by k | sort' -
+  super -z -c 'and(a) by k |> sort' -
 ```
 =>
 ```mdtest-output

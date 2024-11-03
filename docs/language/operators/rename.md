@@ -63,7 +63,7 @@ echo '{a:1,r:{b:2,c:3}}' | super -z -c 'yield {a,r:{c:r.c},w:r.b}' -
 ```
 _Alternatively, mutations can be more generic and use drop_
 ```mdtest-command
-echo '{a:1,r:{b:2,c:3}}' | super -z -c 'yield {a,r,w:r.b} | drop r.b' -
+echo '{a:1,r:{b:2,c:3}}' | super -z -c 'yield {a,r,w:r.b} |> drop r.b' -
 ```
 =>
 ```mdtest-output

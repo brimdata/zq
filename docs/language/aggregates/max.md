@@ -46,7 +46,7 @@ echo '1 2 3 4 "foo"' | super -z -c 'max(this)' -
 Maximum value within buckets grouped by key:
 ```mdtest-command
 echo '{a:1,k:1} {a:2,k:1} {a:3,k:2} {a:4,k:2}' |
-  super -z -c 'max(a) by k | sort' -
+  super -z -c 'max(a) by k |> sort' -
 ```
 =>
 ```mdtest-output

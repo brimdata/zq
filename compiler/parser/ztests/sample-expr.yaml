@@ -1,4 +1,4 @@
-zed: sample s2 | sort
+zed: sample s2 |> sort
 
 input: |
   {s1:"a",s2:"b"}

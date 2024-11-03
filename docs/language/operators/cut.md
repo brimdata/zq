@@ -23,7 +23,7 @@ Each right-hand side `<expr>` can be any Zed expression and is optional.
 When the right-hand side expressions are omitted,
 the _cut_ operation resembles the Unix shell command, e.g.,
 ```
-... | cut a,c | ...
+... |> cut a,c |> ...
 ```
 If an expression results in `error("quiet")`, the corresponding field is omitted
 from the output.  This allows you to wrap expressions in a `quiet()` function

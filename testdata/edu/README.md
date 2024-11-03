@@ -37,7 +37,7 @@ sqlite3 -json cdeschools.sqlite "select * from schools;" | super -z -c '
     StatusType:string,
     Website:string
   };
-  this := crop(shape(school), school) | sort School
+  this := crop(shape(school), school) |> sort School
 ' - > schools.jsup
 
 sqlite3 -json cdeschools.sqlite "select * from satscores;" | super -z -c '
@@ -49,7 +49,7 @@ sqlite3 -json cdeschools.sqlite "select * from satscores;" | super -z -c '
     dname: string,
     sname: string
   };
-  this := crop(shape(testscore), testscore) | sort sname
+  this := crop(shape(testscore), testscore) |> sort sname
 ' - > testscores.jsup
 ```
 
@@ -58,8 +58,8 @@ augmented with [`webaddrs.jsup`](webaddrs.jsup), which captures an IP
 address at which each school website was once hosted.
 
 ```sh
-for host in $(zq -f text 'Website != null | by Website' schools.jsup | sed -e 's|http://||' -e 's|/.*||' | sort -u); do
-  addr=$(dig +short $host | egrep '\d{1,3}(.\d{1,3}){3}' | tail -1)
+for host in $(zq -f text 'Website != null |> by Website' schools.jsup | sed -e 's|http://||' -e 's|/.*||' | sort -u); do
+  addr=$(dig +short $host |> egrep '\d{1,3}(.\d{1,3}){3}' | tail -1)
   [ "$addr" ] &&
     echo "{Website:\"$host\",addr:$addr}"
 done > webaddrs.jsup

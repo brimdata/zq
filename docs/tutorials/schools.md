@@ -31,7 +31,7 @@ with SuperPipe.  The [sample operator](../language/operators/sample.md) is just 
 `sample` will select one representative value from each "shape" of data present
 in the input, e.g.,
 ```mdtest-command dir=testdata/edu
-super -Z -c 'sample | sort this' schools.jsup testscores.jsup webaddrs.jsup
+super -Z -c 'sample |> sort this' schools.jsup testscores.jsup webaddrs.jsup
 ```
 displays
 ```mdtest-output
@@ -75,10 +75,10 @@ You can also quickly see a list of the leaf-value data types with this query:
 ```mdtest-command dir=testdata/edu
 super -Z -c '
   sample
-  | over this
-  | by typeof(value)
-  | yield typeof
-  | sort
+  |> over this
+  |> by typeof(value)
+  |> yield typeof
+  |> sort
 ' schools.jsup testscores.jsup webaddrs.jsup
 ```
 which emits
@@ -131,7 +131,7 @@ which lets you search specific fields instead of the entire input value, e.g.,
 we can search for the string "bar" in the `City` field and list all the unique
 cities that match with a [group-by](#52-grouping):
 ```mdtest-command dir=testdata/edu
-super -f text -c 'grep("bar", City) | by City | yield City | sort' schools.jsup
+super -f text -c 'grep("bar", City) |> by City |> yield City |> sort' schools.jsup
 ```
 produces
 ```mdtest-output
@@ -350,7 +350,7 @@ to achieve the intent of your searches.  For example, the dash suffix
 of the ZIP codes could be dropped, the string converted to an integer, then
 integer comparisons performed, i.e.,
 ```mdtest-command dir=testdata/edu
-super -z -c 'cut Zip | int64(Zip[0:5])==94607' schools.jsup
+super -z -c 'cut Zip |> int64(Zip[0:5])==94607' schools.jsup
 ```
 produces
 ```mdtest-output head
@@ -410,8 +410,8 @@ these we'll find each set that contains a school named `Lincoln Elementary`, e.g
 ```mdtest-command dir=testdata/edu
 super -Z -c '
   Schools:=union(School) by District
-  | "Lincoln Elementary" in Schools
-  | sort this
+  |> "Lincoln Elementary" in Schools
+  |> sort this
 ' schools.jsup
 ```
 produces
@@ -631,7 +631,7 @@ school data that includes fields for both `School` and `Website`, values from
 our web address data that have the `Website` and `addr` fields, and the
 missing value from the test score data since it has none of these fields:
 ```mdtest-command dir=testdata/edu
-super -z -c 'yosemiteuhsd | cut School,Website,addr' *.jsup
+super -z -c 'yosemiteuhsd |> cut School,Website,addr' *.jsup
 ```
 produces
 ```mdtest-output
@@ -722,7 +722,7 @@ is assembled in a first pass through the data stream, which enables the
 presentation of the results under a single, wider header row with no further
 interruptions between the subsequent data rows, e.g.,
 ```mdtest-command dir=testdata/edu
-super -f csv -c 'Geyserville | fuse' *.jsup
+super -f csv -c 'Geyserville |> fuse' *.jsup
 ```
 produces
 ```mdtest-output
@@ -755,7 +755,7 @@ put N:=len(somelist), isbig:=N>10
 ```
 but it could be written instead as
 ```
-put N:=len(somelist) | put isbig:=N>10
+put N:=len(somelist) |> put isbig:=N>10
 ```
 For example,
 to add a field to our test score records representing the computed average of the math,
@@ -763,7 +763,7 @@ reading, and writing scores for each school that reported them, we could say:
 ```mdtest-command dir=testdata/edu
 super -Z -c '
   AvgScrMath!=null
-  | put AvgAll:=(AvgScrMath+AvgScrRead+AvgScrWrite)/3.0
+  |> put AvgAll:=(AvgScrMath+AvgScrRead+AvgScrWrite)/3.0
 ' testscores.jsup
 ```
 which produces
@@ -784,9 +784,9 @@ form using `-f table`, e.g.,
 ```mdtest-command dir=testdata/edu
 super -f table -c '
   AvgScrMath != null
-  | put combined_scores:=AvgScrMath+AvgScrRead+AvgScrWrite
-  | cut sname,combined_scores,AvgScrMath,AvgScrRead,AvgScrWrite
-  | head 5
+  |> put combined_scores:=AvgScrMath+AvgScrRead+AvgScrWrite
+  |> cut sname,combined_scores,AvgScrMath,AvgScrRead,AvgScrWrite
+  |> head 5
 ' testscores.jsup
 ```
 produces
@@ -802,7 +802,7 @@ As noted above the `put` keyword is entirely optional. Here we omit
 it and create a new field to hold the lowercase representation of
 the school `District` field:
 ```mdtest-command dir=testdata/edu
-super -Z -c 'cut District | lower_district:=lower(District)' schools.jsup
+super -Z -c 'cut District |> lower_district:=lower(District)' schools.jsup
 ```
 produces
 ```mdtest-output head
@@ -874,7 +874,7 @@ rename toplevel:=outer.inner
 This goal could instead be achieved by combining [`put`](#44-put) and [`drop`](#42-drop),
 e.g.,
 ```mdtest-command
-super -Z -c 'put toplevel:=outer.inner | drop outer.inner' nested.jsup
+super -Z -c 'put toplevel:=outer.inner |> drop outer.inner' nested.jsup
 ```
 produces
 ```mdtest-output
@@ -976,7 +976,7 @@ not. The following query shows the cities in which all schools have a website. e
 ```mdtest-command dir=testdata/edu
 super -Z -c '
   all_schools_have_website:=and(Website!=null) by City
-  | sort City
+  |> sort City
 ' schools.jsup
 ```
 produces
@@ -1036,8 +1036,8 @@ list of which school each website represents:
 ```mdtest-command dir=testdata/edu
 super -Z -c '
   County=="Fresno" Website!=null
-  | Websites:=collect(Website),Schools:=collect(School) by City
-  | sort City
+  |> Websites:=collect(Website),Schools:=collect(School) by City
+  |> sort City
 ' schools.jsup
 ```
 and produces
@@ -1117,7 +1117,7 @@ and produces
 ```
 To see the precise value, which may take longer to execute, this query
 ```mdtest-command dir=testdata/edu
-super -z -c 'count() by School | count()' schools.jsup
+super -z -c 'count() by School |> count()' schools.jsup
 ```
 produces
 ```mdtest-output
@@ -1164,7 +1164,7 @@ a listed website:
 ```mdtest-command dir=testdata/edu
 super -Z -c '
   has_at_least_one_school_website:=or(Website!=null) by City
-  | sort City
+  |> sort City
 ' schools.jsup
 ```
 and produces
@@ -1224,8 +1224,8 @@ city:
 ```mdtest-command dir=testdata/edu
 super -Z -c '
   County=="Fresno" Website!=null
-  | Websites:=union(Website) by City
-  | sort City
+  |> Websites:=union(Website) by City
+  |> sort City
 ' schools.jsup
 ```
 and produces
@@ -1269,7 +1269,7 @@ For example, to see the different categories of status for the schools
 in our example data, this query:
 
 ```mdtest-command dir=testdata/edu
-super -z -c 'by StatusType | sort' schools.jsup
+super -z -c 'by StatusType |> sort' schools.jsup
 ```
 produces
 ```mdtest-output
@@ -1279,10 +1279,10 @@ produces
 {StatusType:"Pending"}
 ```
 If you work a lot at the UNIX/Linux shell, you might have sought to accomplish
-the same via a familiar idiom: `sort | uniq`.  This works in SuperPipe, but the `by`
+the same via a familiar idiom: `sort |> uniq`.  This works in SuperPipe, but the `by`
 shorthand is preferable, e.g.,
 ```mdtest-command dir=testdata/edu
-super -z -c 'cut StatusType | sort | uniq' schools.jsup
+super -z -c 'cut StatusType |> sort |> uniq' schools.jsup
 ```
 produces
 ```mdtest-output
@@ -1298,7 +1298,7 @@ test scores and school count for each county/district pairing, this query:
 ```mdtest-command dir=testdata/edu
 super -f table -c '
   avg(AvgScrRead),count() by cname,dname
-  | sort count desc
+  |> sort count desc
 ' testscores.jsup
 ```
 produces
@@ -1317,7 +1317,7 @@ appear in the form of a field assignment `field:=expr`
 To see a count of how many school names of a particular character length
 appear in our example data, this query:
 ```mdtest-command dir=testdata/edu
-super -f table -c 'count() by Name_Length:=len(School) | sort -r' schools.jsup
+super -f table -c 'count() by Name_Length:=len(School) |> sort -r' schools.jsup
 ```
 produces
 ```mdtest-output head
@@ -1339,7 +1339,7 @@ the misspelled field would appear as embedded missing errors, e.g.,
 ```mdtest-command dir=testdata/edu
 super -Z -c '
   avg(AvgScrRead),count() by cname,dnmae
-  | sort count desc
+  |> sort count desc
 ' testscores.jsup
 ```
 produces
@@ -1402,7 +1402,7 @@ field name as an explicit argument, the `sort` operator did what we wanted
 because it found a field of the `uint64` [data type](../language/data-types.md),
 e.g.,
 ```mdtest-command dir=testdata/edu
-super -z -c 'count() by County | sort -r' schools.jsup
+super -z -c 'count() by County |> sort -r' schools.jsup
 ```
 produces
 ```mdtest-output head
@@ -1416,7 +1416,7 @@ records. Since we know some of the records don't include a website, we'll
 deliberately put the null values at the front of the list so we can see how
 many there are, e.g.,
 ```mdtest-command dir=testdata/edu
-super -z -c 'count() by Website | sort -nulls first Website' schools.jsup
+super -z -c 'count() by Website |> sort -nulls first Website' schools.jsup
 ```
 produces
 ```mdtest-output head
@@ -1464,7 +1464,7 @@ and produces
 ```
 To see the first five school records in Los Angeles county, this query
 ```mdtest-command dir=testdata/edu
-super -z -c 'County=="Los Angeles" | head 5' schools.jsup
+super -z -c 'County=="Los Angeles" |> head 5' schools.jsup
 ```
 produces
 ```mdtest-output
@@ -1503,7 +1503,7 @@ and produces
 ```
 To see the last five school records in Los Angeles county, this query
 ```mdtest-command dir=testdata/edu
-super -z -c 'County=="Los Angeles" | tail 5' schools.jsup
+super -z -c 'County=="Los Angeles" |> tail 5' schools.jsup
 ```
 produces
 ```mdtest-output
@@ -1541,7 +1541,7 @@ produces
 To eliminate the adjacent lines that share the same field/value pairs,
 this query
 ```mdtest-command dir=testdata/edu
-super -z -c 'cut District,County | uniq' schools.jsup
+super -z -c 'cut District,County |> uniq' schools.jsup
 ```
 produces
 ```mdtest-output head
@@ -1567,7 +1567,7 @@ the average math score with the school name and the county name:
 ```mdtest-command dir=testdata/edu
 super -Z -c '
   AvgScrMath!=null
-  | yield {school:sname,avg:AvgScrMath}, {county:cname,zvg:AvgScrMath}
+  |> yield {school:sname,avg:AvgScrMath}, {county:cname,zvg:AvgScrMath}
 ' testscores.jsup
 ```
 which produces
@@ -1594,9 +1594,9 @@ In earlier example, we used `put` to create a table using this query:
 ```mdtest-command dir=testdata/edu
 super -f table -c '
   AvgScrMath != null
-  | put combined_scores:=AvgScrMath+AvgScrRead+AvgScrWrite
-  | cut sname,combined_scores,AvgScrMath,AvgScrRead,AvgScrWrite
-  | head 5
+  |> put combined_scores:=AvgScrMath+AvgScrRead+AvgScrWrite
+  |> cut sname,combined_scores,AvgScrMath,AvgScrRead,AvgScrWrite
+  |> head 5
 ' testscores.jsup
 ```
 produces
@@ -1614,14 +1614,14 @@ sometimes with a more intuitive  structure, e.g.,
 ```mdtest-command dir=testdata/edu
 super -f table -c '
 AvgScrMath != null
-| yield {
+|> yield {
           sname,
           combined_scores:AvgScrMath+AvgScrRead+AvgScrWrite,
           AvgScrMath,
           AvgScrRead,
           AvgScrWrite
         }
-| head 5' testscores.jsup
+|> head 5' testscores.jsup
 ```
 produces
 ```mdtest-output

@@ -60,7 +60,7 @@ Comparison of a missing error results in a missing error even if they
 are the same missing errors so as to not allow field comparisons of two
 missing fields to succeed:
 ```mdtest-command
-echo '{}' | super -z -c 'badfield:=x | yield badfield==error("missing")' -
+echo '{}' | super -z -c 'badfield:=x |> yield badfield==error("missing")' -
 ```
 =>
 ```mdtest-output

@@ -44,7 +44,7 @@ echo '{stock:"APPL",price:145.03,day:0}
       {stock:"GOOG",price:87.07,day:0}
       {stock:"APPL",price:150.13,day:1}
       {stock:"GOOG",price:89.15,day:1}' |
-  super -z -c 'collect_map(|{stock:price}|) by day | sort' -
+  super -z -c 'collect_map(|{stock:price}|) by day |> sort' -
 ```
 =>
 ```mdtest-output

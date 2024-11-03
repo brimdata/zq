@@ -47,7 +47,7 @@ echo '"foo" 1 2 3 ' | super -z -c 'any(this)' -
 Pick from groups bucketed by key:
 ```mdtest-command
 echo '{a:1,k:1} {a:2,k:1} {a:3,k:2} {a:4,k:2}' |
-  super -z -c 'any(a) by k | sort' -
+  super -z -c 'any(a) by k |> sort' -
 ```
 =>
 ```mdtest-output

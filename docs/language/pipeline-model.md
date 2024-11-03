@@ -26,7 +26,7 @@ HTTP endpoint and process it with `super`, in this case, to extract the descript
 and license of a GitHub repository:
 ```
 super -f text -c 'get https://api.github.com/repos/brimdata/super
-            | yield description,license.name'
+            |> yield description,license.name'
 ```
 When a query is run on the command-line with `super`, the `from` source is
 typically omitted and implied instead by the command-line file arguments.
@@ -88,7 +88,7 @@ switch this (
   case 1 => yield {val:this,message:"one"}
   case 2 => yield {val:this,message:"two"}
   default => yield {val:this,message:"many"}
-) | merge val
+) |> merge val
 ```
 Then, running `super` with `-I switch.spq` like so:
 ```mdtest-command

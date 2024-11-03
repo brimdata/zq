@@ -52,7 +52,7 @@ echo '1 2 3' | super -z -c 'yield this*2+1' -
 ```
 _Yield is often used to transform records_
 ```mdtest-command
-echo '{a:1,b:2}{a:3,b:4}' | super -z -c 'yield [a,b],[b,a] | collect(this)' -
+echo '{a:1,b:2}{a:3,b:4}' | super -z -c 'yield [a,b],[b,a] |> collect(this)' -
 ```
 =>
 ```mdtest-output

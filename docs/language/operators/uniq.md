@@ -48,7 +48,7 @@ echo '1 2 2 3' | super -z -c 'uniq -c' -
 _Use sort to deduplicate non-adjacent values_
 ```mdtest-command
 echo '"hello" "world" "goodbye" "world" "hello" "again"' |
-  super -z -c 'sort | uniq' -
+  super -z -c 'sort |> uniq' -
 ```
 =>
 ```mdtest-output

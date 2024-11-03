@@ -11,9 +11,9 @@
 
 zed: |
   search widget and price > 1000
-  | summarize count() by color
-  | where count >= 10
-  | sort count
+  |> summarize count() by color
+  |> where count >= 10
+  |> sort count
 
 input: |
   {"color":"brown","widget":"kiwi","flavor":"sweet","price":1001}

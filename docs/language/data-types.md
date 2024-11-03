@@ -54,12 +54,12 @@ serve as group-by keys or be used in ["data shaping"](shaping.md) logic.
 A common workflow for data introspection is to first perform a search of
 exploratory data and then count the shapes of each type of data as follows:
 ```
-search ... | count() by typeof(this)
+search ... |> count() by typeof(this)
 ```
 For example,
 ```mdtest-command
 echo '1 2 "foo" 10.0.0.1 <string>' |
-  super -z -c 'count() by typeof(this) | sort this' -
+  super -z -c 'count() by typeof(this) |> sort this' -
 ```
 produces
 ```mdtest-output
@@ -145,7 +145,7 @@ named type retaining the proper type binding while accommodating changes in a
 particular named type.  For example,
 ```mdtest-command
 echo '1(=foo) 2(=bar) "hello"(=foo) 3(=foo)' |
-  super -z -c 'count() by typeof(this) | sort this' -
+  super -z -c 'count() by typeof(this) |> sort this' -
 ```
 results in
 ```mdtest-output

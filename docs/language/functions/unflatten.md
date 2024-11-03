@@ -30,9 +30,9 @@ Flatten to unflatten:
 echo '{a:1,rm:2}' |
   super -z -c 'over flatten(this) => (
            key[0] != "rm"
-           | yield collect(this)
+           |> yield collect(this)
          )
-         | yield unflatten(this)
+         |> yield unflatten(this)
   ' -
 ```
 =>

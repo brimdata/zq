@@ -33,7 +33,7 @@ _Find the two names most frequently referenced in a sequence of records_
 echo '{name:"joe", age:22} {name:"bob", age:37} {name:"liz", age:25}
       {name:"bob", age:18} {name:"liz", age:34} {name:"zoe", age:55}
       {name:"ray", age:44} {name:"sue", age:41} {name:"liz", age:60}' |
-  super -z -c 'count() by name | top 2 count' -
+  super -z -c 'count() by name |> top 2 count' -
 ```
 =>
 ```mdtest-output

@@ -57,7 +57,7 @@ seq 10000 | super -z -c 'dcount(this)' -
 
 Count of values in buckets grouped by key:
 ```mdtest-command
-echo '{a:1,k:1} {a:2,k:1} {a:3,k:2}' | super -z -c 'dcount(a) by k | sort' -
+echo '{a:1,k:1} {a:2,k:1} {a:3,k:2}' | super -z -c 'dcount(a) by k |> sort' -
 ```
 =>
 ```mdtest-output
