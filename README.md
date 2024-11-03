@@ -37,7 +37,8 @@ from the current GitHub API:
 FROM 'https://data.gharchive.org/2015-01-01-15.json.gz'
 |> SELECT union(repo.name) AS repo, actor.login AS user
    GROUP BY user
-   ORDER BY len(repo) DESC LIMIT 5
+   ORDER BY len(repo) DESC
+   LIMIT 5
 |> FORK (
    => FROM f"https://api.github.com/users/${user}"
     |> SELECT VALUE {user:login,created_at:time(created_at)}
