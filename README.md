@@ -90,7 +90,7 @@ syntax and semantics.
 
 Our areas of active development include:
 * the SuperSQL query language,
-* the type-based query compiler annd optimizer,
+* the type-based query compiler and optimizer,
 * fast, vectorized ingest of common file formats,
 * a complete vectorized runtme, and
 * a data lake based on super-structured data.
