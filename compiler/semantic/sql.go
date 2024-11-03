@@ -48,7 +48,7 @@ func (a *analyzer) semSelect(sel *ast.Select, seq dag.Seq) dag.Seq {
 		}
 	} else if sel.Selection.Args != nil {
 		if sel.Having != nil {
-			a.error(sel, errors.New("HAVING clause used without GROUP BY"))
+			a.error(sel.Having, errors.New("HAVING clause used without GROUP BY"))
 			return append(seq, badOp())
 		}
 		seq = a.convertProjection(sel.Selection.Loc, proj, seq)
