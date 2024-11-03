@@ -28,6 +28,11 @@ JSON data model in a unified compute engine.
 
 ## SuperSQL
 
+SuperDB uses SQL as its query language, but it's a SQL that has been extended
+with [pipe syntax](https://research.google/pubs/sql-has-problems-we-can-fix-them-pipe-syntax-in-sql/)
+and [lots of fun shortcuts](https://zed.brimdata.io/docs/language/pipeline-model#implied-operators).
+This extended SQL is called SuperSQL.
+
 Here's a SuperSQL query that fetches some data from GitHub Archive,
 computes the set of repos touched by each user, ranks them by number of repos,
 picks the top five, and joins each user with their original `created_at` time
@@ -76,29 +81,19 @@ SuperDB can also run on a
 [super-structured data lake](https://zed.brimdata.io/docs/commands/zed/#the-lake-model)
 using the `super db` sub-commands.
 
-## Piped Query Syntax
+## Project Status
 
-The long-term goal for SuperDB's SQL syntax (SuperSQL) is to be Postgres-compatible and interoperate
-with BI tools though this is currently a roadmap item.  At the same time, the project
-seeks to forge new ground on the usability of SQL for data exploration.  To this end,
-SuperSQL supports the
-[pipe query syntax](https://github.com/google/zetasql/blob/master/docs/pipe-syntax.md)
-of GoogleSQL, recently described in their
-[VLDB 2024 paper](https://research.google/pubs/sql-has-problems-we-can-fix-them-pipe-syntax-in-sql/).
+Our long-term goal for SuperSQL is to be Postgres-compatible and interoperate
+with existing SQL tooling. In the meantime, SuperSQL is a bit of a moving 
+target and we would love community engagement to evolve and fine tune its
+syntax and semantics.
 
-In addition to the GoogleSQL syntax, SuperSQL includes additional pipeline
-operators to enhance usability, e.g., for search, for traversing
-highly nested JSON, for data shaping, etc.
-
-To facilitate real-time, data exploration use cases,
-SuperDB supports an abbreviated form of SuperSQL called
-[SuperPipe](https://zed.brimdata.io/docs/language).
-
-SuperPipe provides a large number of shortcuts when typing interactive
-queries, e.g., implied group-by clauses, dropping keywords,
-implied keyword searches, and so forth.  Even though SuperPipe is simply
-a short-hand form SuperSQL, it sort of looks like the pipeline-style
-languages utilized in search systems.
+Our areas of active development include:
+* the SuperSQL query language,
+* the type-based query compiler annd optimizer,
+* fast, vectorized ingest of common file formats,
+* a complete vectorized runtme, and
+* a data lake based on super-structured data.
 
 ### SuperDB Desktop - Coming Soon
 
