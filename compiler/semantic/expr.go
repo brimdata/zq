@@ -396,10 +396,12 @@ func (a *analyzer) semBinary(e *ast.BinaryExpr) dag.Expr {
 			Expr:    lhs,
 		}
 	}
-	if op == "=" {
+	switch op {
+	case "=":
 		op = "=="
-	}
-	if op == "||" {
+	case "<>":
+		op = "!="
+	case "||":
 		op = "+"
 	}
 	return &dag.BinaryExpr{
