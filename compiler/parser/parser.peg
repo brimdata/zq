@@ -1104,6 +1104,7 @@ Primary
   / Map
   / Literal
   / Identifier
+  / Tuple
   / "(" __ expr:OverExpr __ ")" { return expr, nil }
   / "(" __ expr:Expr __ ")" { return expr, nil }
 
@@ -1252,6 +1253,15 @@ EntryTail = __ "," __ e:Entry { return e, nil }
 Entry
   = key:Expr __ ":" __ value:Expr {
       return ast.EntryExpr{Key: key.(ast.Expr), Value: value.(ast.Expr),Loc:loc(c)}, nil
+    }
+
+Tuple
+  = "(" __ first:Expr rest:(__ "," __ e:Expr { return e, nil })+ __ ")" {
+      return &ast.TupleExpr{
+        Kind: "TupleExpr",
+        Elems: sliceOf[ast.Expr](prepend(first, rest)),
+        Loc: loc(c),
+      }, nil
     }
 
 /// === Literals ===

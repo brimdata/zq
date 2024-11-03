@@ -252,6 +252,20 @@ func (a *analyzer) semExpr(e ast.Expr) dag.Expr {
 			Kind:    "MapExpr",
 			Entries: entries,
 		}
+	case *ast.TupleExpr:
+		elems := make([]dag.RecordElem, 0, len(e.Elems))
+		for colno, elem := range e.Elems {
+			e := a.semExpr(elem)
+			elems = append(elems, &dag.Field{
+				Kind:  "Field",
+				Name:  fmt.Sprintf("c%d", colno),
+				Value: e,
+			})
+		}
+		return &dag.RecordExpr{
+			Kind:  "RecordExpr",
+			Elems: elems,
+		}
 	case *ast.OverExpr:
 		exprs := a.semExprs(e.Exprs)
 		if e.Body == nil {

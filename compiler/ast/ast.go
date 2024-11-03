@@ -266,6 +266,12 @@ type EntryExpr struct {
 	Loc   `json:"loc"`
 }
 
+type TupleExpr struct {
+	Kind  string `json:"kind" unpack:""`
+	Elems []Expr `json:"elems"`
+	Loc   `json:"loc"`
+}
+
 type OverExpr struct {
 	Kind   string `json:"kind" unpack:""`
 	Locals []Def  `json:"locals"`
@@ -322,6 +328,7 @@ func (*RecordExpr) ExprAST() {}
 func (*ArrayExpr) ExprAST()  {}
 func (*SetExpr) ExprAST()    {}
 func (*MapExpr) ExprAST()    {}
+func (*TupleExpr) ExprAST()  {}
 func (*OverExpr) ExprAST()   {}
 func (*FString) ExprAST()    {}
 
