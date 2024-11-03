@@ -87,7 +87,7 @@ LeanOp
   / "(" __ scope:Scope __ ")" { return scope, nil }
   / a:OpAssignment &EndOfOp { return a, nil }
   / !(Function EndOfOp) a:Aggregation &EndOfOp { return a, nil }
-  / expr:SearchBoolean {
+  / expr:SearchBoolean &EndOfOp {
       return &ast.OpExpr{Kind:"OpExpr",Expr:expr.(ast.Expr),Loc:loc(c)}, nil
     }
   / expr:Expr {
@@ -950,7 +950,7 @@ BetweenExpr
   / ComparisonExpr
 
 ComparisonExpr
-  = lhs:AdditiveExpr opAndRHS:(__ Comparator __ AdditiveExpr / __ ("~" { return string(c.text), nil }) __ Regexp)? {
+  = lhs:BitOrExpr opAndRHS:(__ Comparator __ BitOrExpr / __ ("~" { return string(c.text), nil }) __ Regexp)? {
       if opAndRHS == nil {
         return lhs, nil
       }
@@ -963,8 +963,27 @@ ComparisonExpr
       }, nil
     }
 
-AdditiveExpr
-  = first:MultiplicativeExpr
+BitOrExpr
+  = first:BitAndExpr
+    rest:(__ "|" __ expr:BitAndExpr { return []any{"|", expr}, nil })* {
+        return makeBinaryExprChain(first, rest, c), nil
+    }
+
+BitAndExpr
+  = first:BitShiftExpr
+    rest:(__ "&" __ expr:BitShiftExpr { return []any{"&", expr}, nil })* {
+        return makeBinaryExprChain(first, rest, c), nil
+    }
+
+BitShiftExpr
+  = first:AdditiveExpr
+    rest:(__ op:BitShiftOperator __ expr:AdditiveExpr { return []any{op, expr}, nil })* {
+        return makeBinaryExprChain(first, rest, c), nil
+    }    
+
+BitShiftOperator = ("<<" / ">>") { return string(c.text), nil }
+
+AdditiveExpr = first:MultiplicativeExpr
     rest:(__ op:AdditiveOperator __ expr:MultiplicativeExpr { return []any{op, expr}, nil })* {
         return makeBinaryExprChain(first, rest, c), nil
     }
