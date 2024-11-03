@@ -30,42 +30,42 @@ func NewEnvironment(engine storage.Engine, lake *lake.Root) *Environment {
 	}
 }
 
-func (s *Environment) IsLake() bool {
-	return s.lake != nil
+func (e *Environment) IsLake() bool {
+	return e.lake != nil
 }
 
-func (s *Environment) Lake() *lake.Root {
-	return s.lake
+func (e *Environment) Lake() *lake.Root {
+	return e.lake
 }
 
-func (s *Environment) PoolID(ctx context.Context, name string) (ksuid.KSUID, error) {
+func (e *Environment) PoolID(ctx context.Context, name string) (ksuid.KSUID, error) {
 	if id, err := lakeparse.ParseID(name); err == nil {
-		if _, err := s.lake.OpenPool(ctx, id); err == nil {
+		if _, err := e.lake.OpenPool(ctx, id); err == nil {
 			return id, nil
 		}
 	}
-	return s.lake.PoolID(ctx, name)
+	return e.lake.PoolID(ctx, name)
 }
 
-func (s *Environment) CommitObject(ctx context.Context, id ksuid.KSUID, name string) (ksuid.KSUID, error) {
-	if s.lake != nil {
-		return s.lake.CommitObject(ctx, id, name)
+func (e *Environment) CommitObject(ctx context.Context, id ksuid.KSUID, name string) (ksuid.KSUID, error) {
+	if e.lake != nil {
+		return e.lake.CommitObject(ctx, id, name)
 	}
 	return ksuid.Nil, nil
 }
 
-func (s *Environment) SortKeys(ctx context.Context, src dag.Op) order.SortKeys {
-	if s.lake != nil {
-		return s.lake.SortKeys(ctx, src)
+func (e *Environment) SortKeys(ctx context.Context, src dag.Op) order.SortKeys {
+	if e.lake != nil {
+		return e.lake.SortKeys(ctx, src)
 	}
 	return nil
 }
 
-func (s *Environment) Open(ctx context.Context, zctx *super.Context, path, format string, pushdown zbuf.Filter, demandOut demand.Demand) (zbuf.Puller, error) {
+func (e *Environment) Open(ctx context.Context, zctx *super.Context, path, format string, pushdown zbuf.Filter, demandOut demand.Demand) (zbuf.Puller, error) {
 	if path == "-" {
 		path = "stdio:stdin"
 	}
-	file, err := anyio.Open(ctx, zctx, s.engine, path, demandOut, anyio.ReaderOpts{Format: format})
+	file, err := anyio.Open(ctx, zctx, e.engine, path, demandOut, anyio.ReaderOpts{Format: format})
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", path, err)
 	}
@@ -78,7 +78,7 @@ func (s *Environment) Open(ctx context.Context, zctx *super.Context, path, forma
 	return &closePuller{sn, file}, nil
 }
 
-func (s *Environment) OpenHTTP(ctx context.Context, zctx *super.Context, url, format, method string, headers http.Header, body io.Reader, demandOut demand.Demand) (zbuf.Puller, error) {
+func (*Environment) OpenHTTP(ctx context.Context, zctx *super.Context, url, format, method string, headers http.Header, body io.Reader, demandOut demand.Demand) (zbuf.Puller, error) {
 	req, err := http.NewRequestWithContext(ctx, method, url, body)
 	if err != nil {
 		return nil, err

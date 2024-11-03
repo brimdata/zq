@@ -61,8 +61,6 @@ func (s *Shared) Run(ctx context.Context, args []string, lakeFlags *lakeflags.Fl
 	if len(args) == 1 {
 		query = args[0]
 	}
-	rctx := runtime.DefaultContext()
-	env := exec.NewEnvironment(nil, lk)
 	ast, err := compiler.Parse(query, s.includes...)
 	if err != nil {
 		return err
@@ -80,6 +78,8 @@ func (s *Shared) Run(ctx context.Context, args []string, lakeFlags *lakeflags.Fl
 		}
 		return s.writeValue(ctx, ast.Parsed())
 	}
+	rctx := runtime.DefaultContext()
+	env := exec.NewEnvironment(nil, lk)
 	dag, err := compiler.Analyze(rctx, ast, env, extInput)
 	if err != nil {
 		return err

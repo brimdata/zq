@@ -1,6 +1,7 @@
 package compiler
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -25,16 +26,15 @@ func Parse(query string, filenames ...string) (*parser.AST, error) {
 	return parser.ParseQuery(query, filenames...)
 }
 
-func Analyze(rctx *runtime.Context, ast *parser.AST, env *exec.Environment, extInput bool) (dag.Seq, error) {
-	return semantic.Analyze(rctx.Context, ast, env, extInput)
+func Analyze(ctx context.Context, ast *parser.AST, env *exec.Environment, extInput bool) (dag.Seq, error) {
+	return semantic.Analyze(ctx, ast, env, extInput)
 }
 
-func Optimize(rctx *runtime.Context, seq dag.Seq, env *exec.Environment, parallel int) (dag.Seq, error) {
+func Optimize(ctx context.Context, seq dag.Seq, env *exec.Environment, parallel int) (dag.Seq, error) {
 	// Call optimize to possible push down a filter predicate into the
 	// kernel.Reader so that the zng scanner can do boyer-moore.
-	o := optimizer.New(rctx.Context, env)
-	var err error
-	seq, err = o.Optimize(seq)
+	o := optimizer.New(ctx, env)
+	seq, err := o.Optimize(seq)
 	if err != nil {
 		return nil, err
 	}
@@ -47,7 +47,7 @@ func Optimize(rctx *runtime.Context, seq dag.Seq, env *exec.Environment, paralle
 		if err != nil {
 			return nil, err
 		}
-		seq, err = o.Vectorize(seq) // XXX why is this here?
+		seq, err = o.Vectorize(seq)
 		if err != nil {
 			return nil, err
 		}

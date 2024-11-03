@@ -15,9 +15,9 @@ import (
 // Analyze performs a semantic analysis of the AST, translating it from AST
 // to DAG form, resolving syntax ambiguities, and performing constant propagation.
 // After semantic analysis, the DAG is ready for either optimization or compilation.
-func Analyze(ctx context.Context, ast *parser.AST, source *exec.Environment, extInput bool) (dag.Seq, error) {
+func Analyze(ctx context.Context, ast *parser.AST, env *exec.Environment, extInput bool) (dag.Seq, error) {
 	files := ast.Files()
-	a := newAnalyzer(ctx, files, source)
+	a := newAnalyzer(ctx, files, env)
 	seq := a.semSeq(ast.Parsed())
 	if !HasSource(seq) {
 		if a.env.IsLake() {

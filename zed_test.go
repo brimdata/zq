@@ -15,7 +15,6 @@ import (
 	"github.com/brimdata/super/compiler"
 	"github.com/brimdata/super/compiler/optimizer/demand"
 	"github.com/brimdata/super/compiler/parser"
-	"github.com/brimdata/super/pkg/storage"
 	"github.com/brimdata/super/runtime"
 	"github.com/brimdata/super/zio"
 	"github.com/brimdata/super/zio/anyio"
@@ -144,7 +143,7 @@ func runOneBoomerang(t *testing.T, format, data string) {
 		ast, err := parser.ParseQuery("fuse")
 		require.NoError(t, err)
 		rctx := runtime.NewContext(context.Background(), zctx)
-		q, err := compiler.NewCompiler(storage.NewLocalEngine()).NewQuery(rctx, ast, []zio.Reader{dataReadCloser}, 0)
+		q, err := compiler.NewCompiler(nil).NewQuery(rctx, ast, []zio.Reader{dataReadCloser}, 0)
 		require.NoError(t, err)
 		defer q.Pull(true)
 		dataReader = runtime.AsReader(q)
