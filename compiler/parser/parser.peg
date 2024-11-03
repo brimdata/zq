@@ -983,7 +983,8 @@ BitShiftExpr
 
 BitShiftOperator = ("<<" / ">>") { return string(c.text), nil }
 
-AdditiveExpr = first:MultiplicativeExpr
+AdditiveExpr
+  = first:MultiplicativeExpr
     rest:(__ op:AdditiveOperator __ expr:MultiplicativeExpr { return []any{op, expr}, nil })* {
         return makeBinaryExprChain(first, rest, c), nil
     }
