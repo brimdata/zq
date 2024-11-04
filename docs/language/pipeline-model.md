@@ -277,7 +277,7 @@ from the operator-less source text, in the order given, as follows:
 When in doubt, you can always check what the compiler is doing under the hood
 by running `zq` with the `-C` flag to print the parsed query in "canonical form", e.g.,
 ```mdtest-command
-super -C -c foo
+super -C -c '? foo'
 super -C -c 'is(<foo>)'
 super -C -c 'count()'
 super -C -c '{a:x+1,b:y-1}'

@@ -1,5 +1,5 @@
 script: |
-  super -z -split out -o foo -c "*" -
+  super -z -split out -o foo -
 
 inputs:
   - name: stdin

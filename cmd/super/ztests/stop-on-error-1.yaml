@@ -1,5 +1,5 @@
 script: |
-  ! super -c "*" good.jsup bad.jsup
+  ! super good.jsup bad.jsup
 
 inputs:
   - name: good.jsup

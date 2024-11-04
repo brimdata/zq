@@ -41,7 +41,7 @@ echo '1 2 3' | super -z -c 'search this >= 2' -
 ```
 _The "search" keyword may be dropped_
 ```mdtest-command
-echo '1 2 3' | super -z -c '2 or 3' -
+echo '1 2 3' | super -z -c '? 2 or 3' -
 ```
 =>
 ```mdtest-output
@@ -66,7 +66,7 @@ echo '1 2 3' | super -z -c 'search this >= 2 this <= 2' -
 ```
 _Concatenation for keyword search_
 ```mdtest-command
-echo '"foo" "foo bar" "foo bar baz" "baz"' | super -z -c 'foo bar' -
+echo '"foo" "foo bar" "foo bar baz" "baz"' | super -z -c '? foo bar' -
 ```
 =>
 ```mdtest-output
@@ -75,7 +75,7 @@ echo '"foo" "foo bar" "foo bar baz" "baz"' | super -z -c 'foo bar' -
 ```
 _Search expressions match fields names too_
 ```mdtest-command
-echo '{foo:1} {bar:2} {foo:3}' | super -z -c foo -
+echo '{foo:1} {bar:2} {foo:3}' | super -z -c '? foo' -
 ```
 =>
 ```mdtest-output

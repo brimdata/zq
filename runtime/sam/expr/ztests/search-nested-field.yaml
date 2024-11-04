@@ -1,4 +1,4 @@
-zed: b
+zed: '?b'
 
 input: |
   {a:[{b:"foo"}]}

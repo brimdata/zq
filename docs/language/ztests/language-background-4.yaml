@@ -10,7 +10,7 @@
 # docs/language/README.md.
 
 zed: |
-  widget price > 1000
+  ? widget price > 1000
 
 input: |
   {"text": "this is a sentence with the word widget in it", "price":999}

@@ -104,7 +104,7 @@ is produced each time, so three copies of `2` are emitted.
 In `zq` however, `2` by itself is interpreted as a search and is
 [shorthand for](../language/pipeline-model.md#implied-operators) `search 2` so the command
 ```mdtest-command
-echo '1 2 3' | super -z -c 2 -
+echo '1 2 3' | super -z -c '? 2' -
 ```
 produces this "search result":
 ```mdtest-output
@@ -114,7 +114,7 @@ In fact, this search syntax generalizes, and if we search over a more complex
 input:
 ```mdtest-command
 echo '1 2 [1,2,3] [4,5,6] {r:{x:1,y:2}} {r:{x:3,y:4}} "hello" "Number 2"' |
-  super -z -c 2 -
+  super -z -c '? 2' -
 ```
 we naturally find all the 2's whether as a value, inside a value, or inside a string:
 ```mdtest-output
@@ -126,7 +126,7 @@ we naturally find all the 2's whether as a value, inside a value, or inside a st
 You can also do keyword-text search, e.g.,
 ```mdtest-command
 echo '1 2 [1,2,3] [4,5,6] {r:{x:1,y:2}} {r:{x:3,y:4}} "hello" "Number 2"' |
-  super -z -c 'hello or Number' -
+  super -z -c '? hello or Number' -
 ```
 produces
 ```mdtest-output
@@ -448,7 +448,7 @@ But more powerfully, types can be used anywhere a value can be used and
 in particular, they can be group-by keys, e.g.,
 ```mdtest-command
 echo '{x:1,y:2}{s:"foo"}{x:3,y:4}' |
-  super -f table -c "count() by shape:=typeof(this) |> sort count" -
+  super -f table -c "count() by \`shape\`:=typeof(this) |> sort count" -
 ```
 produces
 ```mdtest-output

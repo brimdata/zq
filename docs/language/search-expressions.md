@@ -30,7 +30,7 @@ and is documented in the
 
 Regular expressions may be used freely in search expressions, e.g.,
 ```mdtest-command
-echo '"foo" {s:"bar"} {s:"baz"} {foo:1}' | super -z -c '/(foo|bar)/' -
+echo '"foo" {s:"bar"} {s:"baz"} {foo:1}' | super -z -c '? /(foo|bar)/' -
 ```
 produces
 ```mdtest-output
@@ -73,7 +73,7 @@ These rules do not allow for a leading digit.
 
 For example, a prefix match is easily accomplished via `prefix*`, e.g.,
 ```mdtest-command
-echo '"foo" {s:"bar"} {s:"baz"} {foo:1}' | super -z -c 'b*' -
+echo '"foo" {s:"bar"} {s:"baz"} {foo:1}' | super -z -c '? b*' -
 ```
 produces
 ```mdtest-output
@@ -82,7 +82,7 @@ produces
 ```
 Likewise, a suffix match may be performed as follows:
 ```mdtest-command
-echo '"foo" {s:"bar"} {s:"baz"} {foo:1}' | super -z -c '*z' -
+echo '"foo" {s:"bar"} {s:"baz"} {foo:1}' | super -z -c '? *z' -
 ```
 produces
 ```mdtest-output
@@ -90,7 +90,7 @@ produces
 ```
 and
 ```mdtest-command
-echo '"foo" {s:"bar"} {s:"baz"} {a:1}' | super -z -c '*a*' -
+echo '"foo" {s:"bar"} {s:"baz"} {a:1}' | super -z -c '? *a*' -
 ```
 produces
 ```mdtest-output
@@ -154,7 +154,7 @@ but shorter and easier to type in a search expression.
 
 For example,
 ```
-/(foo|bar.*baz.*\.com)/
+? /(foo|bar.*baz.*\.com)/
 ```
 Searches for any string that begins with `foo` or `bar` has the string
 `baz` in it and ends with `.com`.
@@ -169,7 +169,7 @@ but shorter and easier to type in a search expression.
 
 For example,
 ```
-foo*baz*.com
+? foo*baz*.com
 ```
 Searches for any string that begins with `foo` has the string
 `baz` in it and ends with `.com`.
@@ -209,7 +209,7 @@ where grep("foo", this)
 Note that the "search" keyword may be omitted.
 For example, the simplest SuperPipe query is perhaps a single keyword search, e.g.,
 ```
-foo
+? foo
 ```
 As above, this query searches the implied input for values that
 contain the string "foo".
@@ -262,7 +262,7 @@ search 123 and 10.0.0.1
 ```
 which can be abbreviated
 ```
-123 10.0.0.1
+? 123 10.0.0.1
 ```
 is equivalent to
 ```
@@ -284,11 +284,11 @@ may be used as a search term and mixed into a search expression.
 
 For example,
 ```
-is(<foo>) has(bar) baz x==y+z timestamp > 2018-03-24T17:17:55Z
+? is(<foo>) has(bar) baz x==y+z timestamp > 2018-03-24T17:17:55Z
 ```
 is a valid search expression but
 ```
-/foo.*/ x+1
+? /foo.*/ x+1
 ```
 is not.
 
@@ -308,7 +308,7 @@ re-use and sharing.
 
 For example,
 ```
-not foo bar or baz
+? not foo bar or baz
 ```
 means
 ```
@@ -316,7 +316,7 @@ means
 ```
 while
 ```
-foo (bar or baz)
+? foo (bar or baz)
 ```
 means
 ```

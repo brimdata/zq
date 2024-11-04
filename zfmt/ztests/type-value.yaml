@@ -1,6 +1,6 @@
 script: |
-  super compile -C "is(<foo>) bar"
-  super compile -dag -C "is(<(uint16,ip)>) 80"
+  super compile -C "? is(<foo>) bar"
+  super compile -dag -C "? is(<(uint16,ip)>) 80"
 
 outputs:
   - name: stdout

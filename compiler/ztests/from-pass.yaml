@@ -3,7 +3,7 @@ script: super -z -I join.zed left.jsup
 inputs:
   - name: join.zed
     data: |
-      * |> from (
+      from (
         pass
         file right.jsup
       ) |> inner join on x=y matched:=true

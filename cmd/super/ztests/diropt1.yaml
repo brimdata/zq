@@ -1,4 +1,4 @@
-script: super -f zeek -split out -c "*" -
+script: super -f zeek -split out -
 
 inputs:
   - name: stdin

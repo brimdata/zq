@@ -1,4 +1,4 @@
-zed: "*ar"
+zed: '? *ar'
 
 input: |
   {a:[{bar:"foo"}]}

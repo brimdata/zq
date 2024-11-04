@@ -78,24 +78,21 @@ TypeDecl
       }, nil
     }
 
-// A LeanOp is a SuperPipe operator along with various forms of 
+// A LeanOp is a pipeline operator along with various forms of 
 // "lean-forward" shortcuts: a scope with other LeanOps, a shortcut assignment 
-// for "put", a short-cut "summarize", a plain keyword-style search, or an implied
-// yield.
+// for "put", a short-cut "summarize", or an expression that is either 
+// implied yield (non-boolean) or implied where (boolean).
 LeanOp
-  = op:Operator
+  = Operator
   / "(" __ scope:Scope __ ")" { return scope, nil }
   / a:OpAssignment &EndOfOp { return a, nil }
   / !(Function EndOfOp) a:Aggregation &EndOfOp { return a, nil }
-  / expr:SearchBoolean &EndOfOp {
-      return &ast.OpExpr{Kind:"OpExpr",Expr:expr.(ast.Expr),Loc:loc(c)}, nil
-    }
-  / expr:Expr {
-      return &ast.OpExpr{Kind:"OpExpr",Expr:expr.(ast.Expr),Loc:loc(c)}, nil
+  / !((Identifier / Literal) __ (Pipe/EOF)) e:Expr {
+      return &ast.OpExpr{Kind:"OpExpr",Expr:e.(ast.Expr),Loc:loc(c)}, nil
     }
 
-EndOfOp = __ (Pipe / SearchKeywordGuard / "=>" / ")" / EOF)
-Pipe = "|>"
+EndOfOp = __ (Pipe / SearchKeywordGuard / "=>" / ")" / ";" / EOF)
+Pipe = "|>" / "|" 
 
 ExprGuard = __ ((!"=>" Comparator) / AdditiveOperator / MultiplicativeOperator / ":" / "(" / "[" / "~")
 
@@ -262,7 +259,7 @@ AggAssignments
 /// === Operators ===
 
 Operator
-  = SelectOp
+  = op:SelectOp &EndOfOp { return op, nil }
   / ForkOp
   / SwitchOp 
   / FromForkOp
@@ -291,6 +288,12 @@ Operator
   / LoadOp
   / OutputOp
   / DebugOp
+
+PipeKeyword
+  = SELECT / FORK / SWITCH / FROM / SEARCH / ASSERT / SORT / TOP/ CUT / DROP
+  / HEAD / TAIL / WHERE / UNIQ / PUT / RENAME / FUSE / SHAPE / JOIN / SAMPLE
+  / FROM / PASS / EXPLODE / MERGE / OVER / YIELD / LOAD / OUTPUT / DEBUG
+  / SUMMARIZE
 
  ForkOp =
    FORK __ "(" paths:Path+ __ ")" {
@@ -366,7 +369,7 @@ FromSource
   / PassOp
 
 SearchOp
-  = SEARCH _ expr:SearchBoolean {
+  = (SEARCH _ / "?" __) expr:SearchBoolean {
       return &ast.Search{Kind:"Search",Expr:expr.(ast.Expr),Loc:loc(c)}, nil
     }
 
@@ -898,6 +901,92 @@ Assignment
       }, nil
     }
 
+LegacyExpr = LegacyConditionalExpr
+
+LegacyConditionalExpr
+  = cond:LegacyLogicalOrExpr opt:(__ "?" __ Expr __ ":" __ Expr)? {
+      if opt != nil {
+        t, e := opt.([]any)[3], opt.([]any)[7]
+        return &ast.Conditional{
+            Kind: "Conditional",
+            Cond: cond.(ast.Expr),
+            Then: t.(ast.Expr),
+            Else: e.(ast.Expr),
+            Loc: loc(c),
+        }, nil
+      }
+      return cond, nil
+    }
+
+LegacyLogicalOrExpr
+  = first:LegacyLogicalAndExpr
+    rest:(__ op:OR __ expr:LegacyLogicalAndExpr { return []any{op, expr}, nil })* {
+        return makeBinaryExprChain(first, rest, c), nil
+    }
+
+LegacyLogicalAndExpr
+  = first:LegacyNotExpr
+    rest:(__ op:AND __ expr:LegacyNotExpr { return []any{op, expr}, nil })* {
+        return makeBinaryExprChain(first, rest, c), nil
+    }
+
+LegacyNotExpr
+  = (NOT _ / "!" __) e:LegacyNotExpr {
+      return &ast.UnaryExpr{
+          Kind: "UnaryExpr",
+          Op: "!",
+          Operand: e.(ast.Expr),
+          Loc: loc(c),
+      }, nil
+    }
+  / LegacyBetweenExpr
+  
+LegacyBetweenExpr
+  = expr:LegacyComparisonExpr _ BETWEEN _ lower:LegacyBetweenExpr _ AND _ upper:LegacyBetweenExpr {
+      return &ast.Between{
+        Kind: "Between",
+        Expr: expr.(ast.Expr),
+        Lower: lower.(ast.Expr),
+        Upper: upper.(ast.Expr),
+      }, nil
+    }
+  / LegacyComparisonExpr
+
+LegacyComparisonExpr
+  = lhs:LegacyBitOrExpr opAndRHS:(__ Comparator __ LegacyBitOrExpr / __ ("~" { return string(c.text), nil }) __ Regexp)? {
+      if opAndRHS == nil {
+        return lhs, nil
+      }
+      return &ast.BinaryExpr{
+        Kind: "BinaryExpr",
+        Op: opAndRHS.([]any)[1].(string),
+        LHS: lhs.(ast.Expr),
+        RHS: opAndRHS.([]any)[3].(ast.Expr),
+        Loc: loc(c),
+      }, nil
+    }
+
+LegacyBitOrExpr
+  = first:LegacyBitAndExpr
+    rest:(__ "|" __ expr:LegacyBitAndExpr { return []any{"|", expr}, nil })* {
+        return makeBinaryExprChain(first, rest, c), nil
+    }
+
+LegacyBitAndExpr
+  = first:LegacyBitShiftExpr
+    rest:(__ "&" __ expr:BitShiftExpr { return []any{"&", expr}, nil })* {
+        return makeBinaryExprChain(first, rest, c), nil
+    }
+
+LegacyBitShiftExpr
+  = first:AdditiveExpr
+    rest:(__ op:BitShiftOperator __ expr:AdditiveExpr { return []any{op, expr}, nil })* {
+        return makeBinaryExprChain(first, rest, c), nil
+    }    
+
+BitShiftOperator = ("<<" / ">>") { return string(c.text), nil }
+
+
 Expr = ConditionalExpr
 
 ConditionalExpr
@@ -950,7 +1039,7 @@ BetweenExpr
   / ComparisonExpr
 
 ComparisonExpr
-  = lhs:BitOrExpr opAndRHS:(__ Comparator __ BitOrExpr / __ ("~" { return string(c.text), nil }) __ Regexp)? {
+  = lhs:AdditiveExpr opAndRHS:(__ Comparator __ AdditiveExpr / __ ("~" { return string(c.text), nil }) __ Regexp)? {
       if opAndRHS == nil {
         return lhs, nil
       }
@@ -962,26 +1051,6 @@ ComparisonExpr
         Loc: loc(c),
       }, nil
     }
-
-BitOrExpr
-  = first:BitAndExpr
-    rest:(__ "|" __ expr:BitAndExpr { return []any{"|", expr}, nil })* {
-        return makeBinaryExprChain(first, rest, c), nil
-    }
-
-BitAndExpr
-  = first:BitShiftExpr
-    rest:(__ "&" __ expr:BitShiftExpr { return []any{"&", expr}, nil })* {
-        return makeBinaryExprChain(first, rest, c), nil
-    }
-
-BitShiftExpr
-  = first:AdditiveExpr
-    rest:(__ op:BitShiftOperator __ expr:AdditiveExpr { return []any{op, expr}, nil })* {
-        return makeBinaryExprChain(first, rest, c), nil
-    }    
-
-BitShiftOperator = ("<<" / ">>") { return string(c.text), nil }
 
 AdditiveExpr
   = first:MultiplicativeExpr
@@ -1126,7 +1195,7 @@ Primary
   / Set
   / Map
   / Literal
-  / Identifier
+  / !PipeKeyword id:Identifier { return id, nil }
   / Tuple
   / "(" __ expr:OverExpr __ ")" { return expr, nil }
   / "(" __ expr:Expr __ ")" { return expr, nil }
@@ -1531,6 +1600,7 @@ IdentifierName
   / "\\" id:IDGuard { return id, nil }
   // "type" is a search guard but should not be an id guard
   / "type" { return string(c.text), nil }
+  / BacktickString 
 
 IdentifierStart
   = UnicodeLetter
@@ -1662,6 +1732,13 @@ QuotedString
 
 DoubleQuotedChar
   = !('"' / EscapedChar) . { return string(c.text), nil }
+  / "\\" s:EscapeSequence { return s, nil }
+
+BacktickString
+  = '`' v:BacktickChar* '`' { return joinChars(v), nil }
+
+BacktickChar
+  = !('`' / EscapedChar) . { return string(c.text), nil }
   / "\\" s:EscapeSequence { return s, nil }
 
 KeyWord
@@ -1998,7 +2075,7 @@ GroupByList
       return prepend(first, rest), nil
     }
 
-GroupByItem = Expr
+GroupByItem = LegacyExpr
 
 OptHavingClause
   = _ h:HavingClause { return h, nil }
@@ -2086,7 +2163,7 @@ Selection
 
 //XXX need to add *, id.*, except, replace
 SelectElem 
-  = e:Expr as:OptAsClause {
+  = e:LegacyExpr as:OptAsClause {
       elem := ast.AsExpr{
         Kind: "AsExpr",
         Expr: e.(ast.Expr),
@@ -2122,7 +2199,7 @@ OrderByList
     }
 
 OrderByItem
-  = e:Expr order:OptAscDesc nulls:OptNullsOrder {
+  = e:LegacyExpr order:OptAscDesc nulls:OptNullsOrder {
       s := ast.SortExpr{Kind: "SortExpr", Expr: e.(ast.Expr), Loc: loc(c)}
       if order != nil {
         s.Order = order.(*ast.ID)

@@ -108,7 +108,7 @@ they will usually do the right thing.
 
 With keyword search, you can just type a keyword that you want to look for, e.g.,
 ```mdtest-command dir=testdata/edu
-super -z -c Ygnacio schools.jsup
+super -z -c '? Ygnacio' schools.jsup
 ```
 which gives the one matching record:
 ```mdtest-output
@@ -120,7 +120,7 @@ As with keyword search, you can simply concantenate keywords to require both
 of them to match (i.e., a "logical AND" of the two search predicates), e.g.
 we can whittle down the two records above by adding the keyword _Delano_
 ```mdtest-command dir=testdata/edu
-super -z -c 'Ygnacio Delano' schools.jsup
+super -z -c '? Ygnacio Delano' schools.jsup
 ```
 and we get just the one record that matches:
 ```mdtest-output
@@ -163,7 +163,7 @@ used.
 For example, the following search finds records that contain school names
 that have some additional text between `ACE` and `Academy`:
 ```mdtest-command dir=testdata/edu
-super -z -c 'ACE*Academy' schools.jsup
+super -z -c '? ACE*Academy' schools.jsup
 ```
 produces
 ```mdtest-output head
@@ -185,7 +185,7 @@ regexp.
 For example, since there are many high schools in our sample data, to find
 only records containing strings that _begin_ with the word `High`:
 ```mdtest-command dir=testdata/edu
-super -z -c '/^High /' schools.jsup
+super -z -c '? /^High /' schools.jsup
 ```
 produces
 ```mdtest-output head
@@ -212,7 +212,7 @@ the number `596` matches records that contain numeric fields of this precise val
 (such as from the test scores) and also records that contain string fields
 (such as the ZIP code and phone number fields in the school data), e.g.,
 ```mdtest-command dir=testdata/edu
-super -z -c '596' testscores.jsup schools.jsup
+super -z -c '? 596' testscores.jsup schools.jsup
 ```
 finds these records
 ```mdtest-output head
@@ -242,7 +242,7 @@ Defunct=
 However, wrapping in quotes to performa a string-literal search
 gives the desired result:
 ```mdtest-command dir=testdata/edu
-super -z -c '"Defunct="' schools.jsup
+super -z -c '? "Defunct="' schools.jsup
 ```
 produces
 ```mdtest-output
@@ -255,7 +255,7 @@ say we're looking for information on the Union Hill Elementary district.
 Entered without quotes, we end up matching far more records than we intended
 since each space character between words is treated as a [Boolean `and`](#541-and), e.g.,
 ```mdtest-command dir=testdata/edu
-super -z -c 'Union Hill Elementary' schools.jsup
+super -z -c '? Union Hill Elementary' schools.jsup
 ```
 produces
 ```mdtest-output head
@@ -268,7 +268,7 @@ produces
 However, wrapping the entire search term in quotes allows us to search for the
 complete string, including the spaces, e.g.,
 ```mdtest-command dir=testdata/edu
-super -z -c '"Union Hill Elementary"' schools.jsup
+super -z -c '? "Union Hill Elementary"' schools.jsup
 ```
 produces
 ```mdtest-output
@@ -484,7 +484,7 @@ Let's say we're earching for information about academies
 that are flagged as being in a `Pending` status.  We can simply concatenate
 the predicate for "Pending" and the keyword search for `academy`, e.g.,
 ```mdtest-command dir=testdata/edu
-super -z -c 'StatusType=="Pending" academy' schools.jsup
+super -z -c '? StatusType=="Pending" academy' schools.jsup
 ```
 produces
 ```mdtest-output
@@ -506,7 +506,7 @@ Let'a revisit two of our previous example searches that each only
 returned a couple records, searching now with `or` to see them all at once,
 e.g.,
 ```mdtest-command dir=testdata/edu
-super -z -c '"Defunct=" or ACE*Academy' schools.jsup
+super -z -c '? "Defunct=" or ACE*Academy' schools.jsup
 ```
 produces
 ```mdtest-output
@@ -522,7 +522,7 @@ it in your search.
 For example, to find schools in the `Dixon Unified` district _other than_
 elementary schools, we invert the logic of a search term:
 ```mdtest-command dir=testdata/edu
-super -z -c 'not elementary District=="Dixon Unified"' schools.jsup
+super -z -c '? not elementary District=="Dixon Unified"' schools.jsup
 ```
 produces
 ```mdtest-output head
@@ -550,7 +550,7 @@ left-to-right evaluation.
 For example, we've noticed there are some test score records that have `null`
 values for all three test scores:
 ```mdtest-command dir=testdata/edu
-super -z -c 'AvgScrMath==null AvgScrRead==null AvgScrWrite==null' testscores.jsup
+super -z -c '? AvgScrMath==null AvgScrRead==null AvgScrWrite==null' testscores.jsup
 ```
 produces
 ```mdtest-output head
@@ -561,7 +561,7 @@ produces
 We can easily filter these out by negating the search for these records, e.g.,
 ```mdtest-command dir=testdata/edu
 super -z -c '
-  not (AvgScrMath==null AvgScrRead==null AvgScrWrite==null)
+  not (AvgScrMath==null and AvgScrRead==null and AvgScrWrite==null)
 ' testscores.jsup
 ```
 produces
@@ -574,7 +574,7 @@ produces
 Parentheses can also be nested, e.g.,
 ```mdtest-command dir=testdata/edu
 super -z -c '
-  grep(*High*, sname)
+  ? grep(*High*, sname)
     and (not (AvgScrMath==null AvgScrRead==null AvgScrWrite==null)
       and dname=="San Francisco Unified")
 ' testscores.jsup
@@ -631,7 +631,7 @@ school data that includes fields for both `School` and `Website`, values from
 our web address data that have the `Website` and `addr` fields, and the
 missing value from the test score data since it has none of these fields:
 ```mdtest-command dir=testdata/edu
-super -z -c 'yosemiteuhsd |> cut School,Website,addr' *.jsup
+super -z -c '? yosemiteuhsd |> cut School,Website,addr' *.jsup
 ```
 produces
 ```mdtest-output
@@ -679,7 +679,7 @@ Let's say you'd started with table-formatted output of all records in our data
 that reference the town of Geyserville, e.g.,
 
 ```mdtest-command dir=testdata/edu
-super -f table -c 'Geyserville' *.jsup
+super -f table -c '? Geyserville' *.jsup
 ```
 produces
 ```mdtest-output
@@ -703,7 +703,7 @@ accurately conveys the heterogeneous nature of the data, but changing schemas
 mid-stream is not allowed in formats such as CSV or other downstream tooling
 such as SQL. Indeed, `zq` halts its output in this case, e.g.,
 ```mdtest-command dir=testdata/edu fails
-super -f csv -c 'Geyserville' *.jsup
+super -f csv -c '? Geyserville' *.jsup
 ```
 produces
 ```mdtest-output
@@ -722,7 +722,7 @@ is assembled in a first pass through the data stream, which enables the
 presentation of the results under a single, wider header row with no further
 interruptions between the subsequent data rows, e.g.,
 ```mdtest-command dir=testdata/edu
-super -f csv -c 'Geyserville |> fuse' *.jsup
+super -f csv -c '? Geyserville |> fuse' *.jsup
 ```
 produces
 ```mdtest-output
@@ -1035,7 +1035,7 @@ constructs an ordered list per city of their websites along with a parallel
 list of which school each website represents:
 ```mdtest-command dir=testdata/edu
 super -Z -c '
-  County=="Fresno" Website!=null
+  ? County=="Fresno" Website!=null
   |> Websites:=collect(Website),Schools:=collect(School) by City
   |> sort City
 ' schools.jsup
@@ -1223,7 +1223,7 @@ constructs a set per city of all the unique websites for the schools in that
 city:
 ```mdtest-command dir=testdata/edu
 super -Z -c '
-  County=="Fresno" Website!=null
+  ? County=="Fresno" Website!=null
   |> Websites:=union(Website) by City
   |> sort City
 ' schools.jsup

@@ -4,7 +4,7 @@ script: |
   super db create -q -orderby ts pool-ts
   super db compile -C -O "from 'pool-ts' |> x=='hello' or x==1.0" | sed -e 's/lister .*/lister/' -e 's/seqscan .*filter/seqscan filter/'
   echo ===
-  super db compile -C -O "from 'pool-ts' |> x > 1 y <= 1.0" | sed -e 's/lister .*/lister/' -e 's/seqscan .*filter/seqscan filter/'
+  super db compile -C -O "from 'pool-ts' |> x > 1 and y <= 1.0" | sed -e 's/lister .*/lister/' -e 's/seqscan .*filter/seqscan filter/'
   echo ===
   super db compile -C -O "from 'pool-ts' |> x=='hello' or x!=1.0" | sed -e 's/lister .*/lister/' -e 's/seqscan .*filter/seqscan filter/'
   echo ===

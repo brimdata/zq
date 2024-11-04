@@ -1,4 +1,4 @@
-zed: foo*
+zed: '? foo*'
 
 input: |
   {a:"hello",b:"there"}

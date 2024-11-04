@@ -1,5 +1,5 @@
 zed: |
-  yield cast(from, to)
+  yield cast(this["from"], to)
 
 input: |
   {from:null((int64,string)),to:<string>}

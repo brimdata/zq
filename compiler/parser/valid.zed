@@ -1,11 +1,11 @@
-foo
-foo |> count()
+?foo
+?foo |> count()
 count() with -limit 10
 count() by _path with -limit 10
 count() by _path,every(1h) with -limit 10
-filter x==1
+where x==1
 _path=='conn'
-_path=='conn' id.resp_p==80
+_path=='conn' and id.resp_p==80
 count(), sum(foo)
 fork (=>count() by _path =>count() by addr)
 switch (case grep("foo") => count() by _path case field==1 => count() by addr)
@@ -18,21 +18,21 @@ sort -r a, b, c
 count() |> sort
 top 1
 top 1 -flush
-foo\tbar
-foo\\x11bar
-foo\\x11\bar
-*
-*abc*
+? foo\tbar
+? foo\\x11bar
+? foo\\x11\bar
+? *
+? *abc*
 field==null
 count() by _path,ts:=every(3600s)
 s=="harefoot-raucous"
 s=='/a/b'
 search _path=='http' and windows
 f(1) and g(2) or h(3)
-NaN
-+Inf
--Inf
-Inf
+? NaN
+? +Inf
+? -Inf
+? Inf
 nullkeys()
 truevals()
 falsevals()

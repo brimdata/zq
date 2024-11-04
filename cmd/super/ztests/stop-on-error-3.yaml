@@ -1,6 +1,6 @@
 # Second input has bad middle line (detection succeeds).
 script: |
-  ! super -z -e=false -c "*" good.jsup bad.jsup
+  ! super -z -e=false good.jsup bad.jsup
 
 inputs:
   - name: good.jsup

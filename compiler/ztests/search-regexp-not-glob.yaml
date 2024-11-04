@@ -1,4 +1,5 @@
-zed: /.*/
+zed: |
+  ? /.*/
 
 input: &input |
   "a"

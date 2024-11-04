@@ -9,7 +9,7 @@ inputs:
     data: |
       type netx=uint16
       type foo={bar:netx}
-      *
+      pass
 
 outputs:
   - name: stdout

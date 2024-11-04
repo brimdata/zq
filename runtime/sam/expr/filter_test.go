@@ -177,7 +177,7 @@ func TestFilters(t *testing.T) {
 		{"nested.vec[0] == 1", true},
 		{"nested.vec[1] == 1", false},
 		{"1 in nested", true},
-		{"1", true},
+		{"?1", true},
 	})
 
 	// Test unicode string comparison.  The following two records
@@ -201,9 +201,9 @@ func TestFilters(t *testing.T) {
 		{`a == '\u017F'`, true},
 		{`a == "S"`, false},
 		{`a == "s"`, false},
-		{`\u017F`, true},
-		{`S`, false}, // Should be true; see https://github.com/brimdata/super/issues/1207.
-		{`s`, false}, // Should be true; see https://github.com/brimdata/super/issues/1207.
+		{`?\u017F`, true},
+		{`?S`, false}, // Should be true; see https://github.com/brimdata/super/issues/1207.
+		{`?s`, false}, // Should be true; see https://github.com/brimdata/super/issues/1207.
 	})
 
 	// Test U+212A KELVIN SIGN.
@@ -211,20 +211,20 @@ func TestFilters(t *testing.T) {
 		{`a == '\u212A'`, true},
 		{`a == "K"`, true}, // True because Unicode NFC replaces U+212A with U+004B.
 		{`a == "k"`, false},
-		{`\u212A`, true},
-		{`K`, true},
-		{`k`, true},
+		{`?\u212A`, true},
+		{`?K`, true},
+		{`?k`, true},
 	})
 
 	// Test searching both fields and containers,
 	// also test case-insensitive search.
 	runCases(t, `{s:"hello",srec:{svec:["world","worldz","1.1.1.1"]}}`, []testcase{
-		{"hello", true},
-		{"worldz", true},
-		{"HELLO", true},
-		{"WoRlDZ", true},
-		{"1.1.1.1", true},
-		{"wor*", true},
+		{"?hello", true},
+		{"?worldz", true},
+		{"?HELLO", true},
+		{"?WoRlDZ", true},
+		{"?1.1.1.1", true},
+		{"?wor*", true},
 	})
 
 	// Test searching a record inside an array, record, set, and union.
@@ -239,22 +239,22 @@ func TestFilters(t *testing.T) {
 	} {
 		t.Run(c.name, func(t *testing.T) {
 			runCases(t, c.record, []testcase{
-				{"123", true},
-				{`"123"`, false},
-				{"12", false},
-				{"456", true},
-				{`"456"`, true},
-				{"45", true},
-				{"hello", true},
+				{"?123", true},
+				{`?"123"`, false},
+				{"?12", false},
+				{"?456", true},
+				{`?"456"`, true},
+				{"?45", true},
+				{"?hello", true},
 			})
 		})
 	}
 
 	// Test searching with subnet syntax
 	runCases(t, "{addr:192.168.1.50}", []testcase{
-		{"192.168.0.0/16", true},
-		{"192.168.1.0/24", true},
-		{"10.0.0.0/8", false},
+		{"?192.168.0.0/16", true},
+		{"?192.168.1.0/24", true},
+		{"?10.0.0.0/8", false},
 	})
 
 	// Test time coercion
@@ -271,7 +271,7 @@ func TestFilters(t *testing.T) {
 	// The ASCII value of 'T' (0x54) is present inside the binary
 	// encoding of 1.001.  But naked string search should not match.
 	runCases(t, "{f:1.001}", []testcase{
-		{"T", false},
+		{"?T", false},
 	})
 
 	// Test integer conditions.  These are really testing 2 things:
@@ -378,28 +378,28 @@ func TestFilters(t *testing.T) {
 
 	// Test searching for a field name
 	runCases(t, `{foo:"bleah",rec:{SUB:"meh"}}`, []testcase{
-		{"foo", true},
-		{"FOO", true},
-		{"foo.", false},
-		{"sub", true},
-		{"sub.", false},
-		{"rec.sub", true},
-		{"c.s", true},
+		{"?foo", true},
+		{"?FOO", true},
+		{"?foo.", false},
+		{"?sub", true},
+		{"?nsub.", false},
+		{"?rec.sub", true},
+		{"?c.s", true},
 	})
 
 	// Test searching for a field name of an null record
 	runCases(t, "{rec:null ({str:string})}", []testcase{
-		{"rec.str", true},
+		{"?rec.str", true},
 	})
 
 	// Test searching an empty top-level record
 	runCases(t, "{}", []testcase{
-		{"empty", false},
+		{"?empty", false},
 	})
 
 	// Test searching an empty nested record
 	runCases(t, "{empty:{}}", []testcase{
-		{"empty", true},
+		{"?empty", true},
 	})
 
 }

@@ -7,14 +7,14 @@ inputs:
   - name: test.zed
     data: |
       // Expressions
-      yield (over a |> b)
-      |> yield (over a with b=c |> d)
-      |> yield (over a, b with c=d, e=f |> g)
+      yield (over a |> ?b)
+      |> yield (over a with b=c |> ?d)
+      |> yield (over a, b with c=d, e=f |> ?g)
       // Operators
       |> over a
-      |> over a => ( b )
-      |> over a with b=c => ( d )
-      |> over a, b with c=d, e=f => ( g )
+      |> over a => ( ?b )
+      |> over a with b=c => ( ?d )
+      |> over a, b with c=d, e=f => ( ?g )
 
 outputs:
   - name: stdout

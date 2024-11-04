@@ -1,4 +1,4 @@
-zed: "*"
+zed: pass
 
 output-flags: -f jsup -pretty=4
 
