@@ -74,10 +74,14 @@ func (a *analyzer) semExpr(e ast.Expr) dag.Expr {
 			Expr:  pathOf("this"),
 		}
 	case *ast.UnaryExpr:
+		operand := a.semExpr(e.Operand)
+		if e.Op == "+" {
+			return operand
+		}
 		return &dag.UnaryExpr{
 			Kind:    "UnaryExpr",
 			Op:      e.Op,
-			Operand: a.semExpr(e.Operand),
+			Operand: operand,
 		}
 	case *ast.BinaryExpr:
 		return a.semBinary(e)

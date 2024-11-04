@@ -1000,21 +1000,24 @@ MultiplicativeExpr
 MultiplicativeOperator = ("*" / "/" / "%") { return string(c.text), nil }
 
 ConcatExpr 
-  = first:UnaryMinusExpr
-    rest:(__ "||" __ expr:UnaryMinusExpr { return []any{"||", expr}, nil })* {
+  = first:UnaryPlusOrMinus
+    rest:(__ "||" __ expr:UnaryPlusOrMinus { return []any{"||", expr}, nil })* {
         return makeBinaryExprChain(first, rest, c), nil
     }
 
-UnaryMinusExpr
-  = !Literal "-" __ e:UnaryMinusExpr {
+UnaryPlusOrMinus
+  = !Literal op:PlusOrMinusOp __ e:UnaryPlusOrMinus
+ {
       return &ast.UnaryExpr{
           Kind: "UnaryExpr",
-          Op: "-",
+          Op: op.(string),
           Operand: e.(ast.Expr),
           Loc: loc(c),
       }, nil
     }
   / DerefExpr
+
+PlusOrMinusOp = "+" / "-" { return c.text, nil }
 
 DerefExpr
   = expr:DerefExpr "[" __ from:AdditiveExpr __ ":" __ to:AdditiveExpr? __ "]" {
