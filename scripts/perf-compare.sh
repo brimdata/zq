@@ -45,7 +45,7 @@ declare -a DESCRIPTIONS=(
     'Output all events with the field `id.resp_h` set to `52.85.83.116`'
 )
 
-declare -a SUPERPIPE_QUERIES=(
+declare -a SPQS=(
     '*'
     'cut quiet(ts)'
     'count:=count()'
@@ -75,7 +75,7 @@ declare -a ZCUT_FIELDS=(
     'NONE'
 )
 
-for (( n=0; n<"${#SUPERPIPE_QUERIES[@]}"; n++ ))
+for (( n=0; n<"${#SPQS[@]}"; n++ ))
 do
     DESC=${DESCRIPTIONS[$n]}
     MD=${MARKDOWNS[$n]}
@@ -84,10 +84,10 @@ do
     echo "|:----------:|:---------------:|:-----------------:|:------------------:|-----------:|-----------:|----------:|" | tee -a "$MD"
     for INPUT in zeek bsup bsup-uncompressed jsup json ; do
       for OUTPUT in zeek bsup bsup-uncompressed jsup json ; do
-        superpipe_query=${SUPERPIPE_QUERIES[$n]}
-        echo -n "|\`super\`|\`$superpipe_query\`|$INPUT|$OUTPUT|" | tee -a "$MD"
+        spq=${SPQS[$n]}
+        echo -n "|\`super\`|\`$spq\`|$INPUT|$OUTPUT|" | tee -a "$MD"
         case $INPUT in
-          json ) super_flags="-i json -I $shaper" superpipe_query="| $superpipe_query" ;;
+          json ) super_flags="-i json -I $shaper" spq="|> $spq" ;;
           bsup-uncompressed ) super_flags="-i bsup" ;;
           * ) super_flags="-i $INPUT" ;;
         esac
@@ -96,7 +96,7 @@ do
           bsup-uncompressed ) super_flags="$super_flags -f bsup -bsup.compress=false" ;;
           * ) super_flags="$super_flags -f $OUTPUT" ;;
         esac
-        ALL_TIMES=$(time -p (super $super_flags -c "$superpipe_query" $DATA/$INPUT/* > /dev/null) 2>&1)
+        ALL_TIMES=$(time -p (super $super_flags -c "$spq" $DATA/$INPUT/* > /dev/null) 2>&1)
         echo "$ALL_TIMES" | tr '\n' ' ' | awk '{ print $2 "|" $4 "|" $6 "|" }' | tee -a "$MD"
       done
     done
