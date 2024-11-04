@@ -197,7 +197,7 @@ type (
 		KeyPruner Expr        `json:"key_pruner"`
 	}
 
-	// Leaf sources
+	// Sources
 
 	// DefaultScan scans an input stream provided by the runtime.
 	DefaultScan struct {
@@ -223,6 +223,12 @@ type (
 		Kind   string      `json:"kind" unpack:""`
 		ID     ksuid.KSUID `json:"id"`
 		Commit ksuid.KSUID `json:"commit"`
+	}
+	RobotScan struct {
+		Kind   string `json:"kind" unpack:""`
+		Expr   Expr   `json:"path"`
+		Format string `json:"format"`
+		Filter Expr   `json:"filter"`
 	}
 	DeleteScan struct {
 		Kind   string      `json:"kind" unpack:""`
@@ -272,6 +278,7 @@ func (*DefaultScan) OpNode()    {}
 func (*FileScan) OpNode()       {}
 func (*HTTPScan) OpNode()       {}
 func (*PoolScan) OpNode()       {}
+func (*RobotScan) OpNode()      {}
 func (*DeleteScan) OpNode()     {}
 func (*LakeMetaScan) OpNode()   {}
 func (*PoolMetaScan) OpNode()   {}

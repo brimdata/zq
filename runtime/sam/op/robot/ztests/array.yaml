@@ -1,0 +1,25 @@
+script: |
+  super -z -c 'from which.jsup | select value this from ["a"+string(this)+".jsup","a"+string(this+1)+".jsup"]'
+
+inputs:
+  - name: which.jsup
+    data: |
+      1
+      2
+  - name: a1.jsup
+    data: |
+      "hello"
+  - name: a2.jsup
+    data: |
+      "world"
+  - name: a3.jsup
+    data: |
+      "goodbye"
+
+outputs:
+  - name: stdout
+    data: |
+      "hello"
+      "world"
+      "world"
+      "goodbye"

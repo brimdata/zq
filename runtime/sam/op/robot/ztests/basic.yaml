@@ -1,0 +1,25 @@
+script: |
+  super -z -c 'from files.jsup | from [f]'
+  echo ===
+  super -z -c 'from files.jsup | select value this from [f]'
+
+inputs:
+  - name: files.jsup
+    data: |
+      {f:"a.jsup"}
+      {f:"b.jsup"}
+  - name: a.jsup
+    data: |
+      "hello"
+  - name: b.jsup
+    data: |
+      "world"
+
+outputs:
+  - name: stdout
+    data: |
+      "hello"
+      "world"
+      ===
+      "hello"
+      "world"

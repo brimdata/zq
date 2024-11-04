@@ -18,11 +18,20 @@ import (
 // and may or may not have its sources embedded.
 func (a *analyzer) semSelect(sel *ast.Select, seq dag.Seq) dag.Seq {
 	if sel.From != nil {
-		if len(seq) > 0 {
-			a.error(sel, errors.New("SELECT cannot have both an embedded FROM claue and input from parents"))
-			return append(seq, badOp())
+		off := len(seq)
+		hasParent := off > 0
+		seq = a.semFrom(sel.From, seq)
+		// If we have parents with both a from and select, report an error
+		// but only if it's not a RobotScan where the parent needs to feed
+		// the from.
+		if off < len(seq) {
+			if _, ok := seq[off].(*dag.RobotScan); !ok {
+				if hasParent {
+					a.error(sel, errors.New("SELECT cannot have both an embedded FROM claue and input from parents"))
+					return append(seq, badOp())
+				}
+			}
 		}
-		seq = a.semFrom(sel.From, nil)
 	}
 	if sel.Value {
 		return a.semSelectValue(sel, seq)
@@ -172,10 +181,13 @@ func (a *analyzer) semSQLJoin(join *ast.SQLJoin, seq dag.Seq) dag.Seq {
 		a.error(join.Cond, errors.New("SQL joins currently limited to equijoin on fields"))
 		return append(seq, badOp())
 	}
-	//XXX need to pass down parent
-	leftPath := a.semFromElem(join.Left)
-	rightPath := a.semFromElem(join.Right)
-
+	if len(seq) > 0 {
+		// At some point we might want to let parent data flow into a join somehow,
+		// but for now we flag an error.
+		a.error(join, errors.New("SQL join cannot inherit data from pipeline parent"))
+	}
+	leftPath := a.semFromElem(join.Left, nil)
+	rightPath := a.semFromElem(join.Right, nil)
 	alias := join.Right.Alias.Text
 	assignment := dag.Assignment{
 		Kind: "Assignment",

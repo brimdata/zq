@@ -35,20 +35,16 @@ func (a *analyzer) semSeq(seq ast.Seq) dag.Seq {
 	return converted
 }
 
-func (a *analyzer) semFrom(from *ast.From, out dag.Seq) dag.Seq {
+func (a *analyzer) semFrom(from *ast.From, seq dag.Seq) dag.Seq {
 	if len(from.Elems) > 1 {
 		a.error(from, errors.New("cross join implied by multiple elements in from clause is not yet supported"))
 		return dag.Seq{badOp()}
 	}
-	if len(out) > 0 {
-		a.error(from, errors.New("from operator with parent input is not yet supported"))
-		return dag.Seq{badOp()}
-	}
-	return a.semFromElem(from.Elems[0])
+	return a.semFromElem(from.Elems[0], seq)
 }
 
-func (a *analyzer) semFromElem(elem *ast.FromElem) dag.Seq {
-	seq := a.semFromEntity(elem.Entity, elem.Args)
+func (a *analyzer) semFromElem(elem *ast.FromElem, seq dag.Seq) dag.Seq {
+	seq = a.semFromEntity(elem.Entity, elem.Args, seq)
 	if elem.Ordinality != nil {
 		a.error(elem.Ordinality, errors.New("WITH ORDINALITY clause is not yet supported"))
 		return dag.Seq{badOp()}
@@ -78,42 +74,79 @@ func wrapAlias(alias string, seq dag.Seq) dag.Seq {
 	})
 }
 
-func (a *analyzer) semFromEntity(entity ast.FromEntity, args ast.FromArgs) dag.Seq {
+func (a *analyzer) semFromEntity(entity ast.FromEntity, args ast.FromArgs, seq dag.Seq) dag.Seq {
 	switch entity := entity.(type) {
 	case *ast.Glob:
+		if a.hasFromParent(entity, seq) {
+			return seq
+		}
 		if a.env.IsLake() {
 			return a.semPoolFromRegexp(entity, reglob.Reglob(entity.Pattern), entity.Pattern, "glob", args)
 		}
 		return dag.Seq{a.semFromFileGlob(entity, entity.Pattern, args)}
 	case *ast.Regexp:
+		if a.hasFromParent(entity, seq) {
+			return seq
+		}
 		if !a.env.IsLake() {
 			a.error(entity, errors.New("cannot use regular expression with from operator on local file system"))
 		}
 		return a.semPoolFromRegexp(entity, entity.Pattern, entity.Pattern, "regexp", args)
 	case *ast.Name:
+		if a.hasFromParent(entity, seq) {
+			return seq
+		}
 		return dag.Seq{a.semFromName(entity, entity.Text, args)}
 	case *ast.ExprEntity:
-		return a.semFromExpr(entity, args)
+		return a.semFromExpr(entity, args, seq)
 	case *ast.LakeMeta:
+		if a.hasFromParent(entity, seq) {
+			return seq
+		}
 		return dag.Seq{a.semLakeMeta(entity)}
 	case *ast.SQLPipe:
-		//XXX pass down parents?
-		return a.semOp(entity, nil)
+		return a.semOp(entity, seq)
 	case *ast.SQLJoin:
-		//XXX pass down parents?
-		return a.semSQLJoin(entity, nil)
+		return a.semSQLJoin(entity, seq)
 	default:
 		panic(fmt.Sprintf("semFromEntity: unknown entity type: %T", entity))
 	}
 }
 
-func (a *analyzer) semFromExpr(entity *ast.ExprEntity, args ast.FromArgs) dag.Seq {
+func (a *analyzer) semFromExpr(entity *ast.ExprEntity, args ast.FromArgs, seq dag.Seq) dag.Seq {
 	expr := a.semExpr(entity.Expr)
 	val, err := kernel.EvalAtCompileTime(a.zctx, expr)
-	if err != nil {
-		a.error(entity, err)
-		return dag.Seq{badOp()}
+	if err == nil && !hasError(val) {
+		if a.hasFromParent(entity, seq) {
+			return seq
+		}
+		return a.semFromConstVal(val, entity, args)
 	}
+	// This is an expression so set up a robot scanner that pulls values from
+	// parent to decide what to scan.
+	e := a.semExpr(entity.Expr)
+	return append(seq, &dag.RobotScan{
+		Kind:   "RobotScan",
+		Expr:   e,
+		Format: a.formatArg(args),
+	})
+}
+
+func hasError(val super.Value) bool {
+	has := function.NewHasError()
+	result := has.Call(nil, []super.Value{val})
+	return result.AsBool()
+}
+
+func (a *analyzer) hasFromParent(loc ast.Node, seq dag.Seq) bool {
+	if len(seq) > 0 {
+		a.error(loc, errors.New("from operator cannot have parent unless from argument is an expression"))
+		return true
+	}
+	return false
+}
+
+func (a *analyzer) semFromConstVal(val super.Value, entity *ast.ExprEntity, args ast.FromArgs) dag.Seq {
 	vals, err := val.Elements()
 	if err != nil {
 		a.error(entity.Expr, errors.New("from expression requires a string array"))
@@ -187,20 +220,24 @@ func asFileArgs(args ast.FromArgs) (*ast.FormatArg, error) {
 	}
 }
 
-func (a *analyzer) semFile(name string, args ast.FromArgs) dag.Op {
+func (a *analyzer) formatArg(args ast.FromArgs) string {
 	formatArg, err := asFileArgs(args)
 	if err != nil {
 		a.error(args, err)
-		return badOp()
+		return ""
 	}
 	var format string
 	if formatArg != nil {
 		format = nullableName(formatArg.Format)
 	}
+	return format
+}
+
+func (a *analyzer) semFile(name string, args ast.FromArgs) dag.Op {
 	return &dag.FileScan{
 		Kind:   "FileScan",
 		Path:   name,
-		Format: format,
+		Format: a.formatArg(args),
 	}
 }
 

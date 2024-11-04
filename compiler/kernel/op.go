@@ -30,6 +30,7 @@ import (
 	"github.com/brimdata/super/runtime/sam/op/merge"
 	"github.com/brimdata/super/runtime/sam/op/meta"
 	"github.com/brimdata/super/runtime/sam/op/mirror"
+	"github.com/brimdata/super/runtime/sam/op/robot"
 	"github.com/brimdata/super/runtime/sam/op/shape"
 	"github.com/brimdata/super/runtime/sam/op/sort"
 	"github.com/brimdata/super/runtime/sam/op/switcher"
@@ -273,6 +274,12 @@ func (b *Builder) compileLeaf(o dag.Op, parent zbuf.Puller) (zbuf.Puller, error)
 		return b.env.OpenHTTP(b.rctx.Context, b.zctx(), v.URL, v.Format, v.Method, v.Headers, body, demand.All())
 	case *dag.FileScan:
 		return b.env.Open(b.rctx.Context, b.zctx(), v.Path, v.Format, b.PushdownOf(v.Filter), demand.All())
+	case *dag.RobotScan:
+		e, err := compileExpr(v.Expr)
+		if err != nil {
+			return nil, err
+		}
+		return robot.New(b.rctx, b.env, parent, e, v.Format, b.PushdownOf(v.Filter), demand.All()), nil
 	case *dag.DefaultScan:
 		pushdown := b.PushdownOf(v.Filter)
 		if len(b.readers) == 1 {
