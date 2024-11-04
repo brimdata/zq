@@ -40,7 +40,7 @@ FROM 'https://data.gharchive.org/2015-01-01-15.json.gz'
    ORDER BY len(repo) DESC
    LIMIT 5
 |> FORK (
-   => FROM f"https://api.github.com/users/{user}"
+   => FROM f'https://api.github.com/users/{user}'
     |> SELECT VALUE {user:login,created_at:time(created_at)}
    => PASS
   )
