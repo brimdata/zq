@@ -5,7 +5,7 @@ input: |
 
 # statically typed database get 2607.9302325581393 for this answer because their
 # static analysis determines that coalesce is float64 (coerced from the avg()
-# aggregate).  # This is a fundamental difference between relational and
+# aggregate).  This is a fundamental difference between relational and
 # polymorphic models and I think we just embrace this disparity.
 output: |
   2402
