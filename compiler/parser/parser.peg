@@ -1017,7 +1017,7 @@ UnaryPlusOrMinus
     }
   / DerefExpr
 
-PlusOrMinusOp = "+" / "-" { return c.text, nil }
+PlusOrMinusOp = ("+" / "-") { return string(c.text), nil }
 
 DerefExpr
   = expr:DerefExpr "[" __ from:AdditiveExpr __ ":" __ to:AdditiveExpr? __ "]" {
