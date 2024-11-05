@@ -6,7 +6,6 @@ import (
 	"strconv"
 
 	"github.com/brimdata/super/compiler/ast"
-	"github.com/kr/pretty"
 )
 
 func sliceOf[E any](s any) []E {
@@ -31,9 +30,6 @@ func newPrimitive(c *current, typ, text string) *ast.Primitive {
 }
 
 func makeBinaryExprChain(first, rest any, c *current) any {
-	if _, ok := first.(ast.Expr); !ok {
-		pretty.Println("BINARY EXPR", first)
-	}
 	ret := first.(ast.Expr)
 	for _, p := range rest.([]any) {
 		part := p.([]any)
