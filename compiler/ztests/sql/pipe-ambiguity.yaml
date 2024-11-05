@@ -2,7 +2,8 @@ script: |
   ! super -z -c "select 1|3" >& err1
   super -z -c "select x | yield x+1" x.jsup
   echo ===
-  ! super -z -c "select 1 | x+1" >& err2
+  super -z -c "select x | x+1" x.jsup  
+  echo ===
   super -z -c "select x |> x+1" x.jsup
 
 inputs:
@@ -20,9 +21,10 @@ outputs:
       3
       ===
       3
+      ===
+      3
   - name: err1
     data: |
-      invalid binary operator |
-  - name: err2
-    data: |
-      invalid binary operator |
+      parse error at line 1, column 11:
+      select 1|3
+            === ^ ===

@@ -901,92 +901,6 @@ Assignment
       }, nil
     }
 
-LegacyExpr = LegacyConditionalExpr
-
-LegacyConditionalExpr
-  = cond:LegacyLogicalOrExpr opt:(__ "?" __ Expr __ ":" __ Expr)? {
-      if opt != nil {
-        t, e := opt.([]any)[3], opt.([]any)[7]
-        return &ast.Conditional{
-            Kind: "Conditional",
-            Cond: cond.(ast.Expr),
-            Then: t.(ast.Expr),
-            Else: e.(ast.Expr),
-            Loc: loc(c),
-        }, nil
-      }
-      return cond, nil
-    }
-
-LegacyLogicalOrExpr
-  = first:LegacyLogicalAndExpr
-    rest:(__ op:OR __ expr:LegacyLogicalAndExpr { return []any{op, expr}, nil })* {
-        return makeBinaryExprChain(first, rest, c), nil
-    }
-
-LegacyLogicalAndExpr
-  = first:LegacyNotExpr
-    rest:(__ op:AND __ expr:LegacyNotExpr { return []any{op, expr}, nil })* {
-        return makeBinaryExprChain(first, rest, c), nil
-    }
-
-LegacyNotExpr
-  = (NOT _ / "!" __) e:LegacyNotExpr {
-      return &ast.UnaryExpr{
-          Kind: "UnaryExpr",
-          Op: "!",
-          Operand: e.(ast.Expr),
-          Loc: loc(c),
-      }, nil
-    }
-  / LegacyBetweenExpr
-  
-LegacyBetweenExpr
-  = expr:LegacyComparisonExpr _ BETWEEN _ lower:LegacyBetweenExpr _ AND _ upper:LegacyBetweenExpr {
-      return &ast.Between{
-        Kind: "Between",
-        Expr: expr.(ast.Expr),
-        Lower: lower.(ast.Expr),
-        Upper: upper.(ast.Expr),
-      }, nil
-    }
-  / LegacyComparisonExpr
-
-LegacyComparisonExpr
-  = lhs:LegacyBitOrExpr opAndRHS:(__ Comparator __ LegacyBitOrExpr / __ ("~" { return string(c.text), nil }) __ Regexp)? {
-      if opAndRHS == nil {
-        return lhs, nil
-      }
-      return &ast.BinaryExpr{
-        Kind: "BinaryExpr",
-        Op: opAndRHS.([]any)[1].(string),
-        LHS: lhs.(ast.Expr),
-        RHS: opAndRHS.([]any)[3].(ast.Expr),
-        Loc: loc(c),
-      }, nil
-    }
-
-LegacyBitOrExpr
-  = first:LegacyBitAndExpr
-    rest:(__ "|" __ expr:LegacyBitAndExpr { return []any{"|", expr}, nil })* {
-        return makeBinaryExprChain(first, rest, c), nil
-    }
-
-LegacyBitAndExpr
-  = first:LegacyBitShiftExpr
-    rest:(__ "&" __ expr:BitShiftExpr { return []any{"&", expr}, nil })* {
-        return makeBinaryExprChain(first, rest, c), nil
-    }
-
-LegacyBitShiftExpr
-  = first:AdditiveExpr
-    rest:(__ op:BitShiftOperator __ expr:AdditiveExpr { return []any{op, expr}, nil })* {
-        return makeBinaryExprChain(first, rest, c), nil
-    }    
-
-BitShiftOperator = ("<<" / ">>") { return string(c.text), nil }
-
-
 Expr = ConditionalExpr
 
 ConditionalExpr
@@ -2075,7 +1989,7 @@ GroupByList
       return prepend(first, rest), nil
     }
 
-GroupByItem = LegacyExpr
+GroupByItem = Expr
 
 OptHavingClause
   = _ h:HavingClause { return h, nil }
@@ -2163,7 +2077,7 @@ Selection
 
 //XXX need to add *, id.*, except, replace
 SelectElem 
-  = e:LegacyExpr as:OptAsClause {
+  = e:Expr as:OptAsClause {
       elem := ast.AsExpr{
         Kind: "AsExpr",
         Expr: e.(ast.Expr),
@@ -2199,7 +2113,7 @@ OrderByList
     }
 
 OrderByItem
-  = e:LegacyExpr order:OptAscDesc nulls:OptNullsOrder {
+  = e:Expr order:OptAscDesc nulls:OptNullsOrder {
       s := ast.SortExpr{Kind: "SortExpr", Expr: e.(ast.Expr), Loc: loc(c)}
       if order != nil {
         s.Order = order.(*ast.ID)
