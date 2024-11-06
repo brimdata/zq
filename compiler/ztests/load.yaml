@@ -1,14 +1,14 @@
 script: |
   export SUPER_DB_LAKE=test
   super db init -q
-  super db create -q samples
-  super db load -q -use samples schools.jsup
-  super db create -q Orange
-  super db query -z 'from samples |> County=="Orange" |> load Orange@main author "Diane"' | sed -E 's/[0-9a-zA-Z]{42}/xxx/'
+  super db create -q sample
+  super db load -q -use sample babble.jsup
+  super db create -q Delta
+  super db query -z 'from sample |> s=="Delta-rootstock" |> load Delta@main author "Diane"' | sed -E 's/[0-9a-zA-Z]{42}/xxx/'
 
 inputs:
-  - name: schools.jsup
-    source: ../../testdata/edu/schools.jsup
+  - name: babble.jsup
+    source: ../../testdata/babble.jsup
 outputs:
   - name: stdout
     data: |
