@@ -31,7 +31,7 @@ func (a *analyzer) semSelect(sel *ast.Select, seq dag.Seq) dag.Seq {
 		if _, ok := seq[off].(*dag.RobotScan); !ok {
 			if hasParent {
 				a.error(sel, errors.New("SELECT cannot have both an embedded FROM claue and input from parents"))
-				return append(seq, badOp())
+				return dag.Seq{badOp()}
 			}
 		}
 	}

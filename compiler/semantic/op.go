@@ -124,10 +124,9 @@ func (a *analyzer) semFromExpr(entity *ast.ExprEntity, args ast.FromArgs, seq da
 	}
 	// This is an expression so set up a robot scanner that pulls values from
 	// parent to decide what to scan.
-	e := a.semExpr(entity.Expr)
 	return append(seq, &dag.RobotScan{
 		Kind:   "RobotScan",
-		Expr:   e,
+		Expr:   expr,
 		Format: a.formatArg(args),
 	})
 }
