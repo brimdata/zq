@@ -226,7 +226,7 @@ type (
 	}
 	RobotScan struct {
 		Kind   string `json:"kind" unpack:""`
-		Expr   Expr   `json:"path"`
+		Expr   Expr   `json:"expr"`
 		Format string `json:"format"`
 		Filter Expr   `json:"filter"`
 	}

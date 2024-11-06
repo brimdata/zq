@@ -21,15 +21,17 @@ func (a *analyzer) semSelect(sel *ast.Select, seq dag.Seq) dag.Seq {
 		off := len(seq)
 		hasParent := off > 0
 		seq = a.semFrom(sel.From, seq)
-		// If we have parents with both a from and select, report an error
-		// but only if it's not a RobotScan where the parent needs to feed
-		// the from.
-		if off < len(seq) {
-			if _, ok := seq[off].(*dag.RobotScan); !ok {
-				if hasParent {
-					a.error(sel, errors.New("SELECT cannot have both an embedded FROM claue and input from parents"))
-					return append(seq, badOp())
-				}
+		if off >= len(seq) {
+			// The chain didn't get lengthed so semFrom must have enocounteded
+			// an error...
+			return seq
+		}
+		// If we have parents with both a from and select, report an error but
+		// only if it's not a RobotScan where the parent feeds the from operateor.
+		if _, ok := seq[off].(*dag.RobotScan); !ok {
+			if hasParent {
+				a.error(sel, errors.New("SELECT cannot have both an embedded FROM claue and input from parents"))
+				return append(seq, badOp())
 			}
 		}
 	}

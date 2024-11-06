@@ -48,38 +48,52 @@ func (o *Op) Pull(done bool) (zbuf.Batch, error) {
 		o.batch = nil
 		src := o.src
 		o.src = nil
-		if closer, ok := src.(io.Closer); ok {
-			if err := closer.Close(); err != nil {
-				return nil, err
+		var err error
+		if src != nil {
+			var b zbuf.Batch
+			b, err = src.Pull(true)
+			if b != nil {
+				b.Unref()
 			}
 		}
-		b, err := o.parent.Pull(true)
+		b, pullErr := o.parent.Pull(true)
 		if b != nil {
 			b.Unref()
 		}
+		if err == nil {
+			err = pullErr
+		}
 		return nil, err
 	}
+	return o.pullNext()
+}
+
+func (o *Op) pullNext() (zbuf.Batch, error) {
 	for {
-		puller, err := o.getPuller()
-		if puller == nil || err != nil {
-			o.src = nil
-			return nil, err
+		puller := o.src
+		if puller == nil {
+			var err error
+			puller, err = o.getPuller()
+			if puller == nil || err != nil {
+				return nil, err
+			}
 		}
 		b, err := puller.Pull(false)
-		if b != nil || err != nil {
+		if b != nil {
 			return b, err
 		}
-		if b == nil {
-			o.src = nil
+		o.src = nil
+		if err != nil {
+			return nil, err
+		}
+		_, err = puller.Pull(true)
+		if err != nil {
+			return nil, err
 		}
 	}
 }
 
 func (o *Op) getPuller() (zbuf.Puller, error) {
-	puller := o.src
-	if puller != nil {
-		return puller, nil
-	}
 	if len(o.targets) > 0 {
 		src, err := o.openNext()
 		o.src = src
@@ -182,12 +196,9 @@ func (o *Op) open(path string) (zbuf.Puller, error) {
 		}
 		return f, err
 	}
+	// This lake check will be removed when we add support for pools here.
 	if o.env.IsLake() {
 		return nil, fmt.Errorf("%s: cannot open in a data lake environment", path)
 	}
-	f, err := o.env.Open(o.rctx.Context, o.rctx.Zctx, path, o.format, o.filter, o.demand)
-	if err != nil {
-		return nil, err
-	}
-	return f, err
+	return o.env.Open(o.rctx.Context, o.rctx.Zctx, path, o.format, o.filter, o.demand)
 }
