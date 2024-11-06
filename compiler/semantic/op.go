@@ -77,31 +77,31 @@ func wrapAlias(alias string, seq dag.Seq) dag.Seq {
 func (a *analyzer) semFromEntity(entity ast.FromEntity, args ast.FromArgs, seq dag.Seq) dag.Seq {
 	switch entity := entity.(type) {
 	case *ast.Glob:
-		if a.hasFromParent(entity, seq) {
-			return seq
+		if bad := a.hasFromParent(entity, seq); bad != nil {
+			return bad
 		}
 		if a.env.IsLake() {
 			return a.semPoolFromRegexp(entity, reglob.Reglob(entity.Pattern), entity.Pattern, "glob", args)
 		}
 		return dag.Seq{a.semFromFileGlob(entity, entity.Pattern, args)}
 	case *ast.Regexp:
-		if a.hasFromParent(entity, seq) {
-			return seq
+		if bad := a.hasFromParent(entity, seq); bad != nil {
+			return bad
 		}
 		if !a.env.IsLake() {
 			a.error(entity, errors.New("cannot use regular expression with from operator on local file system"))
 		}
 		return a.semPoolFromRegexp(entity, entity.Pattern, entity.Pattern, "regexp", args)
 	case *ast.Name:
-		if a.hasFromParent(entity, seq) {
-			return seq
+		if bad := a.hasFromParent(entity, seq); bad != nil {
+			return bad
 		}
 		return dag.Seq{a.semFromName(entity, entity.Text, args)}
 	case *ast.ExprEntity:
 		return a.semFromExpr(entity, args, seq)
 	case *ast.LakeMeta:
-		if a.hasFromParent(entity, seq) {
-			return seq
+		if bad := a.hasFromParent(entity, seq); bad != nil {
+			return bad
 		}
 		return dag.Seq{a.semLakeMeta(entity)}
 	case *ast.SQLPipe:
@@ -117,8 +117,8 @@ func (a *analyzer) semFromExpr(entity *ast.ExprEntity, args ast.FromArgs, seq da
 	expr := a.semExpr(entity.Expr)
 	val, err := kernel.EvalAtCompileTime(a.zctx, expr)
 	if err == nil && !hasError(val) {
-		if a.hasFromParent(entity, seq) {
-			return seq
+		if bad := a.hasFromParent(entity, seq); bad != nil {
+			return bad
 		}
 		return a.semFromConstVal(val, entity, args)
 	}
@@ -137,12 +137,12 @@ func hasError(val super.Value) bool {
 	return result.AsBool()
 }
 
-func (a *analyzer) hasFromParent(loc ast.Node, seq dag.Seq) bool {
+func (a *analyzer) hasFromParent(loc ast.Node, seq dag.Seq) dag.Seq {
 	if len(seq) > 0 {
 		a.error(loc, errors.New("from operator cannot have parent unless from argument is an expression"))
-		return true
+		return append(seq, badOp())
 	}
-	return false
+	return nil
 }
 
 func (a *analyzer) semFromConstVal(val super.Value, entity *ast.ExprEntity, args ast.FromArgs) dag.Seq {
