@@ -25,7 +25,7 @@ FROM Part
 | SELECT p_name
 | AGGREGATE -COUNT(*)
 ```
-arguing that this could be parsed as follows;
+arguing that this could be parsed as follows:
 ```sql
 FROM Part
 | SELECT *, (p_size+1 | extend) AS p_type
