@@ -16,7 +16,7 @@ Other query languages use `|` (e.g.,
 [OxQL](https://rfd.shared.oxide.computer/rfd/0463), and many more)
 but Google recently chose `|>` for GoogleSQL pipeline syntax.  Why?
 
-In [their paper on SQL pipes]((https://research.google/pubs/sql-has-problems-we-can-fix-them-pipe-syntax-in-sql/)),
+In [their paper on SQL pipes](https://research.google/pubs/sql-has-problems-we-can-fix-them-pipe-syntax-in-sql/),
 Google claims that the `|` character collides with its use in bitwise-OR expressions
 to create "parsing ambiguities".  They cite this example as proof:
 ```sql
