@@ -59,6 +59,15 @@ func NewVectorReader(ctx context.Context, zctx *super.Context, r io.Reader, fiel
 	}, nil
 }
 
+func (p *VectorReader) NewConcurrentPuller() vector.Puller {
+	return &VectorReader{
+		ctx:          p.ctx,
+		fr:           p.fr,
+		colIndexes:   p.colIndexes,
+		nextRowGroup: p.nextRowGroup,
+		vb:           vectorBuilder{p.zctx, map[arrow.DataType]super.Type{}},
+	}
+}
 func (p *VectorReader) Pull(done bool) (vector.Any, error) {
 	if done {
 		return nil, nil
