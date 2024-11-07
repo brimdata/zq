@@ -12,7 +12,6 @@ import (
 	"github.com/brimdata/super"
 	"github.com/brimdata/super/compiler/dag"
 	"github.com/brimdata/super/compiler/optimizer"
-	"github.com/brimdata/super/compiler/optimizer/demand"
 	"github.com/brimdata/super/lake"
 	"github.com/brimdata/super/pkg/field"
 	"github.com/brimdata/super/runtime"
@@ -271,15 +270,15 @@ func (b *Builder) compileLeaf(o dag.Op, parent zbuf.Puller) (zbuf.Puller, error)
 		return meta.NewLakeMetaScanner(b.rctx.Context, b.zctx(), b.env.Lake(), v.Meta)
 	case *dag.HTTPScan:
 		body := strings.NewReader(v.Body)
-		return b.env.OpenHTTP(b.rctx.Context, b.zctx(), v.URL, v.Format, v.Method, v.Headers, body, demand.All())
+		return b.env.OpenHTTP(b.rctx.Context, b.zctx(), v.URL, v.Format, v.Method, v.Headers, body, nil)
 	case *dag.FileScan:
-		return b.env.Open(b.rctx.Context, b.zctx(), v.Path, v.Format, b.PushdownOf(v.Filter), demand.All())
+		return b.env.Open(b.rctx.Context, b.zctx(), v.Path, v.Format, nil, b.PushdownOf(v.Filter))
 	case *dag.RobotScan:
 		e, err := compileExpr(v.Expr)
 		if err != nil {
 			return nil, err
 		}
-		return robot.New(b.rctx, b.env, parent, e, v.Format, b.PushdownOf(v.Filter), demand.All()), nil
+		return robot.New(b.rctx, b.env, parent, e, v.Format, nil, b.PushdownOf(v.Filter)), nil
 	case *dag.DefaultScan:
 		pushdown := b.PushdownOf(v.Filter)
 		if len(b.readers) == 1 {

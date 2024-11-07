@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/brimdata/super"
-	"github.com/brimdata/super/compiler/optimizer/demand"
+	"github.com/brimdata/super/pkg/field"
 	"github.com/brimdata/super/zio"
 	"github.com/brimdata/super/zio/arrowio"
 	"github.com/brimdata/super/zio/csvio"
@@ -23,18 +23,19 @@ import (
 )
 
 type ReaderOpts struct {
+	Fields []field.Path
 	Format string
 	CSV    csvio.ReaderOpts
 	ZNG    zngio.ReaderOpts
 }
 
-func NewReader(zctx *super.Context, r io.Reader, demandOut demand.Demand) (zio.ReadCloser, error) {
-	return NewReaderWithOpts(zctx, r, demandOut, ReaderOpts{})
+func NewReader(zctx *super.Context, r io.Reader) (zio.ReadCloser, error) {
+	return NewReaderWithOpts(zctx, r, ReaderOpts{})
 }
 
-func NewReaderWithOpts(zctx *super.Context, r io.Reader, demandOut demand.Demand, opts ReaderOpts) (zio.ReadCloser, error) {
+func NewReaderWithOpts(zctx *super.Context, r io.Reader, opts ReaderOpts) (zio.ReadCloser, error) {
 	if opts.Format != "" && opts.Format != "auto" {
-		return lookupReader(zctx, r, demandOut, opts)
+		return lookupReader(zctx, r, opts)
 	}
 
 	var parquetErr, vngErr error
@@ -48,7 +49,7 @@ func NewReaderWithOpts(zctx *super.Context, r io.Reader, demandOut demand.Demand
 			if _, err := rs.Seek(n, io.SeekStart); err != nil {
 				return nil, err
 			}
-			zr, vngErr = vngio.NewReader(zctx, rs, demandOut)
+			zr, vngErr = vngio.NewReader(zctx, rs, opts.Fields)
 			if vngErr == nil {
 				return zio.NopReadCloser(zr), nil
 			}

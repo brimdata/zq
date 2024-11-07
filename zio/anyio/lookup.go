@@ -5,7 +5,6 @@ import (
 	"io"
 
 	"github.com/brimdata/super"
-	"github.com/brimdata/super/compiler/optimizer/demand"
 	"github.com/brimdata/super/zio"
 	"github.com/brimdata/super/zio/arrowio"
 	"github.com/brimdata/super/zio/csvio"
@@ -19,14 +18,14 @@ import (
 	"github.com/brimdata/super/zio/zsonio"
 )
 
-func lookupReader(zctx *super.Context, r io.Reader, demandOut demand.Demand, opts ReaderOpts) (zio.ReadCloser, error) {
+func lookupReader(zctx *super.Context, r io.Reader, opts ReaderOpts) (zio.ReadCloser, error) {
 	switch opts.Format {
 	case "arrows":
 		return arrowio.NewReader(zctx, r)
 	case "bsup":
 		return zngio.NewReaderWithOpts(zctx, r, opts.ZNG), nil
 	case "csup":
-		zr, err := vngio.NewReader(zctx, r, demandOut)
+		zr, err := vngio.NewReader(zctx, r, opts.Fields)
 		if err != nil {
 			return nil, err
 		}

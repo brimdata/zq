@@ -9,7 +9,6 @@ import (
 
 	"github.com/brimdata/super"
 	"github.com/brimdata/super/cli/auto"
-	"github.com/brimdata/super/compiler/optimizer/demand"
 	"github.com/brimdata/super/pkg/storage"
 	"github.com/brimdata/super/zio"
 	"github.com/brimdata/super/zio/anyio"
@@ -65,7 +64,7 @@ func (f *Flags) Open(ctx context.Context, zctx *super.Context, engine storage.En
 		if path == "-" {
 			path = "stdio:stdin"
 		}
-		file, err := anyio.Open(ctx, zctx, engine, path, demand.All(), f.ReaderOpts)
+		file, err := anyio.Open(ctx, zctx, engine, path, f.ReaderOpts)
 		if err != nil {
 			err = fmt.Errorf("%s: %w", path, err)
 			if stopOnErr {

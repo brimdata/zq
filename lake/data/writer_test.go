@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/brimdata/super"
-	"github.com/brimdata/super/compiler/optimizer/demand"
 	"github.com/brimdata/super/lake/data"
 	"github.com/brimdata/super/order"
 	"github.com/brimdata/super/pkg/field"
@@ -32,7 +31,7 @@ func TestDataReaderWriterVector(t *testing.T) {
 	// Read back the VNG file and make sure it's the same.
 	get, err := engine.Get(ctx, object.VectorURI(tmp))
 	require.NoError(t, err)
-	reader, err := vngio.NewReader(super.NewContext(), get, demand.All())
+	reader, err := vngio.NewReader(super.NewContext(), get, nil)
 	require.NoError(t, err)
 	v, err := reader.Read()
 	require.NoError(t, err)

@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"github.com/brimdata/super"
-	"github.com/brimdata/super/compiler/optimizer/demand"
+	"github.com/brimdata/super/pkg/field"
 	"github.com/brimdata/super/pkg/storage"
 	"github.com/brimdata/super/runtime"
 	"github.com/brimdata/super/runtime/exec"
@@ -19,22 +19,22 @@ type Op struct {
 	rctx    *runtime.Context
 	env     *exec.Environment
 	expr    expr.Evaluator
+	fields  []field.Path
 	filter  zbuf.Filter
 	format  string
-	demand  demand.Demand
 	batch   zbuf.Batch
 	off     int
 	src     zbuf.Puller
 	targets []super.Value
 }
 
-func New(rctx *runtime.Context, env *exec.Environment, parent zbuf.Puller, e expr.Evaluator, format string, f zbuf.Filter, d demand.Demand) *Op {
+func New(rctx *runtime.Context, env *exec.Environment, parent zbuf.Puller, e expr.Evaluator, format string, fields []field.Path, f zbuf.Filter) *Op {
 	return &Op{
 		parent: parent,
 		rctx:   rctx,
 		env:    env,
 		expr:   e,
-		demand: d,
+		fields: fields,
 		filter: f,
 		format: format,
 	}
@@ -200,5 +200,5 @@ func (o *Op) open(path string) (zbuf.Puller, error) {
 	if o.env.IsLake() {
 		return nil, fmt.Errorf("%s: cannot open in a data lake environment", path)
 	}
-	return o.env.Open(o.rctx.Context, o.rctx.Zctx, path, o.format, o.filter, o.demand)
+	return o.env.Open(o.rctx.Context, o.rctx.Zctx, path, o.format, o.fields, o.filter)
 }

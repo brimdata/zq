@@ -8,10 +8,10 @@ import (
 
 	"github.com/brimdata/super"
 	"github.com/brimdata/super/compiler/dag"
-	"github.com/brimdata/super/compiler/optimizer/demand"
 	"github.com/brimdata/super/lake"
 	"github.com/brimdata/super/lakeparse"
 	"github.com/brimdata/super/order"
+	"github.com/brimdata/super/pkg/field"
 	"github.com/brimdata/super/pkg/storage"
 	"github.com/brimdata/super/zbuf"
 	"github.com/brimdata/super/zio/anyio"
@@ -61,11 +61,11 @@ func (e *Environment) SortKeys(ctx context.Context, src dag.Op) order.SortKeys {
 	return nil
 }
 
-func (e *Environment) Open(ctx context.Context, zctx *super.Context, path, format string, pushdown zbuf.Filter, demandOut demand.Demand) (zbuf.Puller, error) {
+func (e *Environment) Open(ctx context.Context, zctx *super.Context, path, format string, fields []field.Path, pushdown zbuf.Filter) (zbuf.Puller, error) {
 	if path == "-" {
 		path = "stdio:stdin"
 	}
-	file, err := anyio.Open(ctx, zctx, e.engine, path, demandOut, anyio.ReaderOpts{Format: format})
+	file, err := anyio.Open(ctx, zctx, e.engine, path, anyio.ReaderOpts{Fields: fields, Format: format})
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", path, err)
 	}
@@ -78,7 +78,7 @@ func (e *Environment) Open(ctx context.Context, zctx *super.Context, path, forma
 	return &closePuller{sn, file}, nil
 }
 
-func (*Environment) OpenHTTP(ctx context.Context, zctx *super.Context, url, format, method string, headers http.Header, body io.Reader, demandOut demand.Demand) (zbuf.Puller, error) {
+func (*Environment) OpenHTTP(ctx context.Context, zctx *super.Context, url, format, method string, headers http.Header, body io.Reader, fields []field.Path) (zbuf.Puller, error) {
 	req, err := http.NewRequestWithContext(ctx, method, url, body)
 	if err != nil {
 		return nil, err
@@ -88,7 +88,7 @@ func (*Environment) OpenHTTP(ctx context.Context, zctx *super.Context, url, form
 	if err != nil {
 		return nil, err
 	}
-	file, err := anyio.NewFile(zctx, resp.Body, url, demandOut, anyio.ReaderOpts{Format: format})
+	file, err := anyio.NewFile(zctx, resp.Body, url, anyio.ReaderOpts{Fields: fields, Format: format})
 	if err != nil {
 		resp.Body.Close()
 		return nil, fmt.Errorf("%s: %w", url, err)
