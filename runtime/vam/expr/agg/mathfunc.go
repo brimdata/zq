@@ -83,7 +83,7 @@ func sumOf[T numeric, E numeric](state T, vals []E, index []uint32, counts []uin
 		}
 		return state
 	}
-	for v := range vals {
+	for _, v := range vals {
 		state += T(v)
 	}
 	return state
@@ -127,7 +127,7 @@ func minOf[T numeric, E numeric](state T, vals []E, index []uint32) T {
 		}
 		return state
 	}
-	for v := range vals {
+	for _, v := range vals {
 		if v := T(v); v < state {
 			state = v
 		}
@@ -173,7 +173,7 @@ func maxOf[T numeric, E numeric](state T, vals []E, index []uint32) T {
 		}
 		return state
 	}
-	for v := range vals {
+	for _, v := range vals {
 		if v := T(v); v > state {
 			state = v
 		}
