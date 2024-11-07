@@ -241,9 +241,15 @@ func (b *Builder) compileVamSeq(seq dag.Seq, parents []vector.Puller) ([]vector.
 func (b *Builder) compileVamSummarize(s *dag.Summarize, parent vector.Puller) (vector.Puller, error) {
 	// compile aggs
 	var aggNames []field.Path
+	var aggExprs []vamexpr.Evaluator
 	var aggs []*vamexpr.Aggregator
 	for _, assignment := range s.Aggs {
 		aggNames = append(aggNames, assignment.LHS.(*dag.This).Path)
+		lhs, err := b.compileVamExpr(assignment.LHS)
+		if err != nil {
+			return nil, err
+		}
+		aggExprs = append(aggExprs, lhs)
 		agg, err := b.compileVamAgg(assignment.RHS.(*dag.Agg))
 		if err != nil {
 			return nil, err
@@ -265,7 +271,7 @@ func (b *Builder) compileVamSummarize(s *dag.Summarize, parent vector.Puller) (v
 		keyNames = append(keyNames, lhs.Path)
 		keyExprs = append(keyExprs, rhs)
 	}
-	return summarize.New(parent, b.zctx(), aggNames, aggs, keyNames, keyExprs, s.PartialsIn, s.PartialsOut)
+	return summarize.New(parent, b.zctx(), aggNames, aggExprs, aggs, keyNames, keyExprs, s.PartialsIn, s.PartialsOut)
 }
 
 func (b *Builder) compileVamAgg(agg *dag.Agg) (*vamexpr.Aggregator, error) {

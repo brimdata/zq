@@ -13,9 +13,8 @@ type Summarize struct {
 	// XX Abstract this runtime into a generic table computation.
 	// Then the generic interface can execute fast paths for simple scenarios.
 	aggs        []*expr.Aggregator
-	aggNames    field.List
+	aggExprs    []expr.Evaluator
 	keyExprs    []expr.Evaluator
-	keyNames    field.List
 	typeTable   *super.TypeVectorTable
 	builder     *vector.RecordBuilder
 	partialsIn  bool
@@ -26,14 +25,15 @@ type Summarize struct {
 	results []aggTable
 }
 
-func New(parent vector.Puller, zctx *super.Context, aggPaths field.List, aggs []*expr.Aggregator, keyNames []field.Path, keyExprs []expr.Evaluator, partialsIn, partialsOut bool) (*Summarize, error) {
-	builder, err := vector.NewRecordBuilder(zctx, append(keyNames, aggPaths...))
+func New(parent vector.Puller, zctx *super.Context, aggNames []field.Path, aggExprs []expr.Evaluator, aggs []*expr.Aggregator, keyNames []field.Path, keyExprs []expr.Evaluator, partialsIn, partialsOut bool) (*Summarize, error) {
+	builder, err := vector.NewRecordBuilder(zctx, append(keyNames, aggNames...))
 	if err != nil {
 		return nil, err
 	}
 	return &Summarize{
 		parent:      parent,
 		aggs:        aggs,
+		aggExprs:    aggExprs,
 		keyExprs:    keyExprs,
 		tables:      make(map[int]aggTable),
 		typeTable:   super.NewTypeVectorTable(),
@@ -69,8 +69,14 @@ func (s *Summarize) Pull(done bool) (vector.Any, error) {
 		for _, e := range s.keyExprs {
 			keys = append(keys, e.Eval(vec))
 		}
-		for _, e := range s.aggs {
-			vals = append(vals, e.Eval(vec))
+		if s.partialsIn {
+			for _, e := range s.aggExprs {
+				vals = append(vals, e.Eval(vec))
+			}
+		} else {
+			for _, e := range s.aggs {
+				vals = append(vals, e.Eval(vec))
+			}
 		}
 		vector.Apply(false, func(args ...vector.Any) vector.Any {
 			s.consume(args[:len(keys)], args[len(keys):])
