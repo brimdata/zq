@@ -46,7 +46,7 @@ declare -a DESCRIPTIONS=(
 )
 
 declare -a SPQS=(
-    '? *'
+    'pass'
     'cut quiet(ts)'
     'count:=count()'
     'count() by quiet(id.orig_h)'
