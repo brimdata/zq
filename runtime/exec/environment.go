@@ -13,8 +13,10 @@ import (
 	"github.com/brimdata/super/order"
 	"github.com/brimdata/super/pkg/field"
 	"github.com/brimdata/super/pkg/storage"
+	"github.com/brimdata/super/vector"
 	"github.com/brimdata/super/zbuf"
 	"github.com/brimdata/super/zio/anyio"
+	"github.com/brimdata/super/zio/parquetio"
 	"github.com/segmentio/ksuid"
 )
 
@@ -112,4 +114,27 @@ func (c *closePuller) Pull(done bool) (zbuf.Batch, error) {
 		c.c.Close()
 	}
 	return batch, err
+}
+
+func (e *Environment) VectorOpen(ctx context.Context, zctx *super.Context, path, format string, fields []field.Path) (vector.Puller, error) {
+	if format != "parquet" {
+		return nil, fmt.Errorf("vector runtime supports only Parquert files")
+	}
+	if path == "-" {
+		path = "stdio:stdin"
+	}
+	uri, err := storage.ParseURI(path)
+	if err != nil {
+		return nil, err
+	}
+	r, err := e.engine.Get(ctx, uri)
+	if err != nil {
+		return nil, err
+	}
+	puller, err := parquetio.NewVectorReader(ctx, zctx, r, fields)
+	if err != nil {
+		r.Close()
+		return nil, err
+	}
+	return puller, nil
 }

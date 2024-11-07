@@ -109,6 +109,11 @@ func (b *Builder) compileVamLeaf(o dag.Op, parent vector.Puller) (vector.Puller,
 		}
 		dropper := vamexpr.NewDropper(b.zctx(), fields)
 		return vamop.NewYield(b.zctx(), parent, []vamexpr.Evaluator{dropper}), nil
+	case *dag.FileScan:
+		if o.Filter != nil {
+			return nil, errors.New("internal error: vector runtime does not support filter pushdown on files")
+		}
+		return b.env.VectorOpen(b.rctx, b.zctx(), o.Path, o.Format, o.Fields)
 	case *dag.Filter:
 		e, err := b.compileVamExpr(o.Expr)
 		if err != nil {
