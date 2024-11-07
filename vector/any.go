@@ -20,5 +20,3 @@ type Promotable interface {
 type Puller interface {
 	Pull(done bool) (Any, error)
 }
-
-type Builder func(*zcode.Builder) bool
