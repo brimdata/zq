@@ -32,10 +32,8 @@ func NewLakeCompiler(lk *lake.Root) runtime.Compiler {
 }
 
 func (c *compiler) NewQuery(rctx *runtime.Context, ast *parser.AST, readers []zio.Reader, parallelism int) (runtime.Query, error) {
-	if c.env.IsLake() {
-		if parallelism == 0 {
-			parallelism = Parallelism
-		}
+	if parallelism == 0 {
+		parallelism = Parallelism
 	}
 	return CompileWithAST(rctx, ast, c.env, true, parallelism, readers)
 }

@@ -1,9 +1,6 @@
 package optimizer
 
 import (
-	"errors"
-	"fmt"
-
 	"github.com/brimdata/super/compiler/dag"
 	"github.com/brimdata/super/order"
 )
@@ -25,7 +22,8 @@ func (o *Optimizer) Parallelize(seq dag.Seq, n int) (dag.Seq, error) {
 		if len(seq) == 0 {
 			return seq, nil
 		}
-		var front, tail dag.Seq
+		var front, parallel dag.Seq
+		var err error
 		if lister, slicer, rest := matchSource(seq); lister != nil {
 			// We parallelize the scanning to achieve the desired concurrency,
 			// then the step below pulls downstream operators into the parallel
@@ -34,17 +32,15 @@ func (o *Optimizer) Parallelize(seq dag.Seq, n int) (dag.Seq, error) {
 			if slicer != nil {
 				front.Append(slicer)
 			}
-			tail = rest
-		} else if scan, ok := seq[0].(*dag.DefaultScan); ok {
+			parallel, err = o.parallelizeSeqScan(rest, n)
+		} else if scan, ok := seq[0].(*dag.FileScan); ok {
+			if !o.env.UseVAM() {
+				// Sequence runtime file scan doesn't support parallelism.
+				return seq, nil
+			}
 			front.Append(scan)
-			tail = seq[1:]
-		} else {
-			return seq, nil
+			parallel, err = o.parallelizeFileScan(seq[1:], n)
 		}
-		if len(tail) == 0 {
-			return seq, nil
-		}
-		parallel, err := o.parallelizeScan(tail, concurrency)
 		if err != nil {
 			return nil, err
 		}
@@ -78,19 +74,26 @@ func matchSource(seq dag.Seq) (*dag.Lister, *dag.Slicer, dag.Seq) {
 	return lister, slicer, seq
 }
 
-func (o *Optimizer) parallelizeScan(seq dag.Seq, replicas int) (dag.Seq, error) {
-	// For now we parallelize only pool scans and no metadata scans.
-	// We can do the latter when we want to scale the performance of metadata.
-	if replicas < 2 {
-		return nil, fmt.Errorf("internal error: parallelizeScan: bad replicas: %d", replicas)
+func (o *Optimizer) parallelizeFileScan(seq dag.Seq, replicas int) (dag.Seq, error) {
+	// Prepend a pass so we can parallelize a sort or summarize with no
+	// preceding op.
+	seq = append(dag.Seq{dag.PassOp}, seq...)
+	n, outputKeys, _, err := o.concurrentPath(seq, nil)
+	if err != nil {
+		return nil, err
 	}
-	if scan, ok := seq[0].(*dag.SeqScan); ok {
-		return o.parallelizeSeqScan(scan, seq, replicas)
+	if n < len(seq) {
+		switch seq[n].(type) {
+		// TODO: Add dag.Sort when the vector runtime implements dag.Merge.
+		case *dag.Summarize:
+			return parallelizeHead(seq, n, outputKeys, replicas), nil
+		}
 	}
-	return nil, errors.New("parallelization of non-pool queries is not yet supported")
+	return nil, nil
 }
 
-func (o *Optimizer) parallelizeSeqScan(scan *dag.SeqScan, seq dag.Seq, replicas int) (dag.Seq, error) {
+func (o *Optimizer) parallelizeSeqScan(seq dag.Seq, replicas int) (dag.Seq, error) {
+	scan := seq[0].(*dag.SeqScan)
 	if len(seq) == 1 && scan.Filter == nil {
 		// We don't try to parallelize the path if it's simply scanning and does no
 		// other work.  We might want to revisit this down the road if
@@ -111,12 +114,16 @@ func (o *Optimizer) parallelizeSeqScan(scan *dag.SeqScan, seq dag.Seq, replicas 
 	if err != nil {
 		return nil, err
 	}
+	return parallelizeHead(seq, n+1, outputKeys, replicas), nil
+}
+
+func parallelizeHead(seq dag.Seq, n int, outputKeys order.SortKeys, replicas int) dag.Seq {
 	// XXX Fix this to handle multi-key merge. See Issue #2657.
 	if len(outputKeys) > 1 {
-		return nil, nil
+		return nil
 	}
-	head := seq[:n+1]
-	tail := seq[n+1:]
+	head := seq[:n]
+	tail := seq[n:]
 	scatter := &dag.Scatter{
 		Kind:  "Scatter",
 		Paths: make([]dag.Seq, replicas),
@@ -140,7 +147,7 @@ func (o *Optimizer) parallelizeSeqScan(scan *dag.SeqScan, seq dag.Seq, replicas 
 	} else {
 		merge = &dag.Combine{Kind: "Combine"}
 	}
-	return append(dag.Seq{scatter, merge}, tail...), nil
+	return append(dag.Seq{scatter, merge}, tail...)
 }
 
 func (o *Optimizer) optimizeParallels(seq dag.Seq) {

@@ -21,7 +21,7 @@ import (
 func (b *Builder) compileVam(o dag.Op, parents []vector.Puller) ([]vector.Puller, error) {
 	switch o := o.(type) {
 	case *dag.Combine:
-		//return []zbuf.Puller{combine.New(b.rctx, parents)}, nil
+		return []vector.Puller{vamop.NewCombine(b.rctx, parents)}, nil
 	case *dag.Fork:
 		return b.compileVamFork(o, parents)
 	case *dag.Join:
@@ -35,7 +35,7 @@ func (b *Builder) compileVam(o dag.Op, parents []vector.Puller) ([]vector.Puller
 		//cmp := vamexpr.NewComparator(true, o.Order == order.Desc, e).WithMissingAsNull()
 		//return []vector.Puller{vamop.NewMerge(b.rctx, parents, cmp.Compare)}, nil
 	case *dag.Scatter:
-		//return b.compileVecScatter(o, parents)
+		return b.compileVamScatter(o, parents)
 	case *dag.Scope:
 		//return b.compileVecScope(o, parents)
 	case *dag.Switch:
@@ -93,6 +93,25 @@ func (b *Builder) compileVamFork(fork *dag.Fork, parents []vector.Puller) ([]vec
 		exits = append(exits, exit...)
 	}
 	return exits, nil
+}
+
+func (b *Builder) compileVamScatter(scatter *dag.Scatter, parents []vector.Puller) ([]vector.Puller, error) {
+	if len(parents) != 1 {
+		return nil, errors.New("internal error: scatter operator requires a single parent")
+	}
+	var ops []vector.Puller
+	for _, seq := range scatter.Paths {
+		parent := parents[0]
+		if p, ok := parent.(interface{ NewConcurrentPuller() vector.Puller }); ok {
+			parent = p.NewConcurrentPuller()
+		}
+		op, err := b.compileVamSeq(seq, []vector.Puller{parent})
+		if err != nil {
+			return nil, err
+		}
+		ops = append(ops, op...)
+	}
+	return ops, nil
 }
 
 func (b *Builder) compileVamLeaf(o dag.Op, parent vector.Puller) (vector.Puller, error) {
