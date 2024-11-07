@@ -42,7 +42,7 @@ func NewReaderWithOpts(zctx *super.Context, r io.Reader, opts ReaderOpts) (zio.R
 	if rs, ok := r.(io.ReadSeeker); ok {
 		if n, err := rs.Seek(0, io.SeekCurrent); err == nil {
 			var zr zio.Reader
-			zr, parquetErr = parquetio.NewReader(zctx, rs)
+			zr, parquetErr = parquetio.NewReader(zctx, rs, opts.Fields)
 			if parquetErr == nil {
 				return zio.NopReadCloser(zr), nil
 			}

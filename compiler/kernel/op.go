@@ -272,7 +272,7 @@ func (b *Builder) compileLeaf(o dag.Op, parent zbuf.Puller) (zbuf.Puller, error)
 		body := strings.NewReader(v.Body)
 		return b.env.OpenHTTP(b.rctx.Context, b.zctx(), v.URL, v.Format, v.Method, v.Headers, body, nil)
 	case *dag.FileScan:
-		return b.env.Open(b.rctx.Context, b.zctx(), v.Path, v.Format, nil, b.PushdownOf(v.Filter))
+		return b.env.Open(b.rctx.Context, b.zctx(), v.Path, v.Format, v.Fields, b.PushdownOf(v.Filter))
 	case *dag.RobotScan:
 		e, err := compileExpr(v.Expr)
 		if err != nil {

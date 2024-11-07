@@ -39,7 +39,7 @@ func lookupReader(zctx *super.Context, r io.Reader, opts ReaderOpts) (zio.ReadCl
 	case "json":
 		return zio.NopReadCloser(jsonio.NewReader(zctx, r)), nil
 	case "parquet":
-		zr, err := parquetio.NewReader(zctx, r)
+		zr, err := parquetio.NewReader(zctx, r, opts.Fields)
 		if err != nil {
 			return nil, err
 		}
