@@ -9,8 +9,11 @@ func insertDemand(seq dag.Seq) dag.Seq {
 	demands := InferDemandSeqOut(seq)
 	return walk(seq, true, func(seq dag.Seq) dag.Seq {
 		for _, op := range seq {
-			if s, ok := op.(*dag.SeqScan); ok {
-				s.Fields = demand.Fields(demands[op])
+			switch op := op.(type) {
+			case *dag.FileScan:
+				op.Fields = demand.Fields(demands[op])
+			case *dag.SeqScan:
+				op.Fields = demand.Fields(demands[op])
 			}
 		}
 		return seq

@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/brimdata/super"
-	"github.com/brimdata/super/compiler/optimizer/demand"
 	"github.com/brimdata/super/fuzz"
 	"github.com/stretchr/testify/require"
 )
@@ -33,7 +32,7 @@ func FuzzVngRoundtripBytes(f *testing.F) {
 func roundtrip(t *testing.T, valuesIn []super.Value) {
 	var buf bytes.Buffer
 	fuzz.WriteVNG(t, valuesIn, &buf)
-	valuesOut, err := fuzz.ReadVNG(buf.Bytes(), demand.All())
+	valuesOut, err := fuzz.ReadVNG(buf.Bytes(), nil)
 	require.NoError(t, err)
 	fuzz.CompareValues(t, valuesIn, valuesOut)
 }

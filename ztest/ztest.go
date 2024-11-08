@@ -137,7 +137,6 @@ import (
 	"github.com/brimdata/super/cli/inputflags"
 	"github.com/brimdata/super/cli/outputflags"
 	"github.com/brimdata/super/compiler"
-	"github.com/brimdata/super/compiler/optimizer/demand"
 	"github.com/brimdata/super/compiler/parser"
 	"github.com/brimdata/super/runtime"
 	"github.com/brimdata/super/runtime/vcache"
@@ -505,7 +504,7 @@ func runzq(path, zedProgram, input string, outputFlags []string, inputFlags []st
 		return "", err
 	}
 	zctx := super.NewContext()
-	zrc, err := anyio.NewReaderWithOpts(zctx, r, demand.All(), inflags.Options())
+	zrc, err := anyio.NewReaderWithOpts(zctx, r, inflags.Options())
 	if err != nil {
 		return "", err
 	}

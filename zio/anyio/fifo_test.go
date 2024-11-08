@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/brimdata/super"
-	"github.com/brimdata/super/compiler/optimizer/demand"
 	"github.com/brimdata/super/pkg/storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -23,7 +22,7 @@ func TestOpenFifoCancelation(t *testing.T) {
 		errCh := make(chan error)
 		ctx, cancel := context.WithCancel(context.Background())
 		go func() {
-			_, err := Open(ctx, super.NewContext(), storage.NewFileSystem(), path, demand.All(), ReaderOpts{})
+			_, err := Open(ctx, super.NewContext(), storage.NewFileSystem(), path, ReaderOpts{})
 			errCh <- err
 		}()
 		time.Sleep(10 * time.Millisecond)

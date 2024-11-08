@@ -58,7 +58,7 @@ func NewReaderFromRecordReader(zctx *super.Context, rr pqarrow.RecordReader) (*R
 	return r, nil
 }
 
-func uniquifyFieldNames(fields []super.Field) {
+func UniquifyFieldNames(fields []super.Field) {
 	names := map[string]int{}
 	for i, f := range fields {
 		if n := names[f.Name]; n > 0 {
@@ -207,7 +207,7 @@ func (r *Reader) newZedType(dt arrow.DataType) (super.Type, error) {
 			}
 			fields = append(fields, super.NewField(f.Name, typ))
 		}
-		uniquifyFieldNames(fields)
+		UniquifyFieldNames(fields)
 		return r.zctx.LookupTypeRecord(fields)
 	case arrow.SPARSE_UNION, arrow.DENSE_UNION:
 		return r.newZedUnionType(dt.(arrow.UnionType), dt.Fingerprint())

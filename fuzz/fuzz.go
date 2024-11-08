@@ -17,6 +17,7 @@ import (
 	"github.com/brimdata/super/compiler/optimizer/demand"
 	"github.com/brimdata/super/compiler/parser"
 	"github.com/brimdata/super/compiler/semantic"
+	"github.com/brimdata/super/pkg/field"
 	"github.com/brimdata/super/pkg/nano"
 	"github.com/brimdata/super/pkg/storage/mock"
 	"github.com/brimdata/super/runtime"
@@ -45,10 +46,10 @@ func ReadZNG(bs []byte) ([]super.Value, error) {
 	return a.Values(), nil
 }
 
-func ReadVNG(bs []byte, demandOut demand.Demand) ([]super.Value, error) {
+func ReadVNG(bs []byte, fields []field.Path) ([]super.Value, error) {
 	bytesReader := bytes.NewReader(bs)
 	context := super.NewContext()
-	reader, err := vngio.NewReader(context, bytesReader, demandOut)
+	reader, err := vngio.NewReader(context, bytesReader, fields)
 	if err != nil {
 		return nil, err
 	}
@@ -81,7 +82,7 @@ func RunQueryZNG(t testing.TB, buf *bytes.Buffer, querySource string) []super.Va
 
 func RunQueryVNG(t testing.TB, buf *bytes.Buffer, querySource string) []super.Value {
 	zctx := super.NewContext()
-	reader, err := vngio.NewReader(zctx, bytes.NewReader(buf.Bytes()), demand.All())
+	reader, err := vngio.NewReader(zctx, bytes.NewReader(buf.Bytes()), nil)
 	require.NoError(t, err)
 	readers := []zio.Reader{reader}
 	defer zio.CloseReaders(readers)

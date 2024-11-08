@@ -13,7 +13,6 @@ import (
 
 	"github.com/brimdata/super"
 	"github.com/brimdata/super/api"
-	"github.com/brimdata/super/compiler/optimizer/demand"
 	"github.com/brimdata/super/compiler/srcfiles"
 	"github.com/brimdata/super/lake"
 	"github.com/brimdata/super/lake/branches"
@@ -174,7 +173,7 @@ func (r *Request) Unmarshal(w *ResponseWriter, body interface{}, templates ...in
 	if !ok {
 		return false
 	}
-	zrc, err := anyio.NewReaderWithOpts(super.NewContext(), r.Body, demand.All(), anyio.ReaderOpts{Format: format})
+	zrc, err := anyio.NewReaderWithOpts(super.NewContext(), r.Body, anyio.ReaderOpts{Format: format})
 	if err != nil {
 		w.Error(srverr.ErrInvalid(err))
 		return false

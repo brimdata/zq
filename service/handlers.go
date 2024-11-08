@@ -13,7 +13,6 @@ import (
 	"github.com/brimdata/super/api/queryio"
 	"github.com/brimdata/super/compiler"
 	"github.com/brimdata/super/compiler/describe"
-	"github.com/brimdata/super/compiler/optimizer/demand"
 	"github.com/brimdata/super/compiler/parser"
 	"github.com/brimdata/super/lake"
 	lakeapi "github.com/brimdata/super/lake/api"
@@ -459,7 +458,7 @@ func handleBranchLoad(c *Core, w *ResponseWriter, r *Request) {
 		ZNG: zngio.ReaderOpts{Validate: true},
 	}
 	zctx := super.NewContext()
-	zrc, err := anyio.NewReaderWithOpts(zctx, reader, demand.All(), opts)
+	zrc, err := anyio.NewReaderWithOpts(zctx, reader, opts)
 	if err != nil {
 		w.Error(srverr.ErrInvalid(err))
 		return
