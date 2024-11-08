@@ -72,6 +72,9 @@ func UintValue(vec Any, slot uint32) (uint64, bool) {
 	case *Const:
 		return vec.Value().Ptr().Uint(), vec.Nulls.Value(slot)
 	case *Dict:
+		if vec.Nulls.Value(slot) {
+			return 0, true
+		}
 		return UintValue(vec.Any, uint32(vec.Index[slot]))
 	case *Dynamic:
 		tag := vec.Tags[slot]

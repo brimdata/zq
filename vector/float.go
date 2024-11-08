@@ -70,3 +70,23 @@ func (f *Float) AppendKey(b []byte, slot uint32) []byte {
 	b = append(b, byte(val>>(8*1)))
 	return append(b, byte(val>>(8*0)))
 }
+
+func FloatValue(vec Any, slot uint32) (float64, bool) {
+	switch vec := Under(vec).(type) {
+	case *Float:
+		return vec.Value(slot), vec.Nulls.Value(slot)
+	case *Const:
+		return vec.Value().Ptr().Float(), vec.Nulls.Value(slot)
+	case *Dict:
+		if vec.Nulls.Value(slot) {
+			return 0, true
+		}
+		return FloatValue(vec.Any, uint32(vec.Index[slot]))
+	case *Dynamic:
+		tag := vec.Tags[slot]
+		return FloatValue(vec.Values[tag], vec.TagMap.Forward[slot])
+	case *View:
+		return FloatValue(vec.Any, vec.Index[slot])
+	}
+	panic(vec)
+}
