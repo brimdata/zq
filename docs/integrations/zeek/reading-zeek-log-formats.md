@@ -14,7 +14,7 @@ the Zed [command line tools](../../commands/README.md).
 [Zeek TSV](https://docs.zeek.org/en/master/log-formats.html#zeek-tsv-format-logs)
 is Zeek's default output format for logs. This format can be read automatically
 (i.e., no `-i` command line flag is necessary to indicate the input format)
-with the Zed tools such as [`zq`](../../commands/zq.md).
+with the Zed tools such as [`super`](../../commands/super.md).
 
 The following example shows a TSV [`conn.log`](https://docs.zeek.org/en/master/logs/conn.html) being read via `zq` and
 output as [Super JSON](../../formats/jsup.md).

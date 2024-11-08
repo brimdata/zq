@@ -64,7 +64,7 @@ there is no authoritative specification of the Zeek TSV log format.
 ## Example
 
 The following example shows a TSV log that includes each Zeek data type, how
-it's output as Super JSON by [`zq`](../../commands/zq.md), and then how it's written back out again as a Zeek
+it's output as Super JSON by [`super`](../../commands/super.md), and then how it's written back out again as a Zeek
 log. You may find it helpful to refer to this example when reading the
 [type-specific details](#type-specific-details).
 

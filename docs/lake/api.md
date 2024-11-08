@@ -526,7 +526,7 @@ service will expect ZSON as the payload format.
 An exception to this is when [loading data](#load-data) and Content-Type is not
 specified. In this case the service will attempt to introspect the data and may
 determine the type automatically. The
-[input formats](../commands/zq.md#input-formats) table describes which
+[input formats](../commands/super.md#input-formats) table describes which
 formats may be successfully auto-detected.
 
 ### Response Payloads

@@ -29,13 +29,13 @@ their data to its output.  A data source can be
 * the [`pass` operator](pass.md), to treat the upstream pipeline branch as a source.
 
 :::tip Note
-File paths and URIs may be followed by an optional [format](../../commands/zq.md#input-formats) specifier.
+File paths and URIs may be followed by an optional [format](../../commands/super.md#input-formats) specifier.
 :::
 
 Sourcing data from pools is only possible when querying a lake, such as
 via the [`super db` command](../../commands/zed.md) or
 [SuperDB lake API](../../lake/api.md). Sourcing data from files is only possible
-with the [`super` command](../../commands/zq.md).
+with the [`super` command](../../commands/super.md).
 
 When a single pool name is specified without `@`-referencing a commit or ID, or
 when using a pool pattern, the tip of the `main` branch of each pool is

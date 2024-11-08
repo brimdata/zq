@@ -51,7 +51,7 @@ much as a modern SQL engine optimizes a declarative SQL query.
 ## Search and Analytics
 
 Zed is also intended to provide a seamless transition from a simple search experience
-(e.g., typed into a search bar or as the query argument of the [`zq`](../commands/zq.md) command-line
+(e.g., typed into a search bar or as the query argument of the [`super`](../commands/super.md) command-line
 tool) to more a complex analytics experience composed of complex joins and aggregations
 where the Zed language source text would typically be authored in a editor and
 managed under source-code control.

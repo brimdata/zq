@@ -85,7 +85,7 @@ Our data has been committed. The `-use prs` argument in `zed load` tells
 
 With our data now loaded let's run a quick `count()` query to verify that we have
 the expected data. To do this we'll use the `zed query` command. To those
-familiar with [`zq`](../commands/zq.md), `zed query` operates similarly except
+familiar with [`super`](../commands/super.md), `zed query` operates similarly except
 it doesn't accept file input arguments since it queries pools.
 
 ```bash

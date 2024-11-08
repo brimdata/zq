@@ -8,5 +8,5 @@
 
 :::tip Note
 The `file` shorthand is exclusively for working with inputs to
-[`zq`](../../commands/zq.md) and is not available for use with [Zed lakes](../../commands/zed.md).
+[`super`](../../commands/super.md) and is not available for use with [Zed lakes](../../commands/zed.md).
 :::

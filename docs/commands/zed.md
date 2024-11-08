@@ -18,7 +18,7 @@ sidebar_label: zed
 <p id="status"></p>
 
 :::tip Status
-While [`zq`](zq.md) and the [Zed formats](../formats/README.md)
+While [`super`](super.md) and the [Zed formats](../formats/README.md)
 are production quality, the Zed lake is still fairly early in development
 and alpha quality.
 That said, Zed lakes can be utilized quite effectively at small scale,
@@ -341,9 +341,9 @@ for that sub-command.
 sub-command and so forth.
 
 By default, commands that display lake metadata (e.g., [`log`](#log) or
-[`ls`](#ls)) use the human-readable [lake metadata output](zq.md#zed-lake-metadata-output)
+[`ls`](#ls)) use the human-readable [lake metadata output](super.md#superdb-data-lake-metadata-output)
 format.  However, the `-f` option can be used to specify any supported
-[output format](zq.md#output-formats).
+[output format](super.md#output-formats).
 
 ### Auth
 ```
@@ -460,8 +460,8 @@ schema-agnostic fashion.  Data of any _shape_ can be stored in any pool
 and arbitrary data _shapes_ can coexist side by side.
 
 As with `zq`,
-the [input arguments](zq.md#usage) can be in
-any [supported format](zq.md#input-formats) and
+the [input arguments](super.md#usage) can be in
+any [supported format](super.md#input-formats) and
 the input format is auto-detected if `-i` is not provided.  Likewise,
 the inputs may be URLs, in which case, the `load` command streams
 the data from a Web server or [S3](../integrations/amazon-s3.md) and into the lake.
@@ -538,7 +538,7 @@ commit history.
 
 Since commit objects are stored as Zed, the metadata can easily be
 queried by running the `log -f bsup` to retrieve the log in ZNG format,
-for example, and using [`zq`](zq.md) to pull the metadata out
+for example, and using [`super`](super.md) to pull the metadata out
 as in:
 ```
 zed log -f bsup | zq 'has(meta) | yield {id,meta}' -

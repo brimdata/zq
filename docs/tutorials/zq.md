@@ -9,7 +9,7 @@ This tour provides new users of `super` an overview of the tool and
 the [SuperPipe language](../language/README.md)
 by walking through a number of examples on the command-line.
 This should get you started without having to read through all the gory details
-of the [SuperPipe language](../language/README.md) or [`super` command-line usage](../commands/zq.md).
+of the [SuperPipe language](../language/README.md) or [`super` command-line usage](../commands/super.md).
 
 We'll start with some simple one-liners on the command line where we feed
 some data to `super` with `echo` and specify `-` for `super` input to indicate
@@ -37,7 +37,7 @@ doing interesting things on that input, and emitting results, of course, as JSON
 
 `jq` is awesome and powerful, but its syntax and computational model can
 sometimes be daunting and difficult.  We tried to make `zq` really easy and intuitive,
-and it is usually faster, sometimes [much faster](../commands/zq.md#performance),
+and it is usually faster, sometimes [much faster](../commands/super.md#performance),
 than `jq`.
 
 To this end, if you want full JSON compatibility without having to delve into the
@@ -166,7 +166,7 @@ go from ZSON to an efficient binary row format ([Super Binary](../formats/bsup.m
 and columnar ([Super Columnar](../formats/csup.md)) --- and vice versa ---
 with complete fidelity and no loss of information.  In this tour,
 we'll stick to ZSON (though for large data sets,
-[ZNG is much faster](../commands/zq.md#performance)).
+[Super Binary is much faster](../commands/super.md#performance)).
 
 The first thing you'll notice about ZSON is that you don't need
 quotations around field names.  We can see this by taking some JSON

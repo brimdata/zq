@@ -269,7 +269,7 @@ and an array of union of string, and float64 --- might have a value that looks l
 
 A ZJSON file is composed of ZJSON objects formatted as
 [newline delimited JSON (NDJSON)](https://en.wikipedia.org/wiki/JSON_streaming#NDJSON).
-e.g., the [zq](../commands/zq.md) CLI command
+e.g., the [super](../commands/super.md) CLI command
 writes its ZJSON output as lines of NDJSON.
 
 ## 4. Example

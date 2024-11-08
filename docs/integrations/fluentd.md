@@ -394,7 +394,7 @@ the size of the commit objects to which they're initially stored.
 
 2. **ZNG format** - In the [shaping example](#shaping-example) shown above, we
 used the [Super JSON format](../formats/jsup.md) format for the shaped data output from
-[`zq`](../commands/zq.md). This text format is typically used in contexts
+[`super`](../commands/super.md). This text format is typically used in contexts
 where human readability is required. Due to its compact nature,
 [Super Binary](../formats/bsup.md) format would have been preferred, but in our research
 we found Fluentd consistently steered us toward using only text formats.

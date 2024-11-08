@@ -13,7 +13,7 @@ without giving up JSON's uncanny ability to represent eclectic data.
 ## Getting Started
 
 Trying out SuperDB is easy: just [install](install.md) the command-line tool
-[`super`](commands/zq.md) and run through the [tutorial](tutorials/zq.md).
+[`super`](commands/super.md) and run through the [tutorial](tutorials/zq.md).
 
 Compared to putting JSON data in a relational column, the
 [super-structured data model](formats/zed.md) makes it really easy to

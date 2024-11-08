@@ -7,7 +7,7 @@
 * Update the [`grok` function docs](docs/language/functions/grok.md) with additional examples and guidance (#5243)
 * Update the [Lateral Subquery docs](docs/language/lateral-subqueries.md) with an emphasis on when primitive values or arrays are returned by [Lateral Expressions](docs/language/lateral-subqueries.md#lateral-expressions) (#5264)
 * The terms "pipeline" and "branch" are now used throughout the [Zed docs](docs/README.md) instead of "dataflow" and "leg" (#5272)
-* Add docs for [`lake` output format](docs/commands/zq.md#zed-lake-metadata-output) and [`zed ls`](docs/commands/zed.md#ls) (#5187)
+* Add docs for [`lake` output format](docs/commands/super.md#superdb-data-lake-metadata-output) and [`zed ls`](docs/commands/zed.md#ls) (#5187)
 * Add docs for the [`top` operator](docs/language/operators/top.md) (#5276)
 * Add [`fluentd` integration docs](docs/integrations/fluentd.md) (#5190, #5195)
 * Add a [`strftime` function](docs/language/functions/strftime.md) to format `time` values into strings (#5197, #5204)
