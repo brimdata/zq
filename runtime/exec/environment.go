@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 
 	"github.com/brimdata/super"
 	"github.com/brimdata/super/compiler/dag"
@@ -23,13 +24,19 @@ import (
 type Environment struct {
 	engine storage.Engine
 	lake   *lake.Root
+	useVAM bool
 }
 
 func NewEnvironment(engine storage.Engine, lake *lake.Root) *Environment {
 	return &Environment{
 		engine: engine,
 		lake:   lake,
+		useVAM: os.Getenv("SUPER_VAM") != "",
 	}
+}
+
+func (e *Environment) UseVAM() bool {
+	return e.useVAM
 }
 
 func (e *Environment) IsLake() bool {

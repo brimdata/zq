@@ -86,9 +86,17 @@ func (b *Builder) Build(seq dag.Seq, readers ...zio.Reader) (map[string]zbuf.Pul
 		return nil, errors.New("internal error: DAG entry point is not a data source")
 	}
 	b.readers = readers
-
-	if _, err := b.compileSeq(seq, nil); err != nil {
-		return nil, err
+	if b.env.UseVAM() {
+		if len(readers) > 0 {
+			return nil, errors.New("vector runtime does not support internal readers")
+		}
+		if _, err := b.compileVamSeq(seq, nil); err != nil {
+			return nil, err
+		}
+	} else {
+		if _, err := b.compileSeq(seq, nil); err != nil {
+			return nil, err
+		}
 	}
 	channels := make(map[string]zbuf.Puller)
 	for key, pullers := range b.channels {
