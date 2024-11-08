@@ -71,19 +71,20 @@ func genFunc(name, op, typ string, lhs, rhs vector.Form) string {
 	s := fmt.Sprintf("func %s(lhs, rhs vector.Any) vector.Any {\n", name)
 	s += genVarInit("l", typ, lhs)
 	s += genVarInit("r", typ, rhs)
+	s += "nulls := vector.Or(l.Nulls, r.Nulls)\n"
 	if lhs == vector.FormConst && rhs == vector.FormConst {
 		if typ == "String" {
 			s += fmt.Sprintf("val := super.NewString(lconst %s rconst)\n", op)
 		} else {
 			s += fmt.Sprintf("val := super.New%s64(lconst %s rconst)\n", typ, op)
 		}
-		s += "return vector.NewConst(val, lhs.Len(), nil)\n"
+		s += "return vector.NewConst(val, lhs.Len(), nulls)\n"
 	} else {
 		s += "n := lhs.Len()\n"
 		if typ == "String" {
-			s += "out := vector.NewStringEmpty(n, nil)\n"
+			s += "out := vector.NewStringEmpty(n, nulls)\n"
 		} else {
-			s += fmt.Sprintf("out := vector.New%sEmpty(super.Type%s64, n, nil)\n", typ, typ)
+			s += fmt.Sprintf("out := vector.New%sEmpty(super.Type%s64, n, nulls)\n", typ, typ)
 		}
 		s += genLoop(op, typ, lhs, rhs)
 		s += "return out\n"
@@ -102,7 +103,9 @@ func genVarInit(which, typ string, form vector.Form) string {
 		s += fmt.Sprintf("%sx := %sd.Index\n", which, which)
 		return s
 	case vector.FormConst:
-		return fmt.Sprintf("%sconst, _ := %shs.(*vector.Const).As%s()\n", which, which, typ)
+		s := fmt.Sprintf("%s := %shs.(*vector.Const)\n", which, which)
+		s += fmt.Sprintf("%sconst, _ := %s.As%s()\n", which, which, typ)
+		return s
 	default:
 		panic("genVarInit: bad form")
 	}

@@ -229,6 +229,9 @@ func (n *numeric) evalAndPromote(ectx Context, this super.Value) (super.Value, s
 	if err != nil {
 		return super.Null, super.Null, nil, n.zctx.NewError(err).Ptr()
 	}
+	if lhsVal.IsNull() || rhsVal.IsNull() {
+		return super.Null, super.Null, nil, super.NewValue(typ, nil).Ptr()
+	}
 	return lhsVal, rhsVal, typ, nil
 }
 
