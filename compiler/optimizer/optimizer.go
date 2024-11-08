@@ -15,6 +15,7 @@ import (
 
 type Optimizer struct {
 	ctx  context.Context
+	env  *exec.Environment
 	lake *lake.Root
 	nent int
 }
@@ -26,6 +27,7 @@ func New(ctx context.Context, env *exec.Environment) *Optimizer {
 	}
 	return &Optimizer{
 		ctx:  ctx,
+		env:  env,
 		lake: lk,
 	}
 }
@@ -254,6 +256,10 @@ func (o *Optimizer) optimizeSourcePaths(seq dag.Seq) (dag.Seq, error) {
 			})
 			seq = append(seq, chain...)
 		case *dag.FileScan:
+			if o.env.UseVAM() {
+				// Vector file readers don't support filter pushdown yet.
+				return seq, nil
+			}
 			op.Filter = filter
 			seq = append(dag.Seq{op}, chain...)
 		case *dag.CommitMetaScan:
