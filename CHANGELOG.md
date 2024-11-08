@@ -435,7 +435,7 @@ questions.
 * Rework dataflow model and Zed compiler optimizations (#2669)
 * Add initial `explode` operator that can break values from complex fields out into separate records (#2673)
 * Fix an issue where including a particular `time`-typed field in a shaper script caused errors with shaping other fields (#2685)
-* Silently discard duplicate fields when reading NDJSON records, which works around [Suricata bug 4016](https://redmine.openinfosecfoundation.org/issues/4106) (#2691)
+* Silently discard duplicate fields when reading NDJSON records, which works around Suricata bug 4016 (#2691)
 * Fix an issue where ZSON type values were output without parentheses (#2700)
 * Swallow single-backslash-escaped `/` when reading NDJSON, which allows for reading default Suricata EVE output (#2697)
 * Improve the error message shown when no Zed lake root is specified (#2701, #2739)
