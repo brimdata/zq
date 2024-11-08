@@ -105,7 +105,7 @@ func Or(a, b *Bool) *Bool {
 		panic("or'ing two different length bool vectors")
 	}
 	out := NewBoolEmpty(a.Len(), nil)
-	for i := range a.Len() {
+	for i := range len(a.Bits) {
 		out.Bits[i] = a.Bits[i] | b.Bits[i]
 	}
 	return out
