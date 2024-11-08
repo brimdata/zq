@@ -118,7 +118,7 @@ func (c *closePuller) Pull(done bool) (zbuf.Batch, error) {
 
 func (e *Environment) VectorOpen(ctx context.Context, zctx *super.Context, path, format string, fields []field.Path) (vector.Puller, error) {
 	if format != "parquet" {
-		return nil, fmt.Errorf("vector runtime supports only Parquert files")
+		return nil, fmt.Errorf("vector runtime supports only Parquet files")
 	}
 	if path == "-" {
 		path = "stdio:stdin"
