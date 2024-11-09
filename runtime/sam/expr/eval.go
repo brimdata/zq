@@ -433,7 +433,10 @@ func (s *Subtract) Eval(ectx Context, this super.Value) super.Value {
 	case super.IsUnsigned(id):
 		return super.NewUint(typ, toUint(lhsVal)-toUint(rhsVal))
 	case super.IsSigned(id):
-		if id == super.IDTime {
+		if lhsVal.Type().ID() == super.IDTime && rhsVal.Type().ID() == super.IDDuration {
+			// Time minus duration should be time
+			typ = super.TypeTime
+		} else if id == super.IDTime {
 			// Return the difference of two times as a duration.
 			typ = super.TypeDuration
 		}
