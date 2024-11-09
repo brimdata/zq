@@ -18,9 +18,16 @@ func New(zctx *super.Context, name string, narg int) (expr.Function, field.Path,
 	switch name {
 	case "base64":
 		f = &Base64{zctx}
+	case "bucket":
+		argmin = 2
+		argmax = 2
+		f = &Bucket{zctx: zctx, name: name}
 	case "coalesce":
 		argmax = -1
 		f = &Coalesce{}
+	case "every":
+		path = field.Path{"ts"}
+		f = &Bucket{zctx: zctx, name: name}
 	case "fields":
 		f = NewFields(zctx)
 	case "hex":

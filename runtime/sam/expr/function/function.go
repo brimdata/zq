@@ -99,7 +99,7 @@ func New(zctx *super.Context, name string, narg int) (expr.Function, field.Path,
 	case "bucket":
 		argmin = 2
 		argmax = 2
-		f = &Bucket{zctx: zctx}
+		f = &Bucket{zctx: zctx, name: name}
 	case "typename":
 		argmax = 2
 		f = &typeName{zctx: zctx}

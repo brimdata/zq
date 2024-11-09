@@ -3,7 +3,6 @@ package function
 import (
 	"github.com/brimdata/super"
 	"github.com/brimdata/super/pkg/nano"
-	"github.com/brimdata/super/runtime/sam/expr/coerce"
 	"github.com/lestrrat-go/strftime"
 )
 
@@ -21,30 +20,35 @@ type Bucket struct {
 }
 
 func (b *Bucket) Call(_ super.Allocator, args []super.Value) super.Value {
+	args = underAll(args)
 	tsArg := args[0]
 	binArg := args[1]
+	tsArgID := tsArg.Type().ID()
+	if tsArgID != super.IDDuration && tsArgID != super.IDTime {
+		return b.zctx.WrapError(b.name+": first argument is not a time or duration", tsArg)
+	}
+	if binArg.Type().ID() != super.IDDuration {
+		return b.zctx.WrapError(b.name+": second argument is not a duration", binArg)
+	}
 	if tsArg.IsNull() || binArg.IsNull() {
+		if tsArgID == super.IDDuration {
+			return super.NullDuration
+		}
 		return super.NullTime
 	}
-	var bin nano.Duration
-	if binArg.Type() == super.TypeDuration {
-		bin = nano.Duration(binArg.Int())
-	} else {
-		d, ok := coerce.ToInt(binArg, super.TypeDuration)
-		if !ok {
-			return b.zctx.WrapError(b.name+": second argument is not a duration or number", binArg)
-		}
-		bin = nano.Duration(d) * nano.Second
-	}
-	if super.TypeUnder(tsArg.Type()) == super.TypeDuration {
+	bin := nano.Duration(binArg.Int())
+	if tsArgID == super.IDDuration {
 		dur := nano.Duration(tsArg.Int())
-		return super.NewDuration(dur.Trunc(bin))
+		if bin != 0 {
+			dur = dur.Trunc(bin)
+		}
+		return super.NewDuration(dur)
 	}
-	v, ok := coerce.ToInt(tsArg, super.TypeInt64)
-	if !ok {
-		return b.zctx.WrapError(b.name+": first argument is not a time", tsArg)
+	ts := nano.Ts(tsArg.Int())
+	if bin != 0 {
+		ts = ts.Trunc(bin)
 	}
-	return super.NewTime(nano.Ts(v).Trunc(bin))
+	return super.NewTime(ts)
 }
 
 // https://github.com/brimdata/super/blob/main/docs/language/functions.md#strftime

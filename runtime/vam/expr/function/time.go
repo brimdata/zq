@@ -3,9 +3,94 @@ package function
 import (
 	"github.com/brimdata/super"
 	"github.com/brimdata/super/pkg/nano"
+	"github.com/brimdata/super/runtime/vam/expr/cast"
 	"github.com/brimdata/super/vector"
 	"github.com/lestrrat-go/strftime"
 )
+
+// https://github.com/brimdata/super/blob/main/docs/language/functions.md#bucket
+type Bucket struct {
+	name string
+	zctx *super.Context
+}
+
+func (b *Bucket) Call(args ...vector.Any) vector.Any {
+	args = underAll(args)
+	tsArg, binArg := args[0], args[1]
+	tsID, binID := tsArg.Type().ID(), binArg.Type().ID()
+	if tsID != super.IDDuration && tsID != super.IDTime {
+		return vector.NewWrappedError(b.zctx, b.name+": first argument is not a time or duration", tsArg)
+	}
+	if binID != super.IDDuration {
+		return vector.NewWrappedError(b.zctx, b.name+": second argument is not a duration", binArg)
+	}
+	return vector.Apply(false, b.call, tsArg, binArg)
+}
+
+func (b *Bucket) call(args ...vector.Any) vector.Any {
+	tsArg, binArg := args[0], args[1]
+	if tsArg.Type().Kind() == super.ErrorKind {
+		return tsArg
+	}
+	if binArg.Type().Kind() == super.ErrorKind {
+		return binArg
+	}
+	if constBin, ok := binArg.(*vector.Const); ok {
+		// Optimize case where the bin argument is static.
+		bin, _ := constBin.AsInt()
+		return b.constBin(tsArg, nano.Duration(bin))
+	}
+	var ints []int64
+	for i := range tsArg.Len() {
+		dur, _ := vector.IntValue(tsArg, i)
+		bin, _ := vector.IntValue(binArg, i)
+		if bin == 0 {
+			ints = append(ints, dur)
+		} else {
+			ints = append(ints, int64(nano.Ts(dur).Trunc(nano.Duration(bin))))
+		}
+	}
+	nulls := vector.Or(vector.NullsOf(tsArg), vector.NullsOf(binArg))
+	return vector.NewInt(b.resultType(tsArg), ints, nulls)
+}
+
+func (b *Bucket) constBin(tsVec vector.Any, bin nano.Duration) vector.Any {
+	if bin == 0 {
+		return cast.To(b.zctx, tsVec, b.resultType(tsVec))
+	}
+	switch tsVec := tsVec.(type) {
+	case *vector.Const:
+		ts, _ := tsVec.AsInt()
+		val := super.NewInt(b.resultType(tsVec), int64(nano.Ts(ts).Trunc(bin)))
+		return vector.NewConst(val, tsVec.Len(), tsVec.Nulls)
+	case *vector.View:
+		return vector.NewView(b.constBinFlat(tsVec.Any, bin), tsVec.Index)
+	case *vector.Dict:
+		return vector.NewDict(b.constBinFlat(tsVec.Any, bin), tsVec.Index, tsVec.Counts, tsVec.Nulls)
+	default:
+		return b.constBinFlat(tsVec, bin)
+	}
+}
+
+func (b *Bucket) constBinFlat(tsVecFlat vector.Any, bin nano.Duration) vector.Any {
+	tsVec := tsVecFlat.(*vector.Int)
+	ints := make([]int64, tsVec.Len())
+	for i := range tsVec.Len() {
+		if bin == 0 {
+			ints[i] = tsVec.Values[i]
+		} else {
+			ints[i] = int64(nano.Ts(tsVec.Values[i]).Trunc(bin))
+		}
+	}
+	return vector.NewInt(b.resultType(tsVec), ints, tsVec.Nulls)
+}
+
+func (b *Bucket) resultType(tsVec vector.Any) super.Type {
+	if tsVec.Type().ID() == super.IDDuration {
+		return super.TypeDuration
+	}
+	return super.TypeTime
+}
 
 // https://github.com/brimdata/super/blob/main/docs/language/functions.md#strftime
 type Strftime struct {
