@@ -30,7 +30,7 @@ packaged up in the easy-to-understand
 [SuperPipe language](language/README.md).
 
 While `super` and its accompanying data formats are production quality, the project's
-[SuperDB data lake](commands/zed.md) is a bit [earlier in development](commands/zed.md#status).
+[SuperDB data lake](commands/super-db.md) is a bit [earlier in development](commands/super-db.md#status).
 
 ## Terminology
 
@@ -52,8 +52,8 @@ data transformation to _shape_
 the input data into the desired set of organizing super-structured data types called "shapes",
 which are traditionally called _schemas_ in relational systems but are
 much more flexible in SuperDB.
-* A [SuperDB data lake](commands/zed.md) is a collection of super-structured data stored
-across one or more [data pools](commands/zed.md#data-pools) with ACID commit semantics and
+* A [SuperDB data lake](commands/super-db.md) is a collection of super-structured data stored
+across one or more [data pools](commands/super-db.md#data-pools) with ACID commit semantics and
 accessed via a [Git](https://git-scm.com/)-like API.
 
 ## Digging Deeper
@@ -63,7 +63,7 @@ is the best way to learn about `super` in depth.
 All of its examples use `super` commands run on the command line.
 Run `super -h` for a list of command options and online help.
 
-The [`super db` documentation](commands/zed.md)
+The [`super db` documentation](commands/super-db.md)
 is the best way to learn about the SuperDB data lake.
 All of its examples use `super db` commands run on the command line.
 Run `super db -h` or `-h` with any subcommand for a list of command options
@@ -93,7 +93,7 @@ or other third-party services to interpret the lake data.
 Once copied, a new service can be instantiated by pointing a `super db serve`
 at the copy of the lake.
 
-Functionality like [data compaction](commands/zed.md#manage) and retention are all API-driven.
+Functionality like [data compaction](commands/super-db.md#manage) and retention are all API-driven.
 
 Bite-sized components are unified by the super-structured data, usually in the SUPZ format:
 * All lake meta-data is available via meta-queries.

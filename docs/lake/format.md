@@ -13,8 +13,8 @@ as we add new capabilities to the system.
 
 ## Introduction
 
-To support the client-facing [Zed lake semantics](../commands/zed.md#the-lake-model)
-implemented by the [`zed` command](../commands/zed.md), we are developing
+To support the client-facing [SuperDB data lake semantics](../commands/super-db.md#the-lake-model)
+implemented by the [`super db` command](../commands/super-db.md), we are developing
 an open specification for the Zed lake storage format described in this document.
 As we make progress on the Zed lake model, we will update this document
 as we go.

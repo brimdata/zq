@@ -3,7 +3,7 @@
 The [`super` command](super.md) is used to execute command-line queries on
 inputs from files, HTTP URLs, or [S3](../integrations/amazon-s3.md).
 
-The [`super db` sub-commands](zed.md) are for creating, configuring, ingesting
+The [`super db` sub-commands](super-db.md) are for creating, configuring, ingesting
 into, querying, and orchestrating SuperDB data lakes. These sub-commands are
 organized into further subcommands like the familiar command patterns
 of `docker` or `kubectl`.

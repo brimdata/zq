@@ -10,7 +10,7 @@ analytics? This is where the `zed` command comes in. `zed` builds on the type
 system and language found in `zq` and adds a high performance data lake on top.
 
 > Note: `zed` is currently in alpha form. Check out its current status in the
-> [`zed` README](../commands/zed.md#status).
+> [`super db` command](../commands/super-db.md#status) documentation..
 
 ## Creating a Lake
 
@@ -317,7 +317,7 @@ $ zed query -Z 'min(created_at), max(created_at)'
 Obviously this is only the tip of the iceberg in terms of things that can be done with
 the `zed` command. Some suggested next steps:
 
-1. Dig deeper into Zed lakes by having a look at the [`zed` README](../commands/zed.md).
+1. Dig deeper into Zed lakes by having a look at the [`super db` command](../commands/super-db.md) documentation.
 2. Get a better idea of ways you can query your data by looking at the
 [Zed language documentation](../language/README.md).
 

@@ -427,12 +427,12 @@ hello -     greeting
 ### SuperDB Data Lake Metadata Output
 
 The `lake` format is used to pretty-print lake metadata, such as in
-[`super db` sub-command](zed.md) outputs.  Because it's `super db`'s default output format,
+[`super db` sub-command](super-db.md) outputs.  Because it's `super db`'s default output format,
 it's rare to request it explicitly via `-f`.  However, since it's possible for
-`super db` to [generate output in any supported format](zed.md#zed-commands),
+`super db` to [generate output in any supported format](super-db.md#super-db-commands),
 the `lake` format is useful to reverse this.
 
-For example, imagine you'd executed a [meta-query](zed.md#meta-queries) via
+For example, imagine you'd executed a [meta-query](super-db.md#meta-queries) via
 `super db query -Z "from :pools"` and saved the output in this file `pools.jsup`.
 
 ```mdtest-input pools.jsup

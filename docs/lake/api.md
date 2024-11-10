@@ -263,10 +263,10 @@ On success, HTTP 204 is returned with no response payload.
 
 Create a commit that reflects the deletion of some data in the branch. The data
 to delete can be specified via a list of object IDs or
-as a filter expression (see [limitations](../commands/zed.md#delete)).
+as a filter expression (see [limitations](../commands/super-db.md#delete)).
 
 This simply removes the data from the branch without actually removing the
-underlying data objects thereby allowing [time travel](../commands/zed.md#time-travel) to work in the face
+underlying data objects thereby allowing [time travel](../commands/super-db.md#time-travel) to work in the face
 of deletes. Permanent removal of underlying data objects is handled by a
 separate [vacuum](#vacuum-pool) operation.
 
@@ -281,7 +281,7 @@ POST /pool/{pool}/branch/{branch}/delete
 | pool | string | path | **Required.** ID of the pool. |
 | branch | string | path | **Required.** Name of branch. |
 | object_ids | [string] | body | Object IDs to be deleted. |
-| where | string | body | Filter expression (see [limitations](../commands/zed.md#delete)). |
+| where | string | body | Filter expression (see [limitations](../commands/super-db.md#delete)). |
 | Content-Type | string | header | [MIME type](#mime-types) of the request payload. |
 | Accept | string | header | Preferred [MIME type](#mime-types) of the response. |
 
@@ -535,7 +535,7 @@ To receive successful (2xx) responses in a preferred format, include the MIME
 type of the format in the request's Accept HTTP header. If the Accept header is
 not specified, the service will return ZSON as the default response format. A
 different default response format can be specified by invoking the
-`-defaultfmt` option when running [`zed serve`](../commands/zed.md#serve).
+`-defaultfmt` option when running [`super db serve`](../commands/super-db.md#serve).
 
 For non-2xx responses, the content type of the response will be
 `application/json` or `text/plain`.

@@ -1255,5 +1255,5 @@ clean data for analysis by `zq` or even export into other systems or for testing
 
 If you'd like to learn more, feel free to read through the
 [language docs](../language/README.md) in depth
-or see how you can organize [Zed data into a lake](../commands/zed.md)
+or see how you can organize [data into a lake](../commands/super-db.md)
 using a git-like commit model.

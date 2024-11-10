@@ -22,7 +22,7 @@ from (
 
 The `from` operator identifies one or more data sources and transmits
 their data to its output.  A data source can be
-* the name of a data pool in a SuperDB lake, with optional [commitish](../../commands/zed.md#commitish);
+* the name of a data pool in a SuperDB lake, with optional [commitish](../../commands/super-db.md#commitish);
 * the names of multiple data pools, expressed as a [regular expression](../search-expressions.md#regular-expressions) or [glob](../search-expressions.md#globs) pattern;
 * a path to a file;
 * an HTTP, HTTPS, or S3 URI; or
@@ -33,7 +33,7 @@ File paths and URIs may be followed by an optional [format](../../commands/super
 :::
 
 Sourcing data from pools is only possible when querying a lake, such as
-via the [`super db` command](../../commands/zed.md) or
+via the [`super db` command](../../commands/super-db.md) or
 [SuperDB lake API](../../lake/api.md). Sourcing data from files is only possible
 with the [`super` command](../../commands/super.md).
 

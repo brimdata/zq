@@ -6,7 +6,7 @@ sidebar_label: Fluentd
 # Fluentd
 
 The [Fluentd](https://www.fluentd.org/) open source data collector can be used
-to push log data to a [Zed lake](../commands/zed.md) in a continuous manner.
+to push log data to a [SuperDB data lake](../commands/super-db.md) in a continuous manner.
 This allows for querying near-"live" event data to enable use cases such as
 dashboarding and alerting in addition to creating a long-running historical
 record for archiving and analytics.
@@ -61,7 +61,7 @@ After making these changes, Zeek was started by running
 
 A binary [release package](https://github.com/brimdata/super/releases) of Zed
 executables compatible with our instance was downloaded and unpacked to a
-directory in our `$PATH`, then the [lake service](https://zed.brimdata.io/docs/commands/zed#serve)
+directory in our `$PATH`, then the [lake service](../commands/super-db.md#serve)
 was started with a specified storage path.
 
 ```
@@ -79,7 +79,7 @@ zed create zeek
 ```
 
 The default settings when running `zed create` set the
-[pool key](../commands/zed.md#pool-key) to the `ts`
+[pool key](../commands/super-db.md#pool-key) to the `ts`
 field and sort the stored data in descending order by that key. This
 configuration is ideal for Zeek log data.
 
@@ -88,7 +88,7 @@ The [Zui](https://zui.brimdata.io/) desktop application automatically starts a
 Zed lake service when it launches. Therefore if you are using Zui you can
 skip the first set of commands shown above. The pool can be created from Zui
 by clicking **+**, selecting **New Pool**, then entering `ts` for the
-[pool key](../commands/zed.md#pool-key).
+[pool key](../commands/super-db.md#pool-key).
 :::
 
 ### Fluentd
@@ -107,7 +107,7 @@ sudo gem install fluentd --no-doc
 
 The following simple `fluentd.conf` was used to watch the streamed Zeek logs
 for newly added lines and load each set of them to the pool in the Zed lake as
-a separate [commit](../commands/zed.md#commit-objects).
+a separate [commit](../commands/super-db.md#commit-objects).
 
 ```
 <source>
@@ -345,7 +345,7 @@ which in our test environment produced
 
 ## Zed Lake Maintenance
 
-The Zed lake stores the data for each [`load`](../commands/zed.md#load)
+The lake stores the data for each [`load`](../commands/super-db.md#load)
 operation in a separate commit. If you observe the output of
 `zed log  -use zeek-shaped` after several minutes, you will see many
 such commits have accumulated, which is a reflection of Fluentd frequently
@@ -361,10 +361,10 @@ in storing the pool data across a smaller number of larger
 as data volumes increase.
 
 By default, even after compaction is performed, the granular commit history is
-still maintained to allow for [time travel](../commands/zed.md#time-travel)
+still maintained to allow for [time travel](../commands/super-db.md#time-travel)
 use cases. However, if time travel is not functionality you're likely to
 leverage, you can reduce the lake's storage footprint by periodically running
-[`zed vacuum`](../commands/zed.md#vacuum). This will delete files from lake
+[`zed vacuum`](../commands/super-db.md#vacuum). This will delete files from lake
 storage that contain the granular commits that have already been rolled into
 larger objects by compaction.
 
