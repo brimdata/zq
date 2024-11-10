@@ -317,7 +317,7 @@ $ zed query -Z 'min(created_at), max(created_at)'
 Obviously this is only the tip of the iceberg in terms of things that can be done with
 the `zed` command. Some suggested next steps:
 
-1. Dig deeper into Zed lakes by having a look at the [`super db` command](../commands/super-db.md) documentation.
+1. Dig deeper into SuperDB data lakes by having a look at the [`super db` command](../commands/super-db.md) documentation.
 2. Get a better idea of ways you can query your data by looking at the
 [Zed language documentation](../language/README.md).
 

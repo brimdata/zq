@@ -170,7 +170,7 @@ be maintained.
 
 ### Locating the Lake
 
-At times you may want the `super db` CLI tools to access the same lake storage
+At times you may want `super db` commands to access the same lake storage
 used by other tools such as [SuperDB Desktop](https://zui.brimdata.io/). To help
 enable this by default while allowing for separate lake storage when desired,
 `super db` checks each of the following in order to attempt to locate an existing
