@@ -1,0 +1,14 @@
+script: |
+  super -z -c "select value this from a.json where a like '%bar%'"
+
+inputs:
+  - name: a.json
+    data: |
+      {a:"foo bar"}
+      {a:"foo\nbar"}
+
+outputs:
+  - name: stdout
+    data: |
+      {a:"foo bar"}
+      {a:"foo\nbar"}

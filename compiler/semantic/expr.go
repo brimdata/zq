@@ -410,7 +410,7 @@ func (a *analyzer) semBinary(e *ast.BinaryExpr) dag.Expr {
 		pattern := likeexpr.ToRegexp(s, '\\', false)
 		return &dag.RegexpSearch{
 			Kind:    "RegexpSearch",
-			Pattern: pattern,
+			Pattern: "(?s)" + pattern,
 			Expr:    lhs,
 		}
 	}
