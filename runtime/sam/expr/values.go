@@ -198,7 +198,7 @@ func (a *ArrayExpr) Eval(ectx Context, this super.Value) super.Value {
 		val := e.Spread.Eval(ectx, this)
 		inner := super.InnerType(val.Type())
 		if inner == nil {
-			// Treat non-list spread values values like missing.
+			a.collection.append(val)
 			continue
 		}
 		a.collection.appendSpread(inner, val.Bytes())
@@ -238,7 +238,7 @@ func (a *SetExpr) Eval(ectx Context, this super.Value) super.Value {
 		val := e.Spread.Eval(ectx, this)
 		inner := super.InnerType(val.Type())
 		if inner == nil {
-			// Treat non-list spread values values like missing.
+			a.collection.append(val)
 			continue
 		}
 		a.collection.appendSpread(inner, val.Bytes())

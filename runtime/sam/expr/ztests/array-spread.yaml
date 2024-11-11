@@ -1,6 +1,0 @@
-zed: yield [...this]
-
-input: &input |
-  [{a:1},{b:2}]
-
-output: *input
