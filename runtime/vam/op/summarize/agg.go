@@ -140,6 +140,8 @@ func (c *countByString) update(keys, vals []vector.Any) {
 		c.countDict(val.Any.(*vector.String), val.Counts, val.Nulls)
 	case *vector.Const:
 		c.countFixed(val)
+	case *vector.View:
+		c.countView(val)
 	default:
 		panic(fmt.Sprintf("UNKNOWN %T", val))
 	}
@@ -215,6 +217,23 @@ func (c *countByString) countFixed(vec *vector.Const) {
 		c.table[super.DecodeString(val.Bytes())] += uint64(vec.Len()) - nullCnt
 	case super.IDNull:
 		c.nulls += uint64(vec.Len())
+	}
+}
+
+func (c *countByString) countView(vec *vector.View) {
+	strVec := vec.Any.(*vector.String)
+	if strVec.Nulls == nil {
+		for _, slot := range vec.Index {
+			c.table[strVec.Value(slot)]++
+		}
+	} else {
+		for _, slot := range vec.Index {
+			if strVec.Nulls.Value(slot) {
+				c.nulls++
+			} else {
+				c.table[strVec.Value(slot)]++
+			}
+		}
 	}
 }
 
