@@ -1,5 +1,7 @@
 zed: sample s2 |> sort
 
+vector: true
+
 input: |
   {s1:"a",s2:"b"}
   {s1:"b",s2:"b"}
