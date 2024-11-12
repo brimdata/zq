@@ -2,6 +2,7 @@ package summarize
 
 import (
 	"fmt"
+	"sync"
 
 	"github.com/brimdata/super"
 	"github.com/brimdata/super/runtime/vam/expr"
@@ -35,8 +36,10 @@ type aggRow struct {
 	funcs []agg.Func
 }
 
+var indexPool sync.Pool
+
 func (s *superTable) update(keys []vector.Any, args []vector.Any) {
-	m := make(map[string][]uint32)
+	m := make(map[string]*[]uint32)
 	var n uint32
 	if len(keys) > 0 {
 		n = keys[0].Len()
@@ -49,17 +52,26 @@ func (s *superTable) update(keys []vector.Any, args []vector.Any) {
 		for _, key := range keys {
 			keyBytes = key.AppendKey(keyBytes, slot)
 		}
-		m[string(keyBytes)] = append(m[string(keyBytes)], slot)
+		index, ok := m[string(keyBytes)]
+		if !ok {
+			index, ok = indexPool.Get().(*[]uint32)
+			if !ok {
+				index = &[]uint32{}
+			}
+			m[string(keyBytes)] = index
+			*index = (*index)[:0]
+		}
+		*index = append(*index, slot)
 	}
 	for rowKey, index := range m {
 		row, ok := s.table[rowKey]
 		if !ok {
-			row = s.newRow(keys, index)
+			row = s.newRow(keys, *index)
 			s.table[rowKey] = row
 		}
 		for i, arg := range args {
 			if len(m) > 1 {
-				arg = vector.NewView(arg, index)
+				arg = vector.NewView(arg, *index)
 			}
 			if s.partialsIn {
 				row.funcs[i].ConsumeAsPartial(arg)
@@ -67,6 +79,7 @@ func (s *superTable) update(keys []vector.Any, args []vector.Any) {
 				row.funcs[i].Consume(arg)
 			}
 		}
+		indexPool.Put(index)
 	}
 }
 
@@ -115,7 +128,7 @@ func (s *superTable) materializeRow(row aggRow) vector.Any {
 
 type countByString struct {
 	nulls      uint64
-	table      map[string]uint64
+	table      map[string]*uint64
 	builder    *vector.RecordBuilder
 	partialsIn bool
 }
@@ -123,9 +136,18 @@ type countByString struct {
 func newCountByString(b *vector.RecordBuilder, partialsIn bool) aggTable {
 	return &countByString{
 		builder:    b,
-		table:      make(map[string]uint64),
+		table:      make(map[string]*uint64),
 		partialsIn: partialsIn,
 	}
+}
+
+func (c *countByString) get(key []byte) *uint64 {
+	count, ok := c.table[string(key)]
+	if !ok {
+		count = new(uint64)
+		c.table[string(key)] = count
+	}
+	return count
 }
 
 func (c *countByString) update(keys, vals []vector.Any) {
@@ -158,39 +180,35 @@ func (c *countByString) updatePartial(keyvec, valvec vector.Any) {
 			if val.Nulls.Value(i) {
 				c.nulls++
 			} else {
-				c.table[key.Value(i)] += val.Values[i]
+				*c.get([]byte(key.Value(i))) += val.Values[i]
 			}
 		}
 	} else {
 		for i := range key.Len() {
-			c.table[key.Value(i)] += val.Values[i]
+			*c.get([]byte(key.Value(i))) += val.Values[i]
 		}
 	}
 }
 
 func (c *countByString) count(vec *vector.String) {
-	offs := vec.Offsets
-	bytes := vec.Bytes
 	if vec.Nulls == nil {
 		for k := range vec.Len() {
-			c.table[string(bytes[offs[k]:offs[k+1]])]++
+			*c.get([]byte(vec.Value(k)))++
 		}
 	} else {
 		for k := range vec.Len() {
 			if vec.Nulls.Value(k) {
 				c.nulls++
 			} else {
-				c.table[string(bytes[offs[k]:offs[k+1]])]++
+				*c.get([]byte(vec.Value(k)))++
 			}
 		}
 	}
 }
 
 func (c *countByString) countDict(vec *vector.String, counts []uint32, nulls *vector.Bool) {
-	offs := vec.Offsets
-	bytes := vec.Bytes
 	for k := range vec.Len() {
-		c.table[string(bytes[offs[k]:offs[k+1]])] = uint64(counts[k])
+		*c.get([]byte(vec.Value(k))) = uint64(counts[k])
 	}
 	if nulls != nil {
 		for k := range nulls.Len() {
@@ -214,7 +232,7 @@ func (c *countByString) countFixed(vec *vector.Const) {
 			}
 			c.nulls += nullCnt
 		}
-		c.table[super.DecodeString(val.Bytes())] += uint64(vec.Len()) - nullCnt
+		*c.get(val.Bytes()) += uint64(vec.Len()) - nullCnt
 	case super.IDNull:
 		c.nulls += uint64(vec.Len())
 	}
@@ -224,14 +242,14 @@ func (c *countByString) countView(vec *vector.View) {
 	strVec := vec.Any.(*vector.String)
 	if strVec.Nulls == nil {
 		for _, slot := range vec.Index {
-			c.table[strVec.Value(slot)]++
+			*c.get([]byte(strVec.Value(slot)))++
 		}
 	} else {
 		for _, slot := range vec.Index {
 			if strVec.Nulls.Value(slot) {
 				c.nulls++
 			} else {
-				c.table[strVec.Value(slot)]++
+				*c.get([]byte(strVec.Value(slot)))++
 			}
 		}
 	}
@@ -246,7 +264,7 @@ func (c *countByString) materialize() vector.Any {
 	for key, count := range c.table {
 		offs[k] = uint32(len(bytes))
 		bytes = append(bytes, key...)
-		counts[k] = count
+		counts[k] = *count
 		k++
 	}
 	offs[k] = uint32(len(bytes))
