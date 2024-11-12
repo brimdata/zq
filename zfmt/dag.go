@@ -1,8 +1,12 @@
 package zfmt
 
 import (
+	"slices"
+	"strings"
+
 	"github.com/brimdata/super/compiler/ast"
 	"github.com/brimdata/super/compiler/dag"
+	"github.com/brimdata/super/pkg/field"
 	"github.com/brimdata/super/zson"
 )
 
@@ -493,6 +497,9 @@ func (c *canonDAG) op(p dag.Op) {
 			c.expr(p.KeyPruner, "")
 			c.write(")")
 		}
+		if len(p.Fields) > 0 {
+			c.fields(p.Fields)
+		}
 		if p.Filter != nil {
 			c.write(" filter (")
 			c.expr(p.Filter, "")
@@ -525,6 +532,9 @@ func (c *canonDAG) op(p dag.Op) {
 		c.write("file %s", p.Path)
 		if p.Format != "" {
 			c.write(" format %s", p.Format)
+		}
+		if len(p.Fields) > 0 {
+			c.fields(p.Fields)
 		}
 		if p.Filter != nil {
 			c.write(" filter (")
@@ -566,6 +576,15 @@ func (c *canonDAG) op(p dag.Op) {
 		c.open("unknown operator: %T", p)
 		c.close()
 	}
+}
+
+func (c *canonDAG) fields(fields []field.Path) {
+	var ss []string
+	for _, f := range fields {
+		ss = append(ss, f.String())
+	}
+	slices.Sort(ss)
+	c.write(" fields %s", strings.Join(ss, ","))
 }
 
 func (c *canonDAG) over(o *dag.Over) {

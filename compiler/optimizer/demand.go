@@ -44,6 +44,9 @@ func inferDemandSeqOutWith(demands map[dag.Op]demand.Demand, demandSeqOut demand
 		// Infer the demand that `op` places on it's input.
 		var demandOpIn demand.Demand
 		switch op := op.(type) {
+		case *dag.FileScan:
+			demandOpIn = demand.Union(demandOpOut, inferDemandExprIn(demand.All(), op.Filter))
+			demands[op] = demandOpIn
 		case *dag.Filter:
 			demandOpIn = demand.Union(
 				// Everything that downstream operations need.
@@ -51,6 +54,9 @@ func inferDemandSeqOutWith(demands map[dag.Op]demand.Demand, demandSeqOut demand
 				// Everything that affects the outcome of this filter.
 				inferDemandExprIn(demand.All(), op.Expr),
 			)
+		case *dag.SeqScan:
+			demandOpIn = demand.Union(demandOpOut, inferDemandExprIn(demand.All(), op.Filter))
+			demands[op] = demandOpIn
 		case *dag.Summarize:
 			demandOpIn = demand.None()
 			// TODO If LHS not in demandOut, we can ignore RHS
