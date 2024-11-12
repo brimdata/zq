@@ -72,6 +72,9 @@ func assemble(zctx *super.Context, vec vector.Any, typ super.Type, fn caster) ve
 }
 
 func castConst(zctx *super.Context, vec *vector.Const, typ super.Type) vector.Any {
+	if vec.Type().ID() == super.IDNull {
+		return vector.NewConst(super.NewValue(typ, nil), vec.Len(), nil)
+	}
 	val := samexpr.LookupPrimitiveCaster(zctx, typ).Eval(samexpr.NewContext(), vec.Value())
 	if val.IsError() {
 		if vec.Nulls != nil {
