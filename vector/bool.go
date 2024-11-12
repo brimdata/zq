@@ -94,6 +94,14 @@ func (b *Bool) String() string {
 	return s.String()
 }
 
+func Not(b *Bool) *Bool {
+	bits := make([]uint64, len(b.Bits))
+	for i := range len(b.Bits) {
+		bits[i] = ^b.Bits[i]
+	}
+	return b.CopyWithBits(bits)
+}
+
 func Or(a, b *Bool) *Bool {
 	if b == nil {
 		return a

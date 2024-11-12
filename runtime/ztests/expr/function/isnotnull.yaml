@@ -1,0 +1,27 @@
+zed: isnotnull(this)
+
+vector: true
+
+input: |
+  // const null
+  null
+  // const with nulls
+  1(uint64)
+  null(uint64)
+  // flat no nulls
+  1.
+  2.
+  // flat mixed nulls
+  1
+  null(int64)
+  2
+
+output: |
+  false
+  true
+  false
+  true
+  true
+  true
+  false
+  true

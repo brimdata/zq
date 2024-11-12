@@ -25,6 +25,10 @@ func New(zctx *super.Context, name string, narg int) (expr.Function, field.Path,
 		f = NewFields(zctx)
 	case "hex":
 		f = &Hex{zctx}
+	case "isnotnull":
+		f = &IsNotNull{}
+	case "isnull":
+		f = &IsNull{}
 	case "join":
 		argmax = 2
 		f = &Join{zctx: zctx}

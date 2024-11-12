@@ -33,6 +33,8 @@ Zed's [primitive types](../../formats/zed.md#1-primitive-types), e.g.,
 * [hex](hex.md) - encode/decode hexadecimal strings
 * [has_error](has_error.md) - test if a value has an error
 * [is](is.md) - test a value's type
+* [isnotnull](isnotnull.md) - test if a value is not null
+* [isnull](isnull.md) - test if a value is null
 * [is_error](is_error.md) - test if a value is an error
 * [join](join.md) - concatenate array of strings with a separator
 * [kind](kind.md) - return a value's type category

@@ -123,6 +123,10 @@ func New(zctx *super.Context, name string, narg int) (expr.Function, field.Path,
 		f = &Is{zctx: zctx}
 	case "is_error":
 		f = &IsErr{}
+	case "isnotnull":
+		f = &IsNotNull{}
+	case "isnull":
+		f = &IsNull{}
 	case "error":
 		f = &Error{zctx: zctx}
 	case "kind":
