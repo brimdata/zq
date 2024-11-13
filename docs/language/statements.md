@@ -172,7 +172,7 @@ the data source of a [`from` operator](operators/from.md). For example, we
 quote the pool name in our program `count-pool.spq`
 ```mdtest-input count-pool.spq
 op CountPool(pool_name): (
-  from [pool_name] |> count()
+  from eval(pool_name) |> count()
 )
 
 CountPool("example")
