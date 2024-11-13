@@ -778,10 +778,10 @@ func (a *analyzer) semOp(o ast.Op, seq dag.Seq) dag.Seq {
 		return append(seq, &dag.Fuse{Kind: "Fuse"})
 	case *ast.Join:
 		rightInput := a.semSeq(o.RightInput)
-		leftKey := a.semExpr(o.LeftKey)
-		rightKey := leftKey
-		if o.RightKey != nil {
-			rightKey = a.semExpr(o.RightKey)
+		leftKey, rightKey, err := a.semJoinCond(o.Cond)
+		if err != nil {
+			a.error(o.Cond, err)
+			return append(seq, badOp())
 		}
 		join := &dag.Join{
 			Kind:     "Join",

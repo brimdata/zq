@@ -525,18 +525,15 @@ ShapeOp
     }
 
 JoinOp
-  = style:JoinStyle JOIN rightInput:JoinRightInput ON _ key:JoinKey optKey:(__ ("==" / "=") __ JoinKey)? optArgs:(_ FlexAssignments)? {
+  = style:JoinStyle JOIN rightInput:JoinRightInput e:JoinExpr optArgs:(_ FlexAssignments)? {
       o := &ast.Join{
         Kind: "Join",
         Style: style.(string),
-        LeftKey: key.(ast.Expr),
+        Cond: e.(ast.JoinExpr),
         Loc: loc(c),
       }
       if rightInput != nil {
         o.RightInput = sliceOf[ast.Op](rightInput)
-      }
-      if optKey != nil {
-        o.RightKey = optKey.([]any)[3].(ast.Expr)
       }
       if optArgs != nil {
         o.Args = sliceOf[ast.Assignment](optArgs.([]any)[1])
@@ -552,8 +549,8 @@ JoinStyle
   / ""        { return "inner", nil }
 
 JoinRightInput
-  = __ "(" __ s:Seq __ ")" __ { return s, nil }
-  / _ { return nil, nil }
+  = __ "(" __ s:Seq __ ")" { return s, nil }
+  / "" { return nil, nil }
 
 JoinKey
   = Lval
@@ -2036,14 +2033,14 @@ SQLJoinStyle
 
 JoinExpr 
   = _ ON _ e:Expr { 
-        return &ast.JoinOn{
-            Kind: "JoinOn", 
+        return &ast.JoinOnExpr{
+            Kind: "JoinOnExpr", 
             Expr: e.(ast.Expr),
         }, nil
     }
-  / _ USING __ "(" __ fields:FieldExprs __ ")" {
-        return &ast.JoinUsing{
-            Kind: "JoinUsing",
+  / _ USING __ "(" __ fields:Lvals __ ")" {
+        return &ast.JoinUsingExpr{
+            Kind: "JoinUsingExpr",
             Fields: sliceOf[ast.Expr](fields),
         }, nil
     }

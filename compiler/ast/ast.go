@@ -535,8 +535,7 @@ type (
 		Kind       string      `json:"kind" unpack:""`
 		Style      string      `json:"style"`
 		RightInput Seq         `json:"right_input"`
-		LeftKey    Expr        `json:"left_key"`
-		RightKey   Expr        `json:"right_key"`
+		Cond       JoinExpr    `json:"cond"`
 		Args       Assignments `json:"args"`
 		Loc        `json:"loc"`
 	}

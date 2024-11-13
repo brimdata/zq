@@ -178,7 +178,7 @@ func (a *analyzer) semSQLJoin(join *ast.SQLJoin, seq dag.Seq) dag.Seq {
 		a.error(join.Right, errors.New("SQL joins currently require a table alias on the right lef of the join"))
 		seq = append(seq, badOp())
 	}
-	leftKey, rightKey, err := a.semJoinCond(join.Cond)
+	leftKey, rightKey, err := a.semSQLJoinCond(join.Cond)
 	if err != nil {
 		a.error(join.Cond, errors.New("SQL joins currently limited to equijoin on fields"))
 		return append(seq, badOp())
@@ -214,27 +214,46 @@ func (a *analyzer) semSQLJoin(join *ast.SQLJoin, seq dag.Seq) dag.Seq {
 	return append(seq, dagJoin)
 }
 
-func (a *analyzer) semJoinCond(cond ast.JoinExpr) (*dag.This, *dag.This, error) {
+func (a *analyzer) semSQLJoinCond(cond ast.JoinExpr) (*dag.This, *dag.This, error) {
+	//XXX we currently require field expressions for SQL joins and will need them
+	// to resolve names to join side when we add scope tracking
+	l, r, err := a.semJoinCond(cond)
+	if err != nil {
+		return nil, nil, err
+	}
+	left, ok := l.(*dag.This)
+	if !ok {
+		return nil, nil, errors.New("join keys must be field references")
+	}
+	right, ok := r.(*dag.This)
+	if !ok {
+		return nil, nil, errors.New("join keys must be field references")
+	}
+	return left, right, nil
+}
+
+func (a *analyzer) semJoinCond(cond ast.JoinExpr) (dag.Expr, dag.Expr, error) {
 	switch cond := cond.(type) {
-	case *ast.JoinOn:
+	case *ast.JoinOnExpr:
+		if id, ok := cond.Expr.(*ast.ID); ok {
+			return a.semJoinCond(&ast.JoinUsingExpr{Fields: []ast.Expr{id}})
+		}
 		binary, ok := cond.Expr.(*ast.BinaryExpr)
-		if !ok || binary.Op != "==" {
+		if !ok || !(binary.Op == "==" || binary.Op == "=") {
 			return nil, nil, errors.New("only equijoins currently supported")
 		}
-		//XXX we currently require field expressions
-		// need to generalize this but that will require work on the
-		// runtime join implementation.
-		leftKey, ok := a.semField(binary.LHS).(*dag.This)
-		if !ok {
-			return nil, nil, errors.New("join keys must be field references")
-		}
-		rightKey, ok := a.semField(binary.RHS).(*dag.This)
-		if !ok {
-			return nil, nil, errors.New("join keys must be field references")
-		}
+		leftKey := a.semExpr(binary.LHS)
+		rightKey := a.semExpr(binary.RHS)
 		return leftKey, rightKey, nil
-	case *ast.JoinUsing:
-		panic("XXX TBD - JoinUsing")
+	case *ast.JoinUsingExpr:
+		if len(cond.Fields) > 1 {
+			return nil, nil, errors.New("join using currently limited to a single field")
+		}
+		key, ok := a.semField(cond.Fields[0]).(*dag.This)
+		if !ok {
+			return nil, nil, errors.New("join using key must be a field reference")
+		}
+		return key, key, nil
 	default:
 		panic(fmt.Sprintf("semJoinCond: unknown type: %T", cond))
 	}
@@ -318,21 +337,16 @@ func (a *analyzer) semGroupBy(exprs []ast.Expr, proj projection, seq dag.Seq) (d
 		}
 		paths = append(paths, this.Path)
 	}
-	// Make sure all group-by keys are in the selection.
-	all := proj.paths()
-	for k, path := range paths {
-		if !path.In(all) {
-			if path.HasPrefixIn(all) {
-				a.error(exprs[k], fmt.Errorf("'%s': GROUP BY key cannot be a sub-field of the selected value", path))
-			}
-			a.error(exprs[k], fmt.Errorf("'%s': GROUP BY key not in selection", path))
-			return nil, false
-		}
-	}
 	// Make sure all scalars are in the group-by keys.
 	scalars := proj.scalars()
-	for k, path := range scalars.paths() {
-		if !path.In(paths) {
+	for k, col := range scalars {
+		path := col.scalar
+		if this, ok := col.scalar.(*dag.This); ok {
+			if field.Path(this.Path).In(paths) {
+				continue
+			}
+		}
+		if !(field.Path{col.name}).In(paths) {
 			a.error(exprs[k], fmt.Errorf("'%s': selected expression is missing from GROUP BY clause (and is not an aggregation)", path))
 			return nil, false
 		}

@@ -565,11 +565,14 @@ func (c *canon) op(p ast.Op) {
 			c.flush()
 			c.write(") ")
 		}
-		c.write("on ")
-		c.expr(p.LeftKey, "")
-		if p.RightKey != nil {
-			c.write("=")
-			c.expr(p.RightKey, "")
+		switch cond := p.Cond.(type) {
+		case *ast.JoinOnExpr:
+			c.write("on ")
+			c.expr(cond.Expr, "")
+		case *ast.JoinUsingExpr:
+			c.write("using (")
+			c.exprs(cond.Fields)
+			c.write(")")
 		}
 		if p.Args != nil {
 			c.write(" ")

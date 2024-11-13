@@ -109,8 +109,8 @@ var unpacker = unpack.New(
 	OrderBy{},
 	Limit{},
 	With{},
-	JoinOn{},
-	JoinUsing{},
+	JoinOnExpr{},
+	JoinUsingExpr{},
 )
 
 // UnmarshalOp transforms a JSON representation of an operator into an Op.

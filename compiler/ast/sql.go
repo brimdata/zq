@@ -87,24 +87,24 @@ type (
 
 type JoinExpr interface {
 	Node
-	joinOp()
+	joinExpr()
 }
 
-type JoinOn struct {
+type JoinOnExpr struct {
 	Kind string `json:"kind" unpack:""`
 	Expr Expr   `json:"expr"`
 	Loc  `json:"loc"`
 }
 
-func (*JoinOn) joinOp() {}
+func (*JoinOnExpr) joinExpr() {}
 
-type JoinUsing struct {
+type JoinUsingExpr struct {
 	Kind   string `json:"kind" unpack:""`
 	Fields []Expr `json:"fields"`
 	Loc    `json:"loc"`
 }
 
-func (*JoinUsing) joinOp() {}
+func (*JoinUsingExpr) joinExpr() {}
 
 func (*SQLPipe) OpAST()   {}
 func (*Select) OpAST()    {}
