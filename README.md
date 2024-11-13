@@ -40,16 +40,16 @@ from the current GitHub API:
 
 ```sql
 FROM 'https://data.gharchive.org/2015-01-01-15.json.gz'
-| SELECT union(repo.name) AS repo, actor.login AS user
+| SELECT union(repo.name) AS repos, actor.login AS user
   GROUP BY user
-  ORDER BY len(repo) DESC
+  ORDER BY len(repos) DESC
   LIMIT 5
 | FORK (
   => FROM eval(f'https://api.github.com/users/{user}')
    | SELECT VALUE {user:login,created_at:time(created_at)}
   => PASS
   )
-| JOIN USING (user)
+| JOIN USING (user) repos
 ```
 
 ## Super JSON
