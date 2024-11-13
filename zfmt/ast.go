@@ -573,6 +573,8 @@ func (c *canon) op(p ast.Op) {
 			c.write("using (")
 			c.exprs(cond.Fields)
 			c.write(")")
+		default:
+			panic(cond)
 		}
 		if p.Args != nil {
 			c.write(" ")
