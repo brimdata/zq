@@ -1,16 +1,25 @@
 script: |
-  zc -C -I test.zed
+  super compile -C -I test.spq
   echo "==="
-  zc -s -C -I test.zed
+  super compile -dag -C -I test.spq
 
 inputs:
-  - name: test.zed
+  - name: test.spq
     data: |
       func fib(n): (n <= 1 ? n : fib(n-1) + fib(n-2))
       const foo = "bar"
       func add(a,b): (a+b)
       const bar = "baz"
-      pass
+      op stamp(assignee): ( yield {...this, assignee, ts: now()} )
+      op nop(foo): ( pass )
+      op joinTest(left_file, right_file, left_key, right_key, left_dest, right_source): (
+        from eval(left_file)
+        |> inner join (
+          from eval(right_file)
+        ) on left_key = right_key left_dest := right_source
+      )
+      joinTest("fruit.json", "people.json", flavor, likes, eater, name)
+      |> stamp("bob")
 
 outputs:
   - name: stdout
@@ -23,17 +32,39 @@ outputs:
         a+b
       )
       const bar = "baz"
-      pass
+      op stamp(assignee): (
+        yield {...this,assignee,ts:now()}
+      )
+      op nop(foo): (
+        pass
+      )
+      op joinTest(left_file, right_file, left_key, right_key, left_dest, right_source): (
+        from eval(left_file)
+        |> join (
+          from eval(right_file)
+        ) on left_key=right_key left_dest:=right_source
+      )
+      joinTest("fruit.json", "people.json", flavor, likes, eater, name)
+      |> stamp("bob")
       ===
-      const foo = "bar"
-      const bar = "baz"
-      func fib(n): (
-        (n<=1) ? n : fib(n-1)+fib(n-2)
+      (
+        const foo = "bar"
+        const bar = "baz"
+        func fib(n): (
+          (n<=1) ? n : fib(n-1)+fib(n-2)
+        )
+        func add(a, b): (
+          a+b
+        )
+        
+        file fruit.json
+        |> fork (
+          =>
+            pass
+          =>
+            file people.json
+        )
+        |> join on flavor=likes eater:=name
+        |> yield {...this,assignee:"bob",ts:now()}
+        |> output main
       )
-      func add(a, b): (
-        a+b
-      )
-      from (
-        (internal reader)
-      )
-      | pass

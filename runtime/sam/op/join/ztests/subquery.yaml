@@ -1,0 +1,20 @@
+script: |
+  super -z -c 'file a.jsup |> inner join (file b.jsup) on a=b'
+
+inputs:
+  - name: a.jsup
+    data: |
+      {a:1}
+      {a:2}
+      {a:3}
+  - name: b.jsup
+    data: |
+      {b:1}
+      {b:3}
+      {b:4}
+
+outputs:
+  - name: stdout
+    data: |
+      {a:1}
+      {a:3}

@@ -1,0 +1,17 @@
+# Test runtime/vam/op.Sum
+
+script: |
+  # Create a VNG file in which x is dictionary-encoded and y is not to test both
+  # encodings.
+  {
+    seq -f '{x: 0, y: %.0f}' 257
+    seq -f '{x: 1, y: %.0f}' 257
+  } | super -o t.csup -f csup -
+  super dev vector query -z 'sum(x)' t.csup
+  super dev vector query -z 'sum(y)' t.csup
+
+outputs:
+  - name: stdout
+    data: |
+      257
+      66306

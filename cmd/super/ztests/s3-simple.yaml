@@ -1,0 +1,15 @@
+script: |
+  source minio.sh
+  mv babble.jsup ./data/bucket
+  super -z -c "count()" s3://bucket/babble.jsup
+
+inputs:
+  - name: babble.jsup
+    source: ../../../testdata/babble.jsup
+  - name: minio.sh
+    source: ../../../testdata/minio.sh
+
+outputs:
+  - name: stdout
+    data: |
+      1000(uint64)

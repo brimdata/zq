@@ -1,0 +1,13 @@
+zed: cut foo
+
+vector: true
+
+input: |
+  {bar:"bar1"}
+  {bar:"bar2"}
+  {bar:"bar3"}
+
+output: |
+  {foo:error("missing")}
+  {foo:error("missing")}
+  {foo:error("missing")}

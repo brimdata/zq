@@ -4,22 +4,16 @@ import (
 	"bytes"
 	"net"
 	"net/netip"
-	"strings"
 	"testing"
 	"time"
 
-	"github.com/brimdata/zed"
-	"github.com/brimdata/zed/zio"
-	"github.com/brimdata/zed/zio/zngio"
-	"github.com/brimdata/zed/zio/zsonio"
-	"github.com/brimdata/zed/zson"
+	"github.com/brimdata/super"
+	"github.com/brimdata/super/zio"
+	"github.com/brimdata/super/zio/zngio"
+	"github.com/brimdata/super/zson"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-func trim(s string) string {
-	return strings.TrimSpace(s) + "\n"
-}
 
 type Thing interface {
 	Color() string
@@ -38,21 +32,16 @@ type Animal struct {
 func (a *Animal) Color() string { return a.MyColor }
 
 func TestInterfaceMarshal(t *testing.T) {
-	rose := Thing(&Plant{"red"})
-	expectedRose := `{MyColor:"red"}(=Plant)`
-	flamingo := Thing(&Animal{"pink"})
-	expectedFlamingo := `{MyColor:"pink"}(=Animal)`
-
 	m := zson.NewMarshaler()
 	m.Decorate(zson.StyleSimple)
 
-	zsonRose, err := m.Marshal(rose)
+	zsonRose, err := m.Marshal(Thing(&Plant{"red"}))
 	require.NoError(t, err)
-	assert.Equal(t, trim(expectedRose), trim(zsonRose))
+	assert.Equal(t, `{MyColor:"red"}(=Plant)`, zsonRose)
 
-	zsonFlamingo, err := m.Marshal(flamingo)
+	zsonFlamingo, err := m.Marshal(Thing(&Animal{"pink"}))
 	require.NoError(t, err)
-	assert.Equal(t, trim(expectedFlamingo), trim(zsonFlamingo))
+	assert.Equal(t, `{MyColor:"pink"}(=Animal)`, zsonFlamingo)
 
 	u := zson.NewUnmarshaler()
 	u.Bind(Plant{}, Animal{})
@@ -114,35 +103,17 @@ type SliceRecord struct {
 	S []IDSlice
 }
 
-func recToZSON(t *testing.T, rec *zed.Value) string {
-	var b strings.Builder
-	w := zsonio.NewWriter(zio.NopCloser(&b), zsonio.WriterOpts{})
-	err := w.Write(rec)
-	require.NoError(t, err)
-	return b.String()
-}
-
 func TestBytes(t *testing.T) {
-	b := BytesRecord{B: []byte{1, 2, 3}}
 	m := zson.NewZNGMarshaler()
-	rec, err := m.Marshal(b)
+	rec, err := m.Marshal(BytesRecord{B: []byte{1, 2, 3}})
 	require.NoError(t, err)
 	require.NotNil(t, rec)
+	assert.Equal(t, "{B:0x010203}", zson.FormatValue(rec))
 
-	exp := `
-{B:0x010203}
-`
-	assert.Equal(t, trim(exp), recToZSON(t, rec))
-
-	a := BytesArrayRecord{A: [3]byte{4, 5, 6}}
-	rec, err = m.Marshal(a)
+	rec, err = m.Marshal(BytesArrayRecord{A: [3]byte{4, 5, 6}})
 	require.NoError(t, err)
 	require.NotNil(t, rec)
-
-	exp = `
-{A:0x040506}
-`
-	assert.Equal(t, trim(exp), recToZSON(t, rec))
+	assert.Equal(t, "{A:0x040506}", zson.FormatValue(rec))
 
 	id := IDRecord{A: ID{0, 1, 2, 3}, B: ID{4, 5, 6, 7}}
 	m = zson.NewZNGMarshaler()
@@ -150,16 +121,12 @@ func TestBytes(t *testing.T) {
 	rec, err = m.Marshal(id)
 	require.NoError(t, err)
 	require.NotNil(t, rec)
-
-	exp = `
-{A:0x00010203(=ID),B:0x04050607(ID)}(=IDRecord)
-	`
-	assert.Equal(t, trim(exp), recToZSON(t, rec))
+	assert.Equal(t, "{A:0x00010203(=ID),B:0x04050607(ID)}(=IDRecord)", zson.FormatValue(rec))
 
 	var id2 IDRecord
 	u := zson.NewZNGUnmarshaler()
 	u.Bind(IDRecord{}, ID{})
-	err = zson.UnmarshalZNGRecord(rec, &id2)
+	err = zson.UnmarshalZNG(rec, &id2)
 	require.NoError(t, err)
 	assert.Equal(t, id, id2)
 
@@ -168,23 +135,14 @@ func TestBytes(t *testing.T) {
 	rec, err = m.Marshal(b2)
 	require.NoError(t, err)
 	require.NotNil(t, rec)
-
-	exp = `
-{B:null(bytes)}
-`
-	assert.Equal(t, trim(exp), recToZSON(t, rec))
+	assert.Equal(t, "{B:null(bytes)}", zson.FormatValue(rec))
 
 	s := SliceRecord{S: nil}
 	m = zson.NewZNGMarshaler()
 	rec, err = m.Marshal(s)
 	require.NoError(t, err)
 	require.NotNil(t, rec)
-
-	exp = `
-{S:null([bytes])}
-	`
-	assert.Equal(t, trim(exp), recToZSON(t, rec))
-
+	assert.Equal(t, "{S:null([bytes])}", zson.FormatValue(rec))
 }
 
 type RecordWithInterfaceSlice struct {
@@ -209,17 +167,15 @@ func TestMixedTypeArrayInsideRecord(t *testing.T) {
 
 	var buffer bytes.Buffer
 	writer := zngio.NewWriter(zio.NopCloser(&buffer))
-	recExpected := zed.NewValue(zv.Type, zv.Bytes)
+	recExpected := super.NewValue(zv.Type(), zv.Bytes())
 	writer.Write(recExpected)
 	writer.Close()
 
-	reader := zngio.NewReader(zed.NewContext(), &buffer)
+	reader := zngio.NewReader(super.NewContext(), &buffer)
 	defer reader.Close()
 	recActual, err := reader.Read()
-	exp, err := zson.FormatValue(recExpected)
-	require.NoError(t, err)
-	actual, err := zson.FormatValue(recActual)
-	require.NoError(t, err)
+	exp := zson.FormatValue(recExpected)
+	actual := zson.FormatValue(*recActual)
 	assert.Equal(t, exp, actual)
 	// Double check that all the proper typing made it into the implied union.
 	assert.Equal(t, `{X:"hello",S:[[{MyColor:"red"}(=Plant),{MyColor:"blue"}(=Animal)]]}(=RecordWithInterfaceSlice)`, actual)
@@ -237,11 +193,10 @@ type ArrayOfThings struct {
 }
 
 func TestMixedTypeUnmarshal(t *testing.T) {
-	z := `{S:[{MyColor:"red"}(=Plant),{MyColor:"blue"}(=Animal)]}`
 	u := zson.NewUnmarshaler()
 	u.Bind(Animal{}, Plant{}, ArrayOfThings{})
 	var out ArrayOfThings
-	err := u.Unmarshal(z, &out)
+	err := u.Unmarshal(`{S:[{MyColor:"red"}(=Plant),{MyColor:"blue"}(=Animal)]}`, &out)
 	require.NoError(t, err)
 	assert.Equal(t, ArrayOfThings{S: []Thing{&Plant{"red"}, &Animal{"blue"}}}, out)
 }
@@ -271,18 +226,17 @@ func TestMixedTypeArrayOfStructWithInterface(t *testing.T) {
 
 	var buffer bytes.Buffer
 	writer := zngio.NewWriter(zio.NopCloser(&buffer))
-	recExpected := zed.NewValue(zv.Type, zv.Bytes)
+	recExpected := super.NewValue(zv.Type(), zv.Bytes())
 	writer.Write(recExpected)
 	writer.Close()
 
-	reader := zngio.NewReader(zed.NewContext(), &buffer)
+	reader := zngio.NewReader(super.NewContext(), &buffer)
 	defer reader.Close()
 	recActual, err := reader.Read()
-	exp, err := zson.FormatValue(recExpected)
 	require.NoError(t, err)
-	actual, err := zson.FormatValue(recActual)
-	require.NoError(t, err)
-	assert.Equal(t, trim(exp), trim(actual))
+	exp := zson.FormatValue(recExpected)
+	actual := zson.FormatValue(*recActual)
+	assert.Equal(t, exp, actual)
 	// Double check that all the proper typing made it into the implied union.
 	assert.Equal(t, `[{Message:"hello",Thing:{MyColor:"red"}(=Plant)}(=MessageThing),{Message:"world",Thing:{MyColor:"blue"}(=Animal)}(=MessageThing)]`, actual)
 
@@ -308,44 +262,38 @@ func TestUnexported(t *testing.T) {
 
 type ZNGValueField struct {
 	Name  string
-	Field zed.Value `zed:"field"`
+	Field super.Value `zed:"field"`
 }
 
 func TestZNGValueField(t *testing.T) {
-	// Include a Zed int64 inside a Go struct as a zed.Value field.
+	// Include a Zed int64 inside a Go struct as a super.Value field.
 	zngValueField := &ZNGValueField{
 		Name:  "test1",
-		Field: *zed.NewInt64(123),
+		Field: super.NewInt64(123),
 	}
 	m := zson.NewZNGMarshaler()
 	m.Decorate(zson.StyleSimple)
 	zv, err := m.Marshal(zngValueField)
 	require.NoError(t, err)
-	expected := `{Name:"test1",field:123}(=ZNGValueField)`
-	actual, err := zson.FormatValue(zv)
-	require.NoError(t, err)
-	assert.Equal(t, trim(expected), trim(actual))
+	assert.Equal(t, `{Name:"test1",field:123}(=ZNGValueField)`, zson.FormatValue(zv))
 	u := zson.NewZNGUnmarshaler()
 	var out ZNGValueField
 	err = u.Unmarshal(zv, &out)
 	require.NoError(t, err)
-	assert.Equal(t, *zngValueField, out)
-	// Include a Zed record inside a Go struct in a zed.Value field.
-	z := `{s:"foo",a:[1,2,3]}`
-	zv2, err := zson.ParseValue(zed.NewContext(), z)
+	assert.Equal(t, zngValueField.Name, out.Name)
+	assert.True(t, zngValueField.Field.Equal(out.Field))
+	// Include a Zed record inside a Go struct in a super.Value field.
+	zv2, err := zson.ParseValue(super.NewContext(), `{s:"foo",a:[1,2,3]}`)
 	require.NoError(t, err)
 	zngValueField2 := &ZNGValueField{
 		Name:  "test2",
-		Field: *zv2,
+		Field: zv2,
 	}
 	m2 := zson.NewZNGMarshaler()
 	m2.Decorate(zson.StyleSimple)
 	zv3, err := m2.Marshal(zngValueField2)
 	require.NoError(t, err)
-	expected2 := `{Name:"test2",field:{s:"foo",a:[1,2,3]}}(=ZNGValueField)`
-	actual2, err := zson.FormatValue(zv3)
-	require.NoError(t, err)
-	assert.Equal(t, trim(expected2), trim(actual2))
+	assert.Equal(t, `{Name:"test2",field:{s:"foo",a:[1,2,3]}}(=ZNGValueField)`, zson.FormatValue(zv3))
 	u2 := zson.NewZNGUnmarshaler()
 	var out2 ZNGValueField
 	err = u2.Unmarshal(zv3, &out2)
@@ -354,13 +302,12 @@ func TestZNGValueField(t *testing.T) {
 }
 
 func TestJSONFieldTag(t *testing.T) {
-	const expected = `{value:"test"}`
 	type jsonTag struct {
 		Value string `json:"value"`
 	}
 	s, err := zson.Marshal(jsonTag{Value: "test"})
 	require.NoError(t, err)
-	assert.Equal(t, expected, s)
+	assert.Equal(t, `{value:"test"}`, s)
 	var j jsonTag
 	require.NoError(t, zson.Unmarshal(s, &j))
 	assert.Equal(t, jsonTag{Value: "test"}, j)
@@ -385,7 +332,7 @@ func TestMarshalNetIP(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, `10.0.0.1`, b)
 	var after net.IP
-	err = zson.Unmarshal(string(b), &after)
+	err = zson.Unmarshal(b, &after)
 	require.NoError(t, err)
 	assert.Equal(t, before, after)
 }
@@ -396,7 +343,7 @@ func TestMarshalNetipAddr(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, `10.0.0.1`, b)
 	var after netip.Addr
-	err = zson.Unmarshal(string(b), &after)
+	err = zson.Unmarshal(b, &after)
 	require.NoError(t, err)
 	assert.Equal(t, before, after)
 }
@@ -422,15 +369,15 @@ func TestMarshalGoTime(t *testing.T) {
 }
 
 type Metadata interface {
-	Type() zed.Type
+	Type() super.Type
 }
 
 type Record struct {
 	Fields []Field
 }
 
-func (r *Record) Type() zed.Type {
-	return zed.TypeNull
+func (r *Record) Type() super.Type {
+	return super.TypeNull
 }
 
 type Field struct {
@@ -442,16 +389,16 @@ type Primitive struct {
 	Foo string
 }
 
-func (*Primitive) Type() zed.Type {
-	return zed.TypeNull
+func (*Primitive) Type() super.Type {
+	return super.TypeNull
 }
 
 type Array struct {
 	Values Metadata
 }
 
-func (*Array) Type() zed.Type {
-	return zed.TypeNull
+func (*Array) Type() super.Type {
+	return super.TypeNull
 }
 
 func TestRecordWithMixedTypeNamedArrayElems(t *testing.T) {
@@ -496,18 +443,18 @@ func TestInterfaceWithConcreteEmptyValue(t *testing.T) {
 }
 
 func TestZedType(t *testing.T) {
-	zctx := zed.NewContext()
+	zctx := super.NewContext()
 	u := zson.NewUnmarshaler()
-	var typ zed.Type
+	var typ super.Type
 	err := u.Unmarshal(`<string>`, &typ)
 	assert.EqualError(t, err, `cannot unmarshal type value without type context`)
 	u.SetContext(zctx)
 	err = u.Unmarshal(`<string>`, &typ)
 	require.NoError(t, err)
-	assert.Equal(t, zed.TypeString, typ)
+	assert.Equal(t, super.TypeString, typ)
 	err = u.Unmarshal(`<int64>`, &typ)
 	require.NoError(t, err)
-	assert.Equal(t, zed.TypeInt64, typ)
+	assert.Equal(t, super.TypeInt64, typ)
 }
 
 func TestSimpleUnionUnmarshal(t *testing.T) {
@@ -516,4 +463,13 @@ func TestSimpleUnionUnmarshal(t *testing.T) {
 	err := zson.Unmarshal(`1((int64,string))`, &i)
 	require.NoError(t, err)
 	assert.Equal(t, 1, i)
+}
+
+func TestEmbeddedNilInterface(t *testing.T) {
+	in := &Record{
+		Fields: nil,
+	}
+	val, err := zson.Marshal(in)
+	require.NoError(t, err)
+	assert.Equal(t, `{Fields:null([{Name:string,Values:null}])}`, val)
 }

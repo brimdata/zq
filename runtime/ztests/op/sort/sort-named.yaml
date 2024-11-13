@@ -1,0 +1,11 @@
+zed: sort host
+
+vector: true
+
+input: |
+  {host:127.0.0.2}
+  {host:127.0.0.1(=ipaddr)}
+
+output: |
+  {host:127.0.0.1(=ipaddr)}
+  {host:127.0.0.2}

@@ -2,12 +2,6 @@
 // queries.
 package ast
 
-import (
-	astzed "github.com/brimdata/zed/compiler/ast/zed"
-	"github.com/brimdata/zed/order"
-	"github.com/brimdata/zed/pkg/field"
-)
-
 // This module is derived from the GO AST design pattern in
 // https://golang.org/pkg/go/ast/
 //
@@ -15,45 +9,76 @@ import (
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+type Node interface {
+	Pos() int // Position of first character belonging to the node.
+	End() int // Position of first character immediately after the node.
+}
+
+type Loc struct {
+	First int `json:"first"`
+	Last  int `json:"last"`
+}
+
+func NewLoc(pos, end int) Loc {
+	return Loc{pos, end}
+}
+
+func (l Loc) Pos() int { return l.First }
+func (l Loc) End() int { return l.Last }
+
 // Op is the interface implemented by all AST operator nodes.
 type Op interface {
+	Node
 	OpAST()
 }
 
 type Decl interface {
+	Node
 	DeclAST()
 }
 
 type Expr interface {
+	Node
 	ExprAST()
 }
 
 type ID struct {
 	Kind string `json:"kind" unpack:""`
 	Name string `json:"name"`
+	Loc  `json:"loc"`
 }
 
 type Term struct {
-	Kind  string     `json:"kind" unpack:""`
-	Text  string     `json:"text"`
-	Value astzed.Any `json:"value"`
+	Kind  string `json:"kind" unpack:""`
+	Text  string `json:"text"`
+	Value Any    `json:"value"`
+	Loc   `json:"loc"`
 }
 
 type UnaryExpr struct {
 	Kind    string `json:"kind" unpack:""`
 	Op      string `json:"op"`
 	Operand Expr   `json:"operand"`
+	Loc     `json:"loc"`
 }
 
 // A BinaryExpr is any expression of the form "lhs kind rhs"
 // including arithmetic (+, -, *, /), logical operators (and, or),
-// comparisons (=, !=, <, <=, >, >=), index operatons (on arrays, sets, and records)
-// with kind "[" and a dot expression (".") (on records).
+// comparisons (=, !=, <, <=, >, >=), and a dot expression (".") (on records).
 type BinaryExpr struct {
 	Kind string `json:"kind" unpack:""`
 	Op   string `json:"op"`
 	LHS  Expr   `json:"lhs"`
 	RHS  Expr   `json:"rhs"`
+	Loc  `json:"loc"`
+}
+
+type Between struct {
+	Kind  string `json:"kind" unpack:""`
+	Expr  Expr   `json:"expr"`
+	Lower Expr   `json:"lower"`
+	Upper Expr   `json:"upper"`
+	Loc   `json:"loc"`
 }
 
 type Conditional struct {
@@ -61,6 +86,22 @@ type Conditional struct {
 	Cond Expr   `json:"cond"`
 	Then Expr   `json:"then"`
 	Else Expr   `json:"else"`
+	Loc  `json:"loc"`
+}
+
+type CaseExpr struct {
+	Kind  string `json:"kind" unpack:""`
+	Expr  Expr   `json:"expr"`
+	Whens []When `json:"whens"`
+	Else  Expr   `json:"else"`
+	Loc   `json:"loc"`
+}
+
+type When struct {
+	Kind string `json:"kind" unpack:""`
+	Cond Expr   `json:"expr"`
+	Then Expr   `json:"else"`
+	Loc  `json:"loc"`
 }
 
 // A Call represents different things dependending on its context.
@@ -72,78 +113,132 @@ type Conditional struct {
 // and returns a result.
 type Call struct {
 	Kind  string `json:"kind" unpack:""`
-	Name  string `json:"name"`
+	Name  *ID    `json:"name"`
 	Args  []Expr `json:"args"`
 	Where Expr   `json:"where"`
+	Loc   `json:"loc"`
 }
 
 type Cast struct {
 	Kind string `json:"kind" unpack:""`
 	Expr Expr   `json:"expr"`
 	Type Expr   `json:"type"`
+	Loc  `json:"loc"`
+}
+
+type IndexExpr struct {
+	Kind  string `json:"kind" unpack:""`
+	Expr  Expr   `json:"expr"`
+	Index Expr   `json:"index"`
+	Loc   `json:"loc"`
+}
+
+type SliceExpr struct {
+	Kind string `json:"kind" unpack:""`
+	Expr Expr   `json:"expr"`
+	From Expr   `json:"from"`
+	To   Expr   `json:"to"`
+	Loc  `json:"loc"`
 }
 
 type Grep struct {
-	Kind    string  `json:"kind" unpack:""`
-	Pattern Pattern `json:"pattern"`
-	Expr    Expr    `json:"expr"`
+	Kind    string `json:"kind" unpack:""`
+	Pattern Expr   `json:"pattern"`
+	Expr    Expr   `json:"expr"`
+	Loc     `json:"loc"`
 }
 
 type Glob struct {
 	Kind    string `json:"kind" unpack:""`
 	Pattern string `json:"pattern"`
+	Loc     `json:"loc"`
 }
 
 type Regexp struct {
-	Kind    string `json:"kind" unpack:""`
-	Pattern string `json:"pattern"`
+	Kind       string `json:"kind" unpack:""`
+	Pattern    string `json:"pattern"`
+	PatternPos int    `json:"pattern_pos"`
+	Loc        `json:"loc"`
 }
 
-type String struct {
+type Name struct {
 	Kind string `json:"kind" unpack:""`
 	Text string `json:"text"`
+	Loc  `json:"loc"`
 }
 
-type Pattern interface {
-	PatternAST()
+type FromEntity interface {
+	Node
+	fromEntity()
 }
 
-func (*Glob) PatternAST()   {}
-func (*Regexp) PatternAST() {}
-func (*String) PatternAST() {}
+type ExprEntity struct {
+	Kind string `json:"kind" unpack:""`
+	Expr Expr   `json:"expr"`
+	Loc  `json:"loc"`
+}
+
+func (*Glob) fromEntity()       {}
+func (*Regexp) fromEntity()     {}
+func (*ExprEntity) fromEntity() {}
+func (*LakeMeta) fromEntity()   {}
+func (*Name) fromEntity()       {}
+func (*CrossJoin) fromEntity()  {}
+func (*SQLJoin) fromEntity()    {}
+func (*SQLPipe) fromEntity()    {}
+
+type FromElem struct {
+	Kind       string      `json:"kind" unpack:""`
+	Entity     FromEntity  `json:"entity"`
+	Args       FromArgs    `json:"args"`
+	Ordinality *Ordinality `json:"ordinality"`
+	Alias      *Name       `json:"alias"`
+	Loc        `json:"loc"`
+}
+
+type Ordinality struct {
+	Kind string `json:"kind" unpack:""`
+	Loc  `json:"loc"`
+}
 
 type RecordExpr struct {
 	Kind  string       `json:"kind" unpack:""`
 	Elems []RecordElem `json:"elems"`
+	Loc   `json:"loc"`
 }
 
 type RecordElem interface {
+	Node
 	recordAST()
 }
 
-func (*Field) recordAST()  {}
-func (*ID) recordAST()     {}
-func (*Spread) recordAST() {}
-
-type Field struct {
+type FieldExpr struct {
 	Kind  string `json:"kind" unpack:""`
-	Name  string `json:"name"`
+	Name  *Name  `json:"name"`
 	Value Expr   `json:"value"`
+	Loc   `json:"loc"`
 }
 
 type Spread struct {
 	Kind string `json:"kind" unpack:""`
 	Expr Expr   `json:"expr"`
+	Loc  `json:"loc"`
 }
+
+func (*FieldExpr) recordAST() {}
+func (*ID) recordAST()        {}
+func (*Spread) recordAST()    {}
 
 type ArrayExpr struct {
 	Kind  string       `json:"kind" unpack:""`
 	Elems []VectorElem `json:"elems"`
+	Loc   `json:"loc"`
 }
 
 type SetExpr struct {
 	Kind  string       `json:"kind" unpack:""`
 	Elems []VectorElem `json:"elems"`
+	Loc   `json:"loc"`
 }
 
 type VectorElem interface {
@@ -156,31 +251,71 @@ func (*VectorValue) vectorAST() {}
 type VectorValue struct {
 	Kind string `json:"kind" unpack:""`
 	Expr Expr   `json:"expr"`
+	Loc  `json:"loc"`
 }
 
 type MapExpr struct {
 	Kind    string      `json:"kind" unpack:""`
 	Entries []EntryExpr `json:"entries"`
+	Loc     `json:"loc"`
 }
 
 type EntryExpr struct {
 	Key   Expr `json:"key"`
 	Value Expr `json:"value"`
+	Loc   `json:"loc"`
+}
+
+type TupleExpr struct {
+	Kind  string `json:"kind" unpack:""`
+	Elems []Expr `json:"elems"`
+	Loc   `json:"loc"`
 }
 
 type OverExpr struct {
-	Kind   string      `json:"kind" unpack:""`
-	Locals []Def       `json:"locals"`
-	Exprs  []Expr      `json:"exprs"`
-	Scope  *Sequential `json:"scope"`
+	Kind   string `json:"kind" unpack:""`
+	Locals []Def  `json:"locals"`
+	Exprs  []Expr `json:"exprs"`
+	Body   Seq    `json:"body"`
+	Loc    `json:"loc"`
 }
+
+type FString struct {
+	Kind  string        `json:"kind" unpack:""`
+	Elems []FStringElem `json:"elems"`
+	Loc   `json:"loc"`
+}
+
+type FStringElem interface {
+	Node
+	FStringElem()
+}
+
+type FStringText struct {
+	Kind string `json:"kind" unpack:""`
+	Text string `json:"text"`
+	Loc  `json:"loc"`
+}
+
+type FStringExpr struct {
+	Kind string `json:"kind" unpack:""`
+	Expr Expr   `json:"expr"`
+	Loc  `json:"loc"`
+}
+
+func (*FStringText) FStringElem() {}
+func (*FStringExpr) FStringElem() {}
 
 func (*UnaryExpr) ExprAST()   {}
 func (*BinaryExpr) ExprAST()  {}
+func (*Between) ExprAST()     {}
 func (*Conditional) ExprAST() {}
 func (*Call) ExprAST()        {}
+func (*CaseExpr) ExprAST()    {}
 func (*Cast) ExprAST()        {}
 func (*ID) ExprAST()          {}
+func (*IndexExpr) ExprAST()   {}
+func (*SliceExpr) ExprAST()   {}
 
 func (*Assignment) ExprAST() {}
 func (*Agg) ExprAST()        {}
@@ -193,142 +328,191 @@ func (*RecordExpr) ExprAST() {}
 func (*ArrayExpr) ExprAST()  {}
 func (*SetExpr) ExprAST()    {}
 func (*MapExpr) ExprAST()    {}
-
-func (*OverExpr) ExprAST() {}
-
-func (*SQLExpr) ExprAST() {}
+func (*TupleExpr) ExprAST()  {}
+func (*OverExpr) ExprAST()   {}
+func (*FString) ExprAST()    {}
 
 type ConstDecl struct {
 	Kind string `json:"kind" unpack:""`
-	Name string `json:"name"`
+	Name *ID    `json:"name"`
 	Expr Expr   `json:"expr"`
+	Loc  `json:"loc"`
 }
 
 type FuncDecl struct {
-	Kind   string   `json:"kind" unpack:""`
-	Name   string   `json:"name"`
-	Params []string `json:"params"`
-	Expr   Expr     `json:"expr"`
+	Kind   string `json:"kind" unpack:""`
+	Name   *ID    `json:"name"`
+	Params []*ID  `json:"params"`
+	Expr   Expr   `json:"expr"`
+	Loc    `json:"loc"`
+}
+
+type OpDecl struct {
+	Kind   string `json:"kind" unpack:""`
+	Name   *ID    `json:"name"`
+	Params []*ID  `json:"params"`
+	Body   Seq    `json:"body"`
+	Loc    `json:"loc"`
+}
+
+type TypeDecl struct {
+	Kind string `json:"kind" unpack:""`
+	Name *ID    `json:"name"`
+	Type Type   `json:"type"`
+	Loc  `json:"loc"`
 }
 
 func (*ConstDecl) DeclAST() {}
 func (*FuncDecl) DeclAST()  {}
+func (*OpDecl) DeclAST()    {}
+func (*TypeDecl) DeclAST()  {}
 
 // ----------------------------------------------------------------------------
 // Operators
 
+// A Seq represents a sequence of operators that receive
+// a stream of Zed values from their parent into the first operator
+// and each subsequent operator processes the output records from the
+// previous operator.
+type Seq []Op
+
+func (s Seq) Pos() int {
+	if len(s) == 0 {
+		return -1
+	}
+	return s[0].Pos()
+}
+
+func (s Seq) End() int {
+	if len(s) == 0 {
+		return -1
+	}
+	return s[len(s)-1].End()
+}
+
+func (s *Seq) Prepend(front Op) {
+	*s = append([]Op{front}, *s...)
+}
+
 // An Op is a node in the flowgraph that takes Zed values in, operates upon them,
 // and produces Zed values as output.
 type (
-	// A Sequential operator represents a set of operators that receive
-	// a stream of Zed values from their parent into the first operator
-	// and each subsequent operator processes the output records from the
-	// previous operator.
-	Sequential struct {
+	Scope struct {
 		Kind  string `json:"kind" unpack:""`
 		Decls []Decl `json:"decls"`
-		Ops   []Op   `json:"ops"`
+		Body  Seq    `json:"body"`
+		Loc   `json:"loc"`
 	}
 	// A Parallel operator represents a set of operators that each get
-	// a stream of Zed values from their parent.
+	// a copy of the input from its parent.
 	Parallel struct {
-		Kind string `json:"kind" unpack:""`
-		// If non-zero, MergeBy contains the field name on
-		// which the branches of this parallel operator should be
-		// merged in the order indicated by MergeReverse.
-		// XXX merge_by should be a list of expressions
-		MergeBy      field.Path `json:"merge_by,omitempty"`
-		MergeReverse bool       `json:"merge_reverse,omitempty"`
-		Ops          []Op       `json:"ops"`
+		Kind  string `json:"kind" unpack:""`
+		Paths []Seq  `json:"paths"`
+		Loc   `json:"loc"`
 	}
 	Switch struct {
 		Kind  string `json:"kind" unpack:""`
 		Expr  Expr   `json:"expr"`
 		Cases []Case `json:"cases"`
+		Loc   `json:"loc"`
 	}
 	Sort struct {
-		Kind       string      `json:"kind" unpack:""`
-		Args       []Expr      `json:"args"`
-		Order      order.Which `json:"order"`
-		NullsFirst bool        `json:"nullsfirst"`
+		Kind       string     `json:"kind" unpack:""`
+		Reverse    bool       `json:"reverse"`
+		NullsFirst bool       `json:"nullsfirst"`
+		Args       []SortExpr `json:"args"`
+		Loc        `json:"loc"`
 	}
 	Cut struct {
-		Kind string       `json:"kind" unpack:""`
-		Args []Assignment `json:"args"`
+		Kind string      `json:"kind" unpack:""`
+		Args Assignments `json:"args"`
+		Loc  `json:"loc"`
 	}
 	Drop struct {
 		Kind string `json:"kind" unpack:""`
 		Args []Expr `json:"args"`
+		Loc  `json:"loc"`
 	}
 	Explode struct {
-		Kind string      `json:"kind" unpack:""`
-		Args []Expr      `json:"args"`
-		Type astzed.Type `json:"type"`
-		As   Expr        `json:"as"`
+		Kind       string `json:"kind" unpack:""`
+		KeywordPos int    `json:"keyword_pos"`
+		Args       []Expr `json:"args"`
+		Type       Type   `json:"type"`
+		As         Expr   `json:"as"`
+		Loc        `json:"loc"`
 	}
 	Head struct {
 		Kind  string `json:"kind" unpack:""`
-		Count int    `json:"count"`
+		Count Expr   `json:"count"`
+		Loc   `json:"loc"`
 	}
 	Tail struct {
 		Kind  string `json:"kind" unpack:""`
-		Count int    `json:"count"`
+		Count Expr   `json:"count"`
+		Loc   `json:"loc"`
 	}
 	Pass struct {
 		Kind string `json:"kind" unpack:""`
+		Loc  `json:"loc"`
 	}
 	Uniq struct {
 		Kind  string `json:"kind" unpack:""`
 		Cflag bool   `json:"cflag"`
+		Loc   `json:"loc"`
 	}
 	Summarize struct {
-		Kind  string       `json:"kind" unpack:""`
-		Limit int          `json:"limit"`
-		Keys  []Assignment `json:"keys"`
-		Aggs  []Assignment `json:"aggs"`
+		Kind  string      `json:"kind" unpack:""`
+		Limit int         `json:"limit"`
+		Keys  Assignments `json:"keys"`
+		Aggs  Assignments `json:"aggs"`
+		Loc   `json:"loc"`
 	}
 	Top struct {
 		Kind  string `json:"kind" unpack:""`
-		Limit int    `json:"limit"`
+		Limit Expr   `json:"limit"`
 		Args  []Expr `json:"args"`
 		Flush bool   `json:"flush"`
+		Loc   `json:"loc"`
 	}
 	Put struct {
-		Kind string       `json:"kind" unpack:""`
-		Args []Assignment `json:"args"`
+		Kind string      `json:"kind" unpack:""`
+		Args Assignments `json:"args"`
+		Loc  `json:"loc"`
 	}
 	Merge struct {
 		Kind string `json:"kind" unpack:""`
 		Expr Expr   `json:"expr"`
+		Loc  `json:"loc"`
 	}
 	Over struct {
-		Kind  string      `json:"kind" unpack:""`
-		Exprs []Expr      `json:"exprs"`
-		Scope *Sequential `json:"scope"`
-	}
-	Let struct {
 		Kind   string `json:"kind" unpack:""`
+		Exprs  []Expr `json:"exprs"`
 		Locals []Def  `json:"locals"`
-		Over   *Over  `json:"over"`
+		Body   Seq    `json:"body"`
+		Loc    `json:"loc"`
 	}
 	Search struct {
 		Kind string `json:"kind" unpack:""`
 		Expr Expr   `json:"expr"`
+		Loc  `json:"loc"`
 	}
 	Where struct {
 		Kind string `json:"kind" unpack:""`
 		Expr Expr   `json:"expr"`
+		Loc  `json:"loc"`
 	}
 	Yield struct {
 		Kind  string `json:"kind" unpack:""`
 		Exprs []Expr `json:"exprs"`
+		Loc   `json:"loc"`
 	}
 	// An OpAssignment is a list of assignments whose parent operator
 	// is unknown: It could be a Summarize or Put operator. This will be
 	// determined in the semantic phase.
 	OpAssignment struct {
-		Kind        string       `json:"kind" unpack:""`
-		Assignments []Assignment `json:"assignments"`
+		Kind        string      `json:"kind" unpack:""`
+		Assignments Assignments `json:"assignments"`
+		Loc         `json:"loc"`
 	}
 	// An OpExpr operator is an expression that appears as an operator
 	// and requires semantic analysis to determine if it is a filter, a yield,
@@ -336,138 +520,149 @@ type (
 	OpExpr struct {
 		Kind string `json:"kind" unpack:""`
 		Expr Expr   `json:"expr"`
+		Loc  `json:"loc"`
 	}
 	Rename struct {
-		Kind string       `json:"kind" unpack:""`
-		Args []Assignment `json:"args"`
+		Kind string      `json:"kind" unpack:""`
+		Args Assignments `json:"args"`
+		Loc  `json:"loc"`
 	}
 	Fuse struct {
 		Kind string `json:"kind" unpack:""`
+		Loc  `json:"loc"`
 	}
 	Join struct {
-		Kind     string       `json:"kind" unpack:""`
-		Style    string       `json:"style"`
-		LeftKey  Expr         `json:"left_key"`
-		RightKey Expr         `json:"right_key"`
-		Args     []Assignment `json:"args"`
+		Kind       string      `json:"kind" unpack:""`
+		Style      string      `json:"style"`
+		RightInput Seq         `json:"right_input"`
+		Cond       JoinExpr    `json:"cond"`
+		Args       Assignments `json:"args"`
+		Loc        `json:"loc"`
 	}
-	// A SQLExpr can be an operator, an expression inside of a SQL FROM clause,
-	// or an expression used as a Zed value generator.  Currenly, the "select"
-	// keyword collides with the select() generator function (it can be parsed
-	// unambiguosly because of the parens but this is not user friendly
-	// so we need a new name for select()... see issue #2133).
-	// TBD: from alias, "in" over tuples, WITH sub-queries, multi-table FROM
-	// implying a JOIN, aliases for tables in FROM and JOIN.
-	SQLExpr struct {
-		Kind    string       `json:"kind" unpack:""`
-		Select  []Assignment `json:"select"`
-		From    *SQLFrom     `json:"from"`
-		Joins   []SQLJoin    `json:"joins"`
-		Where   Expr         `json:"where"`
-		GroupBy []Expr       `json:"group_by"`
-		Having  Expr         `json:"having"`
-		OrderBy *SQLOrderBy  `json:"order_by"`
-		Limit   int          `json:"limit"`
+	Sample struct {
+		Kind string `json:"kind" unpack:""`
+		Expr Expr   `json:"expr"`
+		Loc  `json:"loc"`
 	}
 	Shape struct {
 		Kind string `json:"kind" unpack:""`
+		Loc  `json:"loc"`
 	}
-	From struct {
-		Kind   string  `json:"kind" unpack:""`
-		Trunks []Trunk `json:"trunks"`
+	Load struct {
+		Kind    string `json:"kind" unpack:""`
+		Pool    *Name  `json:"pool"`
+		Branch  *Name  `json:"branch"`
+		Author  *Name  `json:"author"`
+		Message *Name  `json:"message"`
+		Meta    *Name  `json:"meta"`
+		Loc     `json:"loc"`
+	}
+	Assert struct {
+		Kind string `json:"kind" unpack:""`
+		Expr Expr   `json:"expr"`
+		Text string `json:"text"`
+		Loc  `json:"loc"`
+	}
+	Output struct {
+		Kind string `json:"kind" unpack:""`
+		Name *ID    `json:"name"`
+		Loc  `json:"loc"`
+	}
+	Debug struct {
+		Kind string `json:"kind" unpack:""`
+		Expr Expr   `json:"expr"`
+		Loc  `json:"loc"`
 	}
 )
-
-// Source structure
 
 type (
-	File struct {
-		Kind   string  `json:"kind" unpack:""`
-		Path   string  `json:"path"`
-		Format string  `json:"format"`
-		Layout *Layout `json:"layout"`
+	From struct {
+		Kind  string      `json:"kind" unpack:""`
+		Elems []*FromElem `json:"elems"`
+		Args  FromArgs    `json:"args"`
+		Loc   `json:"loc"`
 	}
-	HTTP struct {
-		Kind   string  `json:"kind" unpack:""`
-		URL    string  `json:"url"`
-		Format string  `json:"format"`
-		Layout *Layout `json:"layout"`
+	LakeMeta struct {
+		Kind    string `json:"kind" unpack:""`
+		MetaPos int    `json:"meta_pos"`
+		Meta    *Name  `json:"meta"`
+		Loc     `json:"loc"`
 	}
-	Pool struct {
-		Kind   string   `json:"kind" unpack:""`
-		Spec   PoolSpec `json:"spec"`
-		At     string   `json:"at"`
-		Delete bool     `json:"delete"`
+	Delete struct {
+		Kind   string       `json:"kind" unpack:""`
+		Pool   string       `json:"pool"`
+		Branch string       `json:"branch"`
+		Loc    `json:"loc"` // dummy field, not needed except to implement Node
 	}
 )
 
-type PoolSpec struct {
-	Pool   Pattern `json:"pool"`
-	Commit string  `json:"commit"`
-	Meta   string  `json:"meta"`
-	Tap    bool    `json:"tap"`
+type PoolArgs struct {
+	Kind   string `json:"kind" unpack:""`
+	Commit *Name  `json:"commit"`
+	Meta   *Name  `json:"meta"`
+	Tap    bool   `json:"tap"`
+	Loc    `json:"loc"`
 }
 
-type Source interface {
-	Source()
+type FormatArg struct {
+	Kind   string `json:"kind" unpack:""`
+	Format *Name  `json:"format"`
+	Loc    `json:"loc"`
 }
 
-func (*Pool) Source() {}
-func (*File) Source() {}
-func (*HTTP) Source() {}
-func (*Pass) Source() {}
+type HTTPArgs struct {
+	Kind    string      `json:"kind" unpack:""`
+	Format  *Name       `json:"format"`
+	Method  *Name       `json:"method"`
+	Headers *RecordExpr `json:"headers"`
+	Body    *Name       `json:"body"`
+	Loc     `json:"loc"`
+}
 
-type Layout struct {
+type FromArgs interface {
+	Node
+	fromArgs()
+}
+
+func (*PoolArgs) fromArgs()  {}
+func (*FormatArg) fromArgs() {}
+func (*HTTPArgs) fromArgs()  {}
+
+type SortExpr struct {
 	Kind  string `json:"kind" unpack:""`
-	Keys  []Expr `json:"keys"`
-	Order string `json:"order"`
-}
-
-type Trunk struct {
-	Kind   string      `json:"kind" unpack:""`
-	Source Source      `json:"source"`
-	Seq    *Sequential `json:"seq"`
+	Expr  Expr   `json:"expr"`
+	Order *ID    `json:"order"`
+	Nulls *ID    `json:"nulls"`
+	Loc   `json:"loc"`
 }
 
 type Case struct {
 	Expr Expr `json:"expr"`
-	Op   Op   `json:"op"`
-}
-
-type SQLFrom struct {
-	Table Expr `json:"table"`
-	Alias Expr `json:"alias"`
-}
-
-type SQLOrderBy struct {
-	Kind  string      `json:"kind" unpack:""`
-	Keys  []Expr      `json:"keys"`
-	Order order.Which `json:"order"`
-}
-
-type SQLJoin struct {
-	Table    Expr   `json:"table"`
-	Style    string `json:"style"`
-	LeftKey  Expr   `json:"left_key"`
-	RightKey Expr   `json:"right_key"`
-	Alias    Expr   `json:"alias"`
+	Path Seq  `json:"path"`
 }
 
 type Assignment struct {
 	Kind string `json:"kind" unpack:""`
 	LHS  Expr   `json:"lhs"`
 	RHS  Expr   `json:"rhs"`
+	Loc  `json:"loc"`
 }
+
+type Assignments []Assignment
+
+func (a Assignments) Pos() int { return a[0].Pos() }
+func (a Assignments) End() int { return a[len(a)-1].End() }
 
 // Def is like Assignment but the LHS is an identifier that may be later
 // referenced.  This is used for const blocks in Sequential and var blocks
 // in a let scope.
 type Def struct {
-	Name string `json:"name"`
-	Expr Expr   `json:"expr"`
+	Name *ID  `json:"name"`
+	Expr Expr `json:"expr"`
+	Loc  `json:"loc"`
 }
 
-func (*Sequential) OpAST()   {}
+func (*Scope) OpAST()        {}
 func (*Parallel) OpAST()     {}
 func (*Switch) OpAST()       {}
 func (*Sort) OpAST()         {}
@@ -490,16 +685,15 @@ func (*From) OpAST()         {}
 func (*Explode) OpAST()      {}
 func (*Merge) OpAST()        {}
 func (*Over) OpAST()         {}
-func (*Let) OpAST()          {}
 func (*Search) OpAST()       {}
 func (*Where) OpAST()        {}
 func (*Yield) OpAST()        {}
-
-func (*SQLExpr) OpAST() {}
-
-func (seq *Sequential) Prepend(front Op) {
-	seq.Ops = append([]Op{front}, seq.Ops...)
-}
+func (*Sample) OpAST()       {}
+func (*Load) OpAST()         {}
+func (*Assert) OpAST()       {}
+func (*Output) OpAST()       {}
+func (*Debug) OpAST()        {}
+func (*Delete) OpAST()       {}
 
 // An Agg is an AST node that represents a aggregate function.  The Name
 // field indicates the aggregation method while the Expr field indicates
@@ -512,4 +706,5 @@ type Agg struct {
 	Name  string `json:"name"`
 	Expr  Expr   `json:"expr"`
 	Where Expr   `json:"where"`
+	Loc   `json:"loc"`
 }

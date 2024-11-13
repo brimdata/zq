@@ -7,6 +7,7 @@
 ```
 has_error(val: any) -> bool
 ```
+
 ### Description
 
 The _has_error_ function returns true if its argument is or contains an error.
@@ -16,8 +17,8 @@ into value's leaves to determine if there is an error in the value.
 ### Examples
 
 ```mdtest-command
-echo '{a:{b:"foo"}}' | zq -z 'yield has_error(this)' -
-echo '{a:{b:"foo"}}' | zq -z 'a.x := a.y + 1 | yield has_error(this)' -
+echo '{a:{b:"foo"}}' | super -z -c 'yield has_error(this)' -
+echo '{a:{b:"foo"}}' | super -z -c 'a.x := a.y + 1 |> yield has_error(this)' -
 ```
 =>
 ```mdtest-output

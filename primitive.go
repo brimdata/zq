@@ -1,4 +1,4 @@
-package zed
+package super
 
 import (
 	"encoding/binary"
@@ -8,27 +8,12 @@ import (
 	"math/bits"
 	"net/netip"
 
-	"github.com/brimdata/zed/pkg/nano"
-	"github.com/brimdata/zed/zcode"
+	"github.com/brimdata/super/pkg/nano"
+	"github.com/brimdata/super/zcode"
 	"github.com/x448/float16"
 )
 
 type TypeOfBool struct{}
-
-var False = &Value{TypeBool, []byte{0}}
-var True = &Value{TypeBool, []byte{1}}
-
-func IsTrue(zv zcode.Bytes) bool {
-	return zv[0] != 0
-}
-
-// Not returns the inverse Value of the Boolean-typed bytes value of zb.
-func Not(zb zcode.Bytes) *Value {
-	if IsTrue(zb) {
-		return False
-	}
-	return True
-}
 
 func AppendBool(zb zcode.Bytes, b bool) zcode.Bytes {
 	if b {

@@ -7,6 +7,7 @@
 ```
 typeunder(val: any) -> type
 ```
+
 ### Description
 
 The _typeunder_ function returns the type of its argument `val`.  If this type is a
@@ -16,7 +17,8 @@ returned instead of the named type.
 ### Examples
 
 ```mdtest-command
-echo  '{which:"chocolate"}(=flavor)' | zq -z 'yield {typeof:typeof(this),typeunder:typeunder(this)}' -
+echo  '{which:"chocolate"}(=flavor)' |
+  super -z -c 'yield {typeof:typeof(this),typeunder:typeunder(this)}' -
 ```
 =>
 ```mdtest-output

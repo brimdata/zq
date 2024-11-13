@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"sync/atomic"
 
-	"github.com/brimdata/zed"
-	"github.com/brimdata/zed/runtime/expr"
-	"github.com/brimdata/zed/zio"
+	"github.com/brimdata/super"
+	"github.com/brimdata/super/runtime/sam/expr"
+	"github.com/brimdata/super/zio"
 )
 
 type Filter interface {
@@ -99,18 +99,17 @@ func newScanner(ctx context.Context, r zio.Reader, filterExpr Filter) (Scanner, 
 			return nil, err
 		}
 	}
-	sc := &scanner{reader: r, filter: f, ctx: ctx}
+	sc := &scanner{reader: r, filter: f, ctx: ctx, ectx: expr.NewContext()}
 	sc.Puller = NewPuller(sc)
 	return sc, nil
 }
 
 type scanner struct {
 	Puller
-	reader zio.Reader
-	filter expr.Evaluator
-	ctx    context.Context
-	ectx   expr.Context
-
+	reader   zio.Reader
+	filter   expr.Evaluator
+	ctx      context.Context
+	ectx     expr.Context
 	progress Progress
 }
 
@@ -119,10 +118,7 @@ func (s *scanner) Progress() Progress {
 }
 
 // Read implements Reader.Read.
-func (s *scanner) Read() (*zed.Value, error) {
-	if s.ectx == nil {
-		s.ectx = expr.NewContext()
-	}
+func (s *scanner) Read() (*super.Value, error) {
 	for {
 		if err := s.ctx.Err(); err != nil {
 			return nil, err
@@ -131,15 +127,15 @@ func (s *scanner) Read() (*zed.Value, error) {
 		if err != nil || this == nil {
 			return nil, err
 		}
-		atomic.AddInt64(&s.progress.BytesRead, int64(len(this.Bytes)))
+		atomic.AddInt64(&s.progress.BytesRead, int64(len(this.Bytes())))
 		atomic.AddInt64(&s.progress.RecordsRead, 1)
 		if s.filter != nil {
-			val := s.filter.Eval(s.ectx, this)
-			if !(val.Type == zed.TypeBool && zed.IsTrue(val.Bytes)) {
+			val := s.filter.Eval(s.ectx, *this)
+			if !(val.Type() == super.TypeBool && val.Bool()) {
 				continue
 			}
 		}
-		atomic.AddInt64(&s.progress.BytesMatched, int64(len(this.Bytes)))
+		atomic.AddInt64(&s.progress.BytesMatched, int64(len(this.Bytes())))
 		atomic.AddInt64(&s.progress.RecordsMatched, 1)
 		return this, nil
 	}

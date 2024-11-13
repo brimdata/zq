@@ -1,0 +1,10 @@
+script: |
+  ! super db -lake=path/to/superdb ls
+
+outputs:
+  - name: stderr
+    regexp: |
+      .* lake does not exist
+      \(hint: run 'super db init' to initialize lake at this location\)
+  - name: stdout
+    data: ""

@@ -1,16 +1,17 @@
 script: |
-  export ZED_LAKE=test
-  zed init -q
-  zed create -q logs
-  zed load -q -use logs babble.zson
-  zed ls -f zng | zq -Z "drop id,ts" -
+  export SUPER_DB_LAKE=test
+  super db init -q
+  super db create -q logs
+  super db load -q -use logs babble.jsup
+  super db ls -f bsup | super -Z -c "drop id,ts" -
   echo ===
-  zed query -Z "from logs@main:objects | drop id"
+  super db query -Z "from logs@main:objects |> drop id"
 
 inputs:
-  - name: babble.zson
-    source: ../../testdata/babble.zson
+  - name: babble.jsup
+    source: ../../testdata/babble.jsup
 
+#XXX this is fixed
 # The keys field should be labeled with (field.)Path.
 # See bug #2576
 outputs:
@@ -25,7 +26,7 @@ outputs:
                       "ts"
                   ] (=field.Path)
               ] (=field.List)
-          } (=order.Layout),
+          } (=order.SortKey),
           seek_stride: 65536,
           threshold: 524288000
       }

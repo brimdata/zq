@@ -11,12 +11,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/brimdata/zed"
-	"github.com/brimdata/zed/pkg/storage"
-	"github.com/brimdata/zed/zio/zngio"
+	"github.com/brimdata/super"
+	"github.com/brimdata/super/pkg/storage"
+	"github.com/brimdata/super/zio/zngio"
 )
 
-const ext = "zng"
+const ext = "bsup"
 
 var (
 	ErrEmpty  = errors.New("empty log")
@@ -172,7 +172,7 @@ func (q *Queue) Open(ctx context.Context, head, tail ID) (io.Reader, error) {
 	return q.NewReader(ctx, head, tail), nil
 }
 
-func (q *Queue) OpenAsZNG(ctx context.Context, zctx *zed.Context, head, tail ID) (*zngio.Reader, error) {
+func (q *Queue) OpenAsZNG(ctx context.Context, zctx *super.Context, head, tail ID) (*zngio.Reader, error) {
 	r, err := q.Open(ctx, head, tail)
 	if err != nil {
 		return nil, err

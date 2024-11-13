@@ -1,111 +1,121 @@
-# Zed [![Tests][tests-img]][tests] [![GoPkg][gopkg-img]][gopkg]
+# SuperDB [![Tests][tests-img]][tests] [![GoPkg][gopkg-img]][gopkg]
 
-Zed offers a new approach to data that makes it easier to manipulate and manage
-your data.
+SuperDB is a new analytics database that supports relational tables and JSON
+on an equal footing.  It shines when it comes to data wrangling where
+you need to explore or process large eclectic data sets.  It's also pretty
+decent at analytics and
+[search use cases](https://zed.brimdata.io/docs/language/search-expressions).
 
-With Zed's new
-[super-structured data model](https://zed.brimdata.io/docs/formats/#2-zed-a-super-structured-pattern),
-messy JSON data can easily be given the fully-typed precision of relational tables
-without giving up JSON's uncanny ability to represent eclectic data.
+Unlike other relational systems that do performance-fragile "schema inference" of JSON,
+SuperDB won't fall over if you throw a bunch of eclectic JSON at it.
+You can easily do
+[schema inference if you want](https://zed.brimdata.io/docs/language/operators/fuse),
+but data is ingested by default in its natural form no matter how much heterogeneity
+it might have.  And unlike systems based on the document data model,
+every value in SuperDB is strongly and dynamically typed thus providing the
+best of both worlds: the flexibility of the document model and
+the efficiency and performance of the relational model.
 
-Trying out Zed is easy: just [install](https://zed.brimdata.io/docs/#getting-started)
-the command-line tool [`zq`](https://zed.brimdata.io/docs/commands/zq/).
+In SuperDB's SQL dialect, there are no "JSON columns" so there isn't a "relational
+way to do things" and a different "JSON way to do things".  Instead of having
+a relational type system for structured data and completely separate JSON type
+system for semi-structured data,
+all data handled by SuperDB (e.g., JSON, CSV, Parquet files, Arrow streams, relational tables, etc) is automatically massaged into
+[super-structured data](https://zed.brimdata.io/docs/formats/#2-zed-a-super-structured-pattern)
+form.  This super-structured data is then processed by a runtime that simultaneously
+supports the statically-typed relational model and the dynamically-typed
+JSON data model in a unified compute engine.
 
-`zq` is a lot like [`jq`](https://stedolan.github.io/jq/)
-but is built from the ground up as a search and analytics engine based
-on the [Zed data model](https://zed.brimdata.io/docs/formats/zed).
-Since Zed data is a proper superset of JSON, `zq` also works natively with JSON.
+## SuperSQL
 
-While `zq` and the Zed data formats are production quality, the Zed project's
-[Zed data lake](https://zed.brimdata.io/docs/commands/zed/#1-the-lake-model)
-is a bit [earlier in development](https://zed.brimdata.io/docs/commands/zed/#status).
+SuperDB uses SQL as its query language, but it's a SQL that has been extended
+with [pipe syntax](https://research.google/pubs/sql-has-problems-we-can-fix-them-pipe-syntax-in-sql/)
+and [lots of fun shortcuts](https://zed.brimdata.io/docs/language/pipeline-model#implied-operators).
+This extended SQL is called SuperSQL.
 
-For a non-technical user, Zed is as easy to use as web search
-while for a technical user, Zed exposes its technical underpinnings
-in a gradual slope, providing as much detail as desired,
-packaged up in the easy-to-understand
-[ZSON data format](https://zed.brimdata.io/docs/formats/zson) and
-[Zed language](https://zed.brimdata.io/docs/language).
+Here's a SuperSQL query that fetches some data from GitHub Archive,
+computes the set of repos touched by each user, ranks them by number of repos,
+picks the top five, and joins each user with their original `created_at` time
+from the current GitHub API:
 
-## Why?
+```sql
+FROM 'https://data.gharchive.org/2015-01-01-15.json.gz'
+| SELECT union(repo.name) AS repo, actor.login AS user
+  GROUP BY user
+  ORDER BY len(repo) DESC
+  LIMIT 5
+| FORK (
+  => FROM eval(f'https://api.github.com/users/{user}')
+   | SELECT VALUE {user:login,created_at:time(created_at)}
+  => PASS
+  )
+| JOIN USING (user)
+```
 
-We think data is hard and it should be much, much easier.
+## Super JSON
 
-While _schemas_ are a great way to model and organize your data, they often
-[get in the way](https://github.com/brimdata/sharkfest-21#schemas-a-double-edged-sword)
-when you are just trying to store or transmit your semi-structured data.
+Super-structured data is strongly typed and "polymorphic": any value can take on any type
+and sequences of data need not all conform to a predefined schema.  To this end,
+SuperDB extends the JSON format to support super-structured data in a format called
+[Super JSON](https://zed.brimdata.io/docs/next/formats/jsup) where all JSON values
+are also Super JSON values.  Similarly,
+the [Super Binary](https://zed.brimdata.io/docs/formats/zng) format is an efficient
+binary representation of Super JSON (a bit like Avro) and the
+[Super Columnar](https://zed.brimdata.io/docs/formats/vng) format is a columnar
+representation of Super JSON (a bit like Parquet).
 
-Also, why should you have to set up one system
-for search and another completely different system for historical analytics?
-And the same unified search/analytics system that works at cloud scale should run easily as
-a lightweight command-line tool on your laptop.
+Even though SuperDB is based on these super-structured data formats, it can read and write
+most common data formats.
 
-And rather than having to set up complex ETL pipelines with brittle
-transformation logic, managing your data lake should be as easy as
-[`git`](https://git-scm.com/).
+## Try It
 
-Finally, we believe a lightweight data store that provides easy search and analytics
-would be a great place to store data sets for data science and
-data engineering experiments running in Python and providing easy
-integration with your favorite Python libraries.
+Trying out SuperDB is super easy: just [install](https://zed.brimdata.io/docs/#getting-started)
+the command-line tool [`super`](https://zed.brimdata.io/docs/commands/zq/).
 
-## How?
+Detailed documentation for the entire SuperDB system and its piped SQL syntax
+is available on the [SuperDB docs site](https://zed.brimdata.io/docs).
 
-Zed solves all these problems with a new foundational data format called
-[ZSON](https://zed.brimdata.io/docs/formats/zson),
-which is a superset of JSON and the relational models.
-ZSON is syntax-compatible with JSON
-but it has a comprehensive type system that you can use as little or as much as you like.
-Zed types can be used as schemas.
+The SuperDB query engine can run locally without a storage engine by accessing
+files, HTTP endpoints, or S3 paths using the `super` command. While
+[earlier in its development](https://zed.brimdata.io/docs/commands/zed/#status),
+SuperDB can also run on a
+[super-structured data lake](https://zed.brimdata.io/docs/commands/zed/#the-lake-model)
+using the `super db` sub-commands.
 
-The [Zed language](https://zed.brimdata.io/docs/language) offers a gentle learning curve,
-which spans the gamut from simple
-[keyword search](https://zed.brimdata.io/docs/language/#7-search-expressions)
-to powerful data-transformation operators like
-[lateral sub-queries](https://zed.brimdata.io/docs/language/#8-lateral-subqueries)
-and [shaping](https://zed.brimdata.io/docs/language/#9-shaping).
+## Project Status
 
-Zed also has a cloud-based object design that was modeled after
-the `git` design pattern.  Commits to the lake are transactional
-and consistent.  Search index updates are also transactionally
-consistent with any ingested data, and searches can run with or
-without indexes.
+Our long-term goal for SuperSQL is to be Postgres-compatible and interoperate
+with existing SQL tooling. In the meantime, SuperSQL is a bit of a moving 
+target and we would love community engagement to evolve and fine tune its
+syntax and semantics.
 
-## Quick Start
+Our areas of active development include:
+* the SuperSQL query language,
+* the type-based query compiler and optimizer,
+* fast, vectorized ingest of common file formats,
+* a complete vectorized runtme, and
+* a data lake based on super-structured data.
 
-Check out the [installation page](https://zed.brimdata.io/docs/install/)
-for a quick and easy install.
+### SuperDB Desktop - Coming Soon
 
-Detailed documentation for the entire Zed system and language
-is available on the [Zed docs site](https://zed.brimdata.io/docs).
+[SuperDB Desktop](https://github.com/brimdata/zui) is an Electron-based
+desktop app to explore, query, and shape data in a SuperDB data lake.
+It combines a search experience with a SQL query and has some really slick
+design for dealing with complex and large JSON data.
 
-### Brim
-
-The [Brim app](https://github.com/brimdata/brim) is an electron-based
-desktop app to explore, query, and shape data in your Zed lake.
-
-We originally developed Brim for security-oriented use cases
-(having tight integration with [Zeek](https://zeek.org/),
-[Suricata](https://suricata.io/), and
-[Wireshark](https://www.wireshark.org/)),
-but we are actively extending Brim with UX for handling generic
-data sets to support data science, data engineering, and ETL use cases.
+Unlike most JSON browsing tools, it won't slow to a crawl --- or worse crash ---
+if you load it up with ginormous JSON values.
 
 ## Contributing
 
-See the [contributing guide](CONTRIBUTING.md) on how you can help improve Zed!
+See the [contributing guide](CONTRIBUTING.md) on how you can help improve SuperDB!
 
 ## Join the Community
 
 Join our [public Slack](https://www.brimdata.io/join-slack/) workspace for announcements, Q&A, and to trade tips!
 
-## Acknowledgment
+[tests-img]: https://github.com/brimdata/super/workflows/Tests/badge.svg
+[tests]: https://github.com/brimdata/super/actions?query=workflow%3ATests
+[gopkg-img]: https://pkg.go.dev/badge/github.com/brimdata/super
+[gopkg]: https://pkg.go.dev/github.com/brimdata/super
 
-We modeled this README after
-Philip O'Toole's brilliantly succinct
-[description of `rqlite`](https://github.com/rqlite/rqlite).
-
-[tests-img]: https://github.com/brimdata/zed/workflows/Tests/badge.svg
-[tests]: https://github.com/brimdata/zed/actions?query=workflow%3ATests
-[gopkg-img]: https://pkg.go.dev/badge/github.com/brimdata/zed
-[gopkg]: https://pkg.go.dev/github.com/brimdata/zed

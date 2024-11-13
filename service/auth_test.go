@@ -7,10 +7,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/brimdata/zed/api"
-	"github.com/brimdata/zed/api/client"
-	"github.com/brimdata/zed/service"
-	"github.com/brimdata/zed/service/auth"
+	"github.com/brimdata/super/api"
+	"github.com/brimdata/super/api/client"
+	"github.com/brimdata/super/service"
+	"github.com/brimdata/super/service/auth"
 	"github.com/stretchr/testify/require"
 )
 
@@ -37,7 +37,7 @@ func TestAuthIdentity(t *testing.T) {
 	core, conn := newCoreWithConfig(t, service.Config{
 		Auth: authConfig,
 	})
-	_, err := conn.Query(context.Background(), nil, "from [pools]")
+	_, err := conn.Query(context.Background(), "from [pools]")
 	require.Error(t, err)
 	require.Equal(t, 1.0, promCounterValue(core.Registry(), "request_errors_unauthorized_total"))
 
@@ -59,7 +59,7 @@ func TestAuthIdentity(t *testing.T) {
 		UserID:   "test_user_id",
 	}, res)
 
-	_, err = conn.Query(context.Background(), nil, "from :pools")
+	_, err = conn.Query(context.Background(), "from :pools")
 	require.NoError(t, err)
 }
 

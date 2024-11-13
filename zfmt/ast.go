@@ -2,19 +2,21 @@ package zfmt
 
 import (
 	"fmt"
-	"strings"
+	"slices"
 
-	"github.com/brimdata/zed/compiler/ast"
-	astzed "github.com/brimdata/zed/compiler/ast/zed"
-	"github.com/brimdata/zed/order"
-	"github.com/brimdata/zed/runtime/expr/agg"
-	"github.com/brimdata/zed/runtime/expr/function"
-	"github.com/brimdata/zed/zson"
+	"github.com/brimdata/super/compiler/ast"
+	"github.com/brimdata/super/runtime/sam/expr/agg"
+	"github.com/brimdata/super/runtime/sam/expr/function"
+	"github.com/brimdata/super/zson"
 )
 
-func AST(p ast.Op) string {
+func AST(p ast.Seq) string {
 	c := &canon{canonZed: canonZed{formatter{tab: 2}}, head: true, first: true}
-	c.proc(p)
+	if scope, ok := p[0].(*ast.Scope); ok {
+		c.scope(scope, false)
+	} else {
+		c.seq(p)
+	}
 	c.flush()
 	return c.String()
 }
@@ -60,8 +62,7 @@ func (c *canon) defs(defs []ast.Def, separator string) {
 }
 
 func (c *canon) def(d ast.Def) {
-	c.write(d.Name)
-	c.write("=")
+	c.write("%s=", d.Name.Name)
 	c.expr(d.Expr, "")
 }
 
@@ -69,15 +70,6 @@ func (c *canon) exprs(exprs []ast.Expr) {
 	for k, e := range exprs {
 		if k > 0 {
 			c.write(", ")
-		}
-		c.expr(e, "")
-	}
-}
-
-func (c *canon) exprsTight(exprs []ast.Expr) {
-	for k, e := range exprs {
-		if k > 0 {
-			c.write(",")
 		}
 		c.expr(e, "")
 	}
@@ -99,7 +91,7 @@ func (c *canon) expr(e ast.Expr, parent string) {
 		}
 	case *ast.Assignment:
 		c.assignment(*e)
-	case *astzed.Primitive:
+	case *ast.Primitive:
 		c.literal(*e)
 	case *ast.ID:
 		c.write(e.Name)
@@ -116,7 +108,7 @@ func (c *canon) expr(e ast.Expr, parent string) {
 		c.write(" : ")
 		c.expr(e.Else, "")
 	case *ast.Call:
-		c.write("%s(", e.Name)
+		c.write("%s(", e.Name.Name)
 		c.exprs(e.Args)
 		c.write(")")
 	case *ast.Cast:
@@ -124,9 +116,7 @@ func (c *canon) expr(e ast.Expr, parent string) {
 		c.write("(")
 		c.expr(e.Expr, "")
 		c.write(")")
-	case *ast.SQLExpr:
-		c.sql(e)
-	case *astzed.TypeValue:
+	case *ast.TypeValue:
 		c.write("<")
 		c.typ(e.Value)
 		c.write(">")
@@ -136,21 +126,28 @@ func (c *canon) expr(e ast.Expr, parent string) {
 		c.write(e.Pattern)
 	case *ast.Grep:
 		c.write("grep(")
-		switch p := e.Pattern.(type) {
-		case *ast.Regexp:
-			c.write("/%s/", p.Pattern)
-		case *ast.Glob:
-			c.write(p.Pattern)
-		case *ast.String:
-			c.write(zson.QuotedString([]byte(p.Text)))
-		default:
-			c.open("(unknown grep pattern %T)", p)
-		}
-		if !isThis(e.Expr) {
+		c.expr(e.Pattern, "")
+		if e.Expr != nil {
 			c.write(",")
 			c.expr(e.Expr, "")
 		}
 		c.write(")")
+	case *ast.IndexExpr:
+		c.expr(e.Expr, "")
+		c.write("[")
+		c.expr(e.Index, "")
+		c.write("]")
+	case *ast.SliceExpr:
+		c.expr(e.Expr, "")
+		c.write("[")
+		if e.From != nil {
+			c.expr(e.From, "")
+		}
+		c.write(":")
+		if e.To != nil {
+			c.expr(e.To, "")
+		}
+		c.write("]")
 	case *ast.Term:
 		c.write(e.Text)
 	case *ast.RecordExpr:
@@ -160,8 +157,8 @@ func (c *canon) expr(e ast.Expr, parent string) {
 				c.write(",")
 			}
 			switch e := elem.(type) {
-			case *ast.Field:
-				c.write(zson.QuotedName(e.Name))
+			case *ast.FieldExpr:
+				c.write(zson.QuotedName(e.Name.Text))
 				c.write(":")
 				c.expr(e.Value, "")
 			case *ast.ID:
@@ -202,11 +199,26 @@ func (c *canon) expr(e ast.Expr, parent string) {
 			c.write(" with ")
 			c.defs(e.Locals, ", ")
 		}
-		c.proc(e.Scope)
+		c.seq(e.Body)
 		c.close()
 		c.ret()
 		c.flush()
 		c.write(")")
+	case *ast.FString:
+		c.write(`f"`)
+		for _, elem := range e.Elems {
+			switch elem := elem.(type) {
+			case *ast.FStringExpr:
+				c.write("{")
+				c.expr(elem.Expr, "")
+				c.write("}")
+			case *ast.FStringText:
+				c.write(elem.Text)
+			default:
+				c.write("(unknown f-string element %T)", elem)
+			}
+		}
+		c.write(`"`)
 	default:
 		c.write("(unknown expr %T)", e)
 	}
@@ -235,15 +247,6 @@ func (c *canon) binary(e *ast.BinaryExpr, parent string) {
 			c.write(".")
 		}
 		c.expr(e.RHS, "")
-	case "[":
-		if isThis(e.LHS) {
-			c.write("this")
-		} else {
-			c.expr(e.LHS, "")
-		}
-		c.write("[")
-		c.expr(e.RHS, "")
-		c.write("]")
 	case "and", "or", "in":
 		parens := needsparens(parent, e.Op)
 		c.maybewrite("(", parens)
@@ -287,15 +290,6 @@ func precedence(op string) int {
 	}
 }
 
-func (c *canon) sql(e *ast.SQLExpr) {
-	if e.Select == nil {
-		c.write(" SELECT *")
-	} else {
-		c.write(" SELECT")
-		c.assignments(e.Select)
-	}
-}
-
 func isThis(e ast.Expr) bool {
 	if id, ok := e.(*ast.ID); ok {
 		return id.Name == "this"
@@ -320,69 +314,83 @@ func (c *canon) next() {
 	if c.head {
 		c.head = false
 	} else {
-		c.write("| ")
+		c.write("|> ")
 	}
 }
 
 func (c *canon) decl(d ast.Decl) {
 	switch d := d.(type) {
 	case *ast.ConstDecl:
-		c.write("const %s = ", d.Name)
+		c.write("const %s = ", d.Name.Name)
 		c.expr(d.Expr, "")
 	case *ast.FuncDecl:
-		c.write("func %s(", d.Name)
+		c.write("func %s(", d.Name.Name)
 		for i := range d.Params {
 			if i != 0 {
 				c.write(", ")
 			}
-			c.write(d.Params[i])
+			c.write(d.Params[i].Name)
 		}
 		c.open("): (")
 		c.ret()
-		c.expr(d.Expr, d.Name)
+		c.expr(d.Expr, d.Name.Name)
 		c.close()
 		c.ret()
 		c.flush()
 		c.write(")")
+	case *ast.OpDecl:
+		c.write("op %s(", d.Name.Name)
+		for k, p := range d.Params {
+			if k > 0 {
+				c.write(", ")
+			}
+			c.write(p.Name)
+		}
+		c.open("): (")
+		c.ret()
+		c.flush()
+		c.head = true
+		c.seq(d.Body)
+		c.close()
+		c.ret()
+		c.flush()
+		c.write(")")
+		c.head, c.first = true, true
+	case *ast.TypeDecl:
+		c.write("type %s = ", zson.QuotedName(d.Name.Name))
+		c.typ(d.Type)
 	default:
 		c.open("unknown decl: %T", d)
 		c.close()
 	}
+
 }
 
-func (c *canon) proc(p ast.Op) {
+func (c *canon) seq(seq ast.Seq) {
+	for _, p := range seq {
+		c.op(p)
+	}
+}
+
+func (c *canon) op(p ast.Op) {
 	switch p := p.(type) {
-	case *ast.Sequential:
-		for _, d := range p.Decls {
-			c.decl(d)
-			c.ret()
-		}
-		c.flush()
-		for _, p := range p.Ops {
-			c.proc(p)
-		}
+	case *ast.Scope:
+		c.scope(p, true)
 	case *ast.Parallel:
 		c.next()
 		c.open("fork (")
-		for _, p := range p.Ops {
+		for _, p := range p.Paths {
 			c.ret()
 			c.write("=>")
 			c.open()
 			c.head = true
-			c.proc(p)
+			c.seq(p)
 			c.close()
 		}
 		c.close()
 		c.ret()
 		c.flush()
 		c.write(")")
-		if p.MergeBy != nil {
-			c.write(" merge-by ")
-			c.fieldpath(p.MergeBy)
-		}
-		if p.MergeReverse {
-			c.write(" rev")
-		}
 	case *ast.Switch:
 		c.next()
 		c.write("switch ")
@@ -402,7 +410,7 @@ func (c *canon) proc(p ast.Op) {
 			c.write(" =>")
 			c.open()
 			c.head = true
-			c.proc(k.Op)
+			c.seq(k.Path)
 			c.close()
 		}
 		c.close()
@@ -410,86 +418,9 @@ func (c *canon) proc(p ast.Op) {
 		c.flush()
 		c.write(")")
 	case *ast.From:
-		//XXX cleanup for len(Trunks) = 1
 		c.next()
-		c.open("from (")
-		for _, trunk := range p.Trunks {
-			c.ret()
-			c.source(trunk.Source)
-			if trunk.Seq != nil {
-				c.write(" =>")
-				c.open()
-				c.head = true
-				c.proc(trunk.Seq)
-				c.close()
-			}
-		}
-		c.close()
-		c.ret()
-		c.flush()
-		c.write(")")
-	case *ast.SQLExpr:
-		c.next()
-		c.open("SELECT ")
-		if p.Select == nil {
-			c.write("*")
-		} else {
-			c.assignments(p.Select)
-		}
-		if p.From != nil {
-			c.ret()
-			c.write("FROM ")
-			c.expr(p.From.Table, "")
-			if p.From.Alias != nil {
-				c.write(" AS ")
-				c.expr(p.From.Alias, "")
-			}
-		}
-		for _, join := range p.Joins {
-			c.ret()
-			switch join.Style {
-			case "left":
-				c.write("LEFT ")
-			case "right":
-				c.write("RIGHT ")
-			}
-			c.write("JOIN ")
-			c.expr(join.Table, "")
-			if join.Alias != nil {
-				c.write(" AS ")
-				c.expr(join.Alias, "")
-			}
-			c.write(" ON ")
-			c.expr(join.LeftKey, "")
-			c.write("=")
-			c.expr(join.RightKey, "")
-		}
-		if p.Where != nil {
-			c.ret()
-			c.write("WHERE ")
-			c.expr(p.Where, "")
-		}
-		if p.GroupBy != nil {
-			c.ret()
-			c.write("GROUP BY ")
-			c.exprs(p.GroupBy)
-		}
-		if p.Having != nil {
-			c.ret()
-			c.write("HAVING ")
-			c.expr(p.Having, "")
-		}
-		if p.OrderBy != nil {
-			c.ret()
-			c.write("ORDER BY ")
-			c.exprs(p.OrderBy.Keys)
-			c.write(" ")
-			c.write(strings.ToUpper(p.OrderBy.Order.String()))
-		}
-		if p.Limit != 0 {
-			c.ret()
-			c.write("LIMIT %d", p.Limit)
-		}
+		c.write("from ")
+		c.fromElems(p.Elems)
 	case *ast.Summarize:
 		c.next()
 		c.open("summarize")
@@ -516,22 +447,53 @@ func (c *canon) proc(p ast.Op) {
 	case *ast.Sort:
 		c.next()
 		c.write("sort")
-		if p.Order == order.Desc {
+		if p.Reverse {
 			c.write(" -r")
 		}
 		if p.NullsFirst {
 			c.write(" -nulls first")
 		}
-		if len(p.Args) > 0 {
+		for k, s := range p.Args {
+			if k > 0 {
+				c.write(",")
+			}
 			c.space()
-			c.exprs(p.Args)
+			c.expr(s.Expr, "")
+			if s.Order != nil {
+				c.write(" %s", s.Order.Name)
+			}
+		}
+	case *ast.Load:
+		c.next()
+		c.write("load %s", zson.QuotedString([]byte(p.Pool.Text)))
+		if p.Branch != nil {
+			c.write("@%s", p.Branch.Text)
+		}
+		if p.Author != nil {
+			c.write(" author %s", p.Author.Text)
+		}
+		if p.Message != nil {
+			c.write(" message %s", p.Message.Text)
+		}
+		if p.Meta != nil {
+			c.write(" meta %s", p.Meta.Text)
 		}
 	case *ast.Head:
 		c.next()
-		c.write("head %d", p.Count)
+		c.open("head")
+		if p.Count != nil {
+			c.write(" ")
+			c.expr(p.Count, "")
+		}
+		c.close()
 	case *ast.Tail:
 		c.next()
-		c.write("tail %d", p.Count)
+		c.open("tail")
+		if p.Count != nil {
+			c.write(" ")
+			c.expr(p.Count, "")
+		}
+		c.close()
 	case *ast.Uniq:
 		c.next()
 		c.write("uniq")
@@ -543,7 +505,7 @@ func (c *canon) proc(p ast.Op) {
 		c.write("pass")
 	case *ast.OpExpr:
 		if agg := isAggFunc(p.Expr); agg != nil {
-			c.proc(agg)
+			c.op(agg)
 			return
 		}
 		c.next()
@@ -553,12 +515,19 @@ func (c *canon) proc(p ast.Op) {
 			which = "search "
 		} else if IsBool(e) {
 			which = "where "
-		} else {
+		} else if _, ok := e.(*ast.Call); !ok {
 			which = "yield "
 		}
-		c.open(which)
+		// Since we can't determine whether the expression is a func call or
+		// an op call until the semantic pass, leave this ambiguous.
+		// XXX (nibs) - I don't think we should be doing this kind introspection
+		// here. This is why we have the semantic pass and canonical zed here
+		// should reflect the ambiguous nature of the expression.
+		if which != "" {
+			c.open(which)
+			defer c.close()
+		}
 		c.expr(e, "")
-		c.close()
 	case *ast.Search:
 		c.next()
 		c.open("search ")
@@ -586,15 +555,31 @@ func (c *canon) proc(p ast.Op) {
 		c.write("fuse")
 	case *ast.Join:
 		c.next()
-		c.open("join on ")
-		c.expr(p.LeftKey, "")
-		c.write("=")
-		c.expr(p.RightKey, "")
+		c.write("join ")
+		if p.RightInput != nil {
+			c.open("(")
+			c.head = true
+			c.seq(p.RightInput)
+			c.close()
+			c.ret()
+			c.flush()
+			c.write(") ")
+		}
+		switch cond := p.Cond.(type) {
+		case *ast.JoinOnExpr:
+			c.write("on ")
+			c.expr(cond.Expr, "")
+		case *ast.JoinUsingExpr:
+			c.write("using (")
+			c.exprs(cond.Fields)
+			c.write(")")
+		default:
+			panic(cond)
+		}
 		if p.Args != nil {
 			c.write(" ")
 			c.assignments(p.Args)
 		}
-		c.close()
 	case *ast.OpAssignment:
 		c.next()
 		which := "put "
@@ -604,41 +589,82 @@ func (c *canon) proc(p ast.Op) {
 		c.open(which)
 		c.assignments(p.Assignments)
 		c.close()
-	//case *ast.SqlExpression:
-	//	//XXX TBD
-	//	c.open("sql")
-	//	c.close()
 	case *ast.Merge:
 		c.next()
 		c.write("merge ")
 		c.expr(p.Expr, "")
-	case *ast.Let:
-		c.over(p.Over, p.Locals)
 	case *ast.Over:
-		c.over(p, nil)
+		c.over(p)
 	case *ast.Yield:
 		c.next()
 		c.write("yield ")
 		c.exprs(p.Exprs)
+	case *ast.Output:
+		c.next()
+		c.write("output %s", p.Name.Name)
+	case *ast.Debug:
+		c.next()
+		c.write("debug")
+		if p.Expr != nil {
+			c.write(" ")
+			c.expr(p.Expr, "")
+		}
 	default:
-		c.open("unknown proc: %T", p)
+		c.open("unknown operator: %T", p)
 		c.close()
 	}
 }
 
-func (c *canon) over(o *ast.Over, locals []ast.Def) {
+func (c *canon) fromElems(elems []*ast.FromElem) {
+	c.fromElem(elems[0])
+	for _, elem := range elems[1:] {
+		c.write(", ")
+		c.fromElem(elem)
+	}
+}
+
+func (c *canon) fromElem(elem *ast.FromElem) {
+	c.fromEntity(elem.Entity)
+	if elem.Args != nil {
+		c.fromArgs(elem.Args)
+	}
+	if elem.Alias != nil {
+		c.write(" %s", zson.QuotedName(elem.Alias.Text))
+	}
+}
+
+func (c *canon) fromEntity(e ast.FromEntity) {
+	switch e := e.(type) {
+	case *ast.ExprEntity:
+		c.write("eval(")
+		c.expr(e.Expr, "")
+		c.write(")")
+	case *ast.Glob, *ast.Regexp:
+		c.pattern(e)
+	case *ast.Name:
+		c.write(zson.QuotedName(e.Text))
+	case *ast.CrossJoin:
+		c.write("cross join XXX")
+	case *ast.SQLJoin:
+		c.write("sql join XXX")
+	default:
+		panic(fmt.Sprintf("unknown from expression: %T", e))
+	}
+}
+
+func (c *canon) over(o *ast.Over) {
 	c.next()
 	c.write("over ")
 	c.exprs(o.Exprs)
-	if len(locals) > 0 {
+	if len(o.Locals) > 0 {
 		c.write(" with ")
-		c.defs(locals, ", ")
+		c.defs(o.Locals, ", ")
 	}
-	if o.Scope != nil {
+	if o.Body != nil {
 		c.write(" => (")
 		c.open()
 		c.head = true
-		c.proc(o.Scope)
+		c.seq(o.Body)
 		c.close()
 		c.ret()
 		c.flush()
@@ -646,28 +672,49 @@ func (c *canon) over(o *ast.Over, locals []ast.Def) {
 	}
 }
 
-func (c *canon) pool(p *ast.Pool) {
-	//XXX TBD name, from, to, id etc
-	var s string
-	switch specPool := p.Spec.Pool.(type) {
-	case nil:
-		// This is a lake meta-query.
+func (c *canon) scope(s *ast.Scope, parens bool) {
+	if parens {
+		c.open("(")
+		c.ret()
+	}
+	for _, d := range s.Decls {
+		c.decl(d)
+		c.ret()
+	}
+	//XXX functions?
+	c.flush()
+	c.seq(s.Body)
+	if parens {
+		c.close()
+		c.ret()
+		c.flush()
+		c.write(")")
+	}
+}
+
+func (c *canon) poolArgs(args *ast.PoolArgs) {
+	s := ""
+	if args.Commit != nil {
+		s += "@" + args.Commit.Text
+	}
+	if args.Meta != nil {
+		s += ":" + args.Meta.Text
+	}
+	if args.Tap {
+		s += " tap"
+	}
+	c.write(s)
+}
+
+func (c *canon) pattern(p ast.FromEntity) {
+	switch p := p.(type) {
 	case *ast.Glob:
-		s = specPool.Pattern
+		c.write(p.Pattern)
 	case *ast.Regexp:
-		s = "/" + specPool.Pattern + "/"
-	case *ast.String:
-		s = zson.QuotedString([]byte(specPool.Text))
+		c.write("/" + p.Pattern + "/")
 	default:
-		s = fmt.Sprintf("(unknown pool type %T)", specPool)
+		panic(fmt.Sprintf("(unknown pattern type %T)", p))
 	}
-	if p.Spec.Commit != "" {
-		s += "@" + p.Spec.Commit
-	}
-	if p.Spec.Meta != "" {
-		s += ":" + p.Spec.Meta
-	}
-	c.write("pool %s", s)
 }
 
 func isAggFunc(e ast.Expr) *ast.Summarize {
@@ -675,7 +722,7 @@ func isAggFunc(e ast.Expr) *ast.Summarize {
 	if !ok {
 		return nil
 	}
-	if _, err := agg.NewPattern(call.Name, true); err != nil {
+	if _, err := agg.NewPattern(call.Name.Name, true); err != nil {
 		return nil
 	}
 	return &ast.Summarize{
@@ -689,7 +736,7 @@ func isAggFunc(e ast.Expr) *ast.Summarize {
 
 func IsBool(e ast.Expr) bool {
 	switch e := e.(type) {
-	case *astzed.Primitive:
+	case *ast.Primitive:
 		return e.Type == "bool"
 	case *ast.UnaryExpr:
 		return IsBool(e.Operand)
@@ -703,10 +750,10 @@ func IsBool(e ast.Expr) bool {
 	case *ast.Conditional:
 		return IsBool(e.Then) && IsBool(e.Else)
 	case *ast.Call:
-		return function.HasBoolResult(e.Name)
+		return function.HasBoolResult(e.Name.Name)
 	case *ast.Cast:
-		if typval, ok := e.Type.(*astzed.TypeValue); ok {
-			if typ, ok := typval.Value.(*astzed.TypePrimitive); ok {
+		if typval, ok := e.Type.(*ast.TypeValue); ok {
+			if typ, ok := typval.Value.(*ast.TypePrimitive); ok {
 				return typ.Name == "bool"
 			}
 		}
@@ -719,12 +766,9 @@ func IsBool(e ast.Expr) bool {
 }
 
 func isAggAssignments(assigns []ast.Assignment) bool {
-	for _, a := range assigns {
-		if isAggFunc(a.RHS) == nil {
-			return false
-		}
-	}
-	return true
+	return !slices.ContainsFunc(assigns, func(a ast.Assignment) bool {
+		return isAggFunc(a.RHS) == nil
+	})
 }
 
 func IsSearch(e ast.Expr) bool {
@@ -745,38 +789,37 @@ func IsSearch(e ast.Expr) bool {
 	}
 }
 
-func (c *canon) http(p *ast.HTTP) {
-	//XXX TBD other stuff
-	c.write("get %s", p.URL)
-	if p.Format != "" {
-		c.write(" format %s", p.Format)
+func (c *canon) httpArgs(args *ast.HTTPArgs) {
+	if args.Format != nil {
+		c.write(" format %s", args.Format.Text)
+	}
+	if args.Method != nil {
+		c.write(" method %s", zson.QuotedName(args.Method.Text))
+	}
+	if args.Headers != nil {
+		c.write(" headers ")
+		c.expr(args.Headers, "")
+	}
+	if args.Body != nil {
+		c.write(" body %s", zson.QuotedName(args.Body.Text))
 	}
 }
 
-func (c *canon) file(p *ast.File) {
-	//XXX TBD other stuff
-	c.write("file %s", p.Path)
-	if p.Format != "" {
-		c.write(" format %s", p.Format)
+func (c *canon) formatArg(arg *ast.FormatArg) {
+	if arg.Format != nil {
+		c.write(" format %s", arg.Format.Text)
 	}
 }
 
-func (c *canon) source(src ast.Source) {
-	switch src := src.(type) {
-	case *ast.Pool:
-		c.pool(src)
-	case *ast.HTTP:
-		c.http(src)
-	case *ast.File:
-		c.file(src)
+func (c *canon) fromArgs(args ast.FromArgs) {
+	switch args := args.(type) {
+	case *ast.PoolArgs:
+		c.poolArgs(args)
+	case *ast.HTTPArgs:
+		c.httpArgs(args)
+	case *ast.FormatArg:
+		c.formatArg(args)
 	default:
-		c.write("unknown source type: %T", src)
+		panic(fmt.Sprintf("unknown argument type in from operaetor: %T", args))
 	}
-}
-
-func isTrue(e ast.Expr) bool {
-	if p, ok := e.(*astzed.Primitive); ok {
-		return p.Type == "bool" && p.Text == "true"
-	}
-	return false
 }

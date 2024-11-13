@@ -1,0 +1,22 @@
+script: |
+  source service.sh
+  super db create -use -q -orderby x:asc test
+  echo {x:1} | super db load -q -
+  r=$(echo {x:2} | super db load - | head -1 | awk '{print $1}')
+  r=$(super db revert $r | awk '{print $5}')
+  super db vacuum -dryrun
+  super db vacuum -f
+  super db revert -q $r
+  ! super db query -z 'from test'
+
+inputs:
+  - name: service.sh
+
+outputs:
+  - name: stdout
+    data: |
+      would vacuum 1 object
+      vacuumed 1 object
+  - name: stderr
+    regexp:
+      file:.*file does not exist

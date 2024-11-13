@@ -1,35 +1,38 @@
 package zbuf
 
 import (
-	"github.com/brimdata/zed"
-	"github.com/brimdata/zed/order"
-	"github.com/brimdata/zed/runtime/expr"
+	"github.com/brimdata/super"
+	"github.com/brimdata/super/order"
+	"github.com/brimdata/super/runtime/sam/expr"
 )
 
-func NewComparator(zctx *zed.Context, layout order.Layout) *expr.Comparator {
-	exprs := make([]expr.Evaluator, len(layout.Keys))
-	for i, key := range layout.Keys {
-		exprs[i] = expr.NewDottedExpr(zctx, key)
+func NewComparator(zctx *super.Context, sortKeys []order.SortKey) *expr.Comparator {
+	exprs := make([]expr.SortEvaluator, len(sortKeys))
+	for i, k := range sortKeys {
+		exprs[i] = expr.NewSortEvaluator(expr.NewDottedExpr(zctx, k.Key), k.Order)
 	}
 	// valueAsBytes establishes a total order.
-	exprs = append(exprs, &valueAsBytes{})
-	nullsMax := layout.Order == order.Asc
-	return expr.NewComparator(nullsMax, !nullsMax, exprs...).WithMissingAsNull()
+	exprs = append(exprs, expr.NewSortEvaluator(&valueAsBytes{}, order.Asc))
+	nullsMax := sortKeys[0].Order == order.Asc
+	return expr.NewComparator(nullsMax, exprs...).WithMissingAsNull()
 }
 
-func NewComparatorNullsMax(zctx *zed.Context, layout order.Layout) *expr.Comparator {
-	exprs := make([]expr.Evaluator, len(layout.Keys))
-	for i, key := range layout.Keys {
-		exprs[i] = expr.NewDottedExpr(zctx, key)
+func NewComparatorNullsMax(zctx *super.Context, sortKeys order.SortKeys) *expr.Comparator {
+	exprs := make([]expr.SortEvaluator, len(sortKeys))
+	for i, k := range sortKeys {
+		exprs[i] = expr.NewSortEvaluator(expr.NewDottedExpr(zctx, k.Key), k.Order)
+	}
+	var o order.Which
+	if !sortKeys.IsNil() {
+		o = sortKeys.Primary().Order
 	}
 	// valueAsBytes establishes a total order.
-	exprs = append(exprs, &valueAsBytes{})
-	reverse := layout.Order == order.Desc
-	return expr.NewComparator(true, reverse, exprs...).WithMissingAsNull()
+	exprs = append(exprs, expr.NewSortEvaluator(&valueAsBytes{}, o))
+	return expr.NewComparator(true, exprs...).WithMissingAsNull()
 }
 
 type valueAsBytes struct{}
 
-func (v *valueAsBytes) Eval(_ expr.Context, val *zed.Value) *zed.Value {
-	return zed.NewBytes(val.Bytes)
+func (v *valueAsBytes) Eval(ectx expr.Context, val super.Value) super.Value {
+	return super.NewBytes(val.Bytes())
 }

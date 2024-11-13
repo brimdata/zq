@@ -5,18 +5,30 @@
 ### Synopsis
 
 ```
-head [ n ]
+head [ <const-expr> ]
 ```
 ### Description
 
-The `head` operator copies the first `n` values from its input to its output
-and ends the sequence thereafter.  `n` must be an integer.
+The `head` operator copies the first N values from its input to its output and ends
+the sequence thereafter. N is given by `<const-expr>`, a compile-time
+constant expression that evaluates to a positive integer. If `<const-expr>`
+is not provided, the value of N defaults to `1`.
 
 ### Examples
 
 _Grab first two values of arbitrary sequence_
 ```mdtest-command
-echo '1 "foo" [1,2,3]' | zq -z 'head 2' -
+echo '1 "foo" [1,2,3]' | super -z -c 'head 2' -
+```
+=>
+```mdtest-output
+1
+"foo"
+```
+
+_Grab first two values of arbitrary sequence, using a different representation of two_
+```mdtest-command
+echo '1 "foo" [1,2,3]' | super -z -c 'head 1+1' -
 ```
 =>
 ```mdtest-output
@@ -26,7 +38,7 @@ echo '1 "foo" [1,2,3]' | zq -z 'head 2' -
 
 _Grab the first record of a record sequence_
 ```mdtest-command
-echo '{a:"hello"}{b:"world"}' | zq -z head -
+echo '{a:"hello"}{b:"world"}' | super -z -c head -
 ```
 =>
 ```mdtest-output

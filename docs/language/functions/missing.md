@@ -7,6 +7,7 @@
 ```
 missing(val: any) -> bool
 ```
+
 ### Description
 
 The _missing_ function returns true if its argument is `error("missing")`
@@ -29,12 +30,13 @@ switch (
 ### Examples
 
 ```mdtest-command
-echo '{foo:10}' | zq -z 'yield {yes:missing(bar),no:missing(foo)}' -
-echo '{foo:[1,2,3]}' | zq -z 'yield {yes:has(foo[3]),no:has(foo[0])}' -
-echo '{foo:{bar:"value"}}' | zq -z 'yield {yes:missing(foo.baz),no:missing(foo.bar)}' -
-echo '{foo:10}' | zq -z 'yield {yes:missing(bar+1),no:missing(foo+1)}' -
-echo 1 | zq -z 'yield missing(bar)' -
-echo '{x:error("missing")}' | zq -z 'yield missing(x)' -
+echo '{foo:10}' | super -z -c 'yield {yes:missing(bar),no:missing(foo)}' -
+echo '{foo:[1,2,3]}' | super -z -c 'yield {yes:has(foo[3]),no:has(foo[0])}' -
+echo '{foo:{bar:"value"}}' |
+  super -z -c 'yield {yes:missing(foo.baz),no:missing(foo.bar)}' -
+echo '{foo:10}' | super -z -c 'yield {yes:missing(bar+1),no:missing(foo+1)}' -
+echo 1 | super -z -c 'yield missing(bar)' -
+echo '{x:error("missing")}' | super -z -c 'yield missing(x)' -
 ```
 =>
 ```mdtest-output

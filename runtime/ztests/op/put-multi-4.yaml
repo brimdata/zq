@@ -1,0 +1,13 @@
+# Tests one expression that overwrites an existing field, another that
+# creates a new field
+zed: put new:=1, x:=x+1
+
+vector: true
+
+input: |
+  {x:1(int32)}
+  {x:2(int32)}
+
+output: |
+  {x:2,new:1}
+  {x:3,new:1}

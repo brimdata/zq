@@ -1,0 +1,13 @@
+zed: yield this[0], this[1]
+
+vector: true
+
+input: |
+  [0((int64,string)),"hi"((int64,string))]
+  |[0((int64,string)),"hi"((int64,string))]|
+
+output: |
+  0
+  "hi"
+  0
+  "hi"

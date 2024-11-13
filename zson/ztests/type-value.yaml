@@ -1,7 +1,8 @@
-zed: "*"
+zed: pass
 
 input: &input |
   <int64>
   {typ:<int64>}
+  <{def:"@foo"=int64,ref:"@foo"}>
 
 output: *input

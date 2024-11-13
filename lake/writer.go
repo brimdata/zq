@@ -4,13 +4,13 @@ import (
 	"context"
 	"sync/atomic"
 
-	"github.com/brimdata/zed"
-	"github.com/brimdata/zed/lake/data"
-	"github.com/brimdata/zed/order"
-	"github.com/brimdata/zed/pkg/field"
-	"github.com/brimdata/zed/runtime/expr"
-	"github.com/brimdata/zed/zbuf"
-	"github.com/brimdata/zed/zio"
+	"github.com/brimdata/super"
+	"github.com/brimdata/super/lake/data"
+	"github.com/brimdata/super/order"
+	"github.com/brimdata/super/runtime/sam/expr"
+	"github.com/brimdata/super/zbuf"
+	"github.com/brimdata/super/zio"
+	"github.com/segmentio/ksuid"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -23,18 +23,16 @@ type Writer struct {
 	objects     []data.Object
 	inputSorted bool
 	ctx         context.Context
-	zctx        *zed.Context
-	//defs          index.Definitions
-	errgroup *errgroup.Group
-	vals     []zed.Value
+	zctx        *super.Context
+	errgroup    *errgroup.Group
+	vals        []super.Value
 	// XXX this is a simple double buffering model so the cloud-object
 	// writer can run in parallel with the reader filling the records
 	// buffer.  This can be later extended to pass a big bytes buffer
 	// back and forth where the bytes buffer holds all of the record
 	// data efficiently in one big backing store.
-	buffer      chan []zed.Value
+	buffer      chan []super.Value
 	comparator  *expr.Comparator
-	sorter      expr.Sorter
 	memBuffered int64
 	stats       ImportStats
 }
@@ -51,9 +49,9 @@ type Writer struct {
 // XXX we should make another writer that takes sorted input and is a bit
 // more efficient.  This other writer could have different commit triggers
 // to do useful things like paritioning given the context is a rollup.
-func NewWriter(ctx context.Context, zctx *zed.Context, pool *Pool) (*Writer, error) {
+func NewWriter(ctx context.Context, zctx *super.Context, pool *Pool) (*Writer, error) {
 	g, ctx := errgroup.WithContext(ctx)
-	ch := make(chan []zed.Value, 1)
+	ch := make(chan []super.Value, 1)
 	ch <- nil
 	return &Writer{
 		pool:       pool,
@@ -74,7 +72,7 @@ func (w *Writer) newObject() *data.Object {
 	return &w.objects[len(w.objects)-1]
 }
 
-func (w *Writer) Write(rec *zed.Value) error {
+func (w *Writer) Write(rec super.Value) error {
 	if w.ctx.Err() != nil {
 		if err := w.errgroup.Wait(); err != nil {
 			return err
@@ -85,8 +83,8 @@ func (w *Writer) Write(rec *zed.Value) error {
 	// and slow down import. We should instead copy the raw record bytes into a
 	// recycled buffer and keep around an array of ts + byte-slice structs for
 	// sorting.
-	w.vals = append(w.vals, *rec.Copy())
-	w.memBuffered += int64(len(rec.Bytes))
+	w.vals = append(w.vals, rec.Copy())
+	w.memBuffered += int64(len(rec.Bytes()))
 	//XXX change name LogSizeThreshold
 	// XXX the previous logic estimated the object size with divide by 2...?!
 	if w.memBuffered >= w.pool.Threshold {
@@ -124,11 +122,14 @@ func (w *Writer) Close() error {
 	return w.errgroup.Wait()
 }
 
-func (w *Writer) writeObject(object *data.Object, recs []zed.Value) error {
-	if !w.inputSorted {
+func (w *Writer) writeObject(object *data.Object, recs []super.Value) error {
+	var zr zio.Reader
+	if w.inputSorted {
+		zr = zbuf.NewArray(recs)
+	} else {
 		done := make(chan struct{})
 		go func() {
-			w.sorter.SortStable(recs, w.comparator)
+			zr = w.comparator.SortStableReader(recs)
 			close(done)
 		}()
 		select {
@@ -137,12 +138,11 @@ func (w *Writer) writeObject(object *data.Object, recs []zed.Value) error {
 			return w.ctx.Err()
 		}
 	}
-	writer, err := object.NewWriter(w.ctx, w.pool.engine, w.pool.DataPath, w.pool.Layout.Order, poolKey(w.pool.Layout), w.pool.SeekStride)
+	writer, err := object.NewWriter(w.ctx, w.pool.engine, w.pool.DataPath, w.pool.SortKeys.Primary(), w.pool.SeekStride)
 	if err != nil {
 		return err
 	}
-	r := zbuf.NewArray(recs).NewReader()
-	if err := zio.CopyWithContext(w.ctx, writer, r); err != nil {
+	if err := zio.CopyWithContext(w.ctx, writer, zr); err != nil {
 		writer.Abort()
 		return err
 	}
@@ -162,34 +162,56 @@ func (w *Writer) Stats() ImportStats {
 }
 
 type SortedWriter struct {
-	ctx     context.Context
-	pool    *Pool
-	writer  *data.Writer
-	objects []*data.Object
+	comparator    *expr.Comparator
+	ctx           context.Context
+	pool          *Pool
+	sortKey       order.SortKey
+	lastKey       super.Value
+	writer        *data.Writer
+	vectorEnabled bool
+	vectorWriter  *data.VectorWriter
+	objects       []*data.Object
 }
 
-func NewSortedWriter(ctx context.Context, pool *Pool) *SortedWriter {
-	return &SortedWriter{ctx: ctx, pool: pool}
+func NewSortedWriter(ctx context.Context, zctx *super.Context, pool *Pool, vectorEnabled bool) *SortedWriter {
+	return &SortedWriter{
+		comparator:    ImportComparator(zctx, pool),
+		ctx:           ctx,
+		sortKey:       pool.SortKeys.Primary(),
+		pool:          pool,
+		vectorEnabled: vectorEnabled,
+	}
 }
 
-func (w *SortedWriter) Write(val *zed.Value) error {
+func (w *SortedWriter) Write(val super.Value) error {
+	key := val.DerefPath(w.sortKey.Key).MissingAsNull()
+again:
 	if w.writer == nil {
-		o := data.NewObject()
-		w.objects = append(w.objects, &o)
-		var err error
-		w.writer, err = o.NewWriter(w.ctx, w.pool.engine, w.pool.DataPath, w.pool.Layout.Order, poolKey(w.pool.Layout), w.pool.SeekStride)
-		if err != nil {
+		if err := w.newWriter(); err != nil {
+			w.Abort()
 			return err
 		}
 	}
-	if err := w.writer.Write(val); err != nil {
+	if w.writer.BytesWritten() >= w.pool.Threshold &&
+		w.comparator.Compare(w.lastKey, key) != 0 {
+		if err := w.Close(); err != nil {
+			w.Abort()
+			return err
+		}
+		w.writer, w.vectorWriter = nil, nil
+		goto again
+	}
+	if err := w.writer.WriteWithKey(key, val); err != nil {
+		w.Abort()
 		return err
 	}
-	if w.writer.BytesWritten() >= w.pool.Threshold {
-		writer := w.writer
-		w.writer = nil
-		return writer.Close(w.ctx)
+	if w.vectorWriter != nil {
+		if err := w.vectorWriter.Write(val); err != nil {
+			w.Abort()
+			return err
+		}
 	}
+	w.lastKey.CopyFrom(key)
 	return nil
 }
 
@@ -198,21 +220,59 @@ func (w *SortedWriter) Abort() {
 		w.writer.Abort()
 		w.writer = nil
 	}
+	if w.vectorWriter != nil {
+		w.vectorWriter.Abort()
+		w.vectorWriter = nil
+	}
 	// Delete all created objects.
 	for _, o := range w.objects {
 		o.Remove(w.ctx, w.pool.engine, w.pool.DataPath)
 	}
 }
 
+func (w *SortedWriter) newWriter() error {
+	o := data.NewObject()
+	var err error
+	w.writer, err = o.NewWriter(w.ctx, w.pool.engine, w.pool.DataPath, w.sortKey, w.pool.SeekStride)
+	if err != nil {
+		return err
+	}
+	if w.vectorEnabled {
+		w.vectorWriter, err = o.NewVectorWriter(w.ctx, w.pool.engine, w.pool.DataPath)
+		if err != nil {
+			return err
+		}
+	}
+	w.objects = append(w.objects, &o)
+	return nil
+}
+
 func (w *SortedWriter) Objects() []*data.Object {
 	return w.objects
+}
+
+func (w *SortedWriter) Vectors() []ksuid.KSUID {
+	if !w.vectorEnabled {
+		return nil
+	}
+	var ids []ksuid.KSUID
+	for _, o := range w.objects {
+		ids = append(ids, o.ID)
+	}
+	return ids
 }
 
 func (w *SortedWriter) Close() error {
 	if w.writer == nil {
 		return nil
 	}
-	return w.writer.Close(w.ctx)
+	err := w.writer.Close(w.ctx)
+	if w.vectorWriter != nil {
+		if vecErr := w.vectorWriter.Close(); err == nil {
+			err = vecErr
+		}
+	}
+	return err
 }
 
 type ImportStats struct {
@@ -235,16 +295,6 @@ func (s *ImportStats) Copy() ImportStats {
 	}
 }
 
-func ImportComparator(zctx *zed.Context, pool *Pool) *expr.Comparator {
-	layout := pool.Layout
-	layout.Keys = field.List{poolKey(layout)}
-	return zbuf.NewComparatorNullsMax(zctx, layout)
-}
-
-func poolKey(layout order.Layout) field.Path {
-	if len(layout.Keys) != 0 {
-		// XXX We don't yet handle multiple pool keys.
-		return layout.Keys[0]
-	}
-	return field.New("ts")
+func ImportComparator(zctx *super.Context, pool *Pool) *expr.Comparator {
+	return zbuf.NewComparatorNullsMax(zctx, pool.SortKeys)
 }

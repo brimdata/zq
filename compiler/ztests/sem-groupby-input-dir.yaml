@@ -1,14 +1,15 @@
 script: |
-  export ZED_LAKE=test
-  zed init -q
-  zed create -q -orderby ts pool-ts
-  zc -C -O "from 'pool-ts'| count() by every(1h)" | sed -e 's/pool .*/pool POOL/'
+  export SUPER_DB_LAKE=test
+  super db init -q
+  super db create -q -orderby ts pool-ts
+  super db compile -C -O "from 'pool-ts' |> count() by every(1h)" | sed -e 's/pool .*/.../'
 
 outputs:
   - name: stdout
     data: |
-      from (
-        pool POOL
-      )
-      | summarize sort-dir 1
+      lister ...
+      |> slicer
+      |> seqscan ...
+      |> summarize sort-dir 1
           count:=count() by ts:=every(1h)
+      |> output main

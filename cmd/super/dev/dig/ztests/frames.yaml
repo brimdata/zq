@@ -1,0 +1,22 @@
+script: |
+  super a.jsup > c.bsup
+  super b.jsup >> c.bsup
+  super dev dig frames -z c.bsup
+
+inputs:
+  - name: a.jsup
+    data: |
+      {a:1}
+  - name: b.jsup
+    data: |
+      {b:2}
+
+outputs:
+  - name: stdout
+    data: |
+      {type:"types",offset:0,block:{type:"uncompressed",length:5}}
+      {type:"values",offset:7,block:{type:"uncompressed",length:4}}
+      {type:"EOS",offset:13,block:null}
+      {type:"types",offset:14,block:{type:"uncompressed",length:5}}
+      {type:"values",offset:21,block:{type:"uncompressed",length:4}}
+      {type:"EOS",offset:27,block:null}

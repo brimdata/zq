@@ -1,7 +1,0 @@
-zed: yield a
-
-input: |
-  {"a": {"a": "a", "b": "b"}, "b": "b"}
-
-output: |
-  {a:"a",b:"b"}

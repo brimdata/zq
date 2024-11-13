@@ -7,6 +7,7 @@
 ```
 ceil(n: number) -> number
 ```
+
 ### Description
 
 The _ceil_ function returns the smallest integer greater than or equal to its argument `n`,
@@ -16,7 +17,7 @@ which must be a numeric type.  The return type retains the type of the argument.
 
 The ceiling of a various numbers:
 ```mdtest-command
-echo '1.5 -1.5 1(uint8) 1.5(float32)' | zq -z 'yield ceil(this)' -
+echo '1.5 -1.5 1(uint8) 1.5(float32)' | super -z -c 'yield ceil(this)' -
 ```
 =>
 ```mdtest-output

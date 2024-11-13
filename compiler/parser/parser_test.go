@@ -5,17 +5,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"regexp"
-	"runtime"
 	"strings"
 	"testing"
 
-	"github.com/brimdata/zed/compiler"
-	"github.com/brimdata/zed/compiler/parser"
-	"github.com/brimdata/zed/pkg/fs"
-	"github.com/brimdata/zed/ztest"
+	"github.com/brimdata/super/compiler/parser"
+	"github.com/brimdata/super/pkg/fs"
+	"github.com/brimdata/super/ztest"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -41,18 +38,12 @@ func searchForZed() ([]string, error) {
 	return zed, err
 }
 
-func parsePEGjs(z string) ([]byte, error) {
-	cmd := exec.Command("node", "run.js", "-e", "start")
-	cmd.Stdin = strings.NewReader(z)
-	return cmd.Output()
-}
-
 func parseOp(z string) ([]byte, error) {
-	o, err := compiler.Parse(z)
+	ast, err := parser.ParseQuery(z)
 	if err != nil {
 		return nil, err
 	}
-	return json.Marshal(o)
+	return json.Marshal(ast.Parsed())
 }
 
 func parsePigeon(z string) ([]byte, error) {
@@ -63,11 +54,9 @@ func parsePigeon(z string) ([]byte, error) {
 	return json.Marshal(ast)
 }
 
-// testZed parses the Zed query in line by both the Go and JavaScript
-// parsers.  It checks both that the parse is successful and that the
-// two resulting ASTs are equivalent.  On the go side, we take a round
-// trip through json marshal and unmarshal to turn the parse-tree types
-// into generic JSON types.
+// testZed checks both that the parse is successful and that the
+// two resulting ASTs from the round trip through json marshal and
+// unmarshal are equivalent.
 func testZed(t *testing.T, line string) {
 	pigeonJSON, err := parsePigeon(line)
 	assert.NoError(t, err, "parsePigeon: %q", line)
@@ -76,12 +65,6 @@ func testZed(t *testing.T, line string) {
 	assert.NoError(t, err, "parseOp: %q", line)
 
 	assert.JSONEq(t, string(pigeonJSON), string(astJSON), "pigeon and AST mismatch: %q", line)
-
-	if runtime.GOOS != "windows" {
-		pegJSON, err := parsePEGjs(line)
-		assert.NoError(t, err, "parsePEGjs: %q", line)
-		assert.JSONEq(t, string(pigeonJSON), string(pegJSON), "pigeon and PEGjs mismatch: %q", line)
-	}
 }
 
 func TestValid(t *testing.T) {

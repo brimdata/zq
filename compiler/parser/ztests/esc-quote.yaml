@@ -1,4 +1,4 @@
-zed: '"foo\"bar"'
+zed: '? "foo\"bar"'
 
 input: |
   {s:"foo\"bar"}

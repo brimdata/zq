@@ -9,11 +9,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/brimdata/zed"
-	"github.com/brimdata/zed/pkg/storage"
-	"github.com/brimdata/zed/zio/zngio"
-	"github.com/brimdata/zed/zngbytes"
-	"github.com/brimdata/zed/zson"
+	"github.com/brimdata/super"
+	"github.com/brimdata/super/pkg/storage"
+	"github.com/brimdata/super/zio/zngio"
+	"github.com/brimdata/super/zngbytes"
+	"github.com/brimdata/super/zson"
 	"go.uber.org/zap"
 )
 
@@ -27,9 +27,9 @@ var (
 )
 
 type Store struct {
-	journal     *Queue
-	logger      *zap.Logger
-	unmarshaler *zson.UnmarshalZNGContext
+	journal  *Queue
+	logger   *zap.Logger
+	keyTypes []interface{}
 
 	mu       sync.RWMutex // Protects everything below.
 	table    map[string]Entry
@@ -74,13 +74,10 @@ func OpenStore(ctx context.Context, engine storage.Engine, logger *zap.Logger, p
 }
 
 func newStore(journal *Queue, logger *zap.Logger, keyTypes ...interface{}) *Store {
-	u := zson.NewZNGUnmarshaler()
-	u.Bind(Add{}, Delete{}, Update{})
-	u.Bind(keyTypes...)
 	return &Store{
-		journal:     journal,
-		logger:      logger.Named("journal"),
-		unmarshaler: u,
+		journal:  journal,
+		logger:   logger.Named("journal"),
+		keyTypes: append([]interface{}{Add{}, Delete{}, Update{}}, keyTypes...),
 	}
 }
 
@@ -95,11 +92,13 @@ func (s *Store) load(ctx context.Context) error {
 	if head == current {
 		return nil
 	}
-	at, table, err := s.getSnapshot(ctx)
+	unmarshaler := zson.NewZNGUnmarshaler()
+	unmarshaler.Bind(s.keyTypes...)
+	at, table, err := s.getSnapshot(ctx, unmarshaler)
 	if err != nil && !errors.Is(err, fs.ErrNotExist) {
 		s.logger.Error("Loading snapshot", zap.Error(err))
 	}
-	r, err := s.journal.OpenAsZNG(ctx, zed.NewContext(), head, at)
+	r, err := s.journal.OpenAsZNG(ctx, super.NewContext(), head, at)
 	if err != nil {
 		return err
 	}
@@ -126,7 +125,7 @@ func (s *Store) load(ctx context.Context) error {
 			return nil
 		}
 		var e Entry
-		if err := s.unmarshaler.Unmarshal(val, &e); err != nil {
+		if err := unmarshaler.Unmarshal(*val, &e); err != nil {
 			return err
 		}
 		switch e := e.(type) {
@@ -146,30 +145,30 @@ func (s *Store) load(ctx context.Context) error {
 	}
 }
 
-func (s *Store) getSnapshot(ctx context.Context) (ID, map[string]Entry, error) {
+func (s *Store) getSnapshot(ctx context.Context, unmarshaler *zson.UnmarshalZNGContext) (ID, map[string]Entry, error) {
 	table := make(map[string]Entry)
 	r, err := s.journal.engine.Get(ctx, s.snapshotURI())
 	if err != nil {
 		return Nil, table, err
 	}
 	defer r.Close()
-	zr := zngio.NewReader(zed.NewContext(), r)
+	zr := zngio.NewReader(super.NewContext(), r)
 	defer zr.Close()
 	val, err := zr.Read()
 	if val == nil || err != nil {
 		return Nil, table, err
 	}
-	if val.Type.ID() != zed.IDUint64 {
+	if val.Type().ID() != super.IDUint64 {
 		return Nil, table, errors.New("corrupted journal snapshot")
 	}
-	at := ID(zed.DecodeUint(val.Bytes))
+	at := ID(val.Uint())
 	for {
 		val, err := zr.Read()
 		if val == nil || err != nil {
 			return at, table, err
 		}
 		var e Entry
-		if err := s.unmarshaler.Unmarshal(val, &e); err != nil {
+		if err := unmarshaler.Unmarshal(*val, &e); err != nil {
 			return at, nil, err
 		}
 		table[e.Key()] = e
@@ -177,14 +176,14 @@ func (s *Store) getSnapshot(ctx context.Context) (ID, map[string]Entry, error) {
 }
 
 func (s *Store) putSnapshot(ctx context.Context, at ID, table map[string]Entry) error {
-	// XXX This needs to be an atomic write for file systems: brimdata/zed#4277.
+	// XXX This needs to be an atomic write for file systems: brimdata/super#4277.
 	w, err := s.journal.engine.Put(ctx, s.snapshotURI())
 	if err != nil {
 		return err
 	}
 	zw := zngio.NewWriter(w)
 	defer zw.Close()
-	if err := zw.Write(zed.NewUint64(uint64(at))); err != nil {
+	if err := zw.Write(super.NewUint64(uint64(at))); err != nil {
 		return err
 	}
 	marshaler := zson.NewZNGMarshaler()

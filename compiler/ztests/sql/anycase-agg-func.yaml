@@ -1,0 +1,15 @@
+script: |
+  super -z -c 'select COUNT(),Sum(c) FROM "a.jsup"'
+
+inputs:
+  - name: a.jsup
+    data: |
+      {c:1,a:11}
+      {c:2,a:12}
+      {c:3,a:13}
+      {c:4,a:14}
+
+outputs:
+  - name: stdout
+    data: |
+      {count:4(uint64),sum:10}

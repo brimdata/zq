@@ -3,11 +3,11 @@
 # same code path.
 script: |
   while read -r line; do
-    zc -s -C $line
-  done < inputs.zed
+    super compile -dag -C "$line"
+  done < inputs.spq
 
 inputs:
-  - name: inputs.zed
+  - name: inputs.spq
     data: |
       yield (10+2)/8
       where (y==2 or x==4) and z==5
@@ -16,15 +16,12 @@ inputs:
 outputs:
   -  name: stdout
      data: |
-       from (
-         (internal reader)
-       )
-       | yield (10+2)/8
-       from (
-         (internal reader)
-       )
-       | where (y==2 or x==4) and z==5
-       from (
-         (internal reader)
-       )
-       | where !(ts<=2)
+        null
+        |> yield (10+2)/8
+        |> output main
+        null
+        |> where (y==2 or x==4) and z==5
+        |> output main
+        null
+        |> where !(ts<=2)
+        |> output main

@@ -1,0 +1,19 @@
+zed: |
+  yield uint64(this), int64(this), float64(this), bool(this), bytes(this),
+        string(this), ip(this), net(this), type(null)
+
+vector: true
+
+input: |
+  null
+
+output: |
+  null(uint64)
+  null(int64)
+  null(float64)
+  null(bool)
+  null(bytes)
+  null(string)
+  null(ip)
+  null(net)
+  null(type)

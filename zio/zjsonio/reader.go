@@ -6,10 +6,10 @@ import (
 	"io"
 	"strconv"
 
-	"github.com/brimdata/zed"
-	"github.com/brimdata/zed/pkg/skim"
-	"github.com/brimdata/zed/zcode"
-	"github.com/brimdata/zed/zson"
+	"github.com/brimdata/super"
+	"github.com/brimdata/super/pkg/skim"
+	"github.com/brimdata/super/zcode"
+	"github.com/brimdata/super/zson"
 )
 
 const (
@@ -19,13 +19,13 @@ const (
 
 type Reader struct {
 	scanner *skim.Scanner
-	zctx    *zed.Context
+	zctx    *super.Context
 	decoder decoder
 	builder *zcode.Builder
-	val     zed.Value
+	val     super.Value
 }
 
-func NewReader(zctx *zed.Context, reader io.Reader) *Reader {
+func NewReader(zctx *super.Context, reader io.Reader) *Reader {
 	buffer := make([]byte, ReadSize)
 	return &Reader{
 		scanner: skim.NewScanner(reader, buffer, MaxLineSize),
@@ -35,7 +35,7 @@ func NewReader(zctx *zed.Context, reader io.Reader) *Reader {
 	}
 }
 
-func (r *Reader) Read() (*zed.Value, error) {
+func (r *Reader) Read() (*super.Value, error) {
 	e := func(err error) error {
 		if err == nil {
 			return err
@@ -59,63 +59,54 @@ func (r *Reader) Read() (*zed.Value, error) {
 	if err := r.decodeValue(r.builder, typ, object.Value); err != nil {
 		return nil, e(err)
 	}
-	r.val = *zed.NewValue(typ, r.builder.Bytes().Body())
+	r.val = super.NewValue(typ, r.builder.Bytes().Body())
 	return &r.val, nil
 }
 
-func (r *Reader) decodeValue(b *zcode.Builder, typ zed.Type, body interface{}) error {
+func (r *Reader) decodeValue(b *zcode.Builder, typ super.Type, body interface{}) error {
+	if body == nil {
+		b.Append(nil)
+		return nil
+	}
 	switch typ := typ.(type) {
-	case *zed.TypeNamed:
+	case *super.TypeNamed:
 		return r.decodeValue(b, typ.Type, body)
-	case *zed.TypeUnion:
+	case *super.TypeUnion:
 		return r.decodeUnion(b, typ, body)
-	case *zed.TypeMap:
+	case *super.TypeMap:
 		return r.decodeMap(b, typ, body)
-	case *zed.TypeEnum:
+	case *super.TypeEnum:
 		return r.decodeEnum(b, typ, body)
-	case *zed.TypeRecord:
+	case *super.TypeRecord:
 		return r.decodeRecord(b, typ, body)
-	case *zed.TypeArray:
-		err := r.decodeContainer(b, typ.Type, body, "array")
-		return err
-	case *zed.TypeSet:
-		if body == nil {
-			b.Append(nil)
-			return nil
-		}
+	case *super.TypeArray:
+		return r.decodeContainer(b, typ.Type, body, "array")
+	case *super.TypeSet:
 		b.BeginContainer()
 		err := r.decodeContainerBody(b, typ.Type, body, "set")
-		b.TransformContainer(zed.NormalizeSet)
+		b.TransformContainer(super.NormalizeSet)
 		b.EndContainer()
 		return err
-	case *zed.TypeError:
+	case *super.TypeError:
 		return r.decodeValue(b, typ.Type, body)
-	case *zed.TypeOfType:
-		if body == nil {
-			b.Append(nil)
-			return nil
-		}
-		typeObj, err := unpacker.UnmarshalObject(body)
-		if err != nil {
-			return err
-		}
-		t, ok := typeObj.(zType)
-		if !ok {
-			return errors.New("type value is not a valid ZJSON type")
+	case *super.TypeOfType:
+		var t zType
+		if err := unpacker.UnmarshalObject(body, &t); err != nil {
+			return fmt.Errorf("type value is not a valid ZJSON type: %w", err)
 		}
 		local, err := r.decoder.decodeType(r.zctx, t)
 		if err != nil {
 			return err
 		}
 		tv := r.zctx.LookupTypeValue(local)
-		b.Append(tv.Bytes)
+		b.Append(tv.Bytes())
 		return nil
 	default:
 		return r.decodePrimitive(b, typ, body)
 	}
 }
 
-func (r *Reader) decodeRecord(b *zcode.Builder, typ *zed.TypeRecord, v interface{}) error {
+func (r *Reader) decodeRecord(b *zcode.Builder, typ *super.TypeRecord, v interface{}) error {
 	values, ok := v.([]interface{})
 	if !ok {
 		return errors.New("ZJSON record value must be a JSON array")
@@ -128,10 +119,6 @@ func (r *Reader) decodeRecord(b *zcode.Builder, typ *zed.TypeRecord, v interface
 
 		}
 		// Each field is either a string value or an array of string values.
-		if val == nil {
-			b.Append(nil)
-			continue
-		}
 		if err := r.decodeValue(b, fields[k].Type, val); err != nil {
 			return err
 		}
@@ -140,13 +127,9 @@ func (r *Reader) decodeRecord(b *zcode.Builder, typ *zed.TypeRecord, v interface
 	return nil
 }
 
-func (r *Reader) decodePrimitive(builder *zcode.Builder, typ zed.Type, v interface{}) error {
-	if zed.IsContainerType(typ) && !zed.IsUnionType(typ) {
+func (r *Reader) decodePrimitive(builder *zcode.Builder, typ super.Type, v interface{}) error {
+	if super.IsContainerType(typ) && !super.IsUnionType(typ) {
 		return errors.New("expected primitive type, got container")
-	}
-	if v == nil {
-		builder.Append(nil)
-		return nil
 	}
 	text, ok := v.(string)
 	if !ok {
@@ -158,7 +141,7 @@ func (r *Reader) decodePrimitive(builder *zcode.Builder, typ zed.Type, v interfa
 	})
 }
 
-func (r *Reader) decodeContainerBody(b *zcode.Builder, typ zed.Type, body interface{}, which string) error {
+func (r *Reader) decodeContainerBody(b *zcode.Builder, typ super.Type, body interface{}, which string) error {
 	items, ok := body.([]interface{})
 	if !ok {
 		return fmt.Errorf("bad JSON for ZJSON %s value", which)
@@ -171,22 +154,14 @@ func (r *Reader) decodeContainerBody(b *zcode.Builder, typ zed.Type, body interf
 	return nil
 }
 
-func (r *Reader) decodeContainer(b *zcode.Builder, typ zed.Type, body interface{}, which string) error {
-	if body == nil {
-		b.Append(nil)
-		return nil
-	}
+func (r *Reader) decodeContainer(b *zcode.Builder, typ super.Type, body interface{}, which string) error {
 	b.BeginContainer()
 	err := r.decodeContainerBody(b, typ, body, which)
 	b.EndContainer()
 	return err
 }
 
-func (r *Reader) decodeUnion(builder *zcode.Builder, typ *zed.TypeUnion, body interface{}) error {
-	if body == nil {
-		builder.Append(nil)
-		return nil
-	}
+func (r *Reader) decodeUnion(builder *zcode.Builder, typ *super.TypeUnion, body interface{}) error {
 	tuple, ok := body.([]interface{})
 	if !ok {
 		return errors.New("bad JSON for ZJSON union value")
@@ -207,7 +182,7 @@ func (r *Reader) decodeUnion(builder *zcode.Builder, typ *zed.TypeUnion, body in
 		return fmt.Errorf("bad tag for ZJSON union value: %w", err)
 	}
 	builder.BeginContainer()
-	builder.Append(zed.EncodeInt(int64(tag)))
+	builder.Append(super.EncodeInt(int64(tag)))
 	if err := r.decodeValue(builder, inner, tuple[1]); err != nil {
 		return err
 	}
@@ -215,11 +190,7 @@ func (r *Reader) decodeUnion(builder *zcode.Builder, typ *zed.TypeUnion, body in
 	return nil
 }
 
-func (r *Reader) decodeMap(b *zcode.Builder, typ *zed.TypeMap, body interface{}) error {
-	if body == nil {
-		b.Append(nil)
-		return nil
-	}
+func (r *Reader) decodeMap(b *zcode.Builder, typ *super.TypeMap, body interface{}) error {
 	items, ok := body.([]interface{})
 	if !ok {
 		return errors.New("bad JSON for ZJSON union value")
@@ -241,7 +212,7 @@ func (r *Reader) decodeMap(b *zcode.Builder, typ *zed.TypeMap, body interface{})
 	return nil
 }
 
-func (r *Reader) decodeEnum(b *zcode.Builder, typ *zed.TypeEnum, body interface{}) error {
+func (r *Reader) decodeEnum(b *zcode.Builder, typ *super.TypeEnum, body interface{}) error {
 	s, ok := body.(string)
 	if !ok {
 		return errors.New("ZJSON enum index value is not a JSON string")
@@ -250,6 +221,6 @@ func (r *Reader) decodeEnum(b *zcode.Builder, typ *zed.TypeEnum, body interface{
 	if err != nil {
 		return errors.New("ZJSON enum index value is not a string integer")
 	}
-	b.Append(zed.EncodeUint(uint64(index)))
+	b.Append(super.EncodeUint(uint64(index)))
 	return nil
 }

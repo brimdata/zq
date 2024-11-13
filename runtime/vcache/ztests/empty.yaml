@@ -1,0 +1,15 @@
+script: |
+  super -f csup -o test.csup in.jsup
+  super dev vector copy -z test.csup
+
+inputs:
+  - name: in.jsup
+    data: &input |
+      {}
+      []
+      |{}|
+      |[]|
+
+outputs:
+  - name: stdout
+    data: *input

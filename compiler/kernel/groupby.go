@@ -4,15 +4,16 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/brimdata/zed/compiler/ast/dag"
-	"github.com/brimdata/zed/order"
-	"github.com/brimdata/zed/pkg/field"
-	"github.com/brimdata/zed/runtime/expr"
-	"github.com/brimdata/zed/runtime/op/groupby"
-	"github.com/brimdata/zed/zbuf"
+	"github.com/brimdata/super/compiler/dag"
+	"github.com/brimdata/super/order"
+	"github.com/brimdata/super/pkg/field"
+	"github.com/brimdata/super/runtime/sam/expr"
+	"github.com/brimdata/super/runtime/sam/op/groupby"
+	"github.com/brimdata/super/zbuf"
 )
 
-func (b *Builder) compileGroupBy(parent zbuf.Puller, summarize *dag.Summarize) (*groupby.Proc, error) {
+func (b *Builder) compileGroupBy(parent zbuf.Puller, summarize *dag.Summarize) (*groupby.Op, error) {
+	b.resetResetters()
 	keys, err := b.compileAssignments(summarize.Keys)
 	if err != nil {
 		return nil, err
@@ -22,7 +23,7 @@ func (b *Builder) compileGroupBy(parent zbuf.Puller, summarize *dag.Summarize) (
 		return nil, err
 	}
 	dir := order.Direction(summarize.InputSortDir)
-	return groupby.New(b.pctx, parent, keys, names, reducers, summarize.Limit, dir, summarize.PartialsIn, summarize.PartialsOut)
+	return groupby.New(b.rctx, parent, keys, names, reducers, summarize.Limit, dir, summarize.PartialsIn, summarize.PartialsOut, b.resetters)
 }
 
 func (b *Builder) compileAggAssignments(assignments []dag.Assignment) (field.List, []*expr.Aggregator, error) {
@@ -44,12 +45,12 @@ func (b *Builder) compileAggAssignment(assignment dag.Assignment) (field.Path, *
 	if !ok {
 		return nil, nil, errors.New("aggregator is not an aggregation expression")
 	}
-	lhs, err := compileLval(assignment.LHS)
-	if err != nil {
-		return nil, nil, fmt.Errorf("lhs of aggregation: %w", err)
+	this, ok := assignment.LHS.(*dag.This)
+	if !ok {
+		return nil, nil, fmt.Errorf("internal error: aggregator assignment LHS is not a static path: %#v", assignment.LHS)
 	}
 	m, err := b.compileAgg(aggAST)
-	return lhs, m, err
+	return this.Path, m, err
 }
 
 func (b *Builder) compileAgg(agg *dag.Agg) (*expr.Aggregator, error) {

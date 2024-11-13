@@ -10,10 +10,11 @@ from <pattern>
 file <path> [format <format>]
 get <uri> [format <format>]
 from (
-   pool <pool>[@<commitish>] [ => <leg> ]
+   pool <pool>[@<commitish>] [ => <branch> ]
    pool <pattern>
-   file <path> [format <format>] [ => <leg> ]
-   get <uri> [format <format>] [ => <leg> ]
+   file <path> [format <format>] [ => <branch> ]
+   get <uri> [format <format>] [ => <branch> ]
+   pass
    ...
 )
 ```
@@ -21,16 +22,20 @@ from (
 
 The `from` operator identifies one or more data sources and transmits
 their data to its output.  A data source can be
-* the name of a data pool in a Zed lake, with optional [commitish](../../commands/zed.md#142-commitish);
-* the names of multiple data pools, expressed as a [regular expression](../overview.md#811-regular-expressions) or [glob](../overview.md#812-globs) pattern;
-* a path to a file; or
-* an HTTP, HTTPS, or S3 URI.
-Paths and URIs may be followed by an optional [format](../../commands/zq.md#2-input-formats)  specifier.
+* the name of a data pool in a SuperDB lake, with optional [commitish](../../commands/super-db.md#commitish);
+* the names of multiple data pools, expressed as a [regular expression](../search-expressions.md#regular-expressions) or [glob](../search-expressions.md#globs) pattern;
+* a path to a file;
+* an HTTP, HTTPS, or S3 URI; or
+* the [`pass` operator](pass.md), to treat the upstream pipeline branch as a source.
+
+:::tip Note
+File paths and URIs may be followed by an optional [format](../../commands/super.md#input-formats) specifier.
+:::
 
 Sourcing data from pools is only possible when querying a lake, such as
-via the [`zed` command](../../commands/zed.md) or
-[Zed lake API](../../lake/api.md). Sourcing data from files is only possible
-with the [`zq` command](../../commands/zq.md).
+via the [`super db` command](../../commands/super-db.md) or
+[SuperDB lake API](../../lake/api.md). Sourcing data from files is only possible
+with the [`super` command](../../commands/super.md).
 
 When a single pool name is specified without `@`-referencing a commit or ID, or
 when using a pool pattern, the tip of the `main` branch of each pool is
@@ -40,47 +45,52 @@ In the first four forms, a single source is connected to a single output.
 In the fifth form, multiple sources are accessed in parallel and may be
 [joined](join.md), [combined](combine.md), or [merged](merge.md).
 
-A data path can be split with the [`fork` operator](fork.md) as in
+A pipeline can be split with the [`fork` operator](fork.md) as in
 ```
-from PoolOne | fork (
-  => op1 | op2 | ...
-  => op1 | op2 | ...
-) | merge ts | ...
+from PoolOne |> fork (
+  => op1 |> op2 | ...
+  => op1 |> op2 | ...
+) |> merge ts | ...
 ```
 
 Or multiple pools can be accessed and, for example, joined:
 ```
 from (
-  pool PoolOne => op1 | op2 | ...
-  pool PoolTwo => op1 | op2 | ...
-) | join on key=key | ...
+  pool PoolOne => op1 |> op2 | ...
+  pool PoolTwo => op1 |> op2 | ...
+) |> join on key=key | ...
 ```
 
-Similarly, data can be routed to different paths with replication
+Similarly, data can be routed to different pipeline branches with replication
 using the [`switch` operator](switch.md):
 ```
-from ... | switch color (
-  case "red" => op1 | op2 | ...
-  case "blue" => op1 | op2 | ...
-  default => op1 | op2 | ...
-) | ...
+from ... |> switch color (
+  case "red" => op1 |> op2 | ...
+  case "blue" => op1 |> op2 | ...
+  default => op1 |> op2 | ...
+) |> ...
 ```
 
 ### Input Data
 
-Examples below below assume the existence of the Zed lake created and populated
+Examples below below assume the existence of the SuperDB lake created and populated
 by the following commands:
 
 ```mdtest-command
-export ZED_LAKE=example
-zed -q init
-zed -q create -orderby flip:desc coinflips
-echo '{flip:1,result:"heads"} {flip:2,result:"tails"}' | zed -q -use coinflips load -
-zed -q -use coinflips branch trial 
-echo '{flip:3,result:"heads"}' | zed -q -use coinflips@trial load -
-zed -q create numbers
-echo '{number:1,word:"one"} {number:2,word:"two"} {number:3,word:"three"}' | zed -q -use numbers load -
-zed query -f text 'from :branches | yield pool.name + "@" + branch.name | sort'
+export SUPER_DB_LAKE=example
+super db -q init
+super db -q create -orderby flip:desc coinflips
+echo '{flip:1,result:"heads"} {flip:2,result:"tails"}' |
+  super db load -q -use coinflips -
+super db branch -q -use coinflips trial 
+echo '{flip:3,result:"heads"}' | super db load -q -use coinflips@trial -
+super db -q create numbers
+echo '{number:1,word:"one"} {number:2,word:"two"} {number:3,word:"three"}' |
+  super db load -q -use numbers -
+super db query -f text '
+  from :branches
+  |> yield pool.name + "@" + branch.name
+  |> sort'
 ```
 
 The lake then contains the two pools:
@@ -91,9 +101,9 @@ coinflips@trial
 numbers@main
 ```
 
-The following file `hello.zson` is also used.
+The following file `hello.jsup` is also used.
 
-```mdtest-input hello.zson
+```mdtest-input hello.jsup
 {greeting:"hello world!"}
 ```
 
@@ -102,7 +112,7 @@ The following file `hello.zson` is also used.
 _Source structured data from a local file_
 
 ```mdtest-command
-zq -z 'file hello.zson | yield greeting'
+super -z -c 'file hello.jsup |> yield greeting'
 ```
 =>
 ```mdtest-output
@@ -111,7 +121,7 @@ zq -z 'file hello.zson | yield greeting'
 
 _Source data from a local file, but in line format_
 ```mdtest-command
-zq -z 'file hello.zson format line'
+super -z -c 'file hello.jsup format line'
 ```
 =>
 ```mdtest-output
@@ -120,7 +130,8 @@ zq -z 'file hello.zson format line'
 
 _Source structured data from a URI_
 ```
-zq -z 'get https://raw.githubusercontent.com/brimdata/zui-insiders/main/package.json | yield productName'
+super -z -c 'get https://raw.githubusercontent.com/brimdata/zui-insiders/main/package.json
+       |> yield productName'
 ```
 =>
 ```
@@ -129,7 +140,7 @@ zq -z 'get https://raw.githubusercontent.com/brimdata/zui-insiders/main/package.
 
 _Source data from the `main` branch of a pool_
 ```mdtest-command
-zed -lake example query -z 'from coinflips'
+super db -lake example query -z 'from coinflips'
 ```
 =>
 ```mdtest-output
@@ -139,7 +150,7 @@ zed -lake example query -z 'from coinflips'
 
 _Source data from a specific branch of a pool_
 ```mdtest-command
-zed -lake example query -z 'from coinflips@trial'
+super db -lake example query -z 'from coinflips@trial'
 ```
 =>
 ```mdtest-output
@@ -150,7 +161,7 @@ zed -lake example query -z 'from coinflips@trial'
 
 _Count the number of values in the `main` branch of all pools_
 ```mdtest-command
-zed -lake example query -f text 'from * | count()'
+super db -lake example query -f text 'from * |> count()'
 ```
 =>
 ```mdtest-output
@@ -158,14 +169,35 @@ zed -lake example query -f text 'from * | count()'
 ```
 _Join the data from multiple pools_
 ```mdtest-command
-zed -lake example query -z '
-  from (
-    pool coinflips => sort flip
-    pool numbers => sort number
-  ) | join on flip=number word'
+super db -lake example query -z '
+  from coinflips |> sort flip
+  |> join (
+    from numbers |> sort number
+  ) on flip=number word'
 ```
 =>
 ```mdtest-output
+{flip:1,result:"heads",word:"one"}
+{flip:2,result:"tails",word:"two"}
+```
+
+_Use `pass` to combine our join output with data from yet another source_
+```mdtest-command
+super db -lake example query -z '
+  from coinflips |> sort flip
+  |> join (
+    from numbers |> sort number
+  ) on flip=number word
+  |> from (
+    pass
+    pool coinflips@trial =>
+      c:=count()
+      |> yield f"There were {int64(c)} flips"
+  ) |> sort this'
+```
+=>
+```mdtest-output
+"There were 3 flips"
 {flip:1,result:"heads",word:"one"}
 {flip:2,result:"tails",word:"two"}
 ```

@@ -1,0 +1,41 @@
+script: |
+  super -z -I query.sql
+
+inputs:
+  - name: query.sql
+    data: |
+      FROM gha.jsup
+      | SELECT union(repo.name) AS repos, actor.login AS user
+        GROUP BY user
+        ORDER BY len(repos) DESC
+        LIMIT 2
+      | FORK (
+        => FROM eval(f'{user}.jsup')
+        | SELECT VALUE {user:login,created_at:time(created_at)}
+        => PASS
+        )
+      | JOIN USING (user) repos
+  - name: gha.jsup
+    data: |
+      {repo:{name:"petroav/6.828"},actor:{login:"petroav"}}
+      {repo:{name:"rspt/rspt-theme"},actor:{login:"rspt"}}
+      {repo:{name:"izuzero/xe-module-ajaxboard"},actor:{login:"izuzero"}}
+      {repo:{name:"visionmedia/debug"},actor:{login:"SametSisartenep"}}
+      {repo:{name:"winterbe/streamjs"},actor:{login:"rspt"}}
+      {repo:{name:"hermanwahyudi/selenium"},actor:{login:"hermanwahyudi"}}
+      {repo:{name:"jdilt/jdilt.github.io"},actor:{login:"rspt"}}
+      {repo:{name:"sundaymtn/waterline"},actor:{login:"sundaymtn"}}
+      {repo:{name:"zhouzhi2015/temp"},actor:{login:"izuzero"}}
+      {repo:{name:"petrkutalek/png2pos"},actor:{login:"petrkutalek"}}
+  - name: izuzero.jsup
+    data: |
+      {login:"izuzero",created_at:"2024-11-13T02:13:58.281661Z"}
+  - name: rspt.jsup
+    data: |
+      {login:"rspt",created_at:"2024-11-13T02:14:27.813538Z"}
+
+outputs:
+  - name: stdout
+    data: |
+      {user:"izuzero",created_at:2024-11-13T02:13:58.281661Z,repos:|["zhouzhi2015/temp","izuzero/xe-module-ajaxboard"]|}
+      {user:"rspt",created_at:2024-11-13T02:14:27.813538Z,repos:|["rspt/rspt-theme","winterbe/streamjs","jdilt/jdilt.github.io"]|}

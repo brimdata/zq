@@ -36,7 +36,7 @@ And it's all recursive...
 with bar := <complex-expression> => (
   // scope-1 (this comes from scope-0, bar comes from expr)
   yield {a:complexFunc(bar,this),b:this.b}
-  | baz := over(a) (
+  |> baz := over(a) (
     // scope-2 (this comes from scope-a, bar comes from scope-1, baz comes from batch)
     yield {x:baz,y:bar.a,z:this.x} // yields into baz, is this confusing?
   )
@@ -61,7 +61,7 @@ Or perhaps over should be separated from with:
 with foo:=this (
   // scope-1 (foo comes from scope-0 this, this comes from batch from over)
   over(bar)
-  | yield {a:this.a,b:foo.b} // -> lexical scope: yields into this (is this less confusing?)
+  |> yield {a:this.a,b:foo.b} // -> lexical scope: yields into this (is this less confusing?)
 )
 ```
 And we could have shorthand for the above:
@@ -76,7 +76,7 @@ over(bar) with foo:=this (
 
 Whatever we decide above, we can solve the scoping problem by carrying
 the scope context in a "frame" attached to the batch.  The frame is simply
-a slice of zed.Values where the slice index can be determined by the compiler
+a slice of super.Values where the slice index can be determined by the compiler
 using lexical scope.  Each reference to an identifier can be turned into
 a reference to the proper slot in the frame based on lexical scope.  A new
 dag.Node will represent such references (dag.FrameRef?).  We also change
@@ -86,7 +86,7 @@ to a parent scope value in the frame (dag.FlowVal?)
 With this design:
 * the dataflow values come from batch.Values
 * refs come from batch.Frame
-* expr.Eval() is changed to take the dataflow zed.Value along with the Frame
+* expr.Eval() is changed to take the dataflow super.Value along with the Frame
 * the compiler turns references to "this" or other vars bound by "over" and "with"
 into a frame ref or a dataflow ref.
 

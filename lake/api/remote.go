@@ -5,17 +5,17 @@ import (
 	"errors"
 	"io"
 
-	"github.com/brimdata/zed"
-	"github.com/brimdata/zed/api"
-	"github.com/brimdata/zed/api/client"
-	"github.com/brimdata/zed/api/queryio"
-	"github.com/brimdata/zed/lake"
-	"github.com/brimdata/zed/lake/index"
-	"github.com/brimdata/zed/lakeparse"
-	"github.com/brimdata/zed/order"
-	"github.com/brimdata/zed/zbuf"
-	"github.com/brimdata/zed/zio"
-	"github.com/brimdata/zed/zio/zngio"
+	"github.com/brimdata/super"
+	"github.com/brimdata/super/api"
+	"github.com/brimdata/super/api/client"
+	"github.com/brimdata/super/api/queryio"
+	"github.com/brimdata/super/lake"
+	"github.com/brimdata/super/lakeparse"
+	"github.com/brimdata/super/order"
+	"github.com/brimdata/super/pkg/field"
+	"github.com/brimdata/super/zbuf"
+	"github.com/brimdata/super/zio"
+	"github.com/brimdata/super/zio/zngio"
 	"github.com/segmentio/ksuid"
 )
 
@@ -34,6 +34,11 @@ func (l *remote) Root() *lake.Root {
 }
 
 func (r *remote) PoolID(ctx context.Context, poolName string) (ksuid.KSUID, error) {
+	if id, err := lakeparse.ParseID(poolName); err == nil {
+		if _, err := LookupPoolByID(ctx, r, id); err == nil {
+			return id, nil
+		}
+	}
 	config, err := LookupPoolByName(ctx, r, poolName)
 	if err != nil {
 		return ksuid.Nil, err
@@ -46,10 +51,13 @@ func (r *remote) CommitObject(ctx context.Context, poolID ksuid.KSUID, branchNam
 	return res.Commit, err
 }
 
-func (r *remote) CreatePool(ctx context.Context, name string, layout order.Layout, seekStride int, thresh int64) (ksuid.KSUID, error) {
+func (r *remote) CreatePool(ctx context.Context, name string, sortKeys order.SortKeys, seekStride int, thresh int64) (ksuid.KSUID, error) {
 	res, err := r.conn.CreatePool(ctx, api.PoolPostRequest{
-		Name:       name,
-		Layout:     layout,
+		Name: name,
+		SortKeys: api.SortKeys{
+			Order: sortKeys.Primary().Order,
+			Keys:  field.List{sortKeys.Primary().Key},
+		},
 		SeekStride: seekStride,
 		Thresh:     thresh,
 	})
@@ -76,8 +84,8 @@ func (r *remote) MergeBranch(ctx context.Context, poolID ksuid.KSUID, childBranc
 	return res.Commit, err
 }
 
-func (r *remote) Compact(ctx context.Context, poolID ksuid.KSUID, branch string, objects []ksuid.KSUID, commit api.CommitMessage) (ksuid.KSUID, error) {
-	res, err := r.conn.Compact(ctx, poolID, branch, objects, commit)
+func (r *remote) Compact(ctx context.Context, poolID ksuid.KSUID, branch string, objects []ksuid.KSUID, writeVectors bool, commit api.CommitMessage) (ksuid.KSUID, error) {
+	res, err := r.conn.Compact(ctx, poolID, branch, objects, writeVectors, commit)
 	return res.Commit, err
 }
 
@@ -92,7 +100,7 @@ func (r *remote) RenamePool(ctx context.Context, pool ksuid.KSUID, name string) 
 	return r.conn.RenamePool(ctx, pool, api.PoolPutRequest{Name: name})
 }
 
-func (r *remote) Load(ctx context.Context, _ *zed.Context, poolID ksuid.KSUID, branchName string, reader zio.Reader, commit api.CommitMessage) (ksuid.KSUID, error) {
+func (r *remote) Load(ctx context.Context, _ *super.Context, poolID ksuid.KSUID, branchName string, reader zio.Reader, commit api.CommitMessage) (ksuid.KSUID, error) {
 	pr, pw := io.Pipe()
 	go func() {
 		w := zngio.NewWriter(zio.NopCloser(pw))
@@ -102,7 +110,7 @@ func (r *remote) Load(ctx context.Context, _ *zed.Context, poolID ksuid.KSUID, b
 		}
 		pw.CloseWithError(err)
 	}()
-	res, err := r.conn.Load(ctx, poolID, branchName, api.MediaTypeZNG, pr, commit)
+	res, err := r.conn.Load(ctx, poolID, branchName, api.MediaTypeBSUP, pr, commit)
 	return res.Commit, err
 }
 
@@ -111,24 +119,12 @@ func (r *remote) Revert(ctx context.Context, poolID ksuid.KSUID, branchName stri
 	return res.Commit, err
 }
 
-func (r *remote) Query(ctx context.Context, head *lakeparse.Commitish, src string, srcfiles ...string) (zio.ReadCloser, error) {
-	q, err := r.QueryWithControl(ctx, head, src, srcfiles...)
+func (r *remote) Query(ctx context.Context, src string, srcfiles ...string) (zbuf.Scanner, error) {
+	res, err := r.conn.Query(ctx, src, srcfiles...)
 	if err != nil {
 		return nil, err
 	}
-	return zio.NewReadCloser(zbuf.NoControl(q), q), nil
-}
-
-func (r *remote) QueryWithControl(ctx context.Context, head *lakeparse.Commitish, src string, srcfiles ...string) (zbuf.ProgressReadCloser, error) {
-	res, err := r.conn.Query(ctx, head, src, srcfiles...)
-	if err != nil {
-		return nil, err
-	}
-	q, err := queryio.NewQuery(res.Body), nil
-	if err != nil {
-		return nil, err
-	}
-	return zbuf.MeterReadCloser(q), nil
+	return queryio.NewScanner(ctx, res.Body)
 }
 
 func (r *remote) Delete(ctx context.Context, poolID ksuid.KSUID, branchName string, tags []ksuid.KSUID, commit api.CommitMessage) (ksuid.KSUID, error) {
@@ -141,29 +137,17 @@ func (r *remote) DeleteWhere(ctx context.Context, poolID ksuid.KSUID, branchName
 	return res.Commit, err
 }
 
-func (r *remote) AddIndexRules(ctx context.Context, rules []index.Rule) error {
-	return r.conn.AddIndexRules(ctx, rules)
-}
-
-func (r *remote) DeleteIndexRules(ctx context.Context, ids []ksuid.KSUID) ([]index.Rule, error) {
-	res, err := r.conn.DeleteIndexRules(ctx, ids)
-	return res.Rules, err
-}
-
-func (r *remote) ApplyIndexRules(ctx context.Context, rules []string, poolID ksuid.KSUID, branchName string, inTags []ksuid.KSUID) (ksuid.KSUID, error) {
-	res, err := r.conn.ApplyIndexRules(ctx, poolID, branchName, rules, inTags)
+func (r *remote) AddVectors(ctx context.Context, pool, revision string, objects []ksuid.KSUID, message api.CommitMessage) (ksuid.KSUID, error) {
+	res, err := r.conn.AddVectors(ctx, pool, revision, objects, message)
 	return res.Commit, err
 }
 
-func (r *remote) UpdateIndex(ctx context.Context, rules []string, poolID ksuid.KSUID, branchName string) (ksuid.KSUID, error) {
-	res, err := r.conn.UpdateIndex(ctx, poolID, branchName, rules)
+func (r *remote) DeleteVectors(ctx context.Context, pool, revision string, ids []ksuid.KSUID, message api.CommitMessage) (ksuid.KSUID, error) {
+	res, err := r.conn.DeleteVectors(ctx, pool, revision, ids, message)
 	return res.Commit, err
 }
 
-func (r *remote) AddVectors(ctx context.Context, pool ksuid.KSUID, branch string, objects []ksuid.KSUID, message api.CommitMessage) (ksuid.KSUID, error) {
-	panic("TBD")
-}
-
-func (r *remote) DeleteVectors(ctx context.Context, poolID ksuid.KSUID, branchName string, ids []ksuid.KSUID, message api.CommitMessage) (ksuid.KSUID, error) {
-	panic("TBD")
+func (r *remote) Vacuum(ctx context.Context, pool, revision string, dryrun bool) ([]ksuid.KSUID, error) {
+	res, err := r.conn.Vacuum(ctx, pool, revision, dryrun)
+	return res.ObjectIDs, err
 }

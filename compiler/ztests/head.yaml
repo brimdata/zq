@@ -1,0 +1,33 @@
+script: |
+  super compile -C -dag 'head 1'
+  echo ===
+  super compile -C -dag 'const x=1 head x + 1'
+  ! super compile -C -dag 'head 1.'
+  ! super compile -C -dag 'head "1"'
+  ! super compile -C -dag 'head x'
+
+outputs:
+  - name: stdout
+    data: |
+      null
+      |> head 1
+      |> output main
+      ===
+      null
+      |> (
+        const x = 1
+        
+        head 2
+        |> output main
+      )
+  - name: stderr
+    data: |
+      expression value must be an integer value: 1. at line 1, column 6:
+      head 1.
+           ~~
+      expression value must be an integer value: "1" at line 1, column 6:
+      head "1"
+           ~~~
+      expression value must be an integer value: error("missing") at line 1, column 6:
+      head x
+           ~

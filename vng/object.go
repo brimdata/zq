@@ -1,123 +1,108 @@
-// Package vng implements the reading and writing of VNG storage objects
-// to and from any Zed format.  The VNG storage format is described
-// at https://github.com/brimdata/zed/blob/main/docs/formats/vng.md.
+// Package vng implements the reading and writing of VNG serialization objects.
+// The VNG format is described at https://github.com/brimdata/super/blob/main/docs/formats/csup.md.
 //
-// A VNG storage object must be seekable (e.g., a local file or S3 object),
-// so, unlike ZNG, streaming of VNG objects is not supported.
+// A VNG object is created by allocating an Encoder for any top-level Zed type
+// via NewEncoder, which recursively descends into the Zed type, allocating an Encoder
+// for each node in the type tree.  The top-level ZNG body is written via a call
+// to Write.  Each vector buffers its data in memory until the object is encoded.
 //
-// The vng/vector package handles reading and writing Zed sequence data to vectors,
-// while the vng package comprises the API used to read and write VNG objects.
+// After all of the Zed data is written, a metadata section is written consisting
+// of a single Zed value describing the layout of all the vector data obtained by
+// calling the Metadata method on the Encoder interface.
+//
+// Nulls are encoded by a special Nulls object.  Each type is wrapped by a NullsEncoder,
+// which run-length encodes alternating sequences of nulls and values.  If no nulls
+// are encountered, then the Nulls object is omitted from the metadata.
+//
+// Data is read from a VNG object by reading the metadata and creating vector Builders
+// for each Zed type by calling NewBuilder with the metadata, which recusirvely creates
+// Builders.  An io.ReaderAt is passed to NewBuilder so each vector reader can access
+// the underlying storage object and read its vector data effciently in large vector segments.
+//
+// Once the metadata is assembled in memory, the recontructed Zed sequence data can be
+// read from the vector segments by calling the Build method on the top-level
+// Builder and passing in a zcode.Builder to reconstruct the Zed value.
 package vng
 
 import (
-	"context"
-	"fmt"
+	"errors"
 	"io"
 
-	"github.com/brimdata/zed"
-	"github.com/brimdata/zed/pkg/storage"
-	"github.com/brimdata/zed/vng/vector"
-	"github.com/brimdata/zed/zio/zngio"
-	"github.com/brimdata/zed/zson"
+	"github.com/brimdata/super"
+	"github.com/brimdata/super/zio"
+	"github.com/brimdata/super/zio/zngio"
+	"github.com/brimdata/super/zson"
 )
 
 type Object struct {
 	readerAt io.ReaderAt
-	closer   io.Closer
-	zctx     *zed.Context
-	root     []vector.Segment
-	maps     []vector.Metadata
-	trailer  FileMeta
-	sections []int64
-	size     int64
+	header   Header
+	meta     Metadata
 }
 
-func NewObject(zctx *zed.Context, r io.ReaderAt, size int64) (*Object, error) {
-	trailer, sections, err := readTrailer(r, size)
+func NewObject(r io.ReaderAt) (*Object, error) {
+	hdr, err := ReadHeader(io.NewSectionReader(r, 0, HeaderSize))
 	if err != nil {
 		return nil, err
 	}
-	if trailer.SkewThresh > MaxSkewThresh {
-		return nil, fmt.Errorf("skew threshold too large (%d)", trailer.SkewThresh)
-	}
-	if trailer.SegmentThresh > MaxSegmentThresh {
-		return nil, fmt.Errorf("vector threshold too large (%d)", trailer.SegmentThresh)
-	}
-	o := &Object{
-		readerAt: r,
-		zctx:     zctx,
-		trailer:  *trailer,
-		sections: sections,
-		size:     size,
-	}
-	if err := o.readMetaData(); err != nil {
-		return nil, err
-	}
-	return o, nil
-}
-
-func NewObjectFromStorageReaderNoCloser(zctx *zed.Context, r storage.Reader) (*Object, error) {
-	size, err := storage.Size(r)
+	meta, err := readMetadata(io.NewSectionReader(r, HeaderSize, int64(hdr.MetaSize)))
 	if err != nil {
 		return nil, err
 	}
-	return NewObject(zctx, r, size)
-}
-
-func NewObjectFromStorageReader(zctx *zed.Context, r storage.Reader) (*Object, error) {
-	o, err := NewObjectFromStorageReaderNoCloser(zctx, r)
-	if err != nil {
-		return nil, err
-	}
-	o.closer = r.(io.Closer)
-	return o, nil
-}
-
-func NewObjectFromPath(ctx context.Context, zctx *zed.Context, engine storage.Engine, path string) (*Object, error) {
-	uri, err := storage.ParseURI(path)
-	if err != nil {
-		return nil, err
-	}
-	return NewObjectFromURI(ctx, zctx, engine, uri)
-}
-
-func NewObjectFromURI(ctx context.Context, zctx *zed.Context, engine storage.Engine, uri *storage.URI) (*Object, error) {
-	r, err := engine.Get(ctx, uri)
-	if err != nil {
-		return nil, err
-	}
-	object, err := NewObjectFromStorageReader(zctx, r)
-	if err != nil {
-		r.Close()
-		return nil, err
-	}
-	return object, nil
+	return &Object{
+		readerAt: io.NewSectionReader(r, int64(HeaderSize+hdr.MetaSize), int64(hdr.DataSize)),
+		header:   hdr,
+		meta:     meta,
+	}, nil
 }
 
 func (o *Object) Close() error {
-	if o.closer != nil {
-		return o.closer.Close()
+	if closer, ok := o.readerAt.(io.Closer); ok {
+		return closer.Close()
 	}
 	return nil
 }
 
-func (o *Object) IsEmpty() bool {
-	return o.sections == nil
+func (o *Object) Metadata() Metadata {
+	return o.meta
 }
 
-func (o *Object) FetchMetadata() ([]int32, []vector.Metadata, error) {
-	typeIDs, err := ReadIntVector(o.root, o.readerAt)
+func (o *Object) DataReader() io.ReaderAt {
+	return o.readerAt
+}
+
+func (o *Object) NewReader(zctx *super.Context) (zio.Reader, error) {
+	return NewZedReader(zctx, o.meta, o.readerAt)
+}
+
+func readMetadata(r io.Reader) (Metadata, error) {
+	zctx := super.NewContext()
+	zr := zngio.NewReader(zctx, r)
+	defer zr.Close()
+	val, err := zr.Read()
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
-	return typeIDs, o.maps, nil
+	u := zson.NewZNGUnmarshaler()
+	u.SetContext(zctx)
+	u.Bind(Template...)
+	var meta Metadata
+	if err := u.Unmarshal(*val, &meta); err != nil {
+		return nil, err
+	}
+	// Read another val to make sure there is no extra stuff after the metadata.
+	if extra, _ := zr.Read(); extra != nil {
+		return nil, errors.New("corrupt VNG: metadata section has more than one Zed value")
+	}
+	return meta, nil
 }
 
-func ReadIntVector(segments []vector.Segment, r io.ReaderAt) ([]int32, error) {
-	reader := vector.NewInt64Reader(segments, r)
+// XXX change this to single vector read
+func ReadIntVector(loc Segment, r io.ReaderAt) ([]int32, error) {
+	decoder := NewInt64Decoder(loc, r)
 	var out []int32
 	for {
-		val, err := reader.Read()
+		val, err := decoder.Next()
 		if err != nil {
 			if err == io.EOF {
 				return out, nil
@@ -128,56 +113,17 @@ func ReadIntVector(segments []vector.Segment, r io.ReaderAt) ([]int32, error) {
 	}
 }
 
-func (o *Object) readMetaData() error {
-	reader := o.NewReassemblyReader()
-	defer reader.Close()
-	// First value is the segmap for the root list of type numbers.
-	// The type number is relative to the array of maps.
-	val, err := reader.Read()
-	if err != nil {
-		return err
-	}
-	u := zson.NewZNGUnmarshaler()
-	u.SetContext(o.zctx)
-	u.Bind(vector.Template...)
-	if err := u.Unmarshal(val, &o.root); err != nil {
-		return err
-	}
-	// The rest of the values are vector.Metadata, one for each
-	// Zed type that has been encoded into the VNG file.
+func ReadUint32Vector(loc Segment, r io.ReaderAt) ([]uint32, error) {
+	decoder := NewInt64Decoder(loc, r)
+	var out []uint32
 	for {
-		val, err = reader.Read()
+		val, err := decoder.Next()
 		if err != nil {
-			return err
+			if err == io.EOF {
+				return out, nil
+			}
+			return nil, err
 		}
-		if val == nil {
-			break
-		}
-		var meta vector.Metadata
-		if err := u.Unmarshal(val, &meta); err != nil {
-			return err
-		}
-		o.maps = append(o.maps, meta)
+		out = append(out, uint32(val))
 	}
-	return nil
-}
-
-func (o *Object) section(level int) (int64, int64) {
-	off := int64(0)
-	for k := 0; k < level; k++ {
-		off += o.sections[k]
-	}
-	return off, o.sections[level]
-}
-
-func (o *Object) newSectionReader(level int, sectionOff int64) *zngio.Reader {
-	off, len := o.section(level)
-	off += sectionOff
-	len -= sectionOff
-	reader := io.NewSectionReader(o.readerAt, off, len)
-	return zngio.NewReader(o.zctx, reader)
-}
-
-func (o *Object) NewReassemblyReader() *zngio.Reader {
-	return o.newSectionReader(1, 0)
 }

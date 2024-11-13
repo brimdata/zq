@@ -1,11 +1,11 @@
-package zed
+package super
 
 import (
 	"bytes"
 	"errors"
 	"sort"
 
-	"github.com/brimdata/zed/zcode"
+	"github.com/brimdata/super/zcode"
 )
 
 type TypeArray struct {
@@ -39,17 +39,6 @@ var ErrMissing = errors.New("missing")
 var Missing = zcode.Bytes("missing")
 var Quiet = zcode.Bytes("quiet")
 
-func EncodeError(err error) zcode.Bytes {
-	return zcode.Bytes(err.Error())
-}
-
-func DecodeError(zv zcode.Bytes) error {
-	if zv == nil {
-		return nil
-	}
-	return errors.New(string(zv))
-}
-
 type TypeError struct {
 	id   int
 	Type Type
@@ -68,11 +57,11 @@ func (t *TypeError) Kind() Kind {
 }
 
 func (t *TypeError) IsMissing(zv zcode.Bytes) bool {
-	return t.Type == TypeString && bytes.Compare(zv, Missing) == 0
+	return t.Type == TypeString && bytes.Equal(zv, Missing)
 }
 
 func (t *TypeError) IsQuiet(zv zcode.Bytes) bool {
-	return t.Type == TypeString && bytes.Compare(zv, Quiet) == 0
+	return t.Type == TypeString && bytes.Equal(zv, Quiet)
 }
 
 type TypeEnum struct {
@@ -124,14 +113,6 @@ func (t *TypeMap) ID() int {
 
 func (t *TypeMap) Kind() Kind {
 	return MapKind
-}
-
-func (t *TypeMap) Decode(zv zcode.Bytes) (Value, Value, error) {
-	if zv == nil {
-		return Value{}, Value{}, nil
-	}
-	it := zv.Iter()
-	return Value{t.KeyType, it.Next()}, Value{t.ValType, it.Next()}, nil
 }
 
 type keyval struct {
@@ -234,7 +215,7 @@ func (t *TypeRecord) ID() int {
 	return t.id
 }
 
-func (t *TypeRecord) ColumnOfField(field string) (int, bool) {
+func (t *TypeRecord) IndexOfField(field string) (int, bool) {
 	v, ok := t.LUT[field]
 	return v, ok
 }
@@ -255,7 +236,7 @@ func (t *TypeRecord) HasField(field string) bool {
 func (t *TypeRecord) createLUT() {
 	t.LUT = make(map[string]int)
 	for k, f := range t.Fields {
-		t.LUT[string(f.Name)] = k
+		t.LUT[f.Name] = k
 	}
 }
 

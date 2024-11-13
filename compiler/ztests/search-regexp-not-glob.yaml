@@ -1,0 +1,7 @@
+zed: |
+  ? /.*/
+
+input: &input |
+  "a"
+
+output: *input

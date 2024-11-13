@@ -4,15 +4,15 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/brimdata/zed"
-	"github.com/brimdata/zed/compiler/ast/dag"
-	"github.com/brimdata/zed/pkg/field"
-	"github.com/brimdata/zed/runtime/expr"
-	"github.com/brimdata/zed/runtime/expr/function"
-	"github.com/brimdata/zed/runtime/op/combine"
-	"github.com/brimdata/zed/runtime/op/traverse"
-	"github.com/brimdata/zed/zbuf"
-	"github.com/brimdata/zed/zson"
+	"github.com/brimdata/super"
+	"github.com/brimdata/super/compiler/dag"
+	"github.com/brimdata/super/pkg/field"
+	"github.com/brimdata/super/runtime/sam/expr"
+	"github.com/brimdata/super/runtime/sam/expr/function"
+	"github.com/brimdata/super/runtime/sam/op/combine"
+	"github.com/brimdata/super/runtime/sam/op/traverse"
+	"github.com/brimdata/super/zbuf"
+	"github.com/brimdata/super/zson"
 	"golang.org/x/text/unicode/norm"
 )
 
@@ -35,13 +35,13 @@ import (
 // each record type is like a schema and as we encounter them, we can compile
 // optimized code for the now-static types within that record type.
 //
-// The Evaluator return by CompileExpr produces zed.Values that are stored
+// The Evaluator return by CompileExpr produces super.Values that are stored
 // in temporary buffers and may be modified on subsequent calls to Eval.
 // This is intended to minimize the garbage collection needs of the inner loop
 // by not allocating memory on a per-Eval basis.  For uses like filtering and
 // aggregations, where the results are immediately used, this is desirable and
 // efficient but for use cases like storing the results as groupby keys, the
-// resulting zed.Value should be copied (e.g., via zed.Value.Copy()).
+// resulting super.Value should be copied (e.g., via super.Value.Copy()).
 //
 // TBD: string values and net.IP address do not need to be copied because they
 // are allocated by go libraries and temporary buffers are not used.  This will
@@ -73,6 +73,10 @@ func (b *Builder) compileExpr(e dag.Expr) (expr.Evaluator, error) {
 		return b.compileConditional(*e)
 	case *dag.Call:
 		return b.compileCall(*e)
+	case *dag.IndexExpr:
+		return b.compileIndexExpr(e)
+	case *dag.SliceExpr:
+		return b.compileSliceExpr(e)
 	case *dag.RegexpMatch:
 		return b.compileRegexpMatch(e)
 	case *dag.RegexpSearch:
@@ -83,6 +87,8 @@ func (b *Builder) compileExpr(e dag.Expr) (expr.Evaluator, error) {
 		return b.compileArrayExpr(e)
 	case *dag.SetExpr:
 		return b.compileSetExpr(e)
+	case *dag.MapCall:
+		return b.compileMapCall(e)
 	case *dag.MapExpr:
 		return b.compileMapExpr(e)
 	case *dag.Agg:
@@ -90,7 +96,9 @@ func (b *Builder) compileExpr(e dag.Expr) (expr.Evaluator, error) {
 		if err != nil {
 			return nil, err
 		}
-		return expr.NewAggregatorExpr(agg), nil
+		aggexpr := expr.NewAggregatorExpr(b.zctx(), agg)
+		b.resetters = append(b.resetters, aggexpr)
+		return aggexpr, nil
 	case *dag.OverExpr:
 		return b.compileOverExpr(e)
 	default:
@@ -106,9 +114,6 @@ func (b *Builder) compileExprWithEmpty(e dag.Expr) (expr.Evaluator, error) {
 }
 
 func (b *Builder) compileBinary(e *dag.BinaryExpr) (expr.Evaluator, error) {
-	if slice, ok := e.RHS.(*dag.BinaryExpr); ok && slice.Op == ":" {
-		return b.compileSlice(e.LHS, slice)
-	}
 	if e.Op == "in" {
 		// Do a faster comparison if the LHS is a compile-time constant expression.
 		if in, err := b.compileConstIn(e); in != nil && err == nil {
@@ -134,13 +139,11 @@ func (b *Builder) compileBinary(e *dag.BinaryExpr) (expr.Evaluator, error) {
 	case "in":
 		return expr.NewIn(b.zctx(), lhs, rhs), nil
 	case "==", "!=":
-		return expr.NewCompareEquality(lhs, rhs, op)
+		return expr.NewCompareEquality(b.zctx(), lhs, rhs, op)
 	case "<", "<=", ">", ">=":
 		return expr.NewCompareRelative(b.zctx(), lhs, rhs, op)
 	case "+", "-", "*", "/", "%":
 		return expr.NewArithmetic(b.zctx(), lhs, rhs, op)
-	case "[":
-		return expr.NewIndexExpr(b.zctx(), lhs, rhs), nil
 	default:
 		return nil, fmt.Errorf("invalid binary operator %s", op)
 	}
@@ -199,25 +202,25 @@ func (b *Builder) compileSearch(search *dag.Search) (expr.Evaluator, error) {
 	if err != nil {
 		return nil, err
 	}
-	if zed.TypeUnder(val.Type) == zed.TypeString {
+	if super.TypeUnder(val.Type()) == super.TypeString {
 		// Do a grep-style substring search instead of an
 		// exact match on each value.
-		term := norm.NFC.Bytes(val.Bytes)
+		term := norm.NFC.Bytes(val.Bytes())
 		return expr.NewSearchString(string(term), e), nil
 	}
 	return expr.NewSearch(search.Text, val, e)
 }
 
-func (b *Builder) compileSlice(container dag.Expr, slice *dag.BinaryExpr) (expr.Evaluator, error) {
-	from, err := b.compileExprWithEmpty(slice.LHS)
+func (b *Builder) compileSliceExpr(slice *dag.SliceExpr) (expr.Evaluator, error) {
+	e, err := b.compileExpr(slice.Expr)
 	if err != nil {
 		return nil, err
 	}
-	to, err := b.compileExprWithEmpty(slice.RHS)
+	from, err := b.compileExprWithEmpty(slice.From)
 	if err != nil {
 		return nil, err
 	}
-	e, err := b.compileExpr(container)
+	to, err := b.compileExprWithEmpty(slice.To)
 	if err != nil {
 		return nil, err
 	}
@@ -263,15 +266,38 @@ func (b *Builder) compileDotExpr(dot *dag.Dot) (expr.Evaluator, error) {
 	return expr.NewDotExpr(b.zctx(), record, dot.RHS), nil
 }
 
-func compileLval(e dag.Expr) (field.Path, error) {
-	if this, ok := e.(*dag.This); ok {
-		return field.Path(this.Path), nil
+func (b *Builder) compileLval(e dag.Expr) (*expr.Lval, error) {
+	switch e := e.(type) {
+	case *dag.IndexExpr:
+		container, err := b.compileLval(e.Expr)
+		if err != nil {
+			return nil, err
+		}
+		index, err := b.compileExpr(e.Index)
+		if err != nil {
+			return nil, err
+		}
+		container.Elems = append(container.Elems, expr.NewExprLvalElem(b.zctx(), index))
+		return container, nil
+	case *dag.Dot:
+		lhs, err := b.compileLval(e.LHS)
+		if err != nil {
+			return nil, err
+		}
+		lhs.Elems = append(lhs.Elems, &expr.StaticLvalElem{Name: e.RHS})
+		return lhs, nil
+	case *dag.This:
+		var elems []expr.LvalElem
+		for _, elem := range e.Path {
+			elems = append(elems, &expr.StaticLvalElem{Name: elem})
+		}
+		return expr.NewLval(elems), nil
 	}
-	return nil, errors.New("invalid expression on lhs of assignment")
+	return nil, fmt.Errorf("internal error: invalid lval %#v", e)
 }
 
 func (b *Builder) compileAssignment(node *dag.Assignment) (expr.Assignment, error) {
-	lhs, err := compileLval(node.LHS)
+	lhs, err := b.compileLval(node.LHS)
 	if err != nil {
 		return expr.Assignment{}, err
 	}
@@ -282,64 +308,20 @@ func (b *Builder) compileAssignment(node *dag.Assignment) (expr.Assignment, erro
 	return expr.Assignment{LHS: lhs, RHS: rhs}, err
 }
 
-func shaperOps(name string) expr.ShaperTransform {
-	switch name {
-	case "cast":
-		return expr.Cast
-	case "crop":
-		return expr.Crop
-	case "fill":
-		return expr.Fill
-	case "fit":
-		return expr.Crop | expr.Fill
-	case "order":
-		return expr.Order
-	case "shape":
-		return expr.Cast | expr.Fill | expr.Order
-	default:
-		return 0
-	}
-
-}
-
-func isShaperFunc(name string) bool {
-	return shaperOps(name) != 0
-}
-
-func (b *Builder) compileShaper(node dag.Call) (*expr.Shaper, error) {
-	args := node.Args
-	if len(args) == 1 {
-		args = append([]dag.Expr{&dag.This{Kind: "This"}}, args...)
-	}
-	if len(args) < 2 {
-		return nil, function.ErrTooFewArgs
-	}
-	if len(args) > 2 {
-		return nil, function.ErrTooManyArgs
-	}
-	field, err := b.compileExpr(args[0])
-	if err != nil {
-		return nil, err
-	}
-	typExpr, err := b.compileExpr(args[1])
-	if err != nil {
-		return nil, err
-	}
-	// XXX When we do constant folding, we should detect when typeExpr is
-	// a constant and allocate a ConstShaper instead of a (dynamic) Shaper.
-	// See issue #2425.
-	return expr.NewShaper(b.zctx(), field, typExpr, shaperOps(node.Name)), nil
-}
-
 func (b *Builder) compileCall(call dag.Call) (expr.Evaluator, error) {
-	if isShaperFunc(call.Name) {
-		return b.compileShaper(call)
+	if tf := expr.NewShaperTransform(call.Name); tf != 0 {
+		return b.compileShaper(call, tf)
 	}
 	var path field.Path
 	// First check if call is to a user defined function, otherwise check for
 	// builtin function.
-	fn, ok := b.funcs[call.Name]
-	if !ok {
+	var fn expr.Function
+	if e, ok := b.udfs[call.Name]; ok {
+		var err error
+		if fn, err = b.compileUDFCall(call.Name, e); err != nil {
+			return nil, err
+		}
+	} else {
 		var err error
 		fn, path, err = function.New(b.zctx(), call.Name, len(call.Args))
 		if err != nil {
@@ -355,7 +337,48 @@ func (b *Builder) compileCall(call dag.Call) (expr.Evaluator, error) {
 	if err != nil {
 		return nil, fmt.Errorf("%s(): bad argument: %w", call.Name, err)
 	}
-	return expr.NewCall(b.zctx(), fn, exprs), nil
+	return expr.NewCall(fn, exprs), nil
+}
+
+func (b *Builder) compileUDFCall(name string, body dag.Expr) (expr.Function, error) {
+	if fn, ok := b.compiledUDFs[name]; ok {
+		return fn, nil
+	}
+	fn := &expr.UDF{Name: name, Zctx: b.zctx()}
+	// We store compiled UDF calls here so as to avoid stack overflows on
+	// recursive calls.
+	b.compiledUDFs[name] = fn
+	var err error
+	if fn.Body, err = b.compileExpr(body); err != nil {
+		return nil, err
+	}
+	delete(b.compiledUDFs, name)
+	return fn, nil
+}
+
+func (b *Builder) compileMapCall(a *dag.MapCall) (expr.Evaluator, error) {
+	e, err := b.compileExpr(a.Expr)
+	if err != nil {
+		return nil, err
+	}
+	inner, err := b.compileExpr(a.Inner)
+	if err != nil {
+		return nil, err
+	}
+	return expr.NewMapCall(b.zctx(), e, inner), nil
+}
+
+func (b *Builder) compileShaper(node dag.Call, tf expr.ShaperTransform) (expr.Evaluator, error) {
+	args := node.Args
+	field, err := b.compileExpr(args[0])
+	if err != nil {
+		return nil, err
+	}
+	typExpr, err := b.compileExpr(args[1])
+	if err != nil {
+		return nil, err
+	}
+	return expr.NewShaper(b.zctx(), field, typExpr, tf)
 }
 
 func (b *Builder) compileExprs(in []dag.Expr) ([]expr.Evaluator, error) {
@@ -368,6 +391,18 @@ func (b *Builder) compileExprs(in []dag.Expr) ([]expr.Evaluator, error) {
 		exprs = append(exprs, ev)
 	}
 	return exprs, nil
+}
+
+func (b *Builder) compileIndexExpr(e *dag.IndexExpr) (expr.Evaluator, error) {
+	container, err := b.compileExpr(e.Expr)
+	if err != nil {
+		return nil, err
+	}
+	index, err := b.compileExpr(e.Index)
+	if err != nil {
+		return nil, err
+	}
+	return expr.NewIndexExpr(b.zctx(), container, index), nil
 }
 
 func (b *Builder) compileRegexpMatch(match *dag.RegexpMatch) (expr.Evaluator, error) {
@@ -473,10 +508,7 @@ func (b *Builder) compileMapExpr(m *dag.MapExpr) (expr.Evaluator, error) {
 }
 
 func (b *Builder) compileOverExpr(over *dag.OverExpr) (expr.Evaluator, error) {
-	if over.Scope == nil {
-		return nil, errors.New("over expression requires flow body")
-	}
-	names, lets, err := b.compileLets(over.Defs)
+	names, lets, err := b.compileDefs(over.Defs)
 	if err != nil {
 		return nil, err
 	}
@@ -484,10 +516,10 @@ func (b *Builder) compileOverExpr(over *dag.OverExpr) (expr.Evaluator, error) {
 	if err != nil {
 		return nil, err
 	}
-	parent := traverse.NewExpr(b.pctx.Context, b.zctx())
-	enter := traverse.NewOver(b.pctx, parent, exprs)
-	scope := enter.AddScope(b.pctx.Context, names, lets)
-	exits, err := b.compile(over.Scope, []zbuf.Puller{scope})
+	parent := traverse.NewExpr(b.rctx.Context, b.zctx())
+	enter := traverse.NewOver(b.rctx, parent, exprs, expr.Resetters{})
+	scope := enter.AddScope(b.rctx.Context, names, lets)
+	exits, err := b.compileSeq(over.Body, []zbuf.Puller{scope})
 	if err != nil {
 		return nil, err
 	}
@@ -497,7 +529,7 @@ func (b *Builder) compileOverExpr(over *dag.OverExpr) (expr.Evaluator, error) {
 	} else {
 		// This can happen when output of over body
 		// is a fork or switch.
-		exit = combine.New(b.pctx, exits)
+		exit = combine.New(b.rctx, exits)
 	}
 	parent.SetExit(scope.NewExit(exit))
 	return parent, nil

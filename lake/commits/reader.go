@@ -3,9 +3,9 @@ package commits
 import (
 	"context"
 
-	"github.com/brimdata/zed"
-	"github.com/brimdata/zed/zio"
-	"github.com/brimdata/zed/zson"
+	"github.com/brimdata/super"
+	"github.com/brimdata/super/zio"
+	"github.com/brimdata/super/zson"
 	"github.com/segmentio/ksuid"
 )
 
@@ -19,7 +19,7 @@ type LogReader struct {
 
 var _ zio.Reader = (*LogReader)(nil)
 
-func newLogReader(ctx context.Context, zctx *zed.Context, store *Store, leaf, stop ksuid.KSUID) *LogReader {
+func newLogReader(ctx context.Context, zctx *super.Context, store *Store, leaf, stop ksuid.KSUID) *LogReader {
 	m := zson.NewZNGMarshalerWithContext(zctx)
 	m.Decorate(zson.StyleSimple)
 	return &LogReader{
@@ -31,7 +31,7 @@ func newLogReader(ctx context.Context, zctx *zed.Context, store *Store, leaf, st
 	}
 }
 
-func (r *LogReader) Read() (*zed.Value, error) {
+func (r *LogReader) Read() (*super.Value, error) {
 	if r.cursor == ksuid.Nil {
 		return nil, nil
 	}
@@ -44,5 +44,6 @@ func (r *LogReader) Read() (*zed.Value, error) {
 		next = ksuid.Nil
 	}
 	r.cursor = next
-	return r.marshaler.Marshal(commitObject)
+	val, err := r.marshaler.Marshal(commitObject)
+	return &val, err
 }

@@ -1,0 +1,10 @@
+zed: count(), count()
+
+vector: true
+
+input: |
+  {x:1(int32)}
+  {x:2(int32)}
+
+error: |
+  duplicate field: "count"

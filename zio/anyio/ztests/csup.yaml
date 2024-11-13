@@ -1,0 +1,12 @@
+script: |
+  super -f csup -o f -
+  super -z f
+
+inputs:
+  - name: stdin
+    data: &stdin |
+      {a:1}
+
+outputs:
+  - name: stdout
+    data: *stdin

@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"io/fs"
@@ -10,19 +11,19 @@ import (
 	"strings"
 	"sync/atomic"
 
-	"github.com/brimdata/zed"
-	"github.com/brimdata/zed/api"
-	"github.com/brimdata/zed/compiler/parser"
-	"github.com/brimdata/zed/lake"
-	"github.com/brimdata/zed/lake/branches"
-	"github.com/brimdata/zed/lake/commits"
-	"github.com/brimdata/zed/lake/journal"
-	"github.com/brimdata/zed/lake/pools"
-	"github.com/brimdata/zed/lakeparse"
-	"github.com/brimdata/zed/service/srverr"
-	"github.com/brimdata/zed/zio"
-	"github.com/brimdata/zed/zio/anyio"
-	"github.com/brimdata/zed/zson"
+	"github.com/brimdata/super"
+	"github.com/brimdata/super/api"
+	"github.com/brimdata/super/compiler/srcfiles"
+	"github.com/brimdata/super/lake"
+	"github.com/brimdata/super/lake/branches"
+	"github.com/brimdata/super/lake/commits"
+	"github.com/brimdata/super/lake/journal"
+	"github.com/brimdata/super/lake/pools"
+	"github.com/brimdata/super/lakeparse"
+	"github.com/brimdata/super/service/srverr"
+	"github.com/brimdata/super/zio"
+	"github.com/brimdata/super/zio/anyio"
+	"github.com/brimdata/super/zson"
 	"github.com/gorilla/mux"
 	"github.com/segmentio/ksuid"
 	"go.uber.org/zap"
@@ -34,17 +35,15 @@ type Request struct {
 }
 
 func newRequest(w http.ResponseWriter, r *http.Request, c *Core) (*ResponseWriter, *Request, bool) {
-	logger := c.logger.With(zap.String("request_id", api.RequestIDFromContext(r.Context())))
-	req := &Request{
-		Request: r,
-		Logger:  logger,
-	}
+	req := &Request{Request: r}
+	req.Logger = c.logger.With(zap.String("request_id", req.ID()))
 	m := zson.NewZNGMarshaler()
 	m.Decorate(zson.StylePackage)
 	res := &ResponseWriter{
 		ResponseWriter: w,
-		Logger:         logger,
+		Logger:         req.Logger,
 		marshaler:      m,
+		request:        req,
 	}
 	ss := strings.Split(r.Header.Get("Accept"), ",")
 	if len(ss) == 0 {
@@ -75,22 +74,28 @@ func (r *Request) openPool(w *ResponseWriter, root *lake.Root) (*lake.Pool, bool
 	return pool, true
 }
 
+func (r *Request) ID() string {
+	return api.RequestIDFromContext(r.Context())
+}
+
 func (r *Request) PoolID(w *ResponseWriter, root *lake.Root) (ksuid.KSUID, bool) {
 	s, ok := r.StringFromPath(w, "pool")
 	if !ok {
 		return ksuid.Nil, false
 	}
-	id, err := lakeparse.ParseID(s)
+	if id, err := lakeparse.ParseID(s); err == nil {
+		if _, err = root.OpenPool(r.Context(), id); err == nil {
+			return id, true
+		}
+	}
+	id, err := root.PoolID(r.Context(), s)
+	if errors.Is(err, pools.ErrNotFound) {
+		w.Error(err)
+		return ksuid.Nil, false
+	}
 	if err != nil {
-		id, err = root.PoolID(r.Context(), s)
-		if errors.Is(err, pools.ErrNotFound) {
-			w.Error(err)
-			return ksuid.Nil, false
-		}
-		if err != nil {
-			w.Error(srverr.ErrInvalid("invalid path param %q: %w", s, err))
-			return ksuid.Nil, false
-		}
+		w.Error(srverr.ErrInvalid("invalid path param %q: %w", s, err))
+		return ksuid.Nil, false
 	}
 	return id, true
 }
@@ -164,11 +169,11 @@ func (r *Request) BoolFromQuery(w *ResponseWriter, param string) (bool, bool) {
 }
 
 func (r *Request) Unmarshal(w *ResponseWriter, body interface{}, templates ...interface{}) bool {
-	format, ok := r.format(w, DefaultZedFormat)
+	format, ok := r.format(w, DefaultFormat)
 	if !ok {
 		return false
 	}
-	zrc, err := anyio.NewReaderWithOpts(zed.NewContext(), r.Body, anyio.ReaderOpts{Format: format})
+	zrc, err := anyio.NewReaderWithOpts(super.NewContext(), r.Body, anyio.ReaderOpts{Format: format})
 	if err != nil {
 		w.Error(srverr.ErrInvalid(err))
 		return false
@@ -184,7 +189,7 @@ func (r *Request) Unmarshal(w *ResponseWriter, body interface{}, templates ...in
 	}
 	m := zson.NewZNGUnmarshaler()
 	m.Bind(templates...)
-	if err := m.Unmarshal(zv, body); err != nil {
+	if err := m.Unmarshal(*zv, body); err != nil {
 		w.Error(srverr.ErrInvalid(err))
 		return false
 	}
@@ -213,6 +218,7 @@ type ResponseWriter struct {
 	Logger    *zap.Logger
 	zw        zio.WriteCloser
 	marshaler *zson.MarshalZNGContext
+	request   *Request
 	written   int32
 }
 
@@ -236,6 +242,7 @@ func (w *ResponseWriter) ZioWriter() zio.WriteCloser {
 	}
 	return w.zw
 }
+
 func (w *ResponseWriter) Write(b []byte) (int, error) {
 	if atomic.CompareAndSwapInt32(&w.written, 0, 1) {
 		typ, err := api.FormatToMediaType(w.Format)
@@ -253,6 +260,10 @@ func (w *ResponseWriter) Respond(status int, body interface{}) bool {
 }
 
 func (w *ResponseWriter) Error(err error) {
+	if err == context.Canceled && err == w.request.Context().Err() {
+		w.Logger.Info("Request context canceled")
+		return
+	}
 	status, res := errorResponse(err)
 	if status >= 500 {
 		w.Logger.Warn("Error", zap.Int("status", status), zap.Error(err))
@@ -291,25 +302,21 @@ func errorResponse(e error) (status int, ae *api.Error) {
 	status = http.StatusInternalServerError
 	ae = &api.Error{Type: "Error"}
 
-	var pe *parser.Error
-	if errors.As(e, &pe) {
-		ae.Info = map[string]int{"parse_error_offset": pe.Offset}
+	if list := (srcfiles.ErrorList)(nil); errors.As(e, &list) {
+		ae.CompilationErrors = list
 	}
 
 	var ze *srverr.Error
 	if !errors.As(e, &ze) {
-		var kind srverr.Kind
-		switch {
-		case errors.Is(e, branches.ErrExists) || errors.Is(e, pools.ErrExists):
-			kind = srverr.Conflict
-		case errors.Is(e, branches.ErrNotFound) || errors.Is(e, commits.ErrNotFound) ||
-			errors.Is(e, pools.ErrNotFound) || errors.Is(e, fs.ErrNotExist):
-			kind = srverr.NotFound
-		default:
-			ae.Message = e.Error()
-			return
-		}
-		ze = &srverr.Error{Kind: kind, Err: e}
+		ze = &srverr.Error{Err: e}
+	}
+
+	switch {
+	case errors.Is(e, branches.ErrExists) || errors.Is(e, pools.ErrExists):
+		ze.Kind = srverr.Conflict
+	case errors.Is(e, branches.ErrNotFound) || errors.Is(e, commits.ErrNotFound) ||
+		errors.Is(e, pools.ErrNotFound) || errors.Is(e, fs.ErrNotExist):
+		ze.Kind = srverr.NotFound
 	}
 
 	switch ze.Kind {

@@ -1,12 +1,12 @@
 script: |
   source service.sh
-  curl -X POST -d '{"name":"test"}' $ZED_LAKE/pool > pool.json
-  poolID=$(zq -f text "yield ksuid(pool.id)" pool.json)
-  curl -X POST --data-binary @- $ZED_LAKE/pool/$poolID/branch/main | zq -z "commit:=0" -
+  curl -X POST -d '{"name":"test"}' $SUPER_DB_LAKE/pool > pool.json
+  poolID=$(super -f text -c "yield ksuid(pool.id)" pool.json)
+  curl -X POST --data-binary @- $SUPER_DB_LAKE/pool/$poolID/branch/main | super -z -c "commit:=0" -
 
 inputs:
   - name: stdin
-    # Generated with `bash -c 'gzip -c <<<{x:1} | base64'`.
+    # Generated with `bash -c 'gzip -c <<<{x:1} |> base64'`.
     data: !!binary |
       H4sIAMaiGmEAA6uusDKs5QIAaI7+2QYAAAA=
   - name: service.sh

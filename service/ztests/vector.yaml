@@ -1,0 +1,33 @@
+script: |
+  source service.sh
+  super db create -use -q POOL
+  super db load -q in.jsup
+  id=$(super db query -f text 'from POOL@main:objects |> yield ksuid(id)')
+  super db vector add -q $id
+  super db query -Z 'from POOL@main:vectors |> drop id'
+  echo ===
+  super db vector delete -q $id
+  super db query -Z 'from POOL@main:vectors |> drop id'
+  echo ===
+
+inputs:
+  - name: service.sh
+  - name: in.jsup
+    data: |
+      {x:1}
+      {s:"hello",a:[1,2,3]}
+      {s:"world",a:[3,4,5]}
+      {x:2}
+      {x:3,y:4}
+
+outputs:
+  - name: stdout
+    data: |
+      {
+          min: null,
+          max: null,
+          count: 5 (uint64),
+          size: 72
+      }
+      ===
+      ===

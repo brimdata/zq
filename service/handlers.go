@@ -2,30 +2,35 @@ package service
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"time"
 
-	"github.com/brimdata/zed"
-	"github.com/brimdata/zed/api"
-	"github.com/brimdata/zed/api/queryio"
-	"github.com/brimdata/zed/compiler"
-	"github.com/brimdata/zed/compiler/ast"
-	"github.com/brimdata/zed/lake"
-	"github.com/brimdata/zed/lake/commits"
-	"github.com/brimdata/zed/lake/index"
-	"github.com/brimdata/zed/lake/journal"
-	"github.com/brimdata/zed/lakeparse"
-	"github.com/brimdata/zed/runtime"
-	"github.com/brimdata/zed/runtime/exec"
-	"github.com/brimdata/zed/runtime/op"
-	"github.com/brimdata/zed/service/auth"
-	"github.com/brimdata/zed/service/srverr"
-	"github.com/brimdata/zed/zio"
-	"github.com/brimdata/zed/zio/anyio"
-	"github.com/brimdata/zed/zio/csvio"
-	"github.com/brimdata/zed/zio/zngio"
+	"github.com/brimdata/super"
+	"github.com/brimdata/super/api"
+	"github.com/brimdata/super/api/queryio"
+	"github.com/brimdata/super/compiler"
+	"github.com/brimdata/super/compiler/describe"
+	"github.com/brimdata/super/compiler/parser"
+	"github.com/brimdata/super/lake"
+	lakeapi "github.com/brimdata/super/lake/api"
+	"github.com/brimdata/super/lake/commits"
+	"github.com/brimdata/super/lake/journal"
+	"github.com/brimdata/super/lakeparse"
+	"github.com/brimdata/super/order"
+	"github.com/brimdata/super/pkg/storage"
+	"github.com/brimdata/super/runtime"
+	"github.com/brimdata/super/runtime/exec"
+	"github.com/brimdata/super/runtime/sam/op"
+	"github.com/brimdata/super/service/auth"
+	"github.com/brimdata/super/service/srverr"
+	"github.com/brimdata/super/zbuf"
+	"github.com/brimdata/super/zio"
+	"github.com/brimdata/super/zio/anyio"
+	"github.com/brimdata/super/zio/csvio"
+	"github.com/brimdata/super/zio/zngio"
 	"github.com/segmentio/ksuid"
 	"go.uber.org/zap"
 )
@@ -50,26 +55,35 @@ func handleQuery(c *Core, w *ResponseWriter, r *Request) {
 	// The client must look at the return code and interpret the result
 	// accordingly and when it sees a ZNG error after underway,
 	// the error should be relay that to the caller/user.
-	query, err := c.compiler.Parse(req.Query)
+	ast, err := parser.ParseQuery(req.Query)
 	if err != nil {
 		w.Error(srverr.ErrInvalid(err))
 		return
 	}
-	flowgraph, err := runtime.CompileLakeQuery(r.Context(), zed.NewContext(), c.compiler, query, &req.Head, r.Logger)
+	flowgraph, err := runtime.CompileLakeQuery(r.Context(), super.NewContext(), c.compiler, ast)
 	if err != nil {
-		w.Error(err)
+		w.Error(srverr.ErrInvalid(err))
 		return
 	}
 	flusher, _ := w.ResponseWriter.(http.Flusher)
 	writer, err := queryio.NewWriter(zio.NopCloser(w), w.Format, flusher, ctrl)
 	if err != nil {
-		w.Error(err)
+		w.Error(srverr.ErrInvalid(err))
 		return
 	}
 	// Once we defer writer.Close() are going to write ZNG to the HTTP
 	// response body and for errors after this point, we must call
 	// writer.WriterError() instead of w.Error().
 	defer writer.Close()
+	// Launch query status which will report and runtime errors (i.e., system
+	// errors that occur after the OK header has been sent) to the query status
+	// endpoint.
+	status := c.newQueryStatus(r)
+	defer status.Done()
+	handleError := func(err error) {
+		writer.WriteError(err)
+		status.setError(err)
+	}
 	results := make(chan op.Result)
 	go func() {
 		for {
@@ -87,20 +101,23 @@ func handleQuery(c *Core, w *ResponseWriter, r *Request) {
 		select {
 		case <-timer.C:
 			if err := writer.WriteProgress(meter.Progress()); err != nil {
-				writer.WriteError(err)
+				w.Logger.Warn("Error writing progress", zap.Error(err))
+				handleError(err)
 				return
 			}
 		case r := <-results:
 			batch, err := r.Batch, r.Err
 			if err != nil {
 				if !errors.Is(err, journal.ErrEmpty) {
-					writer.WriteError(err)
+					w.Logger.Warn("Error pulling batch", zap.Error(err))
+					handleError(err)
 				}
 				return
 			}
 			if batch == nil {
 				if err := writer.WriteProgress(meter.Progress()); err != nil {
-					writer.WriteError(err)
+					w.Logger.Warn("Error writing progress", zap.Error(err))
+					handleError(err)
 					return
 				}
 				if batch == nil {
@@ -108,22 +125,67 @@ func handleQuery(c *Core, w *ResponseWriter, r *Request) {
 				}
 			}
 			if len(batch.Values()) == 0 {
-				if eoc, ok := batch.(*op.EndOfChannel); ok {
-					if err := writer.WhiteChannelEnd(int(*eoc)); err != nil {
-						writer.WriteError(err)
+				if eoc, ok := batch.(*zbuf.EndOfChannel); ok {
+					if err := writer.WhiteChannelEnd(string(*eoc)); err != nil {
+						w.Logger.Warn("Error writing channel end", zap.Error(err))
+						handleError(err)
 						return
 					}
 				}
 				continue
 			}
-			var cid int
-			batch, cid = op.Unwrap(batch)
-			if err := writer.WriteBatch(cid, batch); err != nil {
-				writer.WriteError(err)
+			var label string
+			batch, label = zbuf.Unlabel(batch)
+			if err := writer.WriteBatch(label, batch); err != nil {
+				w.Logger.Warn("Error writing batch", zap.Error(err))
+				handleError(err)
 				return
 			}
 		}
 	}
+}
+
+func handleQueryStatus(c *Core, w *ResponseWriter, r *Request) {
+	id, ok := r.StringFromPath(w, "requestID")
+	if !ok {
+		return
+	}
+	c.runningQueriesMu.Lock()
+	q, ok := c.runningQueries[id]
+	c.runningQueriesMu.Unlock()
+	if !ok {
+		w.Error(srverr.ErrInvalid("query not found"))
+		return
+	}
+	q.wg.Wait()
+	w.Respond(http.StatusOK, api.QueryError{Error: q.error})
+}
+
+func handleCompile(c *Core, w *ResponseWriter, r *Request) {
+	var req api.QueryRequest
+	if !r.Unmarshal(w, &req) {
+		return
+	}
+	ast, err := parser.ParseQuery(req.Query)
+	if err != nil {
+		w.Error(srverr.ErrInvalid(err))
+		return
+	}
+	w.Respond(http.StatusOK, ast.Parsed())
+}
+
+func handleQueryDescribe(c *Core, w *ResponseWriter, r *Request) {
+	var req api.QueryRequest
+	if !r.Unmarshal(w, &req) {
+		return
+	}
+	env := exec.NewEnvironment(storage.NewRemoteEngine(), c.root)
+	info, err := describe.Analyze(r.Context(), req.Query, env)
+	if err != nil {
+		w.Error(srverr.ErrInvalid(err))
+		return
+	}
+	w.Respond(http.StatusOK, info)
 }
 
 func handleBranchGet(c *Core, w *ResponseWriter, r *Request) {
@@ -180,9 +242,14 @@ func handlePoolStats(c *Core, w *ResponseWriter, r *Request) {
 func handlePoolPost(c *Core, w *ResponseWriter, r *Request) {
 	var req api.PoolPostRequest
 	if !r.Unmarshal(w, &req) {
+		fmt.Println("unmarshal.err")
 		return
 	}
-	pool, err := c.root.CreatePool(r.Context(), req.Name, req.Layout, req.SeekStride, req.Thresh)
+	var sortKeys order.SortKeys
+	if len(req.SortKeys.Keys) > 0 {
+		sortKeys = append(sortKeys, order.NewSortKey(req.SortKeys.Order, req.SortKeys.Keys[0]))
+	}
+	pool, err := c.root.CreatePool(r.Context(), req.Name, sortKeys, req.SeekStride, req.Thresh)
 	if err != nil {
 		w.Error(err)
 		return
@@ -362,7 +429,7 @@ func handleBranchLoad(c *Core, w *ResponseWriter, r *Request) {
 		w.Error(err)
 		return
 	}
-	if format == "parquet" || format == "vng" {
+	if format == "parquet" || format == "csup" {
 		// These formats require a reader that implements io.ReaderAt and
 		// io.Seeker.  Copy the reader to a temporary file and use that.
 		//
@@ -390,7 +457,7 @@ func handleBranchLoad(c *Core, w *ResponseWriter, r *Request) {
 		// Force validation of ZNG when loading into the lake.
 		ZNG: zngio.ReaderOpts{Validate: true},
 	}
-	zctx := zed.NewContext()
+	zctx := super.NewContext()
 	zrc, err := anyio.NewReaderWithOpts(zctx, reader, opts)
 	if err != nil {
 		w.Error(srverr.ErrInvalid(err))
@@ -425,7 +492,7 @@ type warningsReader struct {
 	warnings []string
 }
 
-func (w *warningsReader) Read() (*zed.Value, error) {
+func (w *warningsReader) Read() (*super.Value, error) {
 	val, err := w.Reader.Read()
 	if err != nil {
 		w.warnings = append(w.warnings, err.Error())
@@ -443,6 +510,10 @@ func handleCompact(c *Core, w *ResponseWriter, r *Request) {
 	if !ok {
 		return
 	}
+	writeVectors, ok := r.BoolFromQuery(w, "vectors")
+	if !ok {
+		return
+	}
 	message, ok := r.decodeCommitMessage(w)
 	if !ok {
 		return
@@ -451,7 +522,7 @@ func handleCompact(c *Core, w *ResponseWriter, r *Request) {
 	if !ok {
 		return
 	}
-	commit, err := exec.Compact(r.Context(), c.root, pool, branch, req.ObjectIDs, message.Author, message.Body, message.Meta)
+	commit, err := exec.Compact(r.Context(), c.root, pool, branch, req.ObjectIDs, writeVectors, message.Author, message.Body, message.Meta)
 	if err != nil {
 		w.Error(err)
 		return
@@ -504,13 +575,14 @@ func handleDelete(c *Core, w *ResponseWriter, r *Request) {
 			w.Error(srverr.ErrInvalid("either object_ids or where must be set"))
 			return
 		}
-		var program ast.Op
-		if program, err = c.compiler.Parse(payload.Where); err != nil {
-			w.Error(srverr.ErrInvalid(err))
+		ast, err2 := parser.ParseQuery(payload.Where)
+		if err != nil {
+			w.Error(srverr.ErrInvalid(err2))
 			return
 		}
-		commit, err = branch.DeleteWhere(r.Context(), c.compiler, program, message.Author, message.Body, message.Meta)
-		if errors.Is(err, &compiler.InvalidDeleteWhereQuery{}) {
+		commit, err = branch.DeleteWhere(r.Context(), c.compiler, ast, message.Author, message.Body, message.Meta)
+		if errors.Is(err, commits.ErrEmptyTransaction) ||
+			errors.Is(err, &compiler.InvalidDeleteWhereQuery{}) {
 			err = srverr.ErrInvalid(err)
 		}
 	}
@@ -526,99 +598,78 @@ func handleDelete(c *Core, w *ResponseWriter, r *Request) {
 	})
 }
 
-func handleIndexRulesPost(c *Core, w *ResponseWriter, r *Request) {
-	var body api.IndexRulesAddRequest
-	if !r.Unmarshal(w, &body, index.RuleTypes...) {
+func handleVacuum(c *Core, w *ResponseWriter, r *Request) {
+	pool, ok := r.StringFromPath(w, "pool")
+	if !ok {
 		return
 	}
-	if err := c.root.AddIndexRules(r.Context(), body.Rules); err != nil {
+	revision, ok := r.StringFromPath(w, "revision")
+	if !ok {
+		return
+	}
+	dryrun, ok := r.BoolFromQuery(w, "dryrun")
+	if !ok {
+		return
+	}
+	lk := lakeapi.FromRoot(c.root)
+	oids, err := lk.Vacuum(r.Context(), pool, revision, dryrun)
+	if err != nil {
 		w.Error(err)
 		return
 	}
-	w.WriteHeader(http.StatusNoContent)
+	w.Respond(http.StatusOK, api.VacuumResponse{ObjectIDs: oids})
 }
 
-func handleIndexRulesDelete(c *Core, w *ResponseWriter, r *Request) {
-	var req api.IndexRulesDeleteRequest
+func handleVectorPost(c *Core, w *ResponseWriter, r *Request) {
+	pool, ok := r.StringFromPath(w, "pool")
+	if !ok {
+		return
+	}
+	revision, ok := r.StringFromPath(w, "revision")
+	if !ok {
+		return
+	}
+	var req api.VectorRequest
 	if !r.Unmarshal(w, &req) {
 		return
 	}
-	ruleIDs, err := lakeparse.ParseIDs(req.RuleIDs)
-	if err != nil {
-		w.Error(srverr.ErrInvalid(err))
-	}
-	rules, err := c.root.DeleteIndexRules(r.Context(), ruleIDs)
-	if err != nil {
-		w.Error(err)
+	message, ok := r.decodeCommitMessage(w)
+	if !ok {
 		return
 	}
-	w.Respond(http.StatusOK, api.IndexRulesDeleteResponse{Rules: rules})
-}
-
-func handleIndexApply(c *Core, w *ResponseWriter, r *Request, branch *lake.Branch) {
-	var req api.IndexApplyRequest
-	if !r.Unmarshal(w, &req) {
-		return
-	}
-	ss, err := lakeparse.ParseIDs(req.Tags)
-	if err != nil {
-		w.Error(srverr.ErrInvalid(err))
-		return
-	}
-	tags, err := branch.LookupTags(r.Context(), ss)
-	if err != nil {
-		w.Error(err)
-		return
-	}
-	rules, err := c.root.LookupIndexRules(r.Context(), lakeparse.FormatIDs(req.Rules)...)
-	if err != nil {
-		w.Error(err)
-		return
-	}
-	commit, err := branch.ApplyIndexRules(r.Context(), c.compiler, rules, tags)
+	lk := lakeapi.FromRoot(c.root)
+	commit, err := lk.AddVectors(r.Context(), pool, revision, req.ObjectIDs, message)
 	if err != nil {
 		w.Error(err)
 		return
 	}
 	w.Respond(http.StatusOK, api.CommitResponse{Commit: commit})
-	c.publishEvent(w, "branch-commit", api.EventBranchCommit{
-		CommitID: commit,
-		PoolID:   branch.Pool().ID,
-		Branch:   branch.Name,
-	})
-
 }
 
-func handleIndexUpdate(c *Core, w *ResponseWriter, r *Request, branch *lake.Branch) {
-	var req api.IndexUpdateRequest
+func handleVectorDelete(c *Core, w *ResponseWriter, r *Request) {
+	pool, ok := r.StringFromPath(w, "pool")
+	if !ok {
+		return
+	}
+	revision, ok := r.StringFromPath(w, "revision")
+	if !ok {
+		return
+	}
+	var req api.VectorRequest
 	if !r.Unmarshal(w, &req) {
 		return
 	}
-	var err error
-	var rules []index.Rule
-	if len(req.Rules) > 0 {
-		rules, err = c.root.LookupIndexRules(r.Context(), lakeparse.FormatIDs(req.Rules)...)
-	} else {
-		rules, err = c.root.AllIndexRules(r.Context())
-	}
-	if err != nil {
-		w.Error(err)
+	message, ok := r.decodeCommitMessage(w)
+	if !ok {
 		return
 	}
-	commit, err := branch.UpdateIndex(r.Context(), c.compiler, rules)
+	lk := lakeapi.FromRoot(c.root)
+	commit, err := lk.DeleteVectors(r.Context(), pool, revision, req.ObjectIDs, message)
 	if err != nil {
-		if errors.Is(err, commits.ErrEmptyTransaction) {
-			err = srverr.ErrInvalid(err)
-		}
 		w.Error(err)
 		return
 	}
 	w.Respond(http.StatusOK, api.CommitResponse{Commit: commit})
-	c.publishEvent(w, "branch-commit", api.EventBranchCommit{
-		CommitID: commit,
-		PoolID:   branch.Pool().ID,
-		Branch:   branch.Name,
-	})
 }
 
 func handleAuthIdentityGet(c *Core, w *ResponseWriter, r *Request) {
@@ -638,7 +689,7 @@ func handleAuthMethodGet(c *Core, w *ResponseWriter, r *Request) {
 }
 
 func handleEvents(c *Core, w *ResponseWriter, r *Request) {
-	format, err := api.MediaTypeToFormat(r.Header.Get("Accept"), "zson")
+	format, err := api.MediaTypeToFormat(r.Header.Get("Accept"), "jsup")
 	if err != nil {
 		w.Error(srverr.ErrInvalid(err))
 	}

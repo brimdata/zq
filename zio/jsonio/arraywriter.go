@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"io"
 
-	"github.com/brimdata/zed"
-	"github.com/brimdata/zed/zio"
+	"github.com/brimdata/super"
+	"github.com/brimdata/super/zio"
 )
 
 type ArrayWriter struct {
@@ -19,7 +19,7 @@ func NewArrayWriter(wc io.WriteCloser) *ArrayWriter {
 	var buf bytes.Buffer
 	return &ArrayWriter{
 		buf: &buf,
-		w:   NewWriter(zio.NopCloser(&buf)),
+		w:   NewWriter(zio.NopCloser(&buf), WriterOpts{}),
 		wc:  wc,
 	}
 }
@@ -35,7 +35,7 @@ func (a *ArrayWriter) Close() error {
 	return a.wc.Close()
 }
 
-func (a *ArrayWriter) Write(val *zed.Value) error {
+func (a *ArrayWriter) Write(val super.Value) error {
 	a.buf.Reset()
 	if a.wrote {
 		a.buf.WriteByte(',')

@@ -6,12 +6,13 @@ import (
 	"fmt"
 	"io/fs"
 
-	"github.com/brimdata/zed"
-	"github.com/brimdata/zed/pkg/bufwriter"
-	"github.com/brimdata/zed/pkg/storage"
-	"github.com/brimdata/zed/zio"
-	"github.com/brimdata/zed/zio/vngio"
-	"github.com/brimdata/zed/zio/zngio"
+	"github.com/brimdata/super"
+	"github.com/brimdata/super/pkg/bufwriter"
+	"github.com/brimdata/super/pkg/storage"
+	"github.com/brimdata/super/vng"
+	"github.com/brimdata/super/zio"
+	"github.com/brimdata/super/zio/vngio"
+	"github.com/brimdata/super/zio/zngio"
 	"github.com/segmentio/ksuid"
 )
 
@@ -25,26 +26,16 @@ func CreateVector(ctx context.Context, engine storage.Engine, path *storage.URI,
 		}
 		return err
 	}
-	put, err := engine.Put(ctx, VectorURI(path, id))
+	w, err := NewVectorWriter(ctx, engine, path, id)
 	if err != nil {
 		get.Close()
-		return err
-	}
-	writer, err := vngio.NewWriter(bufwriter.New(put), vngio.WriterOpts{
-		ColumnThresh: vngio.DefaultColumnThresh,
-		SkewThresh:   vngio.DefaultSkewThresh,
-	})
-	if err != nil {
-		get.Close()
-		put.Close()
-		DeleteVector(ctx, engine, path, id)
 		return err
 	}
 	// Note here that writer.Close closes the Put but reader.Close does not
 	// close the Get.
-	reader := zngio.NewReader(zed.NewContext(), get)
-	err = zio.Copy(writer, reader)
-	if closeErr := writer.Close(); err == nil {
+	reader := zngio.NewReader(super.NewContext(), get)
+	err = zio.Copy(w, reader)
+	if closeErr := w.Close(); err == nil {
 		err = closeErr
 	}
 	if closeErr := reader.Close(); err == nil {
@@ -54,9 +45,37 @@ func CreateVector(ctx context.Context, engine storage.Engine, path *storage.URI,
 		err = closeErr
 	}
 	if err != nil {
-		DeleteVector(ctx, engine, path, id)
+		w.Abort()
 	}
 	return err
+}
+
+type VectorWriter struct {
+	*vng.Writer
+	delete func()
+}
+
+func (o *Object) NewVectorWriter(ctx context.Context, engine storage.Engine, path *storage.URI) (*VectorWriter, error) {
+	return NewVectorWriter(ctx, engine, path, o.ID)
+}
+
+func NewVectorWriter(ctx context.Context, engine storage.Engine, path *storage.URI, id ksuid.KSUID) (*VectorWriter, error) {
+	put, err := engine.Put(ctx, VectorURI(path, id))
+	if err != nil {
+		return nil, err
+	}
+	delete := func() {
+		DeleteVector(context.Background(), engine, path, id)
+	}
+	return &VectorWriter{
+		Writer: vngio.NewWriter(bufwriter.New(put)),
+		delete: delete,
+	}, nil
+}
+
+func (w *VectorWriter) Abort() {
+	w.Close()
+	w.delete()
 }
 
 func DeleteVector(ctx context.Context, engine storage.Engine, path *storage.URI, id ksuid.KSUID) error {

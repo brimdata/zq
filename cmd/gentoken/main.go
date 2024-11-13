@@ -7,8 +7,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/brimdata/zed/pkg/charm"
-	"github.com/brimdata/zed/service/auth"
+	"github.com/brimdata/super/pkg/charm"
+	"github.com/brimdata/super/service/auth"
 )
 
 var CLI = &charm.Spec{
@@ -59,7 +59,7 @@ func (c *Command) Run(args []string) error {
 }
 
 func main() {
-	err := CLI.ExecRoot(os.Args[1:])
+	err := CLI.Exec(os.Args[1:])
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%s\n", err)
 		os.Exit(1)

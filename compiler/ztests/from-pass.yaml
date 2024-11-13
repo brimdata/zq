@@ -1,20 +1,21 @@
-script: zq -z -I join.zed left.zson
+script: super -z -I join.zed left.jsup
 
 inputs:
   - name: join.zed
     data: |
-      * | from (
-        pass => sort x
-        file right.zson => sort y
-      ) | inner join on x=y matched:=true
-  - name: left.zson
+      from (
+        pass
+        file right.jsup
+      ) |> inner join on x=y matched:=true
+  - name: left.jsup
     data: |
       {x:1,s:"one"}
       {x:2,s:"two"}
       {x:3,s:"three"}
-  - name: right.zson
+  - name: right.jsup
     data: |
       {y:2,y:"y-two"}
+
 outputs:
   - name: stdout
     data: |

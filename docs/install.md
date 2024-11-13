@@ -5,99 +5,94 @@ sidebar_label: Installation
 
 # Installation
 
-Several options for installing `zq` and/or `zed` are available:
-* [HomeBrew](#homebrew) for Mac or Linux,
-* [Binary Download](#binary-download), or
-* [Build from Source](#building-from-source).
+Several options for installing `super` are available:
+* [Homebrew](#homebrew) for Mac or Linux,
+* [Binary download](#binary-download), or
+* [Build from source](#building-from-source).
 
-To install the Zed Python client, see the
+To install the SuperDB Python client, see the
 [Python library documentation](libraries/python.md).
 
 ## Homebrew
 
-On macOS and Linux, you can use [Homebrew](https://brew.sh/) to install `zq`:
+On macOS and Linux, you can use [Homebrew](https://brew.sh/) to install `super`:
 
 ```bash
-brew install brimdata/tap/zq
-```
-
-Similarly, to install `zed` for working with Zed lakes:
-```bash
-brew install brimdata/tap/zed
+brew install brimdata/tap/super
 ```
 
 Once installed, run a [quick test](#quick-tests).
 
 ## Binary Download
 
-We offer pre-built binaries for macOS, Windows and Linux for both x86 and arm
-architectures in the Zed [Github Release page](https://github.com/brimdata/zed/releases).
+We offer pre-built binaries for macOS, Windows and Linux for both amd64/x86 and arm
+architectures in the super [GitHub Release page](https://github.com/brimdata/super/releases).
 
-Each archive includes the build for `zq` and `zed`.
+Once the `super` binary is unpacked from a downloaded package, run a [quick test](#quick-tests).
 
-Once installed, run a [quick test](#quick-tests).
+## Building From Source
 
-## Building from source
-
-If you have Go installed, you can easily build `zed` from source:
+If you have Go installed, you can easily build `super` from source:
 
 ```bash
-go install github.com/brimdata/zed/cmd/{zed,zq}@latest
+go install github.com/brimdata/super/cmd/super@latest
 ```
 
-This installs the `zed` and `zq` binaries in your `$GOPATH/bin`.
-
-> If you don't have Go installed, download and install it from the
-> [Go install page](https://golang.org/doc/install). Go 1.19 or later is
-> required.
+This installs the `super` binary in your `$GOPATH/bin`.
 
 Once installed, run a [quick test](#quick-tests).
+
+:::tip note
+If you don't have Go installed, download and install it from the
+[Go install page](https://golang.org/doc/install). Go 1.23 or later is
+required.
+:::
 
 ## Quick Tests
 
-`zq` and `zed` are easy to test as they are completely self-contained
-command-line tools and require no external dependendies to run.
+`super` is easy to test as it's a completely self-contained
+command-line tool and requires no external dependencies.
 
-### Test zq
+### Test `super`
 
-To test `zq`, simply run this command in your shell:
+To test `super`, simply run this command in your shell:
 ```mdtest-command
-echo '"hello, world"' | zq -z -
+echo '"hello, world"' | super -z -
 ```
 which should produce
 ```mdtest-output
 "hello, world"
 ```
 
-### Test zed
+### Test `super db`
 
-To test `zed`, we'll make a lake in `./scratch`, load data, and query it
+To test `super db`, we'll make a SuperDB data lake in `./scratch`, load data, and query it
 as follows:
 ```
-export ZED_LAKE=./scratch
-zed init
-zed create Demo
-echo '{s:"hello, world"}' | zed load -use Demo -
-zed query "from Demo"
+export SUPER_DB_LAKE=./scratch
+super db init
+super db create Demo
+echo '{s:"hello, world"}' | super db load -use Demo -
+super db query "from Demo"
 ```
 which should display
 ```
 {s:"hello, world"}
 ```
-Alternatively, you can run a Zed lake service, load it with data using `zed load`,
+Alternatively, you can run a lake service, load it with data using `super db load`,
 and hit the API.
 
 In one shell, run the server:
 ```
-zed init -lake scratch
-zed serve -lake scratch
+super db init -lake scratch
+super db serve -lake scratch
 ```
 And in another shell, run the client:
 ```
-zed create Demo
-zed use Demo
-echo '{s:"hello, world"}' | zed load -
-zed query "from Demo"
+super db create Demo
+super db use Demo
+echo '{s:"hello, world"}' | super db load -
+super db query "from Demo"
 ```
 which should also display
 ```

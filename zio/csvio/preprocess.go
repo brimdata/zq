@@ -15,14 +15,19 @@ import (
 // Would get converted into:
 // field1,field2 extra
 type preprocess struct {
-	leftover []byte
-	scanner  *bufio.Reader
-	scratch  []byte
+	delimiter rune
+	leftover  []byte
+	scanner   *bufio.Reader
+	scratch   []byte
 }
 
-func newPreprocess(r io.Reader) *preprocess {
+func newPreprocess(r io.Reader, delim rune) *preprocess {
+	if delim == 0 {
+		delim = ','
+	}
 	return &preprocess{
-		scanner: bufio.NewReader(r),
+		delimiter: delim,
+		scanner:   bufio.NewReader(r),
 	}
 }
 
@@ -68,15 +73,21 @@ func (p *preprocess) parseField() ([]byte, error) {
 		}
 		if c == '"' {
 			hasstr = true
-			str, err := p.parseString()
-			p.scratch = append(p.scratch, str...)
-			if err != nil {
+			var s []byte
+			s, err = p.parseString()
+			p.scratch = append(p.scratch, s...)
+			if err == nil {
+				continue
+			}
+			if err != io.EOF {
 				return p.scratch, err
 			}
-			continue
 		}
-		if c == ',' || c == '\n' {
-			ending := []byte{c}
+		if rune(c) == p.delimiter || c == '\n' || err == io.EOF {
+			var ending []byte
+			if err != io.EOF {
+				ending = []byte{c}
+			}
 			if hasstr {
 				// If field had quotes wrap entire field in quotes.
 				if last := len(p.scratch) - 1; last > 0 && p.scratch[last] == '\r' {
@@ -87,7 +98,7 @@ func (p *preprocess) parseField() ([]byte, error) {
 				p.scratch = append([]byte{'"'}, bytes.TrimSpace(p.scratch)...)
 			}
 			p.scratch = append(p.scratch, ending...)
-			return p.scratch, nil
+			return p.scratch, err
 		}
 		p.scratch = append(p.scratch, c)
 	}
@@ -103,7 +114,6 @@ func (p *preprocess) parseString() ([]byte, error) {
 		if c == '"' {
 			next, err := p.scanner.ReadByte()
 			if err != nil {
-				str = append(str, c)
 				return str, err
 			}
 			if next == '"' {

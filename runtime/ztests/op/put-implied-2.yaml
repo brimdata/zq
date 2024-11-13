@@ -1,0 +1,9 @@
+zed: 'x:=upper(x), y:=lower(x)'
+
+vector: true
+
+input: |
+  {x:"vAlUe1"}
+
+output: |
+  {x:"VALUE1",y:"value1"}

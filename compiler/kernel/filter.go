@@ -1,9 +1,9 @@
 package kernel
 
 import (
-	"github.com/brimdata/zed/compiler/ast/dag"
-	"github.com/brimdata/zed/runtime/expr"
-	"github.com/brimdata/zed/zbuf"
+	"github.com/brimdata/super/compiler/dag"
+	"github.com/brimdata/super/runtime/sam/expr"
+	"github.com/brimdata/super/zbuf"
 )
 
 type Filter struct {
@@ -24,7 +24,7 @@ func (f *Filter) AsBufferFilter() (*expr.BufferFilter, error) {
 	if f == nil {
 		return nil, nil
 	}
-	return CompileBufferFilter(f.builder.pctx.Zctx, f.pushdown)
+	return CompileBufferFilter(f.builder.zctx(), f.pushdown)
 }
 
 type DeleteFilter struct {

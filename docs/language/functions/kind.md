@@ -7,6 +7,7 @@
 ```
 kind(val: any) -> string
 ```
+
 ### Description
 
 The _kind_ function returns the category of the type of `v` as a string,
@@ -17,7 +18,7 @@ then the type category of the referenced type is returned.
 
 A primitive value's kind is "primitive":
 ```mdtest-command
-echo '1 "a" 10.0.0.1' | zq -z 'yield kind(this)' -
+echo '1 "a" 10.0.0.1' | super -z -c 'yield kind(this)' -
 ```
 =>
 ```mdtest-output
@@ -29,7 +30,7 @@ echo '1 "a" 10.0.0.1' | zq -z 'yield kind(this)' -
 A complex value's kind is it's complex type category.  Try it on
 these empty values of various complex types:
 ```mdtest-command
-echo '{} [] |[]| |{}| 1((int64,string))' | zq -z 'yield kind(this)' -
+echo '{} [] |[]| |{}| 1((int64,string))' | super -z -c 'yield kind(this)' -
 ```
 =>
 ```mdtest-output
@@ -42,7 +43,7 @@ echo '{} [] |[]| |{}| 1((int64,string))' | zq -z 'yield kind(this)' -
 
 A Zed error has kind "error":
 ```mdtest-command
-echo null | zq -z 'yield kind(1/0)' -
+echo null | super -z -c 'yield kind(1/0)' -
 ```
 =>
 ```mdtest-output
@@ -51,7 +52,7 @@ echo null | zq -z 'yield kind(1/0)' -
 
 A Zed type's kind is the kind of the type:
 ```mdtest-command
-echo '<{s:string}>' | zq -z 'yield kind(this)' -
+echo '<{s:string}>' | super -z -c 'yield kind(this)' -
 ```
 =>
 ```mdtest-output

@@ -1,35 +1,26 @@
 package seekindex
 
 import (
-	"github.com/brimdata/zed"
-	"github.com/brimdata/zed/zio"
-	"github.com/brimdata/zed/zson"
+	"github.com/brimdata/super"
+	"github.com/brimdata/super/zio"
+	"github.com/brimdata/super/zson"
 )
-
-type Entry struct {
-	Min    *zed.Value `zed:"min"`
-	Max    *zed.Value `zed:"max"`
-	ValOff uint64     `zed:"val_off"`
-	ValCnt uint64     `zed:"val_cnt"`
-	Offset uint64     `zed:"offset"`
-	Length uint64     `zed:"length"`
-}
 
 type Writer struct {
 	marshal *zson.MarshalZNGContext
-	writer  zio.Writer
+	writer  zio.WriteCloser
 	offset  uint64
 	valoff  uint64
 }
 
-func NewWriter(w zio.Writer) *Writer {
+func NewWriter(w zio.WriteCloser) *Writer {
 	return &Writer{
 		marshal: zson.NewZNGMarshaler(),
 		writer:  w,
 	}
 }
 
-func (w *Writer) Write(min, max *zed.Value, valoff uint64, offset uint64) error {
+func (w *Writer) Write(min, max super.Value, valoff uint64, offset uint64) error {
 	val, err := w.marshal.Marshal(&Entry{
 		Min:    min,
 		Max:    max,
@@ -43,5 +34,7 @@ func (w *Writer) Write(min, max *zed.Value, valoff uint64, offset uint64) error 
 	if err != nil {
 		return err
 	}
-	return w.writer.Write(val.Copy())
+	return w.writer.Write(val)
 }
+
+func (w *Writer) Close() error { return w.writer.Close() }

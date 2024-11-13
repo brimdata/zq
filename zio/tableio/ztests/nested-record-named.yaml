@@ -1,4 +1,4 @@
-zed: '*'
+zed: pass
 
 input: |
   {a:{b:1}(=record_named)}

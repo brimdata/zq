@@ -1,15 +1,21 @@
 script: |
-  zc -C "join on x=x p:=a"
+  super compile -C "join (file test.jsup) on x=x p:=a"
   echo ===
-  zc -C -s "join on x=x p:=a"
+  super compile -C -dag "join (file test.jsup) on x=x p:=a"
 
 outputs:
   - name: stdout
     data: |
-      join on x=x p:=a
+      join (
+        from "test.jsup"
+      ) on x=x p:=a
       ===
-      from (
-        (internal reader)
-        (internal reader)
+      null
+      |> fork (
+        =>
+          pass
+        =>
+          file test.jsup
       )
-      | join on x=x p:=a
+      |> join on x=x p:=a
+      |> output main

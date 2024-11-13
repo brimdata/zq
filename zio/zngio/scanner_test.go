@@ -8,9 +8,9 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/brimdata/zed"
-	"github.com/brimdata/zed/zio"
-	"github.com/brimdata/zed/zson"
+	"github.com/brimdata/super"
+	"github.com/brimdata/super/zio"
+	"github.com/brimdata/super/zson"
 	"github.com/stretchr/testify/require"
 )
 
@@ -45,7 +45,7 @@ func TestScannerContext(t *testing.T) {
 			readers = append(readers, bytes.NewReader(bufs[j]))
 		}
 	}
-	r := NewReaderWithOpts(zed.NewContext(), io.MultiReader(readers...), ReaderOpts{
+	r := NewReaderWithOpts(super.NewContext(), io.MultiReader(readers...), ReaderOpts{
 		Validate: true,
 	})
 	// Create a scanner and scan, validating each record.

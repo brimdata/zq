@@ -6,9 +6,10 @@
 ```
 fuse(any) -> type
 ```
+
 ### Description
 
-The _fuse_ aggregate function applies [type fusion](../overview.md#11-type-fusion)
+The _fuse_ aggregate function applies [type fusion](../shaping.md#type-fusion)
 to its input and returns the fused type.
 
 This aggregation is useful with group-by for data exploration and discovery  
@@ -19,15 +20,16 @@ types to a smaller number of fused types each from a set of interrelated types.
 
 Fuse two records:
 ```mdtest-command
-echo '{a:1,b:2}{a:2,b:"foo"}' | zq -z 'fuse(this)' -
+echo '{a:1,b:2}{a:2,b:"foo"}' | super -z -c 'fuse(this)' -
 ```
 =>
 ```mdtest-output
-{fuse:<{a:int64,b:(int64,string)}>}
+<{a:int64,b:(int64,string)}>
 ```
 Fuse records with a group-by key:
 ```mdtest-command
-echo '{a:1,b:"bar"}{a:2.1,b:"foo"}{a:3,b:"bar"}' | zq -z 'fuse(this) by b | sort' -
+echo '{a:1,b:"bar"}{a:2.1,b:"foo"}{a:3,b:"bar"}' |
+  super -z -c 'fuse(this) by b |> sort' -
 ```
 =>
 ```mdtest-output

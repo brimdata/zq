@@ -1,4 +1,4 @@
-package zed_test
+package super_test
 
 import (
 	"bytes"
@@ -11,15 +11,15 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/brimdata/zed"
-	"github.com/brimdata/zed/compiler"
-	"github.com/brimdata/zed/runtime/op"
-	"github.com/brimdata/zed/zio"
-	"github.com/brimdata/zed/zio/anyio"
-	"github.com/brimdata/zed/zio/arrowio"
-	"github.com/brimdata/zed/zio/parquetio"
-	"github.com/brimdata/zed/zio/zngio"
-	"github.com/brimdata/zed/ztest"
+	"github.com/brimdata/super"
+	"github.com/brimdata/super/compiler"
+	"github.com/brimdata/super/compiler/parser"
+	"github.com/brimdata/super/runtime"
+	"github.com/brimdata/super/zio"
+	"github.com/brimdata/super/zio/anyio"
+	"github.com/brimdata/super/zio/arrowio"
+	"github.com/brimdata/super/zio/zngio"
+	"github.com/brimdata/super/ztest"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -35,8 +35,10 @@ func TestZed(t *testing.T) {
 		data, err := loadZTestInputsAndOutputs(dirs)
 		require.NoError(t, err)
 		runAllBoomerangs(t, "arrows", data)
+		runAllBoomerangs(t, "csup", data)
+		runAllBoomerangs(t, "jsup", data)
 		runAllBoomerangs(t, "parquet", data)
-		runAllBoomerangs(t, "zson", data)
+		runAllBoomerangs(t, "zjson", data)
 	})
 
 	for d := range dirs {
@@ -53,10 +55,13 @@ func findZTests() (map[string]struct{}, error) {
 	pattern := fmt.Sprintf(`.*ztests\%c.*\.yaml$`, filepath.Separator)
 	re := regexp.MustCompile(pattern)
 	err := filepath.Walk(".", func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
 		if !info.IsDir() && strings.HasSuffix(path, ".yaml") && re.MatchString(path) {
 			dirs[filepath.Dir(path)] = struct{}{}
 		}
-		return err
+		return nil
 	})
 	return dirs, err
 }
@@ -93,7 +98,7 @@ func loadZTestInputsAndOutputs(ztestDirs map[string]struct{}) (map[string]string
 // isValid returns true if and only if s can be read fully without error by
 // anyio and contains at least one value.
 func isValid(s string) bool {
-	zrc, err := anyio.NewReader(zed.NewContext(), strings.NewReader(s))
+	zrc, err := anyio.NewReader(super.NewContext(), strings.NewReader(s))
 	if err != nil {
 		return false
 	}
@@ -126,7 +131,7 @@ func runAllBoomerangs(t *testing.T, format string, data map[string]string) {
 
 func runOneBoomerang(t *testing.T, format, data string) {
 	// Create an auto-detecting reader for data.
-	zctx := zed.NewContext()
+	zctx := super.NewContext()
 	dataReadCloser, err := anyio.NewReader(zctx, strings.NewReader(data))
 	require.NoError(t, err)
 	defer dataReadCloser.Close()
@@ -134,13 +139,13 @@ func runOneBoomerang(t *testing.T, format, data string) {
 	dataReader := zio.Reader(dataReadCloser)
 	if format == "parquet" {
 		// Fuse for formats that require uniform values.
-		proc, err := compiler.NewCompiler().Parse("fuse")
+		ast, err := parser.ParseQuery("fuse")
 		require.NoError(t, err)
-		pctx := op.NewContext(context.Background(), zctx, nil)
-		q, err := compiler.NewCompiler().NewQuery(pctx, proc, []zio.Reader{dataReadCloser})
+		rctx := runtime.NewContext(context.Background(), zctx)
+		q, err := compiler.NewCompiler(nil).NewQuery(rctx, ast, []zio.Reader{dataReadCloser}, 0)
 		require.NoError(t, err)
 		defer q.Pull(true)
-		dataReader = q.AsReader()
+		dataReader = runtime.AsReader(q)
 	}
 
 	// Copy from dataReader to baseline as format.
@@ -154,20 +159,14 @@ func runOneBoomerang(t *testing.T, format, data string) {
 	if err != nil {
 		if errors.Is(err, arrowio.ErrMultipleTypes) ||
 			errors.Is(err, arrowio.ErrNotRecord) ||
-			errors.Is(err, arrowio.ErrUnsupportedType) ||
-			errors.Is(err, parquetio.ErrEmptyRecordType) ||
-			errors.Is(err, parquetio.ErrNullType) ||
-			errors.Is(err, parquetio.ErrUnionType) ||
-			strings.Contains(err.Error(), "Parquet output encountered non-record value") ||
-			strings.Contains(err.Error(), "Parquet output requires uniform records but multiple types encountered") ||
-			strings.Contains(err.Error(), "column has no name") {
+			errors.Is(err, arrowio.ErrUnsupportedType) {
 			t.Skipf("skipping due to expected error: %s", err)
 		}
 		t.Fatalf("unexpected error writing %s baseline: %s", format, err)
 	}
 
 	// Create a reader for baseline.
-	baselineReader, err := anyio.NewReaderWithOpts(zed.NewContext(), bytes.NewReader(baseline.Bytes()), anyio.ReaderOpts{
+	baselineReader, err := anyio.NewReaderWithOpts(super.NewContext(), bytes.NewReader(baseline.Bytes()), anyio.ReaderOpts{
 		Format: format,
 		ZNG: zngio.ReaderOpts{
 			Validate: true,

@@ -3,11 +3,11 @@ package api
 import (
 	"context"
 
-	"github.com/brimdata/zed/lake/index"
-	"github.com/brimdata/zed/lakeparse"
-	"github.com/brimdata/zed/order"
-	"github.com/brimdata/zed/pkg/nano"
-	"github.com/brimdata/zed/zbuf"
+	"github.com/brimdata/super/compiler/srcfiles"
+	"github.com/brimdata/super/order"
+	"github.com/brimdata/super/pkg/field"
+	"github.com/brimdata/super/pkg/nano"
+	"github.com/brimdata/super/zbuf"
 	"github.com/segmentio/ksuid"
 )
 
@@ -21,10 +21,10 @@ func RequestIDFromContext(ctx context.Context) string {
 }
 
 type Error struct {
-	Type    string      `json:"type"`
-	Kind    string      `json:"kind"`
-	Message string      `json:"error"`
-	Info    interface{} `json:"info,omitempty"`
+	Type              string             `json:"type"`
+	Kind              string             `json:"kind"`
+	Message           string             `json:"error"`
+	CompilationErrors srcfiles.ErrorList `json:"compilation_errors,omitempty"`
 }
 
 func (e Error) Error() string {
@@ -36,10 +36,15 @@ type VersionResponse struct {
 }
 
 type PoolPostRequest struct {
-	Name       string       `json:"name"`
-	Layout     order.Layout `json:"layout"`
-	SeekStride int          `json:"seek_stride"`
-	Thresh     int64        `json:"thresh"`
+	Name       string   `json:"name"`
+	SortKeys   SortKeys `json:"layout"`
+	SeekStride int      `json:"seek_stride"`
+	Thresh     int64    `json:"thresh"`
+}
+
+type SortKeys struct {
+	Order order.Which `json:"order" zed:"order"`
+	Keys  field.List  `json:"keys" zed:"keys"`
 }
 
 type PoolPutRequest struct {
@@ -75,27 +80,6 @@ type CommitResponse struct {
 	Warnings []string    `zed:"warnings"`
 }
 
-type IndexRulesAddRequest struct {
-	Rules []index.Rule `zed:"rules"`
-}
-
-type IndexRulesDeleteRequest struct {
-	RuleIDs []string `zed:"rule_ids"`
-}
-
-type IndexRulesDeleteResponse struct {
-	Rules []index.Rule `zed:"rules"`
-}
-
-type IndexApplyRequest struct {
-	Rules []string `zed:"rules"`
-	Tags  []string `zed:"tags"`
-}
-
-type IndexUpdateRequest struct {
-	Rules []string `zed:"rules"`
-}
-
 type EventBranchCommit struct {
 	CommitID ksuid.KSUID `zed:"commit_id"`
 	PoolID   ksuid.KSUID `zed:"pool_id"`
@@ -113,16 +97,15 @@ type EventBranch struct {
 }
 
 type QueryRequest struct {
-	Query string              `json:"query"`
-	Head  lakeparse.Commitish `json:"head"`
+	Query string `json:"query"`
 }
 
 type QueryChannelSet struct {
-	ChannelID int `json:"channel_id" zed:"channel_id"`
+	Channel string `json:"channel" zed:"channel"`
 }
 
 type QueryChannelEnd struct {
-	ChannelID int `json:"channel_id" zed:"channel_id"`
+	Channel string `json:"channel" zed:"channel"`
 }
 
 type QueryError struct {
@@ -137,4 +120,12 @@ type QueryStats struct {
 
 type QueryWarning struct {
 	Warning string `json:"warning" zed:"warning"`
+}
+
+type VacuumResponse struct {
+	ObjectIDs []ksuid.KSUID `zed:"object_ids"`
+}
+
+type VectorRequest struct {
+	ObjectIDs []ksuid.KSUID `zed:"object_ids"`
 }

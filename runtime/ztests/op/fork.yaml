@@ -1,0 +1,10 @@
+zed: fork (=> pass => pass)
+
+vector: true
+
+input: |
+  1
+
+output: |
+  1
+  1

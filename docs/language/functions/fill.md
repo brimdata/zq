@@ -11,18 +11,26 @@ fill(val: any, t: type) -> any
 ### Description
 
 The _fill_ function adds to the input record `val` any fields that are
-present in the output type `t` but not in the input.
+present in the output type `t` but not in the input.  Such fields are added
+after the fields already present in `t` and in the order they appear in the
+input record.
 
 Filled fields are added with a `null` value.  Filling is useful when
 you want to be sure that all fields in a schema are present in a record.
 
 If `val` is not a record, it is returned unmodified.
 
+:::tip
+Many users seeking the functionality of `fill` prefer to use the
+[`shape` function](./shape.md) which applies the `fill`, [`cast`](./cast.md),
+and [`order`](./order.md) functions simultaneously on a record.
+:::
+
 ### Examples
 
 _Fill a record_
 ```mdtest-command
-echo '{a:1}' | zq -z 'fill(this, <{a:int64,b:string}>)' -
+echo '{a:1}' | super -z -c 'fill(this, <{a:int64,b:string}>)' -
 ```
 produces
 ```mdtest-output
@@ -31,7 +39,7 @@ produces
 
 _Fill an array of records_
 ```mdtest-command
-echo '[{a:1},{a:2}]' | zq -z 'fill(this, <[{a:int64,b:int64}]>)' -
+echo '[{a:1},{a:2}]' | super -z -c 'fill(this, <[{a:int64,b:int64}]>)' -
 ```
 produces
 ```mdtest-output
@@ -40,7 +48,7 @@ produces
 
 _Non-records are returned unmodified_
 ```mdtest-command
-echo '10.0.0.1 1 "foo"' | zq -z 'fill(this, <{a:int64,b:int64}>)' -
+echo '10.0.0.1 1 "foo"' | super -z -c 'fill(this, <{a:int64,b:int64}>)' -
 ```
 produces
 ```mdtest-output

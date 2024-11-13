@@ -6,18 +6,18 @@ import (
 	"io"
 	"testing"
 
-	"github.com/brimdata/zed"
-	"github.com/brimdata/zed/api"
-	"github.com/brimdata/zed/api/client"
-	"github.com/brimdata/zed/lake"
-	lakeapi "github.com/brimdata/zed/lake/api"
-	"github.com/brimdata/zed/lake/branches"
-	"github.com/brimdata/zed/lake/pools"
-	"github.com/brimdata/zed/runtime/exec"
-	"github.com/brimdata/zed/zio"
-	"github.com/brimdata/zed/zio/zngio"
-	"github.com/brimdata/zed/zio/zsonio"
-	"github.com/brimdata/zed/zson"
+	"github.com/brimdata/super"
+	"github.com/brimdata/super/api"
+	"github.com/brimdata/super/api/client"
+	"github.com/brimdata/super/lake"
+	lakeapi "github.com/brimdata/super/lake/api"
+	"github.com/brimdata/super/lake/branches"
+	"github.com/brimdata/super/lake/pools"
+	"github.com/brimdata/super/runtime/exec"
+	"github.com/brimdata/super/zio"
+	"github.com/brimdata/super/zio/zngio"
+	"github.com/brimdata/super/zio/zsonio"
+	"github.com/brimdata/super/zson"
 	"github.com/segmentio/ksuid"
 	"github.com/stretchr/testify/require"
 )
@@ -48,11 +48,11 @@ func (c *testClient) TestBranchGet(id ksuid.KSUID) (config lake.BranchMeta) {
 }
 
 func (c *testClient) TestPoolList() []pools.Config {
-	r, err := c.Query(context.Background(), nil, "from :pools")
+	r, err := c.Query(context.Background(), "from :pools")
 	require.NoError(c, err)
 	defer r.Body.Close()
 	var confs []pools.Config
-	zr := zngio.NewReader(zed.NewContext(), r.Body)
+	zr := zngio.NewReader(super.NewContext(), r.Body)
 	defer zr.Close()
 	for {
 		rec, err := zr.Read()
@@ -61,7 +61,7 @@ func (c *testClient) TestPoolList() []pools.Config {
 			return confs
 		}
 		var pool pools.Config
-		err = zson.UnmarshalZNGRecord(rec, &pool)
+		err = zson.UnmarshalZNG(*rec, &pool)
 		require.NoError(c, err)
 		confs = append(confs, pool)
 	}
@@ -80,10 +80,10 @@ func (c *testClient) TestBranchPost(poolID ksuid.KSUID, payload api.BranchPostRe
 }
 
 func (c *testClient) TestQuery(query string) string {
-	r, err := c.Connection.Query(context.Background(), nil, query)
+	r, err := c.Connection.Query(context.Background(), query)
 	require.NoError(c, err)
 	defer r.Body.Close()
-	zr := zngio.NewReader(zed.NewContext(), r.Body)
+	zr := zngio.NewReader(super.NewContext(), r.Body)
 	defer zr.Close()
 	var buf bytes.Buffer
 	zw := zsonio.NewWriter(zio.NopCloser(&buf), zsonio.WriterOpts{})

@@ -1,0 +1,18 @@
+script: |
+  super -z -c 'Select value this FROM "a.jsup" |> droP c'
+
+inputs:
+  - name: a.jsup
+    data: |
+      {c:1,a:11}
+      {c:2,a:12}
+      {c:3,a:13}
+      {c:4,a:14}
+
+outputs:
+  - name: stdout
+    data: |
+      {a:11}
+      {a:12}
+      {a:13}
+      {a:14}

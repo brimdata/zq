@@ -3,37 +3,35 @@
 // that requries a semantic analysis to parse an input to its structured data
 // representation.  To do so, Parser translats a ZSON input to an AST, Analyzer
 // performs semantic type analysis to turn the AST into a Value, and Builder
-// constructs a zed.Value from a Value.
+// constructs a super.Value from a Value.
 package zson
 
 import (
+	"slices"
 	"strings"
 
-	"github.com/brimdata/zed"
-	astzed "github.com/brimdata/zed/compiler/ast/zed"
-	"github.com/brimdata/zed/zcode"
+	"github.com/brimdata/super"
+	"github.com/brimdata/super/compiler/ast"
+	"github.com/brimdata/super/zcode"
 )
 
 // Implied returns true for primitive types whose type can be inferred
 // syntactically from its value and thus never needs a decorator.
-func Implied(typ zed.Type) bool {
+func Implied(typ super.Type) bool {
 	switch typ := typ.(type) {
-	case *zed.TypeOfInt64, *zed.TypeOfDuration, *zed.TypeOfTime, *zed.TypeOfFloat64, *zed.TypeOfBool, *zed.TypeOfBytes, *zed.TypeOfString, *zed.TypeOfIP, *zed.TypeOfNet, *zed.TypeOfType, *zed.TypeOfNull:
+	case *super.TypeOfInt64, *super.TypeOfDuration, *super.TypeOfTime, *super.TypeOfFloat64, *super.TypeOfBool, *super.TypeOfBytes, *super.TypeOfString, *super.TypeOfIP, *super.TypeOfNet, *super.TypeOfType, *super.TypeOfNull:
 		return true
-	case *zed.TypeRecord:
-		for _, f := range typ.Fields {
-			if !Implied(f.Type) {
-				return false
-			}
-		}
-		return true
-	case *zed.TypeArray:
+	case *super.TypeRecord:
+		return !slices.ContainsFunc(typ.Fields, func(f super.Field) bool {
+			return !Implied(f.Type)
+		})
+	case *super.TypeArray:
 		return Implied(typ.Type)
-	case *zed.TypeSet:
+	case *super.TypeSet:
 		return Implied(typ.Type)
-	case *zed.TypeMap:
+	case *super.TypeMap:
 		return Implied(typ.KeyType) && Implied(typ.ValType)
-	case *zed.TypeError:
+	case *super.TypeError:
 		return Implied(typ.Type)
 	}
 	return false
@@ -46,20 +44,20 @@ func Implied(typ zed.Type) bool {
 // names are present in the value.  In the former case, a decorated typedef can
 // use the abbreviated form "(= <name>)", while the letter case, a type def must use
 // the longer form "<value> (<name> = (<type>))".
-func SelfDescribing(typ zed.Type) bool {
+func SelfDescribing(typ super.Type) bool {
 	if Implied(typ) {
 		return true
 	}
 	switch typ := typ.(type) {
-	case *zed.TypeRecord, *zed.TypeArray, *zed.TypeSet, *zed.TypeMap:
+	case *super.TypeRecord, *super.TypeArray, *super.TypeSet, *super.TypeMap:
 		return true
-	case *zed.TypeNamed:
+	case *super.TypeNamed:
 		return SelfDescribing(typ.Type)
 	}
 	return false
 }
 
-func ParseType(zctx *zed.Context, zson string) (zed.Type, error) {
+func ParseType(zctx *super.Context, zson string) (super.Type, error) {
 	zp := NewParser(strings.NewReader(zson))
 	ast, err := zp.parseType()
 	if ast == nil || noEOF(err) != nil {
@@ -68,20 +66,20 @@ func ParseType(zctx *zed.Context, zson string) (zed.Type, error) {
 	return NewAnalyzer().convertType(zctx, ast)
 }
 
-func ParseValue(zctx *zed.Context, zson string) (*zed.Value, error) {
+func ParseValue(zctx *super.Context, zson string) (super.Value, error) {
 	zp := NewParser(strings.NewReader(zson))
 	ast, err := zp.ParseValue()
 	if err != nil {
-		return nil, err
+		return super.Null, err
 	}
 	val, err := NewAnalyzer().ConvertValue(zctx, ast)
 	if err != nil {
-		return nil, err
+		return super.Null, err
 	}
 	return Build(zcode.NewBuilder(), val)
 }
 
-func MustParseValue(zctx *zed.Context, zson string) *zed.Value {
+func MustParseValue(zctx *super.Context, zson string) super.Value {
 	val, err := ParseValue(zctx, zson)
 	if err != nil {
 		panic(err)
@@ -89,14 +87,14 @@ func MustParseValue(zctx *zed.Context, zson string) *zed.Value {
 	return val
 }
 
-func ParseValueFromAST(zctx *zed.Context, ast astzed.Value) (*zed.Value, error) {
+func ParseValueFromAST(zctx *super.Context, ast ast.Value) (super.Value, error) {
 	val, err := NewAnalyzer().ConvertValue(zctx, ast)
 	if err != nil {
-		return nil, err
+		return super.Null, err
 	}
 	return Build(zcode.NewBuilder(), val)
 }
 
-func TranslateType(zctx *zed.Context, astType astzed.Type) (zed.Type, error) {
+func TranslateType(zctx *super.Context, astType ast.Type) (super.Type, error) {
 	return NewAnalyzer().convertType(zctx, astType)
 }

@@ -1,0 +1,7 @@
+script: |
+  ! super -c 'from ( pool a )'
+
+outputs:
+  - name: stderr
+    regexp: |
+      a: file does not exist

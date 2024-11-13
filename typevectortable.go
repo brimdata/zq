@@ -1,4 +1,6 @@
-package zed
+package super
+
+import "slices"
 
 type TypeVectorTable struct {
 	types []typeVector
@@ -41,41 +43,23 @@ func (t *TypeVectorTable) Length() int {
 type typeVector []Type
 
 func newTypeVector(in []Type) typeVector {
-	out := make(typeVector, 0, len(in))
-	for _, t := range in {
-		out = append(out, t)
-	}
-	return out
+	return slices.Clone(in)
 }
 
 func newTypeVectorFromValues(vals []Value) typeVector {
 	out := make(typeVector, 0, len(vals))
 	for _, val := range vals {
-		out = append(out, val.Type)
+		out = append(out, val.Type())
 	}
 	return out
 }
 
 func (t typeVector) equal(to []Type) bool {
-	if len(t) != len(to) {
-		return false
-	}
-	for k, typ := range t {
-		if typ != to[k] {
-			return false
-		}
-	}
-	return true
+	return slices.Equal(t, to)
 }
 
 func (t typeVector) equalToValues(vals []Value) bool {
-	if len(t) != len(vals) {
-		return false
-	}
-	for k, typ := range t {
-		if typ != vals[k].Type {
-			return false
-		}
-	}
-	return true
+	return slices.EqualFunc(t, vals, func(typ Type, val Value) bool {
+		return typ == val.Type()
+	})
 }

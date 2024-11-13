@@ -8,30 +8,32 @@ import (
 	"io"
 	"strings"
 
-	"github.com/brimdata/zed"
-	"github.com/brimdata/zed/zio"
-	"github.com/brimdata/zed/zio/arrowio"
-	"github.com/brimdata/zed/zio/csvio"
-	"github.com/brimdata/zed/zio/jsonio"
-	"github.com/brimdata/zed/zio/parquetio"
-	"github.com/brimdata/zed/zio/vngio"
-	"github.com/brimdata/zed/zio/zeekio"
-	"github.com/brimdata/zed/zio/zjsonio"
-	"github.com/brimdata/zed/zio/zngio"
-	"github.com/brimdata/zed/zio/zsonio"
+	"github.com/brimdata/super"
+	"github.com/brimdata/super/pkg/field"
+	"github.com/brimdata/super/zio"
+	"github.com/brimdata/super/zio/arrowio"
+	"github.com/brimdata/super/zio/csvio"
+	"github.com/brimdata/super/zio/jsonio"
+	"github.com/brimdata/super/zio/parquetio"
+	"github.com/brimdata/super/zio/vngio"
+	"github.com/brimdata/super/zio/zeekio"
+	"github.com/brimdata/super/zio/zjsonio"
+	"github.com/brimdata/super/zio/zngio"
+	"github.com/brimdata/super/zio/zsonio"
 )
 
 type ReaderOpts struct {
+	Fields []field.Path
 	Format string
 	CSV    csvio.ReaderOpts
 	ZNG    zngio.ReaderOpts
 }
 
-func NewReader(zctx *zed.Context, r io.Reader) (zio.ReadCloser, error) {
+func NewReader(zctx *super.Context, r io.Reader) (zio.ReadCloser, error) {
 	return NewReaderWithOpts(zctx, r, ReaderOpts{})
 }
 
-func NewReaderWithOpts(zctx *zed.Context, r io.Reader, opts ReaderOpts) (zio.ReadCloser, error) {
+func NewReaderWithOpts(zctx *super.Context, r io.Reader, opts ReaderOpts) (zio.ReadCloser, error) {
 	if opts.Format != "" && opts.Format != "auto" {
 		return lookupReader(zctx, r, opts)
 	}
@@ -40,14 +42,14 @@ func NewReaderWithOpts(zctx *zed.Context, r io.Reader, opts ReaderOpts) (zio.Rea
 	if rs, ok := r.(io.ReadSeeker); ok {
 		if n, err := rs.Seek(0, io.SeekCurrent); err == nil {
 			var zr zio.Reader
-			zr, parquetErr = parquetio.NewReader(zctx, rs)
+			zr, parquetErr = parquetio.NewReader(zctx, rs, opts.Fields)
 			if parquetErr == nil {
 				return zio.NopReadCloser(zr), nil
 			}
 			if _, err := rs.Seek(n, io.SeekStart); err != nil {
 				return nil, err
 			}
-			zr, vngErr = vngio.NewReader(zctx, rs)
+			zr, vngErr = vngio.NewReader(zctx, rs, opts.Fields)
 			if vngErr == nil {
 				return zio.NopReadCloser(zr), nil
 			}
@@ -59,47 +61,46 @@ func NewReaderWithOpts(zctx *zed.Context, r io.Reader, opts ReaderOpts) (zio.Rea
 			vngErr = err
 		}
 		parquetErr = fmt.Errorf("parquet: %w", parquetErr)
-		vngErr = fmt.Errorf("vng: %w", vngErr)
+		vngErr = fmt.Errorf("csup: %w", vngErr)
 	} else {
 		parquetErr = errors.New("parquet: auto-detection requires seekable input")
-		vngErr = errors.New("vng: auto-detection requires seekable input")
+		vngErr = errors.New("csup: auto-detection requires seekable input")
 	}
 
-	recorder := NewRecorder(r)
-	track := NewTrack(recorder)
+	track := NewTrack(r)
 
 	arrowsErr := isArrowStream(track)
 	if arrowsErr == nil {
-		return arrowio.NewReader(zctx, recorder)
+		return arrowio.NewReader(zctx, track.Reader())
 	}
 	arrowsErr = fmt.Errorf("arrows: %w", arrowsErr)
 	track.Reset()
 
-	zeekErr := match(zeekio.NewReader(zed.NewContext(), track), "zeek", 1)
+	zeekErr := match(zeekio.NewReader(super.NewContext(), track), "zeek", 1)
 	if zeekErr == nil {
-		return zio.NopReadCloser(zeekio.NewReader(zctx, recorder)), nil
+		return zio.NopReadCloser(zeekio.NewReader(zctx, track.Reader())), nil
 	}
 	track.Reset()
 
 	// ZJSON must come before JSON and ZSON since it is a subset of both.
-	zjsonErr := match(zjsonio.NewReader(zed.NewContext(), track), "zjson", 1)
+	zjsonErr := match(zjsonio.NewReader(super.NewContext(), track), "zjson", 1)
 	if zjsonErr == nil {
-		return zio.NopReadCloser(zjsonio.NewReader(zctx, recorder)), nil
+		return zio.NopReadCloser(zjsonio.NewReader(zctx, track.Reader())), nil
 	}
 	track.Reset()
 
 	// JSON comes before ZSON because the JSON reader is faster than the
 	// ZSON reader.  The number of values wanted is greater than one for the
 	// sake of tests.
-	jsonErr := match(jsonio.NewReader(zed.NewContext(), track), "json", 10)
+	jsonErr := match(jsonio.NewReader(super.NewContext(), track), "json", 10)
 	if jsonErr == nil {
-		return zio.NopReadCloser(jsonio.NewReader(zctx, recorder)), nil
+		return zio.NopReadCloser(jsonio.NewReader(zctx, track.Reader())), nil
 	}
 	track.Reset()
 
-	zsonErr := match(zsonio.NewReader(zed.NewContext(), track), "zson", 1)
+	zsonErr := match(zsonio.NewReader(super.NewContext(), track), "jsup", 1)
 	if zsonErr == nil {
-		return zio.NopReadCloser(zsonio.NewReader(zctx, recorder)), nil
+		return zio.NopReadCloser(zsonio.NewReader(zctx, track.Reader())), nil
 	}
 	track.Reset()
 
@@ -108,26 +109,24 @@ func NewReaderWithOpts(zctx *zed.Context, r io.Reader, opts ReaderOpts) (zio.Rea
 	// validation to the user setting in the actual reader returned.
 	zngOpts := opts.ZNG
 	zngOpts.Validate = true
-	zngReader := zngio.NewReaderWithOpts(zed.NewContext(), track, zngOpts)
-	zngErr := match(zngReader, "zng", 1)
+	zngReader := zngio.NewReaderWithOpts(super.NewContext(), track, zngOpts)
+	zngErr := match(zngReader, "bsup", 1)
 	// Close zngReader to ensure that it does not continue to call track.Read.
 	zngReader.Close()
 	if zngErr == nil {
-		return zngio.NewReaderWithOpts(zctx, recorder, opts.ZNG), nil
+		return zngio.NewReaderWithOpts(zctx, track.Reader(), opts.ZNG), nil
 	}
 	track.Reset()
 
-	var csvErr error
-	if s, err := bufio.NewReader(track).ReadString('\n'); err != nil {
-		csvErr = fmt.Errorf("csv: line 1: %w", err)
-	} else if !strings.Contains(s, ",") {
-		csvErr = errors.New("csv: line 1: no comma found")
-	} else {
-		track.Reset()
-		csvErr = match(csvio.NewReader(zed.NewContext(), track, opts.CSV), "csv", 1)
-		if csvErr == nil {
-			return zio.NopReadCloser(csvio.NewReader(zctx, recorder, opts.CSV)), nil
-		}
+	csvErr := isCSVStream(track, ',', "csv")
+	if csvErr == nil {
+		return zio.NopReadCloser(csvio.NewReader(zctx, track.Reader(), csvio.ReaderOpts{Delim: ','})), nil
+	}
+	track.Reset()
+
+	tsvErr := isCSVStream(track, '\t', "tsv")
+	if tsvErr == nil {
+		return zio.NopReadCloser(csvio.NewReader(zctx, track.Reader(), csvio.ReaderOpts{Delim: '\t'})), nil
 	}
 	track.Reset()
 
@@ -138,6 +137,7 @@ func NewReaderWithOpts(zctx *zed.Context, r io.Reader, opts ReaderOpts) (zio.Rea
 		jsonErr,
 		lineErr,
 		parquetErr,
+		tsvErr,
 		vngErr,
 		zeekErr,
 		zjsonErr,
@@ -167,13 +167,23 @@ func isArrowStream(track *Track) error {
 		return errors.New("schema message length exceeds 1 MiB")
 	}
 	track.Reset()
-	zrc, err := arrowio.NewReader(zed.NewContext(), track)
+	zrc, err := arrowio.NewReader(super.NewContext(), track)
 	if err != nil {
 		return err
 	}
 	defer zrc.Close()
 	_, err = zrc.Read()
 	return err
+}
+
+func isCSVStream(track *Track, delim rune, name string) error {
+	if s, err := bufio.NewReader(track).ReadString('\n'); err != nil {
+		return fmt.Errorf("%s: line 1: %w", name, err)
+	} else if !strings.Contains(s, string(delim)) {
+		return fmt.Errorf("%s: line 1: delimiter %q not found", name, delim)
+	}
+	track.Reset()
+	return match(csvio.NewReader(super.NewContext(), track, csvio.ReaderOpts{Delim: delim}), name, 1)
 }
 
 func joinErrs(errs []error) error {

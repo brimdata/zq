@@ -1,0 +1,9 @@
+script: |
+  ! super -z doesnotexist
+
+outputs:
+  - name: stdout
+    data: ""
+  - name: stderr
+    data: |
+      doesnotexist: file does not exist

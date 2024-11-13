@@ -1,4 +1,5 @@
-zed: <{x:int64}>
+zed: |
+  ? <{x:int64}>
 
 input: <int64> <string> <{x:int64}>
 

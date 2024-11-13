@@ -6,9 +6,12 @@ set -eo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$SCRIPT_DIR" || exit 1
 
+shaper=$(mktemp)
+sed -e '1,/```mdtest-input shaper.zed/d' -e '/```/,$d' ../docs/integrations/zeek/shaping-zeek-json.md > "$shaper"
+
 DATA="../zed-sample-data"
 ln -sfn zeek-default "$DATA/zeek"
-ln -sfn zeek-ndjson "$DATA/ndjson"
+ln -sfn zeek-json "$DATA/json"
 
 if [[ $(type -P "gzcat") ]]; then
   ZCAT="gzcat"
@@ -19,7 +22,7 @@ else
   exit 1
 fi
 
-for CMD in zq jq zeek-cut; do
+for CMD in super jq zeek-cut; do
   if ! [[ $(type -P "$CMD") ]]; then
     echo "$CMD not found in PATH"
     exit 1
@@ -42,10 +45,10 @@ declare -a DESCRIPTIONS=(
     'Output all events with the field `id.resp_h` set to `52.85.83.116`'
 )
 
-declare -a ZED_QUERIES=(
-    '*'
-    'cut ts'
-    'count()'
+declare -a SPQS=(
+    'pass'
+    'cut quiet(ts)'
+    'count:=count()'
     'count() by quiet(id.orig_h)'
     'id.resp_h==52.85.83.116'
 )
@@ -72,29 +75,28 @@ declare -a ZCUT_FIELDS=(
     'NONE'
 )
 
-for (( n=0; n<"${#ZED_QUERIES[@]}"; n++ ))
+for (( n=0; n<"${#SPQS[@]}"; n++ ))
 do
     DESC=${DESCRIPTIONS[$n]}
     MD=${MARKDOWNS[$n]}
     echo -e "### $DESC\n" | tee "$MD"
     echo "|**<br>Tool**|**<br>Arguments**|**Input<br>Format**|**Output<br>Format**|**<br>Real**|**<br>User**|**<br>Sys**|" | tee -a "$MD"
     echo "|:----------:|:---------------:|:-----------------:|:------------------:|-----------:|-----------:|----------:|" | tee -a "$MD"
-    for INPUT in zeek zng zng-uncompressed zson ndjson ; do
-      for OUTPUT in zeek zng zng-uncompressed zson ndjson ; do
-        echo -n "|\`zq\`|\`$zed\`|$INPUT|$OUTPUT|" | tee -a "$MD"
+    for INPUT in zeek bsup bsup-uncompressed jsup json ; do
+      for OUTPUT in zeek bsup bsup-uncompressed jsup json ; do
+        spq=${SPQS[$n]}
+        echo -n "|\`super\`|\`$spq\`|$INPUT|$OUTPUT|" | tee -a "$MD"
         case $INPUT in
-          ndjson ) zq_flags="-i json" ;;
-          zng-uncompressed ) zq_flags="-i zng" ;;
-          * ) zq_flags="-i $INPUT" ;;
+          json ) super_flags="-i json -I $shaper" spq="|> $spq" ;;
+          bsup-uncompressed ) super_flags="-i bsup" ;;
+          * ) super_flags="-i $INPUT" ;;
         esac
-        zed=${ZED_QUERIES[$n]}
         case $OUTPUT in
-          ndjson ) zq_flags="$zq_flags -f json -I ../zeek/shaper.zed" zed="| $zed";;
-          zeek ) zq_flags="$zq_flags -f zeek -I ../zeek/shaper.zed" zed="| $zed";;
-          zng-uncompressed ) zq_flags="$zq_flags -f zng -zng.compress=false" ;;
-          * ) zq_flags="$zq_flags -f $OUTPUT" ;;
+          json ) super_flags="$super_flags -f json" ;;
+          bsup-uncompressed ) super_flags="$super_flags -f bsup -bsup.compress=false" ;;
+          * ) super_flags="$super_flags -f $OUTPUT" ;;
         esac
-        ALL_TIMES=$(time -p (zq $zq_flags "$zed" $DATA/$INPUT/* > /dev/null) 2>&1)
+        ALL_TIMES=$(time -p (super $super_flags -c "$spq" $DATA/$INPUT/* > /dev/null) 2>&1)
         echo "$ALL_TIMES" | tr '\n' ' ' | awk '{ print $2 "|" $4 "|" $6 "|" }' | tee -a "$MD"
       done
     done
@@ -108,10 +110,12 @@ do
 
     JQ=${JQ_FILTERS[$n]}
     JQFLAG=${JQFLAGS[$n]}
-    echo -n "|\`jq\`|\`$JQFLAG ""'""${JQ//|/\\|}""'""\`|ndjson|ndjson|" | tee -a "$MD"
+    echo -n "|\`jq\`|\`$JQFLAG ""'""${JQ//|/\\|}""'""\`|json|json|" | tee -a "$MD"
     # shellcheck disable=SC2086      # For expanding JQFLAG
-    ALL_TIMES=$(time -p ($ZCAT "$DATA"/zeek-ndjson/* | jq $JQFLAG "$JQ" > /dev/null) 2>&1)
+    ALL_TIMES=$(time -p ($ZCAT "$DATA"/zeek-json/* | jq $JQFLAG "$JQ" > /dev/null) 2>&1)
     echo "$ALL_TIMES" | tr '\n' ' ' | awk '{ print $2 "|" $4 "|" $6 "|" }' | tee -a "$MD"
 
     echo | tee -a "$MD"
 done
+
+rm -f "$shaper"

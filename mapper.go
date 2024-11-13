@@ -1,6 +1,7 @@
-package zed
+package super
 
 import (
+	"slices"
 	"sync"
 )
 
@@ -35,7 +36,8 @@ func (m *Mapper) Lookup(id int) Type {
 	return nil
 }
 
-func (m *Mapper) Enter(id int, ext Type) (Type, error) {
+func (m *Mapper) Enter(ext Type) (Type, error) {
+	id := TypeID(ext)
 	if id < IDTypeComplex {
 		return LookupPrimitiveByID(id)
 	}
@@ -55,12 +57,8 @@ func (m *Mapper) EnterType(id int, typ Type) {
 		return
 	}
 	m.mu.Lock()
-	if id >= cap(m.types) {
-		new := make([]Type, id+1, id*2)
-		copy(new, m.types)
-		m.types = new
-	} else if id >= len(m.types) {
-		m.types = m.types[:id+1]
+	if id >= len(m.types) {
+		m.types = slices.Grow(m.types[:0], id+1)[:id+1]
 	}
 	m.types[id] = typ
 	m.mu.Unlock()
@@ -75,17 +73,25 @@ type MapperLookupCache struct {
 }
 
 func (m *MapperLookupCache) Reset(mapper *Mapper) {
+	clear(m.cache)
 	m.cache = m.cache[:0]
 	m.mapper = mapper
 }
 
 func (m *MapperLookupCache) Lookup(id int) Type {
-	if id >= len(m.cache) {
-		m.cache = append(m.cache, make([]Type, id+1-len(m.cache))...)
-	} else if typ := m.cache[id]; typ != nil {
-		return typ
+	if id < len(m.cache) {
+		if typ := m.cache[id]; typ != nil {
+			return typ
+		}
 	}
 	typ := m.mapper.Lookup(id)
+	if typ == nil {
+		// To prevent OOM, don't grow cache if id is unknown.
+		return nil
+	}
+	if id >= len(m.cache) {
+		m.cache = slices.Grow(m.cache[:0], id+1)[:id+1]
+	}
 	m.cache[id] = typ
 	return typ
 }

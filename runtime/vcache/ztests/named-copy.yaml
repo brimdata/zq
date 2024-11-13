@@ -1,6 +1,6 @@
 script: |
-  zq -f vng -o test.vng -
-  zed dev vcache copy -z test.vng
+  super -f csup -o test.csup -
+  super dev vector copy -z test.csup
 
 inputs:
   - name: stdin

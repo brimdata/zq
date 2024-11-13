@@ -1,0 +1,13 @@
+zed: pass
+
+input: !!binary |
+  H4sIAGv26WEAAy1OwUrDQBTcpE3TprRYemi3h1YvgpdKCi1eaw2NogimWBRkSTdbsyXNLr
+  ubIngWBP/C3/AL9OoPePIs4k1EF/Vd5s17w8wcV8GN+W7aec6EMkC+wAS9RHGrCO55uyCI
+  5L/k65q3DQjqFuKhiqGpZCWX0QiaNOrYKyIkZSksYMpjIqCFM7EisCyJBoHScEmgra2yJY
+  kaThJKhcKECAUrKblSiAumGGYJLBOpwllCZax1a1grEI5DmqK5jpLrDZxQkioEwYdjy2y2
+  IFjBApUy05nV/2cT1CtrAHTAm62vtVWY0ChUuh3S3iqTsFXcuDXyUiYl8Hn6cvd8sVUfzb
+  1dxnvxbH5wxhfjvh/VLMexz3OPT9bgddrMPRj25DBYub1NDcgb7fkeOgmGaLo/8dHQC5Db
+  20Hj0REK/GGvPwB1HDOKiewqkUlFupgtTQOUYqX4ttt19f433z8QM5onfgEAAA==
+
+output: |
+  {_path:"ssl",ts:2017-03-24T19:59:23.053424Z,uid:"CfEBop2hbfJYpjG5Hd",id:{orig_h:10.10.7.90,orig_p:51913(port=uint16),resp_h:54.230.87.24,resp_p:443(port)},version:"TLSv12",cipher:"TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",curve:null(string),server_name:"choices.truste.com",resumed:true,last_alert:null(string),next_protocol:"http/1.1",established:true,cert_chain_fuids:null([string]),client_cert_chain_fuids:null([string]),subject:null(string),issuer:null(string),client_subject:null(string),client_issuer:null(string),validation_status:null(string)}

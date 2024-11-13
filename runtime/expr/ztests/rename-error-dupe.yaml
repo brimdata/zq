@@ -1,7 +1,0 @@
-zed: rename foo:=goo
-
-input: |
-  {foo:"foo1",goo:"goo1"}
-
-output: |
-  error({message:"rename: duplicate field: \"foo\"",on:{foo:"foo1",goo:"goo1"}})

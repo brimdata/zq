@@ -1,322 +1,337 @@
 package optimizer
 
 import (
-	"errors"
-
-	"github.com/brimdata/zed/compiler/ast/dag"
-	"github.com/brimdata/zed/order"
-	"github.com/brimdata/zed/pkg/field"
+	"github.com/brimdata/super/compiler/dag"
+	"github.com/brimdata/super/order"
 )
 
-func orderAsDirection(which order.Which) int {
-	if which == order.Asc {
-		return 1
+// Parallelize tries to parallelize the DAG by splitting each source
+// path as much as possible of the sequence into n parallel branches.
+func (o *Optimizer) Parallelize(seq dag.Seq, n int) (dag.Seq, error) {
+	// Compute the number of parallel paths across all input sources to
+	// achieve the desired level of concurrency.  At some point, we should
+	// use a semaphore here and let each possible path use the max concurrency.
+	if o.nent == 0 {
+		return seq, nil
 	}
-	return -1
+	concurrency := n / o.nent
+	if concurrency < 2 {
+		concurrency = 2
+	}
+	seq, err := walkEntries(seq, func(seq dag.Seq) (dag.Seq, error) {
+		if len(seq) == 0 {
+			return seq, nil
+		}
+		var front, parallel dag.Seq
+		var err error
+		if lister, slicer, rest := matchSource(seq); lister != nil {
+			// We parallelize the scanning to achieve the desired concurrency,
+			// then the step below pulls downstream operators into the parallel
+			// branches when possible, e.g., to parallelize aggregations etc.
+			front.Append(lister)
+			if slicer != nil {
+				front.Append(slicer)
+			}
+			parallel, err = o.parallelizeSeqScan(rest, n)
+		} else if scan, ok := seq[0].(*dag.FileScan); ok {
+			if !o.env.UseVAM() {
+				// Sequence runtime file scan doesn't support parallelism.
+				return seq, nil
+			}
+			front.Append(scan)
+			parallel, err = o.parallelizeFileScan(seq[1:], n)
+		}
+		if err != nil {
+			return nil, err
+		}
+		if parallel == nil {
+			// Leave the source path unmodified.
+			return seq, nil
+		}
+		// Replace the source path with the parallelized gadget.
+		return append(front, parallel...), nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	o.optimizeParallels(seq)
+	return removePassOps(seq), nil
 }
 
-// XXX assume the trunk is from a from op at seq.Ops[0] and we will
-// possible insert an operator at seq.Op[1]
-func (o *Optimizer) parallelizeTrunk(seq *dag.Sequential, trunk *dag.Trunk, replicas int) error {
-	from, ok := seq.Ops[0].(*dag.From)
+func matchSource(seq dag.Seq) (*dag.Lister, *dag.Slicer, dag.Seq) {
+	lister, ok := seq[0].(*dag.Lister)
 	if !ok {
-		return errors.New("internal error: parallelizeTrunk: entry is not a From")
+		return nil, nil, nil
 	}
-	if len(from.Trunks) > 1 {
-		// No support for multi-trunk from's yet, which only arise for
-		// joins and other peculaliar mixins of different sources.
-		// We need to handle join parallelization differently, though
-		// the logic is not very far from what's here.
-		return nil
+	seq = seq[1:]
+	slicer, ok := seq[0].(*dag.Slicer)
+	if ok {
+		seq = seq[1:]
 	}
-	if len(from.Trunks) == 0 {
-		return errors.New("internal error: no trunks in dag.From")
+	if _, ok := seq[0].(*dag.SeqScan); !ok {
+		panic("parseSource: no SeqScan")
 	}
-	egressLayout, err := o.layoutOfTrunk(trunk)
+	return lister, slicer, seq
+}
+
+func (o *Optimizer) parallelizeFileScan(seq dag.Seq, replicas int) (dag.Seq, error) {
+	// Prepend a pass so we can parallelize a sort or summarize with no
+	// preceding op.
+	seq = append(dag.Seq{dag.PassOp}, seq...)
+	n, outputKeys, _, err := o.concurrentPath(seq, nil)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	if len(egressLayout.Keys) > 1 {
-		// XXX don't yet support multi-key ordering
-		return nil
+	if n < len(seq) {
+		switch seq[n].(type) {
+		// TODO: Add dag.Sort when the vector runtime implements dag.Merge.
+		case *dag.Summarize:
+			return parallelizeHead(seq, n, outputKeys, replicas), nil
+		}
 	}
-	// This logic requires that there is only one trunk in the From,
-	// as checked above.
-	layout, err := o.layoutOfSource(trunk.Source, order.Nil)
+	return nil, nil
+}
+
+func (o *Optimizer) parallelizeSeqScan(seq dag.Seq, replicas int) (dag.Seq, error) {
+	scan := seq[0].(*dag.SeqScan)
+	if len(seq) == 1 && scan.Filter == nil {
+		// We don't try to parallelize the path if it's simply scanning and does no
+		// other work.  We might want to revisit this down the road if
+		// the system would benefit for parallel reading and merging.
+		return nil, nil
+	}
+	srcSortKeys, err := o.sortKeysOfSource(scan)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	// Check that the path consisting of the original from
+	if len(srcSortKeys) > 1 {
+		// XXX Don't yet support multi-key ordering.  See Issue #2657.
+		return nil, nil
+	}
+	// concurrentPath will check that the path consisting of the original source
 	// sequence and any lifted sequence is still parallelizable.
-	if trunk.Seq != nil && len(trunk.Seq.Ops) > 0 {
-		n, newLayout, err := o.splittablePath(trunk.Seq.Ops, layout)
-		if err != nil {
-			return err
-		}
-		if n != len(trunk.Seq.Ops) {
-			return nil
-		}
-		// If the trunk operators affect the scan layout, then update
-		// it here so the merge will properly happen below...
-		layout = newLayout
+	n, outputKeys, _, err := o.concurrentPath(seq[1:], srcSortKeys)
+	if err != nil {
+		return nil, err
 	}
-	if len(seq.Ops) < 2 {
-		// There are no operators past the trunk.  Just parallelize
-		// and merge the trunk here.
-		if err := insertMerge(seq, layout); err != nil {
-			return err
-		}
-		replicateTrunk(from, trunk, replicas)
+	return parallelizeHead(seq, n+1, outputKeys, replicas), nil
+}
+
+func parallelizeHead(seq dag.Seq, n int, outputKeys order.SortKeys, replicas int) dag.Seq {
+	// XXX Fix this to handle multi-key merge. See Issue #2657.
+	if len(outputKeys) > 1 {
 		return nil
 	}
-	switch ingress := seq.Ops[1].(type) {
-	case *dag.Join, *dag.Parallel, *dag.Sequential:
-		return nil
+	head := seq[:n]
+	tail := seq[n:]
+	scatter := &dag.Scatter{
+		Kind:  "Scatter",
+		Paths: make([]dag.Seq, replicas),
+	}
+	for k := 0; k < replicas; k++ {
+		scatter.Paths[k] = copySeq(head)
+	}
+	var merge dag.Op
+	if len(outputKeys) > 0 {
+		// At this point, we always insert a merge as we don't know if the
+		// downstream DAG requires the sort order.  A later step will look at
+		// the fanin from this parallel structure and see if the merge can be
+		// removed while also pushing additional ops from the output segment up into
+		// the parallel branches to enhance concurrency.
+		sortKey := outputKeys.Primary()
+		merge = &dag.Merge{
+			Kind:  "Merge",
+			Expr:  &dag.This{Kind: "This", Path: sortKey.Key},
+			Order: sortKey.Order,
+		}
+	} else {
+		merge = &dag.Combine{Kind: "Combine"}
+	}
+	return append(dag.Seq{scatter, merge}, tail...)
+}
+
+func (o *Optimizer) optimizeParallels(seq dag.Seq) {
+	walk(seq, false, func(seq dag.Seq) dag.Seq {
+		for ops := seq; len(ops) >= 2; ops = ops[1:] {
+			o.liftIntoParPaths(ops)
+		}
+		return seq
+	})
+}
+
+// liftIntoParPaths examines seq to see if there's an opportunity to
+// lift operations downstream from a parallel op into its parallel paths to
+// enhance concurrency.  If so, we modify the sequential ops in place.
+func (o *Optimizer) liftIntoParPaths(seq dag.Seq) {
+	if len(seq) < 2 {
+		// Need a parallel, an optional merge/combine, and something downstream.
+		return
+	}
+	paths, ok := parallelPaths(seq[0])
+	if !ok {
+		return
+	}
+	egress := 1
+	var merge *dag.Merge
+	switch op := seq[1].(type) {
+	case *dag.Merge:
+		merge = op
+		egress = 2
+	case *dag.Combine:
+		egress = 2
+	}
+	if egress >= len(seq) {
+		return
+	}
+	switch op := seq[egress].(type) {
 	case *dag.Summarize:
 		// To decompose the groupby, we split the flowgraph into branches that run up to and including a groupby,
 		// followed by a post-merge groupby that composes the results.
 		// Copy the aggregator into the tail of the trunk and arrange
 		// for partials to flow between them.
-		egress := copyOp(ingress).(*dag.Summarize)
-		egress.PartialsOut = true
-		ingress.PartialsIn = true
+		if op.PartialsIn || op.PartialsOut {
+			// Need an unmodified summarize to split into its parials pieces.
+			return
+		}
+		for k := range paths {
+			partial := copyOp(op).(*dag.Summarize)
+			partial.PartialsOut = true
+			paths[k].Append(partial)
+		}
+		op.PartialsIn = true
 		// The upstream aggregators will compute any key expressions
 		// so the ingress aggregator should simply reference the key
 		// by its name.  This loop updates the ingress to do so.
-		keys := ingress.Keys
-		for k := range keys {
-			keys[k].RHS = keys[k].LHS
+		for k := range op.Keys {
+			op.Keys[k].RHS = op.Keys[k].LHS
 		}
-		extend(trunk, egress)
-		seq.Ops[1] = ingress
-		//
-		// Add a merge-by if this is a streaming every aggregator.
-		//
-		if canOptimizeEvery(egress) {
-			// We insert a mergeby ts in front of the partialsIn aggregator.
-			// If the inbound layout doesn't match up here then the
-			// every operator won't work right so we flag
-			// a compilation error..., e.g., it's like saying
-			//   sort x | every 1h count() by _path
-			// Actually, this could work it just can't stream the
-			// every's as they finish.  We should work out this logic.
-			// Otherwise, the runtime builder will insert a simple combiner.
-			// Note: combiner has a nice flow-control feature in that it
-			// allows a fast upstream send to complete without HOL blocking
-			// while the slow guys continue on.  See Issue #2662.
-			if !layout.Primary().Equal(field.New("ts")) {
-				return errors.New("aggregation requiring 'every' semantics requires input sorted by 'ts'")
-			}
-			if err := insertMerge(seq, layout); err != nil {
-				return err
-			}
-		}
-		replicateTrunk(from, trunk, replicas)
-		return nil
 	case *dag.Sort:
-		if len(ingress.Args) > 1 {
-			// Unknown or multiple sort fields: we sort after
-			// the merge, which can be unordered.
-			replicateTrunk(from, trunk, replicas)
-			return nil
+		if len(op.Args) != 1 {
+			return
 		}
-		// Single sort field: we can sort in each parallel branch,
-		// and then do an ordered merge.
-		var mergeKey field.Path
-		if len(ingress.Args) > 0 {
-			mergeKey = fieldOf(ingress.Args[0])
-			if mergeKey == nil {
-				// Sort key is an expression instead of a
-				// field.  Don't try to sort.
-				// XXX This would be parallelizable if we
-				// did on merge on the same expression.
-				return nil
+		if merge != nil {
+			mergeKey, ok := sortKeyOfExpr(merge.Expr, merge.Order)
+			if !ok {
+				// If the merge expression isn't a field, don't try to pull it up.
+				// XXX We could generalize this to test for equal expressions by
+				// doing an expression comparison. See issue #4524.
+				return
+			}
+			sortKey := sortKeysOfSort(op)
+			if !sortKey.Equal(order.SortKeys{mergeKey}) {
+				return
 			}
 		}
-		if mergeKey == nil {
-			// No sort key.  We can parallelize the trunk
-			// but we don't lift the heuristic sort into the
-			// trunk since we don't know what to merge on since
-			// merge does not have the sort key heuristic.
-			// Also, we don't pass a merge order here since the
-			// ingress sort doesn't care.
-			return replicateAndMerge(seq, order.Nil, from, trunk, replicas)
+		for k := range paths {
+			paths[k].Append(copyOp(op))
 		}
-		// Lift sort into trunk for replication, delete the sort from
-		// the main sequence, then add back a merge to effect a merge sort.
-		extend(trunk, ingress)
-		seq.Delete(1, 1)
-		layout := order.NewLayout(ingress.Order, field.List{mergeKey})
-		return replicateAndMerge(seq, layout, from, trunk, replicas)
+		if merge == nil {
+			merge = &dag.Merge{
+				Kind:  "Merge",
+				Expr:  op.Args[0].Key,
+				Order: op.Args[0].Order,
+			}
+			if egress == 2 {
+				seq[1] = merge
+				seq[2] = dag.PassOp
+			} else {
+				seq[egress] = merge
+			}
+		} else {
+			// There already was an appropriate merge.
+			// Smash the sort into a nop.
+			seq[egress] = dag.PassOp
+		}
 	case *dag.Head, *dag.Tail:
-		if layout.IsNil() {
-			// Unknown order: we can't parallelize because we can't maintain this unknown order at the merge point.
-			return nil
+		// Copy the head or tail into the parallel path and leave the original in
+		// place which will apply another head or tail after the merge.
+		for k := range paths {
+			paths[k].Append(copyOp(op))
 		}
-		// Copy a head/tail into the trunk and leave the original in
-		// place which will apply another head/tail after the merge.
-		egress := copyOp(ingress)
-		extend(trunk, egress)
-		return replicateAndMerge(seq, layout, from, trunk, replicas)
-	case *dag.Cut, *dag.Drop, *dag.Put, *dag.Rename:
-		//XXX shouldn't these check for mergeKey = nil?
-		return replicateAndMerge(seq, layout, from, trunk, replicas)
-	default:
-		// If we're here, we reached the end of the flowgraph without
-		// coming across a merge-forcing op. If inputs are sorted,
-		// we can parallelize the entire chain and do an ordered
-		// merge. Otherwise, no parallelization.
-		if layout.IsNil() {
-			// Unknown order: we can't parallelize because
-			// we can't maintain this unknown order at the merge point,
-			// but we shouldn't care if the client doesn't care
-			// so this goes back to whether the scan order was
-			// specified in the source. See Issue #2661.
-			return nil
-		}
-		return replicateAndMerge(seq, layout, from, trunk, replicas)
-	}
-}
-
-func replicateAndMerge(seq *dag.Sequential, layout order.Layout, from *dag.From, trunk *dag.Trunk, replicas int) error {
-	if err := insertMerge(seq, layout); err != nil {
-		return err
-	}
-	replicateTrunk(from, trunk, replicas)
-	return nil
-}
-
-func insertMerge(seq *dag.Sequential, layout order.Layout) error {
-	// layout represents the order we need to preserve at exit from the
-	// parallel paths within the trunk.  It is nil if the order implied
-	// by the DAG is unknown, meaning we do not need to preserve it and
-	// thus do not need to insert a merge operator (resulting in the runtime
-	// building a more efficient combine operator).
-	if layout.IsNil() {
-		return nil
-	}
-	// XXX Fix this to handle multi-key merge. See Issue #2657.
-	head := []dag.Op{seq.Ops[0], &dag.Merge{
-		Kind:  "Merge",
-		Expr:  &dag.This{Kind: "This", Path: layout.Primary()},
-		Order: layout.Order,
-	}}
-	seq.Ops = append(head, seq.Ops[1:]...)
-	return nil
-}
-
-func replicateTrunk(from *dag.From, trunk *dag.Trunk, replicas int) {
-	// We use the same source pointer across the replicas.  This is very
-	// important as the runtime uses pointer equivalence here to determine
-	// that multiple trunks are sharing the same scan so that scan concurrency
-	// will be correctly realized.
-	src := trunk.Source
-	seq := trunk.Seq
-	if seq != nil && len(seq.Ops) == 0 {
-		seq = nil
-	}
-	for k := 0; k < replicas; k++ {
-		var newSeq *dag.Sequential
-		if seq != nil {
-			newSeq = &dag.Sequential{
-				Kind: "Sequential",
-				Ops:  copyOps(seq.Ops),
+	case *dag.Cut, *dag.Drop, *dag.Put, *dag.Rename, *dag.Filter:
+		if merge != nil {
+			// See if this op would disrupt the merge-on key
+			mergeKey, err := o.propagateSortKeyOp(merge, []order.SortKeys{nil})
+			if err != nil || mergeKey[0].IsNil() {
+				// Bail if there's a merge with a non-key expression.
+				return
+			}
+			key, err := o.propagateSortKeyOp(op, mergeKey)
+			if err != nil || !key[0].Equal(mergeKey[0]) {
+				// This operator destroys the merge order so we cannot
+				// lift it up into the parallel legs in front of the merge.
+				return
 			}
 		}
-		pd := trunk.Pushdown
-		if pd != nil {
-			pd = copyOp(pd)
+		for k := range paths {
+			paths[k].Append(copyOp(op))
 		}
-		replica := dag.Trunk{
-			Kind:      "Trunk",
-			Source:    src,
-			Seq:       newSeq,
-			Pushdown:  pd,
-			KeyPruner: trunk.KeyPruner,
-		}
-		from.Trunks = append(from.Trunks, replica)
+		// this will get removed later
+		seq[egress] = dag.PassOp
 	}
 }
 
-func canOptimizeEvery(s *dag.Summarize) bool {
-	for _, assignment := range s.Keys {
-		if call, ok := assignment.RHS.(*dag.Call); ok && call.Name == "every" {
-			return true
-		}
+func parallelPaths(op dag.Op) ([]dag.Seq, bool) {
+	if s, ok := op.(*dag.Scatter); ok {
+		return s.Paths, true
 	}
-	return false
+	if f, ok := op.(*dag.Fork); ok {
+		return f.Paths, true
+	}
+	return nil, false
 }
 
-func (o *Optimizer) layoutOfFrom(from *dag.From) (order.Layout, error) {
-	layout, err := o.layoutOfTrunk(&from.Trunks[0])
-	if err != nil {
-		return order.Nil, err
-	}
-	for k := range from.Trunks[1:] {
-		next, err := o.layoutOfTrunk(&from.Trunks[k])
-		if err != nil || !next.Equal(layout) {
-			return order.Nil, err
-		}
-	}
-	return layout, nil
-}
-
-func (o *Optimizer) layoutOfTrunk(trunk *dag.Trunk) (order.Layout, error) {
-	layout, err := o.layoutOfSource(trunk.Source, order.Nil)
-	if err != nil {
-		return order.Nil, err
-	}
-	if trunk.Seq == nil {
-		return layout, nil
-	}
-	if trunk.Pushdown != nil {
-		layout, err = o.analyzeOp(trunk.Pushdown, layout)
-		if err != nil {
-			return order.Nil, err
-		}
-	}
-	return o.analyzeOp(trunk.Seq, layout)
-}
-
-// splittablePath returns the largest path within ops from front to end that is splittable.
-// The length of the splittablePath path is returned and the stream order at
-// exit from that path is returned.  If layout is zero, then the
-// splittable path is allowed to include operators that do not guarantee
-// a stream order.  The property of the returned path is that it may be
-// executed in parallel with some way to merge of the the parallel results.
-// The layout parameter defines the input layout.
-func (o *Optimizer) splittablePath(ops []dag.Op, layout order.Layout) (int, order.Layout, error) {
-	requireOrder := !layout.IsNil()
-	if requireOrder {
-		// If the input stream is ordered, then we will preserve order,
-		// but only if we have to because there are nor order-destructive ops.
-		// Note we could be smarter here by taking into account what is
-		// in the upstream trunk, but for now, we keep it simple.  Later
-		// we will back propagate the output order desired (e.g., by noting
-		// when the user requests a sort at the output stage) and use
-		// this information to inform the scan decision (i.e., doing a more
-		// efficient unordered scan when the scan order isn't necessary).
-		// See issue #2661.
-		requireOrder = orderSensitive(ops)
-	}
-	for k := range ops {
-		switch op := ops[k].(type) {
+// concurrentPath returns the largest path within seq from front to end that can
+// be parallelized and run concurrently while preserving its semantics where
+// the input to seq is known to have an order defined by sortKey (or order.Nil
+// if unknown).
+// The length of the concurrent path is returned and the sort order at
+// exit from that path is returned.  If sortKey is zero, then the
+// concurrent path is allowed to include operators that do not guarantee
+// an output order.
+func (o *Optimizer) concurrentPath(seq dag.Seq, sortKeys order.SortKeys) (length int, outputKeys order.SortKeys, orderRequired bool, err error) {
+	for k := range seq {
+		switch op := seq[k].(type) {
 		// This should be a boolean in op.go that defines whether
 		// function can be parallelized... need to think through
 		// what the meaning is here exactly.  This is all still a bit
 		// of a heuristic.  See #2660 and #2661.
-		case *dag.Summarize, *dag.Sort, *dag.Parallel, *dag.Head, *dag.Tail, *dag.Uniq, *dag.Fuse, *dag.Sequential, *dag.Join:
-			return k, layout, nil
+		case *dag.Summarize:
+			// We want input sorted when we are preserving order into
+			// group-by so we can release values incrementally which is really
+			// important when doing a head on the group-by results
+			if isKeyOfSummarize(op, sortKeys) {
+				// Keep the input ordered so we can incrementally release
+				// results from the groupby as a streaming operation.
+				return k, sortKeys, true, nil
+			}
+			return k, nil, false, nil
+		case *dag.Sort:
+			newKeys := sortKeysOfSort(op)
+			if newKeys.IsNil() {
+				// No analysis for sort without expression since we can't
+				// parallelize the heuristic.  We should revisit these semantics
+				// and define a global order across Zed type.
+				return 0, nil, false, nil
+			}
+			return k, newKeys, false, nil
+		case *dag.Load:
+			// XXX At some point Load should have an optimization where if the
+			// upstream sort is the same as the Load destination sort we
+			// request a merge and set the Load operator to do a sorted write.
+			return k, nil, false, nil
+		case *dag.Fork, *dag.Scatter, *dag.Mirror, *dag.Head, *dag.Tail, *dag.Uniq, *dag.Fuse, *dag.Join, *dag.Output:
+			return k, sortKeys, true, nil
 		default:
-			next, err := o.analyzeOp(op, layout)
+			next, err := o.analyzeSortKeys(op, sortKeys)
 			if err != nil {
-				return 0, order.Nil, err
+				return 0, nil, false, err
 			}
-			if requireOrder && next.IsNil() {
-				return k, layout, nil
+			if !sortKeys.IsNil() && next.IsNil() {
+				return k, sortKeys, true, nil
 			}
-			layout = next
+			sortKeys = next
 		}
 	}
-	return len(ops), layout, nil
+	return len(seq), sortKeys, true, nil
 }

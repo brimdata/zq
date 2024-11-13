@@ -6,31 +6,29 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
-	"sort"
 
-	"github.com/brimdata/zed"
-	"github.com/brimdata/zed/compiler/ast/dag"
-	"github.com/brimdata/zed/lake/branches"
-	"github.com/brimdata/zed/lake/data"
-	"github.com/brimdata/zed/lake/index"
-	"github.com/brimdata/zed/lake/pools"
-	"github.com/brimdata/zed/order"
-	"github.com/brimdata/zed/pkg/storage"
-	"github.com/brimdata/zed/runtime/expr"
-	"github.com/brimdata/zed/zbuf"
-	"github.com/brimdata/zed/zio/zngio"
-	"github.com/brimdata/zed/zngbytes"
-	"github.com/brimdata/zed/zson"
-	lru "github.com/hashicorp/golang-lru/v2"
+	"github.com/brimdata/super"
+	"github.com/brimdata/super/compiler/dag"
+	"github.com/brimdata/super/lake/branches"
+	"github.com/brimdata/super/lake/data"
+	"github.com/brimdata/super/lake/pools"
+	"github.com/brimdata/super/order"
+	"github.com/brimdata/super/pkg/storage"
+	"github.com/brimdata/super/runtime/sam/expr"
+	"github.com/brimdata/super/runtime/vcache"
+	"github.com/brimdata/super/zbuf"
+	"github.com/brimdata/super/zio/zngio"
+	"github.com/brimdata/super/zngbytes"
+	"github.com/brimdata/super/zson"
+	arc "github.com/hashicorp/golang-lru/arc/v2"
 	"github.com/segmentio/ksuid"
 	"go.uber.org/zap"
 )
 
 const (
-	Version         = 3
+	Version         = 4
 	PoolsTag        = "pools"
-	IndexRulesTag   = "index_rules"
-	LakeMagicFile   = "lake.zng"
+	LakeMagicFile   = "lake.bsup"
 	LakeMagicString = "ZED LAKE"
 )
 
@@ -46,9 +44,9 @@ type Root struct {
 	logger *zap.Logger
 	path   *storage.URI
 
-	poolCache  *lru.ARCCache[ksuid.KSUID, *Pool]
-	pools      *pools.Store
-	indexRules *index.Store
+	poolCache *arc.ARCCache[ksuid.KSUID, *Pool]
+	pools     *pools.Store
+	vCache    *vcache.Cache
 }
 
 type LakeMagic struct {
@@ -57,15 +55,19 @@ type LakeMagic struct {
 }
 
 func newRoot(engine storage.Engine, logger *zap.Logger, path *storage.URI) *Root {
-	poolCache, err := lru.NewARC[ksuid.KSUID, *Pool](1024)
+	poolCache, err := arc.NewARC[ksuid.KSUID, *Pool](1024)
 	if err != nil {
 		panic(err)
+	}
+	if logger == nil {
+		logger = zap.NewNop()
 	}
 	return &Root{
 		engine:    engine,
 		logger:    logger,
 		path:      path,
 		poolCache: poolCache,
+		vCache:    vcache.NewCache(engine),
 	}
 }
 
@@ -101,13 +103,8 @@ func CreateOrOpen(ctx context.Context, engine storage.Engine, logger *zap.Logger
 
 func (r *Root) createConfig(ctx context.Context) error {
 	poolPath := r.path.JoinPath(PoolsTag)
-	rulesPath := r.path.JoinPath(IndexRulesTag)
 	var err error
 	r.pools, err = pools.CreateStore(ctx, r.engine, r.logger, poolPath)
-	if err != nil {
-		return err
-	}
-	r.indexRules, err = index.CreateStore(ctx, r.engine, rulesPath)
 	if err != nil {
 		return err
 	}
@@ -119,13 +116,11 @@ func (r *Root) loadConfig(ctx context.Context) error {
 		return err
 	}
 	poolPath := r.path.JoinPath(PoolsTag)
-	rulesPath := r.path.JoinPath(IndexRulesTag)
 	var err error
 	r.pools, err = pools.OpenStore(ctx, r.engine, r.logger, poolPath)
 	if err != nil {
 		return err
 	}
-	r.indexRules, err = index.OpenStore(ctx, r.engine, rulesPath)
 	return err
 }
 
@@ -161,7 +156,8 @@ func (r *Root) readLakeMagic(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	zr := zngio.NewReader(zed.NewContext(), reader)
+	zr := zngio.NewReader(super.NewContext(), reader)
+	defer zr.Close()
 	val, err := zr.Read()
 	if err != nil {
 		return err
@@ -174,7 +170,7 @@ func (r *Root) readLakeMagic(ctx context.Context) error {
 		return fmt.Errorf("corrupt lake version file: more than one Zed value at %s", zson.String(last))
 	}
 	var magic LakeMagic
-	if err := zson.UnmarshalZNG(val, &magic); err != nil {
+	if err := zson.UnmarshalZNG(*val, &magic); err != nil {
 		return fmt.Errorf("corrupt lake version file: %w", err)
 	}
 	if magic.Magic != LakeMagicString {
@@ -186,7 +182,7 @@ func (r *Root) readLakeMagic(ctx context.Context) error {
 	return nil
 }
 
-func (r *Root) BatchifyPools(ctx context.Context, zctx *zed.Context, f expr.Evaluator) ([]zed.Value, error) {
+func (r *Root) BatchifyPools(ctx context.Context, zctx *super.Context, f expr.Evaluator) ([]super.Value, error) {
 	m := zson.NewZNGMarshalerWithContext(zctx)
 	m.Decorate(zson.StylePackage)
 	pools, err := r.ListPools(ctx)
@@ -194,27 +190,27 @@ func (r *Root) BatchifyPools(ctx context.Context, zctx *zed.Context, f expr.Eval
 		return nil, err
 	}
 	ectx := expr.NewContext()
-	var vals []zed.Value
+	var vals []super.Value
 	for k := range pools {
 		rec, err := m.Marshal(&pools[k])
 		if err != nil {
 			return nil, err
 		}
 		if filter(zctx, ectx, rec, f) {
-			vals = append(vals, *rec)
+			vals = append(vals, rec)
 		}
 	}
 	return vals, nil
 }
 
-func (r *Root) BatchifyBranches(ctx context.Context, zctx *zed.Context, f expr.Evaluator) ([]zed.Value, error) {
+func (r *Root) BatchifyBranches(ctx context.Context, zctx *super.Context, f expr.Evaluator) ([]super.Value, error) {
 	m := zson.NewZNGMarshalerWithContext(zctx)
 	m.Decorate(zson.StylePackage)
 	poolRefs, err := r.ListPools(ctx)
 	if err != nil {
 		return nil, err
 	}
-	var vals []zed.Value
+	var vals []super.Value
 	for k := range poolRefs {
 		pool, err := r.openPool(ctx, &poolRefs[k])
 		if err != nil {
@@ -246,16 +242,11 @@ func (r *Root) PoolID(ctx context.Context, poolName string) (ksuid.KSUID, error)
 	if poolName == "" {
 		return ksuid.Nil, errors.New("no pool name given")
 	}
-	poolID, err := ksuid.Parse(poolName)
-	var poolRef *pools.Config
-	if err != nil {
-		poolRef = r.pools.LookupByName(ctx, poolName)
-		if poolRef == nil {
-			return ksuid.Nil, fmt.Errorf("%s: %w", poolName, pools.ErrNotFound)
-		}
-		poolID = poolRef.ID
+	poolRef := r.pools.LookupByName(ctx, poolName)
+	if poolRef == nil {
+		return ksuid.Nil, fmt.Errorf("%s: %w", poolName, pools.ErrNotFound)
 	}
-	return poolID, nil
+	return poolRef.ID, nil
 }
 
 func (r *Root) CommitObject(ctx context.Context, poolID ksuid.KSUID, branchName string) (ksuid.KSUID, error) {
@@ -270,20 +261,28 @@ func (r *Root) CommitObject(ctx context.Context, poolID ksuid.KSUID, branchName 
 	return branchRef.Commit, nil
 }
 
-func (r *Root) Layout(ctx context.Context, src dag.Source) order.Layout {
+func (r *Root) SortKeys(ctx context.Context, src dag.Op) order.SortKeys {
 	switch src := src.(type) {
-	case *dag.Pool:
-		if config, err := r.pools.LookupByID(ctx, src.ID); err == nil {
-			return config.Layout
+	case *dag.Lister:
+		if config, err := r.pools.LookupByID(ctx, src.Pool); err == nil {
+			return config.SortKeys
 		}
-	case *dag.CommitMeta:
+	case *dag.SeqScan:
+		if config, err := r.pools.LookupByID(ctx, src.Pool); err == nil {
+			return config.SortKeys
+		}
+	case *dag.PoolScan:
+		if config, err := r.pools.LookupByID(ctx, src.ID); err == nil {
+			return config.SortKeys
+		}
+	case *dag.CommitMetaScan:
 		if src.Tap {
 			if config, err := r.pools.LookupByID(ctx, src.Pool); err == nil {
-				return config.Layout
+				return config.SortKeys
 			}
 		}
 	}
-	return order.Nil
+	return nil
 }
 
 func (r *Root) OpenPool(ctx context.Context, id ksuid.KSUID) (*Pool, error) {
@@ -303,7 +302,7 @@ func (r *Root) openPool(ctx context.Context, config *pools.Config) (*Pool, error
 		p.Config = *config
 		return &p, nil
 	}
-	p, err := OpenPool(ctx, config, r.engine, r.logger, r.path)
+	p, err := OpenPool(ctx, r.engine, r.logger, r.path, config)
 	if err != nil {
 		return nil, err
 	}
@@ -315,7 +314,7 @@ func (r *Root) RenamePool(ctx context.Context, id ksuid.KSUID, newName string) e
 	return r.pools.Rename(ctx, id, newName)
 }
 
-func (r *Root) CreatePool(ctx context.Context, name string, layout order.Layout, seekStride int, thresh int64) (*Pool, error) {
+func (r *Root) CreatePool(ctx context.Context, name string, sortKeys order.SortKeys, seekStride int, thresh int64) (*Pool, error) {
 	if name == "HEAD" {
 		return nil, fmt.Errorf("pool cannot be named %q", name)
 	}
@@ -325,17 +324,20 @@ func (r *Root) CreatePool(ctx context.Context, name string, layout order.Layout,
 	if thresh == 0 {
 		thresh = data.DefaultThreshold
 	}
-	config := pools.NewConfig(name, layout, thresh, seekStride)
-	if err := CreatePool(ctx, config, r.engine, r.logger, r.path); err != nil {
+	if len(sortKeys) > 1 {
+		return nil, errors.New("multiple pool keys not supported")
+	}
+	config := pools.NewConfig(name, sortKeys, thresh, seekStride)
+	if err := CreatePool(ctx, r.engine, r.logger, r.path, config); err != nil {
 		return nil, err
 	}
 	pool, err := r.openPool(ctx, config)
 	if err != nil {
-		RemovePool(ctx, config, r.engine, r.path)
+		RemovePool(ctx, r.engine, r.path, config)
 		return nil, err
 	}
 	if err := r.pools.Add(ctx, config); err != nil {
-		RemovePool(ctx, config, r.engine, r.path)
+		RemovePool(ctx, r.engine, r.path, config)
 		return nil, err
 	}
 	return pool, nil
@@ -355,7 +357,7 @@ func (r *Root) RemovePool(ctx context.Context, id ksuid.KSUID) error {
 	// With no entry in the pool store, it will be inaccessible and
 	// eventually evicted by the cache's LRU algorithm.
 	r.poolCache.Remove(config.ID)
-	return RemovePool(ctx, config, r.engine, r.path)
+	return RemovePool(ctx, r.engine, r.path, config)
 }
 
 func (r *Root) CreateBranch(ctx context.Context, poolID ksuid.KSUID, name string, parent ksuid.KSUID) (*branches.Config, error) {
@@ -363,7 +365,7 @@ func (r *Root) CreateBranch(ctx context.Context, poolID ksuid.KSUID, name string
 	if err != nil {
 		return nil, err
 	}
-	return CreateBranch(ctx, config, r.engine, r.logger, r.path, name, parent)
+	return CreateBranch(ctx, r.engine, r.logger, r.path, config, name, parent)
 }
 
 func (r *Root) RemoveBranch(ctx context.Context, poolID ksuid.KSUID, name string) error {
@@ -404,78 +406,10 @@ func (r *Root) Revert(ctx context.Context, poolID ksuid.KSUID, branchName string
 	return branch.Revert(ctx, commitID, author, message)
 }
 
-func (r *Root) AddIndexRules(ctx context.Context, rules []index.Rule) error {
-	//XXX should change this to do a single commit for all of the rules
-	// and abort all if one fails.  (change Add() semantics)
-	for _, rule := range rules {
-		if err := r.indexRules.Add(ctx, rule); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (r *Root) DeleteIndexRules(ctx context.Context, ids []ksuid.KSUID) ([]index.Rule, error) {
-	deleted := make([]index.Rule, 0, len(ids))
-	for _, id := range ids {
-		rule, err := r.indexRules.Delete(ctx, id)
-		if err != nil {
-			return deleted, fmt.Errorf("index %s not found", id)
-		}
-		deleted = append(deleted, rule)
-	}
-	return deleted, nil
-}
-
-func (r *Root) LookupIndexRules(ctx context.Context, refs ...string) ([]index.Rule, error) {
-	var rules []index.Rule
-	for _, ref := range refs {
-		r, err := r.indexRules.LookupByRef(ctx, ref)
-		if err != nil {
-			return nil, err
-		}
-		rules = append(rules, r...)
-	}
-	return rules, nil
-}
-
-func (r *Root) AllIndexRules(ctx context.Context) ([]index.Rule, error) {
-	return r.indexRules.All(ctx)
-}
-
-func (r *Root) BatchifyIndexRules(ctx context.Context, zctx *zed.Context, f expr.Evaluator) ([]zed.Value, error) {
-	m := zson.NewZNGMarshalerWithContext(zctx)
-	m.Decorate(zson.StylePackage)
-	names, err := r.indexRules.Names(ctx)
-	if err != nil {
-		return nil, err
-	}
-	var vals []zed.Value
-	ectx := expr.NewContext()
-	for _, name := range names {
-		rules, err := r.indexRules.LookupByRef(ctx, name)
-		if err != nil {
-			if err == index.ErrNoSuchRule {
-				continue
-			}
-			return nil, err
-		}
-		sort.Slice(rules, func(i, j int) bool {
-			return rules[i].CreateTime() < rules[j].CreateTime()
-		})
-		for _, rule := range rules {
-			rec, err := m.Marshal(rule)
-			if err != nil {
-				return nil, err
-			}
-			if filter(zctx, ectx, rec, f) {
-				vals = append(vals, *rec)
-			}
-		}
-	}
-	return vals, nil
-}
-
-func (r *Root) Open(context.Context, *zed.Context, string, string, zbuf.Filter) (zbuf.Puller, error) {
+func (r *Root) Open(context.Context, *super.Context, string, string, zbuf.Filter) (zbuf.Puller, error) {
 	return nil, errors.New("cannot use 'file' or 'http' source in a lake query")
+}
+
+func (r *Root) VectorCache() *vcache.Cache {
+	return r.vCache
 }

@@ -6,20 +6,18 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/brimdata/zed"
-	"github.com/brimdata/zed/compiler/ast"
-	"github.com/brimdata/zed/lake/branches"
-	"github.com/brimdata/zed/lake/commits"
-	"github.com/brimdata/zed/lake/data"
-	"github.com/brimdata/zed/lake/index"
-	"github.com/brimdata/zed/lake/journal"
-	"github.com/brimdata/zed/lakeparse"
-	"github.com/brimdata/zed/pkg/storage"
-	"github.com/brimdata/zed/runtime"
-	"github.com/brimdata/zed/runtime/op"
-	"github.com/brimdata/zed/zio"
-	"github.com/brimdata/zed/zio/zngio"
-	"github.com/brimdata/zed/zson"
+	"github.com/brimdata/super"
+	"github.com/brimdata/super/compiler/parser"
+	"github.com/brimdata/super/lake/branches"
+	"github.com/brimdata/super/lake/commits"
+	"github.com/brimdata/super/lake/data"
+	"github.com/brimdata/super/lake/journal"
+	"github.com/brimdata/super/lakeparse"
+	"github.com/brimdata/super/pkg/plural"
+	"github.com/brimdata/super/pkg/storage"
+	"github.com/brimdata/super/runtime"
+	"github.com/brimdata/super/zio"
+	"github.com/brimdata/super/zson"
 	"github.com/segmentio/ksuid"
 )
 
@@ -48,7 +46,7 @@ func OpenBranch(ctx context.Context, config *branches.Config, engine storage.Eng
 	}, nil
 }
 
-func (b *Branch) Load(ctx context.Context, zctx *zed.Context, r zio.Reader, author, message, meta string) (ksuid.KSUID, error) {
+func (b *Branch) Load(ctx context.Context, zctx *super.Context, r zio.Reader, author, message, meta string) (ksuid.KSUID, error) {
 	w, err := NewWriter(ctx, zctx, b.pool)
 	if err != nil {
 		return ksuid.Nil, err
@@ -76,17 +74,13 @@ func (b *Branch) Load(ctx context.Context, zctx *zed.Context, r zio.Reader, auth
 	// with other concurrent writers (except for updating the branch pointer
 	// which is handled by Branch.commit)
 	return b.commit(ctx, func(parent *branches.Config, retries int) (*commits.Object, error) {
-		return commits.NewAddsObject(parent.Commit, retries, author, message, *appMeta, objects), nil
+		return commits.NewAddsObject(parent.Commit, retries, author, message, appMeta, objects), nil
 	})
 }
 
 func loadMessage(objects []data.Object) string {
 	var b strings.Builder
-	plural := "s"
-	if len(objects) == 1 {
-		plural = ""
-	}
-	b.WriteString(fmt.Sprintf("loaded %d data object%s\n\n", len(objects), plural))
+	b.WriteString(fmt.Sprintf("loaded %d data object%s\n\n", len(objects), plural.Slice(objects, "s")))
 	for k, o := range objects {
 		b.WriteString("  ")
 		b.WriteString(o.String())
@@ -99,11 +93,11 @@ func loadMessage(objects []data.Object) string {
 	return b.String()
 }
 
-func loadMeta(zctx *zed.Context, meta string) (*zed.Value, error) {
+func loadMeta(zctx *super.Context, meta string) (super.Value, error) {
 	if meta == "" {
-		return zed.Null, nil
+		return super.Null, nil
 	}
-	val, err := zson.ParseValue(zed.NewContext(), meta)
+	val, err := zson.ParseValue(super.NewContext(), meta)
 	if err != nil {
 		return zctx.Missing(), fmt.Errorf("%w %q: %s", ErrInvalidCommitMeta, meta, err)
 	}
@@ -126,7 +120,7 @@ func (b *Branch) Delete(ctx context.Context, ids []ksuid.KSUID, author, message 
 		}
 		if message == "" {
 			var b strings.Builder
-			fmt.Fprintf(&b, "deleted %d data object%s\n\n", len(objects), plural(objects))
+			fmt.Fprintf(&b, "deleted %d data object%s\n\n", len(objects), plural.Slice(objects, "s"))
 			printObjects(&b, objects, maxMessageObjects)
 			message = b.String()
 		}
@@ -134,15 +128,15 @@ func (b *Branch) Delete(ctx context.Context, ids []ksuid.KSUID, author, message 
 	})
 }
 
-func (b *Branch) DeleteWhere(ctx context.Context, c runtime.Compiler, program ast.Op, author, message, meta string) (ksuid.KSUID, error) {
-	zctx := zed.NewContext()
+func (b *Branch) DeleteWhere(ctx context.Context, c runtime.Compiler, ast *parser.AST, author, message, meta string) (ksuid.KSUID, error) {
+	zctx := super.NewContext()
 	appMeta, err := loadMeta(zctx, meta)
 	if err != nil {
 		return ksuid.Nil, err
 	}
 	return b.commit(ctx, func(parent *branches.Config, retries int) (*commits.Object, error) {
-		pctx := op.NewContext(ctx, zctx, nil)
-		defer pctx.Cancel()
+		rctx := runtime.NewContext(ctx, zctx)
+		defer rctx.Cancel()
 		// XXX It would be great to not do this since and just pass the snapshot
 		// into c.NewLakeDeleteQuery since we have to load the snapshot later
 		// anyways. Unfortunately there's quite a few layers of plumbing needed
@@ -151,7 +145,7 @@ func (b *Branch) DeleteWhere(ctx context.Context, c runtime.Compiler, program as
 			Pool:   b.pool.Name,
 			Branch: parent.Commit.String(),
 		}
-		query, err := c.NewLakeDeleteQuery(pctx, program, commitish)
+		query, err := c.NewLakeDeleteQuery(rctx, ast, commitish)
 		if err != nil {
 			return nil, err
 		}
@@ -160,7 +154,7 @@ func (b *Branch) DeleteWhere(ctx context.Context, c runtime.Compiler, program as
 		if err != nil {
 			return nil, err
 		}
-		err = zio.CopyWithContext(ctx, w, query.AsReader())
+		err = zio.CopyWithContext(ctx, w, runtime.AsReader(query))
 		if closeErr := w.Close(); err == nil {
 			err = closeErr
 		}
@@ -191,20 +185,21 @@ func (b *Branch) DeleteWhere(ctx context.Context, c runtime.Compiler, program as
 			}
 			var added []*data.Object
 			for _, o := range w.Objects() {
-				added = append(added, &o)
+				obj := o
+				added = append(added, &obj)
 			}
 			message = deleteWhereMessage(deletedObjs, added)
 		}
-		return patch.NewCommitObject(parent.Commit, retries, author, message, *appMeta), nil
+		return patch.NewCommitObject(parent.Commit, retries, author, message, appMeta), nil
 	})
 }
 
 func deleteWhereMessage(deleted, added []*data.Object) string {
 	var b strings.Builder
-	fmt.Fprintf(&b, "deleted %d data object%s\n\n", len(deleted), plural(deleted))
+	fmt.Fprintf(&b, "deleted %d data object%s\n\n", len(deleted), plural.Slice(deleted, "s"))
 	printObjects(&b, deleted, maxMessageObjects)
 	if len(added) > 0 {
-		fmt.Fprintf(&b, "\nadded %d data object%s\n\n", len(added), plural(added))
+		fmt.Fprintf(&b, "\nadded %d data object%s\n\n", len(added), plural.Slice(added, "s"))
 		printObjects(&b, added, maxMessageObjects-len(deleted))
 	}
 	return b.String()
@@ -217,13 +212,6 @@ func printObjects(b *strings.Builder, objects []*data.Object, maxMessageObjects 
 			b.WriteString("  ...\n")
 		}
 	}
-}
-
-func plural[S ~[]E, E any](s S) string {
-	if len(s) == 1 {
-		return ""
-	}
-	return "s"
 }
 
 func (b *Branch) Revert(ctx context.Context, commit ksuid.KSUID, author, message string) (ksuid.KSUID, error) {
@@ -247,11 +235,11 @@ func (b *Branch) Revert(ctx context.Context, commit ksuid.KSUID, author, message
 	})
 }
 
-func (b *Branch) CommitCompact(ctx context.Context, src, rollup []*data.Object, author, message, meta string) (ksuid.KSUID, error) {
+func (b *Branch) CommitCompact(ctx context.Context, src, rollup []*data.Object, rollupVecs []ksuid.KSUID, author, message, meta string) (ksuid.KSUID, error) {
 	if len(rollup) < 1 {
 		return ksuid.Nil, errors.New("compact: one or more rollup objects required")
 	}
-	zctx := zed.NewContext()
+	zctx := super.NewContext()
 	appMeta, err := loadMeta(zctx, meta)
 	if err != nil {
 		return ksuid.Nil, err
@@ -267,6 +255,11 @@ func (b *Branch) CommitCompact(ctx context.Context, src, rollup []*data.Object, 
 				return nil, err
 			}
 		}
+		for _, id := range rollupVecs {
+			if err := patch.AddVector(id); err != nil {
+				return nil, err
+			}
+		}
 		for _, o := range src {
 			if err := patch.DeleteObject(o.ID); err != nil {
 				return nil, err
@@ -274,13 +267,13 @@ func (b *Branch) CommitCompact(ctx context.Context, src, rollup []*data.Object, 
 		}
 		if message == "" {
 			var b strings.Builder
-			fmt.Fprintf(&b, "compacted %d object%s\n\n", len(src), plural(src))
+			fmt.Fprintf(&b, "compacted %d object%s\n\n", len(src), plural.Slice(src, "s"))
 			printObjects(&b, src, maxMessageObjects)
-			fmt.Fprintf(&b, "\ncreated %d object%s\n\n", len(rollup), plural(rollup))
+			fmt.Fprintf(&b, "\ncreated %d object%s\n\n", len(rollup), plural.Slice(rollup, "s"))
 			printObjects(&b, rollup, maxMessageObjects-len(src))
 			message = b.String()
 		}
-		commit := patch.NewCommitObject(parent.Commit, retries, author, message, *appMeta)
+		commit := patch.NewCommitObject(parent.Commit, retries, author, message, appMeta)
 		return commit, nil
 	})
 }
@@ -342,7 +335,7 @@ func (b *Branch) buildMergeObject(ctx context.Context, parent *branches.Config, 
 	if err != nil {
 		return nil, fmt.Errorf("error merging %q into %q: %w", b.Name, parent.Name, err)
 	}
-	return diff.NewCommitObject(parent.Commit, retries, author, message, *zed.Null), nil
+	return diff.NewCommitObject(parent.Commit, retries, author, message, super.Null), nil
 }
 
 func commonAncestor(a, b []ksuid.KSUID) ksuid.KSUID {
@@ -435,87 +428,6 @@ func (b *Branch) LookupTags(ctx context.Context, tags []ksuid.KSUID) ([]ksuid.KS
 
 func (b *Branch) Pool() *Pool {
 	return b.pool
-}
-
-func (b *Branch) ApplyIndexRules(ctx context.Context, c runtime.Compiler, rules []index.Rule, ids []ksuid.KSUID) (ksuid.KSUID, error) {
-	idxrefs := make([]*index.Object, 0, len(rules)*len(ids))
-	for _, id := range ids {
-		//XXX make issue for this.
-		// This could be easily parallized with errgroup.
-		refs, err := b.indexObject(ctx, c, rules, id)
-		if err != nil {
-			return ksuid.Nil, err
-		}
-		idxrefs = append(idxrefs, refs...)
-	}
-	author := "indexer"
-	message := indexMessage(rules)
-	return b.commit(ctx, func(parent *branches.Config, retries int) (*commits.Object, error) {
-		return commits.NewAddIndexesObject(parent.Commit, author, message, retries, idxrefs), nil
-	})
-}
-
-func (b *Branch) UpdateIndex(ctx context.Context, c runtime.Compiler, rules []index.Rule) (ksuid.KSUID, error) {
-	snap, err := b.pool.commits.Snapshot(ctx, b.Commit)
-	if err != nil {
-		return ksuid.Nil, err
-	}
-	var objects []*index.Object
-	for id, rules := range snap.Unindexed(rules) {
-		o, err := b.indexObject(ctx, c, rules, id)
-		if err != nil {
-			return ksuid.Nil, err
-		}
-		objects = append(objects, o...)
-	}
-	if len(objects) == 0 {
-		return ksuid.Nil, commits.ErrEmptyTransaction
-	}
-	const author = "indexer"
-	message := indexMessage(rules)
-	return b.commit(ctx, func(parent *branches.Config, retries int) (*commits.Object, error) {
-		return commits.NewAddIndexesObject(parent.Commit, author, message, retries, objects), nil
-	})
-}
-
-func indexMessage(rules []index.Rule) string {
-	skip := make(map[string]struct{})
-	var names []string
-	for _, r := range rules {
-		name := r.RuleName()
-		if _, ok := skip[name]; !ok {
-			skip[name] = struct{}{}
-			names = append(names, name)
-		}
-	}
-	if len(names) == 0 {
-		return ""
-	}
-	return "index rules applied: " + strings.Join(names, ",")
-}
-
-func (b *Branch) indexObject(ctx context.Context, c runtime.Compiler, rules []index.Rule, id ksuid.KSUID) ([]*index.Object, error) {
-	r, err := b.engine.Get(ctx, data.SequenceURI(b.pool.DataPath, id))
-	if err != nil {
-		return nil, err
-	}
-	reader := zngio.NewReader(zed.NewContext(), r)
-	defer reader.Close()
-	w, err := index.NewCombiner(ctx, c, b.engine, b.pool.IndexPath, rules, id)
-	if err != nil {
-		r.Close()
-		return nil, err
-	}
-	err = zio.CopyWithContext(ctx, w, reader)
-	if err != nil {
-		w.Abort()
-	} else {
-		err = w.Close()
-	}
-	if rerr := r.Close(); err == nil {
-		err = rerr
-	}
-	return w.References(), err
 }
 
 func (b *Branch) AddVectors(ctx context.Context, ids []ksuid.KSUID, author, message string) (ksuid.KSUID, error) {

@@ -1,0 +1,27 @@
+script: |
+ super - | super -z -I test.zed
+
+inputs:
+  - name: test.zed
+    data: |
+      const FILE = "A.jsup"
+      op test(path): (
+        file eval(path) |> sort a 
+      )
+      test(FILE)
+  - name: A.jsup
+    data: |
+      {a:5}
+      {a:1}
+      {a:7}
+      {a:3}
+      {a:8}
+  
+outputs:
+  - name: stdout
+    data: |
+      {a:1}
+      {a:3}
+      {a:5}
+      {a:7}
+      {a:8}

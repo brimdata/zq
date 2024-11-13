@@ -1,0 +1,19 @@
+script: |
+  echo '{a:["foo","bar","baz"]}' | super -z -c 'a := map(a,upper)' -
+  echo '{a:|["foo","bar","baz"]|}' | super -z -c 'a := map(a,upper)' -
+  echo '["1","2","3"]' | super -z -c 'yield map(this,int64)' -
+  echo '[1,2,3]' |super - | super -z -I udf.zed -
+
+inputs:
+  - name: udf.zed
+    data: |
+      func stringify(x): ( cast(x, <string>) )
+      yield map(this, stringify)
+
+outputs:
+  - name: stdout
+    data: |
+      {a:["FOO","BAR","BAZ"]}
+      {a:|["BAR","BAZ","FOO"]|}
+      [1,2,3]
+      ["1","2","3"]

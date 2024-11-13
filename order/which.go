@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/brimdata/zed"
-	"github.com/brimdata/zed/zson"
+	"github.com/brimdata/super"
+	"github.com/brimdata/super/zson"
 )
 
 type Which bool
@@ -34,6 +34,13 @@ func (w Which) String() string {
 	return "asc"
 }
 
+func (w Which) Direction() Direction {
+	if w == Desc {
+		return Down
+	}
+	return Up
+}
+
 func (w Which) MarshalJSON() ([]byte, error) {
 	return json.Marshal(w.String())
 }
@@ -54,12 +61,12 @@ func (w *Which) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-func (w Which) MarshalZNG(m *zson.MarshalZNGContext) (zed.Type, error) {
+func (w Which) MarshalZNG(m *zson.MarshalZNGContext) (super.Type, error) {
 	return m.MarshalValue(w.String())
 }
 
-func (w *Which) UnmarshalZNG(u *zson.UnmarshalZNGContext, val *zed.Value) error {
-	which, err := Parse(string(val.Bytes))
+func (w *Which) UnmarshalZNG(u *zson.UnmarshalZNGContext, val super.Value) error {
+	which, err := Parse(string(val.Bytes()))
 	if err != nil {
 		return err
 	}

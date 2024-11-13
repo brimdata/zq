@@ -1,17 +1,17 @@
 script: |
   source service.sh
-  zed create -q test
-  zed load -q -use test a.zson
-  zed load -q -use test b.zson
-  zed query -z "from test@main:objects | sort min | {min,max}"
+  super db create -q test
+  super db load -q -use test a.jsup
+  super db load -q -use test b.jsup
+  super db query -z "from test@main:objects |> sort min |> {min,max}"
 
 inputs:
   - name: service.sh
     source: service.sh
-  - name: a.zson
+  - name: a.jsup
     data: |
       {ts:1}
-  - name: b.zson
+  - name: b.jsup
     data: |
       {ts:2}
 

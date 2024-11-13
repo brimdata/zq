@@ -6,6 +6,7 @@
 ```
 any(any) -> any
 ```
+
 ### Description
 
 The _any_ aggregate function returns an arbitrary element from its input.
@@ -15,16 +16,16 @@ The semantics of how the item is selected is not defined.
 
 Any picks the first one in this scenario but this behavior is undefined:
 ```mdtest-command
-echo '1 2 3 4' | zq -z 'any(this)' -
+echo '1 2 3 4' | super -z -c 'any(this)' -
 ```
 =>
 ```mdtest-output
-{any:1}
+1
 ```
 
 Continuous any over a simple sequence:
 ```mdtest-command
-echo '1 2 3 4' | zq -z 'yield any(this)' -
+echo '1 2 3 4' | super -z -c 'yield any(this)' -
 ```
 =>
 ```mdtest-output
@@ -33,11 +34,23 @@ echo '1 2 3 4' | zq -z 'yield any(this)' -
 1
 1
 ```
+
 Any is not sensitive to mixed types as it just picks one:
 ```mdtest-command
-echo '"foo" 1 2 3 ' | zq -z 'any(this)' -
+echo '"foo" 1 2 3 ' | super -z -c 'any(this)' -
 ```
 =>
 ```mdtest-output
-{any:"foo"}
+"foo"
+```
+
+Pick from groups bucketed by key:
+```mdtest-command
+echo '{a:1,k:1} {a:2,k:1} {a:3,k:2} {a:4,k:2}' |
+  super -z -c 'any(a) by k |> sort' -
+```
+=>
+```mdtest-output
+{k:1,any:1}
+{k:2,any:3}
 ```

@@ -1,45 +1,45 @@
 script: |
-  zc -C 'switch ( case grep("a") => head case grep("c") => tail )'
+  super compile -C 'switch ( case grep("a") => head case grep("c") => tail )'
   echo ===
-  zc -C -s 'switch ( case grep("a") => head case grep("c") => tail )'
+  super compile -C -dag 'switch ( case grep("a") => head case grep("c") => tail )'
   echo ===
-  zc -C 'switch ( case grep("a") => head default => tail )'
+  super compile -C 'switch ( case grep("a") => head default => tail )'
   echo ===
-  zc -C -s 'switch ( case grep("a") => head default => tail )'
+  super compile -C -dag 'switch ( case grep("a") => head default => tail )'
 
 outputs:
   - name: stdout
     data: |
       switch (
         case grep("a") =>
-          head 1
+          head
         case grep("c") =>
-          tail 1
+          tail
       )
       ===
-      from (
-        (internal reader)
-      )
-      | switch (
+      null
+      |> switch (
           case search("a") =>
             head 1
+            |> output main
           case search("c") =>
             tail 1
+            |> output main
         )
       ===
       switch (
         case grep("a") =>
-          head 1
+          head
         default =>
-          tail 1
+          tail
       )
       ===
-      from (
-        (internal reader)
-      )
-      | switch (
+      null
+      |> switch (
           case search("a") =>
             head 1
+            |> output main
           case true =>
             tail 1
+            |> output main
         )

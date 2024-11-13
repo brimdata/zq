@@ -1,0 +1,51 @@
+script: |
+  super -z -c 'file a.jsup |> join (file b.jsup) on a=b'
+  echo '// ==='
+  super -z -c 'file a.jsup |> join (file b.jsup |> sort -r b) on a=b'
+  echo '// ==='
+  super -z -c 'file a.jsup |> join (file b.jsup |> sort b) on a=b'
+  echo '// ==='
+  super -z -c 'file a.jsup |> sort a |> join (file b.jsup |> sort -r b) on a=b'
+  echo '// ==='
+  super -z -c 'file a.jsup |> sort -r a |> join (file b.jsup) on a=b'
+  echo '// ==='
+  super -z -c 'file a.jsup |> sort -r a |> join (file b.jsup |> sort b) on a=b'
+
+inputs:
+  - name: a.jsup
+    data: |
+      {a:null(int64)}
+      {a:1}
+      {a:2}
+  - name: b.jsup
+    data: |
+      {b:2}
+      {b:1}
+      {b:null(int64)}
+
+outputs:
+  - name: stdout
+    data: |
+      {a:1}
+      {a:2}
+      {a:null(int64)}
+      // ===
+      {a:2}
+      {a:1}
+      {a:null(int64)}
+      // ===
+      {a:1}
+      {a:2}
+      {a:null(int64)}
+      // ===
+      {a:1}
+      {a:2}
+      {a:null(int64)}
+      // ===
+      {a:2}
+      {a:1}
+      {a:null(int64)}
+      // ===
+      {a:2}
+      {a:1}
+      {a:null(int64)}

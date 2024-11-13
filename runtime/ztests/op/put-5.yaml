@@ -1,0 +1,12 @@
+# Tests overwriting a record with a primitive value
+zed: put r := x
+
+vector: true
+
+input: |
+  {x:1(int32),r:{s:"hello"}}
+  {x:2(int32),r:{s:"world"}}
+
+output: |
+  {x:1(int32),r:1(int32)}
+  {x:2(int32),r:2(int32)}

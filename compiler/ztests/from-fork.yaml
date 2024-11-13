@@ -1,13 +1,13 @@
 script: |
-  zq -z 'from (file in.zson file in.zson ) | fork (=> count() => count())'
+  super -z -c 'from (file in.jsup file in.jsup ) |> fork (=> count() => count())'
 
 inputs:
-  - name: in.zson
+  - name: in.jsup
     data: |
       1
 
 outputs:
   - name: stdout
     data: |
-      {count:2(uint64)}
-      {count:2(uint64)}
+      2(uint64)
+      2(uint64)

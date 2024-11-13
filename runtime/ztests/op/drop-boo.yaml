@@ -1,0 +1,10 @@
+zed: drop boo
+
+vector: true
+
+input: &input |
+  {foo:"foo1"}
+  {foo:"foo2"}
+  {foo:"foo3"}
+
+output: *input

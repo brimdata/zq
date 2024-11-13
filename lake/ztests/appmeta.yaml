@@ -1,15 +1,15 @@
 script: |
-  export ZED_LAKE=test
-  zed init -q
-  zed create -q logs
-  zed load -q -use logs -meta '"original"' babble.zson
-  zed load -q -use logs -meta '"normalized-v1"' babble.zson
-  zed load -q -use logs -meta '"normalized-v2"' babble.zson
-  zed query "from logs@main:log | grep(normalized*, meta)| sort date | cut meta" | zq -z -
+  export SUPER_DB_LAKE=test
+  super db init -q
+  super db create -q logs
+  super db load -q -use logs -meta '"original"' babble.jsup
+  super db load -q -use logs -meta '"normalized-v1"' babble.jsup
+  super db load -q -use logs -meta '"normalized-v2"' babble.jsup
+  super db query "from logs@main:log |> grep(normalized*, meta) |> sort date |> cut meta" | super -z -
 
 inputs:
-  - name: babble.zson
-    source: ../../testdata/babble.zson
+  - name: babble.jsup
+    source: ../../testdata/babble.jsup
 
 outputs:
   - name: stdout

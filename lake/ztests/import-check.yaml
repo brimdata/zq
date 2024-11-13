@@ -1,11 +1,11 @@
 script: |
-  export ZED_LAKE=test
-  zed init -q
-  zed create -q logs
-  ! zed load -q -use logs missingfield.zson
+  export SUPER_DB_LAKE=test
+  super db init -q
+  super db create -q logs
+  ! super db load -q -use logs missingfield.jsup
 
 inputs:
-  - name: missingfield.zson
+  - name: missingfield.jsup
     data: |
       {a:"a",b:"b"} (=foo)
       {a:"a"} (foo)

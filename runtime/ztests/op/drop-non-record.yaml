@@ -1,0 +1,9 @@
+zed: drop x
+
+vector: true
+
+input: |
+  1
+
+output: |
+  1

@@ -2,121 +2,122 @@ package optimizer
 
 import (
 	"encoding/json"
+	"errors"
 	"strings"
 
-	"github.com/brimdata/zed/compiler/ast/dag"
-	"github.com/brimdata/zed/order"
-	"github.com/brimdata/zed/pkg/field"
+	"github.com/brimdata/super/compiler/dag"
+	"github.com/brimdata/super/order"
+	"github.com/brimdata/super/pkg/field"
 )
 
-// analyzeOp returns how an input order maps to an output order based
+// analyzeSortKeys returns how an input order maps to an output order based
 // on the semantics of the operator.  Note that an order can go from unknown
-// to known (e.g., sort) or from known to unknown (e.g., parallel paths).
-// Also, when op is a Summarize operator, it's input direction (where the
+// to known (e.g., sort) or from known to unknown (e.g., conflicting parallel paths).
+// Also, when op is a Summarize operator, its input direction (where the
 // order key is presumed to be the primary group-by key) is set based
-// on the layout argument.  This is clumsy and needs to change.
+// on the in sort key.  This is clumsy and needs to change.
 // See issue #2658.
-func (o *Optimizer) analyzeOp(op dag.Op, layout order.Layout) (order.Layout, error) {
+func (o *Optimizer) analyzeSortKeys(op dag.Op, in order.SortKeys) (order.SortKeys, error) {
+	switch op := op.(type) {
+	case *dag.PoolScan:
+		// Ignore in and just return the sort order of the pool.
+		pool, err := o.lookupPool(op.ID)
+		if err != nil {
+			return nil, err
+		}
+		return pool.SortKeys, nil
+	case *dag.Sort:
+		return sortKeysOfSort(op), nil
+	}
 	// We should handle secondary keys at some point.
 	// See issue #2657.
-	key := layout.Primary()
-	if key == nil {
-		return order.Nil, nil
+	if in.IsNil() {
+		return nil, nil
 	}
+	key := in.Primary()
 	switch op := op.(type) {
-	case *dag.Filter, *dag.Head, *dag.Pass, *dag.Uniq, *dag.Tail, *dag.Fuse:
-		return layout, nil
+	case *dag.Lister:
+		// This shouldn't happen.
+		return nil, errors.New("internal error: dag.Lister encountered in anaylzeSortKeys")
+	case *dag.Filter, *dag.Head, *dag.Pass, *dag.Uniq, *dag.Tail, *dag.Fuse, *dag.Output:
+		return in, nil
 	case *dag.Cut:
-		return analyzeCuts(op.Args, layout), nil
+		return analyzeCuts(op.Args, in), nil
 	case *dag.Drop:
 		for _, f := range op.Args {
-			if fieldOf(f).Equal(key) {
-				return order.Nil, nil
+			if fieldOf(f).Equal(key.Key) {
+				return nil, nil
 			}
 		}
-		return layout, nil
+		return in, nil
 	case *dag.Rename:
+		out := in
 		for _, assignment := range op.Args {
-			if fieldOf(assignment.RHS).Equal(key) {
+			if fieldOf(assignment.RHS).Equal(key.Key) {
 				lhs := fieldOf(assignment.LHS)
-				layout = order.NewLayout(layout.Order, field.List{lhs})
+				out = order.SortKeys{order.NewSortKey(key.Order, lhs)}
 			}
 		}
-		return layout, nil
+		return out, nil
 	case *dag.Summarize:
-		return analyzeOpSummarize(op, layout), nil
+		if isKeyOfSummarize(op, in) {
+			return in, nil
+		}
+		return nil, nil
 	case *dag.Put:
 		for _, assignment := range op.Args {
-			if fieldOf(assignment.LHS).Equal(key) {
-				return order.Nil, nil
+			if fieldOf(assignment.LHS).Equal(key.Key) {
+				return nil, nil
 			}
 		}
-		return layout, nil
-	case *dag.Sequential:
-		for _, op := range op.Ops {
-			var err error
-			layout, err = o.analyzeOp(op, layout)
-			if err != nil {
-				return order.Nil, err
-			}
-		}
-		return layout, nil
-	case *dag.Sort:
-		// XXX Only single sort keys.  See issue #2657.
-		if len(op.Args) != 1 {
-			return order.Nil, nil
-		}
-		newKey := fieldOf(op.Args[0])
-		if newKey == nil {
-			// Not a field
-			return order.Nil, nil
-		}
-		return order.NewLayout(op.Order, field.List{key}), nil
-	case *dag.From:
-		var egress order.Layout
-		for k := range op.Trunks {
-			trunk := &op.Trunks[k]
-			l, err := o.layoutOfSource(trunk.Source, layout)
-			if err != nil || l.IsNil() {
-				return order.Nil, err
-			}
-			l, err = o.analyzeOp(trunk.Seq, l)
-			if err != nil {
-				return order.Nil, err
-			}
-			if k == 0 {
-				egress = l
-			} else if !egress.Equal(l) {
-				return order.Nil, nil
-			}
-		}
-		return egress, nil
+		return in, nil
 	default:
-		return order.Nil, nil
+		return nil, nil
 	}
 }
 
-// summarizeOrderAndAssign determines whether its first groupby key is the
-// same as the scan order or an order-preserving function thereof, and if so,
-// sets ast.Summarize.InputSortDir to the propagated scan order.  It returns
-// the new order (or order.Nil if unknown) that will arise after the summarize
-// is applied to its input.
-func analyzeOpSummarize(summarize *dag.Summarize, layout order.Layout) order.Layout {
-	// Set p.InputSortDir and return true if the first grouping key
-	// is inputSortField or an order-preserving function of it.
-	key := layout.Keys[0]
-	if len(summarize.Keys) == 0 {
-		return order.Nil
+func sortKeysOfSort(op *dag.Sort) order.SortKeys {
+	// XXX Only single sort keys.  See issue #2657.
+	if len(op.Args) != 1 {
+		return nil
 	}
-	groupByKey := fieldOf(summarize.Keys[0].LHS)
-	if groupByKey.Equal(key) {
-		rhsExpr := summarize.Keys[0].RHS
-		rhs := fieldOf(rhsExpr)
-		if rhs.Equal(key) || orderPreservingCall(rhsExpr, groupByKey) {
-			return layout
+	key, ok := sortKeyOfExpr(op.Args[0].Key, op.Args[0].Order)
+	if !ok {
+		return nil
+	}
+	if op.Reverse {
+		key.Order = !key.Order
+	}
+	return order.SortKeys{key}
+}
+
+func sortKeyOfExpr(e dag.Expr, o order.Which) (order.SortKey, bool) {
+	key := fieldOf(e)
+	if key == nil {
+		return order.SortKey{}, false
+	}
+	return order.NewSortKey(o, key), true
+}
+
+// isKeyOfSummarize returns true iff its any of the groupby keys is the
+// same as the given primary-key sort order or an order-preserving function
+// thereof.
+func isKeyOfSummarize(summarize *dag.Summarize, in order.SortKeys) bool {
+	if in.IsNil() {
+		return false
+	}
+	key := in[0].Key
+	for _, outputKeyExpr := range summarize.Keys {
+		groupByKey := fieldOf(outputKeyExpr.LHS)
+		if groupByKey.Equal(key) {
+			rhsExpr := outputKeyExpr.RHS
+			rhs := fieldOf(rhsExpr)
+			if rhs.Equal(key) || orderPreservingCall(rhsExpr, groupByKey) {
+				return true
+			}
 		}
 	}
-	return order.Nil
+	return false
 }
 
 func orderPreservingCall(e dag.Expr, key field.Path) bool {
@@ -136,18 +137,18 @@ func orderPreservingCall(e dag.Expr, key field.Path) bool {
 	return false
 }
 
-func analyzeCuts(assignments []dag.Assignment, layout order.Layout) order.Layout {
-	key := layout.Primary()
-	if key == nil {
-		return order.Nil
+func analyzeCuts(assignments []dag.Assignment, sortKeys order.SortKeys) order.SortKeys {
+	if sortKeys.IsNil() {
+		return nil
 	}
+	key := sortKeys[0].Key
 	// This loop implements a very simple data flow analysis where we
 	// track the known order through the scoreboard.  If on exit, there
 	// is more than one field of known order, the current optimization
 	// framework cannot handle this so we return unknown (order.Nil)
 	// as a conservative stance to prevent any problematic optimizations.
 	// If there is precisely one field of known order, then that is the
-	// layout we return.  In a future version of the optimizer, we will
+	// sort key we return.  In a future version of the optimizer, we will
 	// generalize this scoreboard concept across the flowgraph for a
 	// comprehensive approach to dataflow analysis.  See issue #2756.
 	scoreboard := make(map[string]field.Path)
@@ -161,7 +162,7 @@ func analyzeCuts(assignments []dag.Assignment, layout order.Layout) order.Layout
 			// conservative in general and will miss optimization
 			// opportunities, e.g., we could do dependency
 			// analysis of a complex RHS expression.
-			return order.Nil
+			return nil
 		}
 		lhsKey := fieldKey(lhs)
 		if rhs == nil {
@@ -171,9 +172,9 @@ func analyzeCuts(assignments []dag.Assignment, layout order.Layout) order.Layout
 			// to preserve, then we can continue along by clearing
 			// the LHS from the scoreboard knowing that is being set
 			// to something that does not have a defined order.
-			dependencies, ok := fieldsOf(a.RHS)
+			dependencies, ok := FieldsOf(a.RHS)
 			if !ok {
-				return order.Nil
+				return nil
 			}
 			for _, d := range dependencies {
 				key := fieldKey(d)
@@ -182,7 +183,7 @@ func analyzeCuts(assignments []dag.Assignment, layout order.Layout) order.Layout
 					// field but we're not sophisticated
 					// enough here to know if this preserves
 					// its order...
-					return order.Nil
+					return nil
 				}
 			}
 			// There are no RHS dependencies on an ordered input.
@@ -201,10 +202,10 @@ func analyzeCuts(assignments []dag.Assignment, layout order.Layout) order.Layout
 		delete(scoreboard, lhsKey)
 	}
 	if len(scoreboard) != 1 {
-		return order.Nil
+		return nil
 	}
 	for _, f := range scoreboard {
-		return order.Layout{Keys: field.List{f}, Order: layout.Order}
+		return order.SortKeys{order.NewSortKey(sortKeys[0].Order, f)}
 	}
 	panic("unreachable")
 }
@@ -220,9 +221,9 @@ func fieldOf(e dag.Expr) field.Path {
 	return nil
 }
 
-func copyOps(ops []dag.Op) []dag.Op {
-	var copies []dag.Op
-	for _, o := range ops {
+func copySeq(seq dag.Seq) dag.Seq {
+	var copies dag.Seq
+	for _, o := range seq {
 		copies = append(copies, copyOp(o))
 	}
 	return copies
@@ -236,27 +237,14 @@ func copyOp(o dag.Op) dag.Op {
 	if err != nil {
 		panic(err)
 	}
-	copy, err := dag.UnpackJSONAsOp(b)
+	copy, err := dag.UnmarshalOp(b)
 	if err != nil {
 		panic(err)
 	}
 	return copy
 }
 
-func orderSensitive(ops []dag.Op) bool {
-	for _, op := range ops {
-		switch op.(type) {
-		case *dag.Sort, *dag.Summarize:
-			return false
-		case *dag.Parallel, *dag.From, *dag.Join:
-			// Don't try to analyze past these operators.
-			return true
-		}
-	}
-	return true
-}
-
-func fieldsOf(e dag.Expr) (field.List, bool) {
+func FieldsOf(e dag.Expr) (field.List, bool) {
 	if e == nil {
 		return nil, false
 	}
@@ -269,13 +257,13 @@ func fieldsOf(e dag.Expr) (field.List, bool) {
 	case *dag.This:
 		return field.List{e.Path}, true
 	case *dag.UnaryExpr:
-		return fieldsOf(e.Operand)
+		return FieldsOf(e.Operand)
 	case *dag.BinaryExpr:
-		lhs, ok := fieldsOf(e.LHS)
+		lhs, ok := FieldsOf(e.LHS)
 		if !ok {
 			return nil, false
 		}
-		rhs, ok := fieldsOf(e.RHS)
+		rhs, ok := FieldsOf(e.RHS)
 		if !ok {
 			return nil, false
 		}
@@ -287,7 +275,7 @@ func fieldsOf(e dag.Expr) (field.List, bool) {
 		// finish with issue #2756
 		return nil, false
 	case *dag.RegexpMatch:
-		return fieldsOf(e.Expr)
+		return FieldsOf(e.Expr)
 	case *dag.RecordExpr:
 		// finish with issue #2756
 		return nil, false

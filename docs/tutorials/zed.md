@@ -10,7 +10,7 @@ analytics? This is where the `zed` command comes in. `zed` builds on the type
 system and language found in `zq` and adds a high performance data lake on top.
 
 > Note: `zed` is currently in alpha form. Check out its current status in the
-> [`zed` README](../commands/zed.md#status).
+> [`super db` command](../commands/super-db.md#status) documentation..
 
 ## Creating a Lake
 
@@ -68,10 +68,10 @@ prs <pool_id> key created_at order desc
 ```
 
 Let's add some pull request data I've prefetched from the GitHub API
-[here](github1.zng):
+[here](github1.bsup):
 
 ```bash
-$ zed load -use prs github1.zng
+$ zed load -use prs github1.bsup
 ```
 =>
 ```
@@ -85,7 +85,7 @@ Our data has been committed. The `-use prs` argument in `zed load` tells
 
 With our data now loaded let's run a quick `count()` query to verify that we have
 the expected data. To do this we'll use the `zed query` command. To those
-familiar with [`zq`](../commands/zq.md), `zed query` operates similarly except
+familiar with [`super`](../commands/super.md), `zed query` operates similarly except
 it doesn't accept file input arguments since it queries pools.
 
 ```bash
@@ -108,7 +108,7 @@ We can run an aggregation to see who has created the most PRs during the time ra
 of this first data set:
 
 ```bash
-$ zed query 'count() by user:=user.login | sort -r count'
+$ zed query 'count() by user:=user.login |> sort count desc'
 ```
 =>
 ```
@@ -140,10 +140,10 @@ That's not a lot of data, so let's add some more.
 ## Adding additional data
 
 Additional data can be added to our pool by running `zed load` on our second
-[data set](github2.zng):
+[data set](github2.bsup):
 
 ```bash
-$ zed load github2.zng
+$ zed load github2.bsup
 ```
 
 Running our `min(created_at), max(created_at)` query, we'll see that we now have
@@ -164,7 +164,7 @@ Now let's run a bucketed aggregation to count approximate PRs per month (specifi
 bucketed in 12 equal spans of a year):
 
 ```
-$ zed query 'count() by ts:=bucket(created_at, 1y/12) | sort ts'
+$ zed query 'count() by ts:=bucket(created_at, 1y/12) |> sort ts'
 ```
 =>
 ```
@@ -184,7 +184,7 @@ and see who created these PRs:
 
 ```
 $ zed query 'from prs range 2020-04-19T16:00:00Z to 2020-05-20T02:00:00Z
-             | count() by user:=user.login | sort -r count'
+             |> count() by user:=user.login | sort count desc'
 ```
 =>
 ```
@@ -317,7 +317,7 @@ $ zed query -Z 'min(created_at), max(created_at)'
 Obviously this is only the tip of the iceberg in terms of things that can be done with
 the `zed` command. Some suggested next steps:
 
-1. Dig deeper into Zed lakes by having a look at the [`zed` README](../commands/zed.md).
+1. Dig deeper into SuperDB data lakes by having a look at the [`super db` command](../commands/super-db.md) documentation.
 2. Get a better idea of ways you can query your data by looking at the
 [Zed language documentation](../language/README.md).
 

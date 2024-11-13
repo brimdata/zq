@@ -4,16 +4,16 @@ import (
 	"context"
 	"errors"
 
-	"github.com/brimdata/zed"
-	"github.com/brimdata/zed/lake"
-	"github.com/brimdata/zed/lake/commits"
-	"github.com/brimdata/zed/runtime/op"
-	"github.com/brimdata/zed/runtime/op/meta"
-	"github.com/brimdata/zed/zbuf"
+	"github.com/brimdata/super"
+	"github.com/brimdata/super/lake"
+	"github.com/brimdata/super/lake/commits"
+	"github.com/brimdata/super/runtime"
+	"github.com/brimdata/super/runtime/sam/op/meta"
+	"github.com/brimdata/super/zbuf"
 	"github.com/segmentio/ksuid"
 )
 
-func Compact(ctx context.Context, lk *lake.Root, pool *lake.Pool, branchName string, objectIDs []ksuid.KSUID, author, message, info string) (ksuid.KSUID, error) {
+func Compact(ctx context.Context, lk *lake.Root, pool *lake.Pool, branchName string, objectIDs []ksuid.KSUID, writeVectors bool, author, message, info string) (ksuid.KSUID, error) {
 	if len(objectIDs) < 2 {
 		return ksuid.Nil, errors.New("compact: two or more source objects required")
 	}
@@ -33,12 +33,12 @@ func Compact(ctx context.Context, lk *lake.Root, pool *lake.Pool, branchName str
 		}
 		compact.AddDataObject(o)
 	}
-	zctx := zed.NewContext()
-	lister := meta.NewSortedListerFromSnap(ctx, zed.NewContext(), lk, pool, compact, nil)
-	octx := op.NewContext(ctx, zctx, nil)
+	zctx := super.NewContext()
+	lister := meta.NewSortedListerFromSnap(ctx, super.NewContext(), pool, compact, nil)
+	rctx := runtime.NewContext(ctx, zctx)
 	slicer := meta.NewSlicer(lister, zctx)
-	puller := meta.NewSequenceScanner(octx, slicer, pool, lister.Snapshot(), nil, nil, nil)
-	w := lake.NewSortedWriter(ctx, pool)
+	puller := meta.NewSequenceScanner(rctx, slicer, pool, nil, nil, nil)
+	w := lake.NewSortedWriter(ctx, zctx, pool, writeVectors)
 	if err := zbuf.CopyPuller(w, puller); err != nil {
 		puller.Pull(true)
 		w.Abort()
@@ -48,7 +48,7 @@ func Compact(ctx context.Context, lk *lake.Root, pool *lake.Pool, branchName str
 		w.Abort()
 		return ksuid.Nil, err
 	}
-	commit, err := branch.CommitCompact(ctx, compact.SelectAll(), w.Objects(), author, message, info)
+	commit, err := branch.CommitCompact(ctx, compact.SelectAll(), w.Objects(), w.Vectors(), author, message, info)
 	if err != nil {
 		w.Abort()
 		return ksuid.Nil, err

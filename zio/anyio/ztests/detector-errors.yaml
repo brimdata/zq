@@ -1,5 +1,5 @@
 script: |
-  ! zq -z -
+  ! super -z -
 
 inputs:
   - name: stdin
@@ -8,4 +8,4 @@ inputs:
 
 outputs:
   - name: stderr
-    regexp: 'csv:(.|\s)+json:(.|\s)+parquet:(.|\s)+vng:'
+    regexp: 'csv:(.|\s)+json:(.|\s)+parquet:(.|\s)+csup:'

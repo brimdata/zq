@@ -1,0 +1,29 @@
+
+script: |
+  super -z -c 'select val between lower and upper as x from in.jsup'
+  echo ===
+  super -z -c 'yield  "Cat" BETWEEN upper(lower) And upper(upper)' in.jsup
+
+inputs:
+  - name: in.jsup
+    data: |
+      {val:1,lower:5,upper:10}
+      {val:8,lower:5,upper:10}
+      {val:22,lower:5,upper:10}
+      {val:"a",lower:"bee",upper:"eel"}
+      {val:"cat",lower:"bee",upper:"eel"}
+
+outputs:
+  - name: stdout
+    data: |
+      {x:false}
+      {x:true}
+      {x:false}
+      {x:false}
+      {x:true}
+      ===
+      error({message:"upper: string arg required",on:5})
+      error({message:"upper: string arg required",on:5})
+      error({message:"upper: string arg required",on:5})
+      true
+      true

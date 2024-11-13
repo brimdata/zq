@@ -1,0 +1,16 @@
+script: |
+  super -f csup -o out.csup -
+  super dev csup -z out.csup
+
+inputs:
+  - name: stdin
+    data: |
+      1
+      1
+      1
+
+outputs:
+  - name: stdout
+    data: |
+      {Version:5(uint32),MetaSize:35(uint64),DataSize:0(uint64)}
+      {Value:1,Count:3(uint32)}(=Const)

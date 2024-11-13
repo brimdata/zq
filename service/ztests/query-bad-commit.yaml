@@ -1,7 +1,7 @@
 script: |
   source service.sh
-  zed create test
-  ! zed query "from test@doesnotexist"
+  super db create test
+  ! super db query "from test@doesnotexist"
 
 inputs:
   - name: service.sh
@@ -10,4 +10,6 @@ inputs:
 outputs:
   - name: stderr
     data: |
-      status code 404: "doesnotexist": branch not found
+      "doesnotexist": branch not found at line 1, column 11:
+      from test@doesnotexist
+                ~~~~~~~~~~~~

@@ -1,6 +1,183 @@
+## v1.18.0
+* Improve the error message shown to a user when a `zed` command is run but there's no pool/branch set for use (#5198)
+* Improve the performance of the [`load` operator](docs/language/operators/load.md) by removing an unnecessary/inefficient merge (#5200)
+* Improve the [`sort` operator](docs/language/operators/sort.md) to allow different ordering for each key (#5203, #5262)
+* Update the [Zeek reference shaper docs](docs/integrations/zeek/shaping-zeek-json.md#reference-shaper-contents) to incorporate changes for [Zeek v7.0.0](https://github.com/zeek/zeek/releases/tag/v7.0.0) logs (#5212)
+* Update the [`summarize` operator docs](docs/language/operators/summarize.md) to show the use of `by` without an [aggregate function](docs/language/aggregates/README.md) (#5216)
+* Update the [`grok` function docs](docs/language/functions/grok.md) with additional examples and guidance (#5243)
+* Update the [Lateral Subquery docs](docs/language/lateral-subqueries.md) with an emphasis on when primitive values or arrays are returned by [Lateral Expressions](docs/language/lateral-subqueries.md#lateral-expressions) (#5264)
+* The terms "pipeline" and "branch" are now used throughout the [Zed docs](docs/README.md) instead of "dataflow" and "leg" (#5272)
+* Add docs for [`lake` output format](docs/commands/super.md#superdb-data-lake-metadata-output) and [`zed ls`](docs/commands/super-db.md#ls) (#5187)
+* Add docs for the [`top` operator](docs/language/operators/top.md) (#5276)
+* Add [`fluentd` integration docs](docs/integrations/fluentd.md) (#5190, #5195)
+* Add a [`strftime` function](docs/language/functions/strftime.md) to format `time` values into strings (#5197, #5204)
+* Add a `DATESTAMP_ISO8601` [pattern](https://raw.githubusercontent.com/brimdata/super/main/pkg/grok/base.go) for use with the [`grok` function](docs/language/functions/grok.md) (#5232)
+* Fix an issue where CSV files without a final newline could not be read (#5185)
+* Fix an issue where comparisons against union values produced incorrect results (#5210)
+* Fix an issue where concurrent Zed lake operations could cause a service crash (#5279)
+
+## v1.17.0
+* Improve the performance of multi-pool searches (e.g., `from * | "MyFilter"`) (#5174)
+* Reduce the amount of memory consumed by the [`merge` operator](docs/language/operators/merge.md) and merge-dependent operations, such as compaction (#5171)
+* Add the `-pool` flag to [`zed manage`](docs/commands/super-db.md#manage) (#5164)
+* Fix an issue where the lake API was not providing query descriptions for Zed programs that contain scopes (#5152)
+* Fix an issue where attempts to use the [`load` operator](docs/language/operators/load.md) in `zq` caused a panic (#5162)
+* Fix a parser issue with collisions between the names of [user-defined operators](docs/language/statements.md#operator-statements) and [functions](docs/language/statements.md#func-statements) and some built-in [operators](docs/language/operators/README.md) (#5161)
+* Fix an issue where using `null` values in math caused a panic (#5163)
+
+## v1.16.0
+* Improve ZNG scanning performance (#5101, #5103)
+* Improve the error message shown when `zq` is invoked with a single argument that's not a valid query and doesn't contain a source (#5119)
+* Update [Zeek integration docs](docs/integrations/zeek/README.md), including [reference shaper](docs/integrations/zeek/shaping-zeek-json.md) changes for [Zeek v6.2.0](https://github.com/zeek/zeek/releases/tag/v6.2.0) data (#5106)
+* [String literals](docs/language/expressions.md#formatted-string-literals) now use the "f-string" format `f"{ <expr> }"` instead of the previous `${ <expr> }` (#5123)
+* Prototype SQL support has been dropped from the Zed language (full SQL support is expected at a later date) (#5109)
+* Empty objects and arrays in JSON output are now consistently printed on a single line (#5127)
+* Enable colorized ZSON and JSON by default when output is to a terminal (#5114)
+* Add JSON pretty print functionality (with color if supported by terminal) when activated via `-J` flag or setting format and the `-pretty` flag (#5096)
+* Add a [Grafana integration doc](docs/integrations/grafana.md) that points to the [GitHub repo for the Zed data source plugin for Grafana](https://github.com/brimdata/grafana-zed-datasource) (#5141)
+* Fix an issue where stateful expressions inside of [lateral queries](docs/language/lateral-subqueries.md) could generate incorrect results (#5069)
+* Fix an issue where stateful expressions inside [user-defined functions](docs/language/statements.md#func-statements) could generate incorrect results (#5093)
+* Fix an issue where the [Go library examples](docs/libraries/go.md) failed to compile and run (#5095, #5147)
+
+## v1.15.0
+* Improve the error message when reading NDJSON data with an incomplete last line (#5055)
+* Improve the error message when math operators are applied to complex types (e.g., attempting to concatenate arrays with `+`) (#5059)
+* Improve the error message when `zq` is called with a single argument that's neither a file nor a valid Zed query (#5053)
+* Increase the buffer size for `line` input format to 25 MB (#5045, #5048)
+* The body of a [user-defined operator](docs/language/statements.md#operator-statements) is now a scope that can include locally-defined statements (#5074)
+* The [nameof() function](docs/language/functions/nameof.md) now supports type values (#5081)
+* Fix an issue where  [`yield`](docs/language/operators/yield.md) inside a [`switch`](docs/language/operators/switch.md) inside an [`over`](docs/language/operators/over.md) caused a panic (#5058)
+* Fix an issue where accessing a variable inside a `switch` inside an `over` inside a `switch` caused a panic (#5080)
+* Fix an issue where using `over` in an expression context caused a panic (#5079)
+* Fix an issue where math and [`join`](docs/language/operators/join.md) matches involving `float16` and `float32` types could yield incorrect results (#5086)
+
+## v1.14.0
+* Add the `-manage` flag to [`zed serve`](docs/commands/super-db.md#serve) to have the Zed service process initiate [maintenance tasks](docs/commands/super-db.md#manage) on a regular interval (#5017)
+* Fix an issue where the Python client would not allow loading to a pool with `/` in its name (#5020)
+* Fix an issue where pools with KSUID-like names could not be accessed by name (#5019)
+* Fix a reference counting issue that could cause a Zed service panic (#5029, #5030)
+
+## v1.13.0
+* Improve the error message when [`zed manage -monitor`](docs/commands/super-db.md#manage) is attempted on a local lake (#4979)
+* The [`zed serve`](docs/commands/super-db.md#serve) log now includes version, storage root, and auth info at startup (#4988)
+* Add [docs for the `zed manage` command](docs/commands/super-db.md#manage) to compact data for improved performance (#4961)
+* Add the ability to [cast](docs/language/expressions.md#casts) to Zed's `type` type (#4980, #4985)
+* Add the ability to [`yield`](docs/language/operators/yield.md) a Zed `error` literal (#4998)
+* Fix an issue with accessing values inside complex literals (#4953)
+* Fix an issue where [cast](docs/language/expressions.md#casts) of an empty string to a `duration` value incorrectly yielded `0s` (#4965)
+* Fix an issue where a [`zed vacuum`](docs/commands/super-db.md#vacuum) on a large amount of data could crash the Zed service (#4974)
+* Fix an issue where some IPv6 values of Zed's `net` type were not parsed correctly in Zed queries (#4992)
+* Fix an issue where output of certain union-typed values was not consistent (#4995)
+* Fix an issue where parsing of `type` literals inside of `type` literals was incorrectly permitted (#4996)
+* Fix an issue where the [`grok()` function](docs/language/functions/grok.md) would panic when encountering optional fields (#5010)
+
+## v1.12.0
+* Zed CSV output now handles records with the same field names but different types (#4889)
+* The [`grep()` function](docs/language/functions/grep.md) now accepts variables as pattern arguments (#4887)
+* Prevent the creation of multi-key pools in Zed lakes (support for this will be added later) (#4903)
+* Zed CLI help can now be invoked via `--help` and is printed to stdout instead of stderr (#4907)
+* Symbols (e.g., `const` and `type`) may no longer be redefined within the same scope (#4930)
+* [Set types](docs/formats/zed.md#23-set) can now be [sliced](docs/language/expressions.md#slices) (#4939)
+* Canceled client requests to the Zed lake API are now logged at `info` level without stack traces (#4947)
+* Add support for [TSV](https://en.wikipedia.org/wiki/Tab-separated_values) input/output (useful for spreadsheet data) (#4891, #4913, #4912)
+* Add a [`grok()` function](docs/language/functions/grok.md) for parsing text lines (such as logs) into records (#4827)
+* Fix an issue where [`switch` operators](docs/language/operators/switch.md) could not be chained back-to-back in a Zed pipeline (#4926)
+* Fix a panic that occurred if the [`from` operator](docs/language/operators/from.md) was attempted in Zed run with `zq` (#4936)
+* Fix an "invalid union tag" panic that could occur when using the [`collect()` aggregate function](docs/language/aggregates/collect.md) (#4932)
+
+## v1.11.1
+* Fix an issue where loading and querying certain data caused a panic (#4877)
+
+## v1.11.0
+* Introduce new logic for the `zed` CLI command to [locate the lake](docs/commands/super-db.md#locating-the-lake) (#4758, #4787, #4811)
+* [Cast expressions](docs/language/expressions.md#casts) now behave more like function calls (#4805)
+* Reduce the amount of memory needed to store a Zed value (#4812)
+* Add support for unicode in keywords and identifiers (#4799, #4796)
+* Add support for dynamic field paths in "left-hand side" contexts with [`put`](docs/language/operators/put.md), [`cut`](docs/language/operators/cut.md), and [`rename`](docs/language/operators/rename.md) operators (#4795, #4802, #4832)
+* Add a [`map()` function](docs/language/functions/map.md) that applies a function to each element of an array or set. To avoid a naming clash, the aggregate function previously called `map()` is now called [`collect_map()`](docs/language/aggregates/collect_map.md) (#4806, #4856, #4860)
+* Fix an issue where a [record expression](docs/language/expressions.md#record-expressions) with duplicate fields caused a panic (#4789)
+* Fix an issue where valid ZNG input might not be read successfully via auto-detection (#4790)
+* Fix an issue where `null` values could cause [`join`](docs/language/operators/join.md) to produce incorrect output (#4801)
+* Fix a `zq` where a call to a [user-defined operator](docs/language/statements.md#operator-statements) included via `-I` could fail (#4808)
+* Fix an issue where running `zed` commands on a system with many CPU cores caused an internal error (#4826)
+* Fix an encoding issue that caused different [map values](docs/formats/zed.md#24-map) to be rendered the same in Zui (#4853)
+
+## v1.10.0
+* Sorting is now performed automatically on [`join`](docs/language/operators/join.md) inputs when needed (explicit [`sort`](docs/language/operators/sort.md) no longer required) (#4770)
+* Various query performance improvements (#4736, #4737, #4739, #4740, #4783, #4785)
+* [`join`](docs/language/operators/join.md) now works correctly when data inputs are sorted in descending order (#4767)
+* Reduce memory consumption during [`delete -where`](docs/commands/super-db.md#delete) operations (#4734)
+* Fix a `null`-handling issue that caused incorrect query results after pool compaction (#4735, #4753)
+* Allow writing of vectors when compacting objects in a pool (#4756, #4757)
+* Ensure query runtime errors are logged and made available through a new [Query Status](docs/lake/api.md#query-status) lake API endpoint (#4763, #4765, #4766, #4769)
+* Add an example to the [`where` docs](docs/language/operators/where.md) showing inverse containment logic (#4761)
+* Add an example to the [`cut` docs](docs/language/operators/cut.md) that includes setting a default value for a field (#4773, #4776)
+* Boolean `not` and `!` now both work the same in [expressions](docs/language/expressions.md#logic) and [search expressions](docs/language/search-expressions.md#boolean-logic) (#4768)
+* The [`zed` command](docs/commands/super-db.md) now returns a hint mentioning [`init`](docs/commands/super-db.md#init) if no lake exists at the expected path (#4786)
+## v1.9.0
+* The [Zed Language Overview docs](docs/language/overview.md) have been split into multiple sections (#4576)
+* Add support for [user-defined operators](docs/language/statements.md#operator-statements) (#4417, #4635, #4646, #4644, #4663, #4674, #4698, #4702, #4716)
+* Add experimental support to the [`get` operator](docs/language/operators/get.md) for customized methods, headers, and body (#4572)
+* Allow float decorators on integers in [ZSON](docs/formats/jsup.md) (#4654)
+* The [shaping docs](docs/language/shaping.md) have been expanded with a new section on [error handling](docs/language/shaping.md#error-handling) (#4686)
+* `zq` no longer attaches positional command line file inputs directly to [`join`](docs/language/operators/join.md) inputs (use [`file`](docs/language/operators/file.md) within a Zed program instead) (#4689)
+* [Zeek](https://zeek.org/)-related docs have been moved to the Integrations area of the [Zed docs site](https://zed.brimdata.io/docs) (#4694, #4696)
+* [`zed create`](docs/commands/super-db.md#create) now has a `-use` flag to set the newly-created pool as the default pool for future operations (#4656)
+* Fix an issue where the [Zed Python client](docs/libraries/python.md) was incorrectly returning `False` for all `bool` values (#4706)
+* Fix an issue where the `!=` operator was not returning correct results when comparing certain types (#4704)
+
+## v1.8.1
+* Send an HTTP 400 response instead of HTTP 500 for attempted deletes that find nothing to delete (#4618)
+* Send an HTTP 400 response instead of HTTP 500 for queries that parse ok but fail to compile, such as searches lacking a leading [`from`](docs/language/operators/from.md) (#4620)
+* Fix an issue where some regexps were not matching pool names when used in a `from` (#4619)
+
+## v1.8.0
+* Improve [`sort`](docs/language/operators/sort.md) performance for `duration` and `time` types (#4469)
+* Improve performance and reduce memory used by `zed load` and `sort` on multi-GB inputs (#4476, #4484)
+* Fix an issue where [meta-queries](docs/commands/super-db.md#meta-queries) were incorrectly returning results (#4474)
+* The [`join` operator](docs/language/operators/join.md) now has an additional syntax that uses subqueries, which is more reminiscent of SQL (#4467, #4473, #4492, #4502)
+* Improve performance when a Zed lake scan is not order sensitive (#4526)
+* The [lake API documentation](docs/lake/api.md) now includes both request & response MIME types (#4512)
+* Add more usage examples for the [`pass` operator](docs/language/operators/pass.md) in documentation (#4541)
+* [`cast()`](docs/language/functions/cast.md) errors are now structured and contain more detail (#4548)
+* A different Parquet library is now used, which allows for reading more dialects (#4547)
+* Fix an issue where reading certain ZNG files via auto-detect caused a panic (#4569)
+* Add a [`load` operator](docs/language/operators/load.md) that can be invoked in a Zed pipeline to commit data to a pool (#4471)
+* Fix an issue where certain ZNG files could not be read and caused a `control` error (#4579)
+* Fix an issue where `zed serve` would exit if it tried to write to a closed socket (#4587)
+* Improve JSON output for Zed [maps](docs/formats/zed.md#24-map) (#4589)
+* Add the [`zed vacuum`](docs/commands/super-db.md#215-vacuum) command (#4577, #4598, #4600)
+
+## v1.7.0
+* Add [`regexp_replace()`](docs/language/functions/regexp_replace.md) function for replacing regular expression matches in a string (#4435, #4449)
+* Add [documentation](docs/integrations/zed-lake-auth.md) showing how to configure Auth0 for authenticated access to a Zed lake service (#4439)
+* Fix an issue where elements of map could not be accessed if the key was of a union type (#4447)
+* Allow [`head`](docs/language/operators/head.md) operator to accept an expression (#4451)
+* Allow [`tail`](docs/language/operators/tail.md) operator to accept an expression (#4464)
+
+## v1.6.0
+
+> ## Note: Changes to the Zed lake storage format
+> 
+> This release includes a change to the Zed lake storage format that is **not**
+> backward compatible. To migrate your pools to the new format there is a 
+> [Zed lake migration](https://github.com/brimdata/zed-lake-migration) kit and
+> [specific guidance for users of the Zed CLI tools](https://github.com/brimdata/zed-lake-migration#zed-cli-tools).
+
+* Zed lake storage format is now at version 3 (#4386, #4415)
+* Allow loading and responses in [VNG](docs/formats/csup.md) format over the lake API (#4345)
+* Fix an issue where [record spread expressions](docs/language/expressions.md#record-expressions) could cause a crash (#4359)
+* Fix an issue where the Zed service `/version` endpoint returned "unknown" if it had been built via `go install` (#4371)
+* Branch-level [meta-queries](docs/commands/super-db.md#meta-queries) on the `main` branch no longer require an explicit `@main` reference (#4377, #4394)
+* Add `-defaultfmt` flag to `zed serve` to specify the lake API's default response format (#4379, #4396)
+* Zed queries now appear in the lake log when `zed serve` is run at `-log.level debug` (#4385)
+* Fix an issue where elements of complex [named types](docs/formats/zed.md#3-named-type) could not be accessed (#4391)
+* Add docs for the [`pass` operator](docs/language/operators/pass.md) and an example of [`join` on more than two inputs](docs/tutorials/join.md#joining-more-than-two-inputs) (#4403)
+* When the result of [`summarize`](docs/language/operators/summarize.md) is a single value and there is no field name specified, the output is now that single value rather than a single-field record containing that value (#4420)
+
 ## v1.5.0
 * Add `float16` primitive type (#4301)
-* Add segment compression to the [VNG](docs/formats/vng.md) format (#4299)
+* Add segment compression to the [VNG](docs/formats/csup.md) format (#4299)
 * Add `-unbuffered` flag to `zed` and `zq` (#4320)
 * Add `-csv.delim` flag to `zed` and `zq` for reading CSV with non-comma delimiter (#4325)
 * Add `csv.delim` query parameter to lake API for reading CSV with non-comma delimiter (#4333)
@@ -9,7 +186,7 @@
 * Fix an issue where type decorators of union values were leaking into CSV output (#4338)
 
 ## v1.4.0
-* The ZST format is now called [VNG](docs/formats/vng.md) (#4256)
+* The ZST format is now called [VNG](docs/formats/csup.md) (#4256)
 * Allow loading of "line" format over the lake API (#4229)
 * Allow loading of Parquet format over the lake API (#4235)
 * Allow loading of Zeek TSV format over the lake API (#4246)
@@ -18,19 +195,19 @@
 * Add pool level configuration to `zed manage` (#4234)
 * The `mask` argument of the [`network_of()` function](docs/language/functions/network_of.md) now accepts an `ip`-type netmask instead of a `net` type (#4247, #4253)
 * Drop support for the older "zng21" format (#4255)
-* Add support for [user defined functions](docs/language/overview.md#4-func-statements) (UDFs) to the Zed language (#4264)
+* Add support for [user defined functions](docs/language/statements.md#func-statements) (UDFs) to the Zed language (#4264)
 * Add journal snapshots, significantly improving performance when a pool contains many small commits (#4274)
 
 ## v1.3.0
 * Optimize performance of filters on pool key fields (#3930)
-* Improve handling of errors during [shaping](docs/language/overview.md#9-shaping) (#4067, #4069)
+* Improve handling of errors during [shaping](docs/language/shaping.md) (#4067, #4069)
 * Allow use of a pool name regexp/glob pattern with the [`from` operator](docs/language/operators/from.md) (#4072, #4075)
 * Add [`levenshtein()` function](docs/language/functions/levenshtein.md) for fuzzy string matching (#4104)
-* Allow use of any filter with [`zed delete -where`](docs/commands/zed.md#24-delete) (#4100, #4124, #4126, #4125, #4127)
+* Allow use of any filter with [`zed delete -where`](docs/commands/super-db.md#24-delete) (#4100, #4124, #4126, #4125, #4127)
 * Add [`regexp()`](docs/language/functions/regexp.md) function for regular expression searches and capture groups (#4145, #4158)
 * Add [`coalesce()`](docs/language/functions/coalesce.md) function for locating non-null/non-error values (#4172)
 * Add `line` format for sourcing newline-delimited input as strings (#4175)
-* Add [`map()` aggregation function](docs/language/aggregates/map.md) for constructing [maps](docs/formats/zed.md#24-map) #4173
+* Add [`collect_map()` aggregation function](docs/language/aggregates/collect_map.md) for constructing [maps](docs/formats/zed.md#24-map) #4173
 
 ## v1.2.0
 * Compress index values (#3974)
@@ -42,8 +219,8 @@
 * Always default to ZNG output for `-split` flag to `zed` and `zq` (#3938)
 * Number `-split` flag files sequentially for `zed` and `zq`  (#3937)
 * Remove index support for relative comparisons (#3932)
-* Support `...` spread operator in [array expressions](docs/language/overview.md#6113-array-expressions) and [set expressions](docs/language/overview.md#6114-set-expressions) (#3910)
-* [Python client](python/zed): rework `zed.Client.query_raw()` to handle any format (#3911)
+* Support `...` spread operator in [array expressions](docs/language/expressions.md#array-expressions) and [set expressions](docs/language/expressions.md#set-expressions) (#3910)
+* [Python client](python/superdb): rework `zed.Client.query_raw()` to handle any format (#3911)
 * Add support for Parquet API responses (#3909)
 * Support the indexing operation on sets (#3908)
 * Add `nullsMax` argument to [`compare() function`](docs/language/functions/compare.md) (#3898)
@@ -57,8 +234,8 @@
 * Pretty-print ZSON type values (#3819)
 * Allow conversion of time values to other numeric types (#3816)
 * Remove scaling from duration and time conversions (#3809)
-* Add [`over` expressions](docs/language/overview.md#82-lateral-expressions) (#3797)
-* Add `-where` flag to [`zed delete`](docs/commands/zed.md#24-delete) (#3791)
+* Add [`over` expressions](docs/language/lateral-subqueries.md#lateral-expressions) (#3797)
+* Add `-where` flag to [`zed delete`](docs/commands/super-db.md#24-delete) (#3791)
 * Allow base62 object IDs in lake API request bodies (#3783)
 * Remove `let` operator and [`over` operator](docs/language/operators/over.md)'s `as` clause (#3785)
 
@@ -66,23 +243,23 @@
 
 * Comprehensive [documentation](docs/README.md)
 * Substantial improvements to the [Zed language](docs/language/README.md)
-* Revamped [`zed` command](docs/commands/zed.md)
+* Revamped [`zed` command](docs/commands/super-db.md)
 * New Zed lake format (see #3634 for a migration script)
-* New version of the [ZNG format](docs/formats/zng.md) (with read-only support for the previous version)
-* New version of the [ZSON format](docs/formats/zson.md)
+* New version of the [ZNG format](docs/formats/bsup.md) (with read-only support for the previous version)
+* New version of the [ZSON format](docs/formats/jsup.md)
 
 ## v0.33.0
 
 * `zapi`: Rename the `ZED_LAKE_HOST` environment variable to `ZED_LAKE` and rename the `-host` flag to `-lake` (#3280)
 * `zq`: Improve ZNG read performance when the command line includes multiple input files (#3282)
 * `zed lake serve`: Add the `-rootcontentfile` flag  (#3283)
-* [Python client](python/zed): Improve error messages (#3279)
-* [Python client](python/zed): Fix Zed `bytes` decoding (#3278)
+* [Python client](python/superdb): Improve error messages (#3279)
+* [Python client](python/superdb): Fix Zed `bytes` decoding (#3278)
 * Detect CSV input (#3277)
 * `zed lake serve`: Fix an issue where `POST /pool/{}/branch/{}` format detection errors caused a 500 response (#3272)
 * Fix an issue where the ZSON parser failed to normalize maps and sets (#3273)
-* [Python client](python/zed): Add authentication (#3270)
-* [Python client](python/zed): Handle query errors  (#3269)
+* [Python client](python/superdb): Add authentication (#3270)
+* [Python client](python/superdb): Handle query errors  (#3269)
 * Remove support for the TZNG format (#3263)
 * `zapi`, `zed lake serve`: Add authentication with Auth0 (#3266)
 * Fix an issue preventing casting from `ip` to `ip` (#3259)
@@ -147,7 +324,7 @@
 
 As you can see below, there's been many changes since the last Zed GA release!  Highlights include:
 * The introduction of Zed lakes for data storage, which include powerful
-  Git-like branching. See the [Zed lake README](docs/commands/zed.md)
+  Git-like branching. See the [Zed lake README](docs/commands/super-db.md)
   for details.
 * Enhancements to the Zed language to unify search and expression syntax,
   introduce new operators and functions for data exploration and shaping, and
@@ -199,7 +376,7 @@ questions.
 * Add an `unflatten()` function that turns fields with dot-separated names into fields of nested records (#2277)
 * Fix an issue where querying an index in a Zed lake did not return all matched records (#2273)
 * Accept type definition names and aliases in shaper functions (#2289)
-* Add a reference [shaper for Zeek data](zeek/Shaping-Zeek-NDJSON.md) (#2300, #2368, #2448, #2489, #2601)
+* Add a reference [shaper for Zeek data](docs/integrations/zeek/shaping-zeek-json.md) (#2300, #2368, #2448, #2489, #2601)
 * Fix an issue where accessing a `null` array element in a `by` grouping caused a panic (#2310)
 * Add support for parsing timestamps with offset format `±[hh][mm]` (#2297)
 * Remove cropping from `shape()` (#2309)
@@ -237,7 +414,7 @@ questions.
 * `zq` now reads its inputs sequentially rather than the prior merged behavior (#2492)
 * Extend the `len()` function to return the number of fields in a record (#2494)
 * Remove the `-E` flag in `zed` commands that displayed `time` values as epoch (#2495)
-* Add the [Zed lake design](docs/commands/zed.md) README document (#2500, #2569, #2595, #2781, #2940, #3014, #3034, #3035)
+* Add the [Zed lake design](docs/commands/super-db.md) README document (#2500, #2569, #2595, #2781, #2940, #3014, #3034, #3035)
 * Fix an issue where escaping quotes caused a parse error (#2510)
 * Fix an issue where multiple ZSON type definitions would be output when only the first was needed (#2511)
 * Use less buffer when decoding ZSON (#2515)
@@ -258,7 +435,7 @@ questions.
 * Rework dataflow model and Zed compiler optimizations (#2669)
 * Add initial `explode` operator that can break values from complex fields out into separate records (#2673)
 * Fix an issue where including a particular `time`-typed field in a shaper script caused errors with shaping other fields (#2685)
-* Silently discard duplicate fields when reading NDJSON records, which works around [Suricata bug 4016](https://redmine.openinfosecfoundation.org/issues/4106) (#2691)
+* Silently discard duplicate fields when reading NDJSON records, which works around Suricata bug 4016 (#2691)
 * Fix an issue where ZSON type values were output without parentheses (#2700)
 * Swallow single-backslash-escaped `/` when reading NDJSON, which allows for reading default Suricata EVE output (#2697)
 * Improve the error message shown when no Zed lake root is specified (#2701, #2739)
@@ -277,7 +454,7 @@ questions.
 * Fix an issue where `len()` of a `null` array was evaluating to something greater than zero (#2761)
 * Fix an issue where `sort` with no fields was ignoring alias types and nested fields when picking a sort field (#2762)
 * Fix an issue where unexpected `cut: no record found` warnings were returned by `zed lake query` but not when the same data was queried via `zq` (#2764)
-* Move and extend the [Zeek interoperability docs](zeek/README.md) (#2770, #2782, #2830)
+* Move and extend the [Zeek interoperability docs](docs/integrations/zeek/README.md) (#2770, #2782, #2830)
 * Create endpoints in the Zed lake service API that correspond to underlying Zed lake operations, and expose them via `zapi` commands (#2741, #2774, #2786, #2775, #2794, #2795, #2796, #2920, #2925, #2928)
 * Fix an issue where `zq` would surface a syntax error when reading ZSON it had sent as output (#2792)
 * Add an `/events` endpoint to the API, which can be used by clients such as the Brim app to be notified of pool updates (#2791)
@@ -316,7 +493,7 @@ questions.
 * Fix an issue where temporary spill-to-disk directories were not being deleted upon exit (#3009, #3010)
 * Fix a ZSON issue with `union` types with alias decorators (#3015, #3016)
 * The ZSON format has been changed such that integer type IDs are no longer output (#3017)
-* Update the reference Zed shaper for Zeek ([shaper](zeek/shaper.zed), [docs](zeek/Shaping-Zeek-NDJSON.md)) to reflect changes in Zeek release v4.1.0 (#3021)
+* Update the reference Zed shaper for Zeek ([docs](docs/integrations/zeek/shaping-zeek-json.md)) to reflect changes in Zeek release v4.1.0 (#3021)
 * Fix an issue where backslash escapes in Zed regular expressions were not accepted (#3040)
 * The ZST format has been updated to work for typedef'd outer records (#3047)
 * Fix an issue where an empty string could not be output as a JSON field name (#3054)
@@ -338,7 +515,7 @@ questions.
 
 ## v0.28.0
 **NOTE** - Beginning with this release, a subset of the source code in the
-[github.com/brimdata/zed](https://github.com/brimdata/zed) GitHub repository is
+[github.com/brimdata/super](https://github.com/brimdata/super) GitHub repository is
 covered by a source-available style license, the
 [Polyform Perimeter License (PPL)](https://polyformproject.org/licenses/perimeter/1.0.0/).
 We've moved the PPL-covered code under a `ppl/` directory in the repository.
@@ -367,7 +544,7 @@ questions.
 
 * zqd: Update Zeek pointer to [v3.2.1-brim9](https://github.com/brimdata/zeek/releases/tag/v3.2.1-brim9) which provides the latest [geolocation](https://github.com/brimdata/brim/wiki/Geolocation) data (#2010)
 * zqd: Update Suricata pointer to [v5.0.3-brim1](https://github.com/brimdata/build-suricata/releases/tag/v5.0.3-brim1) which disables checksum checks, allowing for alert creation on more types of pcaps (#1975)
-* ZSON: Update [Zeek Interoperability doc](zeek/Data-Type-Compatibility.md) to include current ZSON syntax (#1956)
+* ZSON: Update [Zeek Interoperability doc](docs/integrations/zeek/data-type-compatibility.md) to include current ZSON syntax (#1956)
 * zq: Ensure the output from the [`fuse`](docs/language/operators/fuse.md) operator is deterministic (#1958)
 * zq: Fix an issue where the presence of the Greek µ character caused a ZSON read parsing error (#1967)
 * zqd: Fix an issue where Zeek events generated during pcap import and written to an archivestore were only visible after ingest completion (#1973)
@@ -410,7 +587,7 @@ questions.
 * zq: Fix an issue where returned errors could cause a panic due to type mismatches (#1720, #1727, #1728, #1740, #1773)
 * python: Fix an issue where the [Python client](https://medium.com/brim-securitys-knowledge-funnel/visualizing-ip-traffic-with-brim-zeek-and-networkx-3844a4c25a2f) did not generate an error when `zqd` was absent (#1711)
 * zql: Allow the `len()` function to work on `ip` and `net` types (#1725)
-* ZSON: Add a [draft specification](docs/formats/zson.md) of the new ZSON format (#1715, #1735, #1741, #1765)
+* ZSON: Add a [draft specification](docs/formats/jsup.md) of the new ZSON format (#1715, #1735, #1741, #1765)
 * zng: Add support for marshaling of `time` values (#1743)
 * zar: Fix an issue where a `couldn't read trailer` failure was observed during a `zar zq` query (#1748)
 * zar: Fix an issue where `zar import` of a 14 GB data set triggered a SEGV (#1766)
@@ -451,8 +628,8 @@ questions.
 
 ## v0.23.0
 * zql: Add `week` as a unit for [time grouping with `every`](docs/language/functions/every.md) (#1374)
-* zq: Fix an issue where a `null` value in a [JSON type definition](zeek/README.md) caused a failure without an error message (#1377)
-* zq: Add [`zst` format](docs/formats/vng.md) to `-i` and `-f` command-line help (#1384)
+* zq: Fix an issue where a `null` value in a [JSON type definition](docs/integrations/zeek/README.md) caused a failure without an error message (#1377)
+* zq: Add [`zst` format](docs/formats/csup.md) to `-i` and `-f` command-line help (#1384)
 * zq: ZNG spec and `zq` updates to introduce the beta ZNG storage format (#1375, #1415, #1394, #1457, #1512, #1523, #1529), also addressing the following:
    * New data type `bytes` for storing sequences of bytes encoded as base64 (#1315)
    * Improvements to the `enum` data type (#1314)
@@ -467,11 +644,11 @@ questions.
 * zqd: Check and convert alpha ZNG filestores to beta ZNG (#1574, #1576)
 * zq: Fix an issue where spill-to-disk file names could collide (#1391)
 * zq: Allow the [`fuse` operator](docs/language/operators/fuse.md) to spill-to-disk to avoid memory limitations (#1355, #1402)
-* zq: No longer require `_path` as a first column in a [JSON type definition](zeek/README.md) (#1370)
+* zq: No longer require `_path` as a first column in a [JSON type definition](docs/integrations/zeek/README.md) (#1370)
 * zql: Improve ZQL docs for [aggregate functions](docs/language/operators/summarize.md) and grouping (#1385)
 * zql: Point links for developer docs at [pkg.go.dev](https://pkg.go.dev/) instead of [godoc.org](https://godoc.org/) (#1401)
 * zq: Add support for timestamps with signed timezone offsets (#1389)
-* zq: Add a [JSON type definition](zeek/README.md) for alert events in [Suricata EVE logs](https://suricata.readthedocs.io/en/suricata-5.0.2/output/eve/eve-json-output.html) (#1400)
+* zq: Add a [JSON type definition](docs/integrations/zeek/README.md) for alert events in [Suricata EVE logs](https://suricata.readthedocs.io/en/suricata-5.0.2/output/eve/eve-json-output.html) (#1400)
 * zq: Update the [ZNG over JSON (ZJSON)](docs/formats/zjson.md) spec and implementation (#1299)
 * zar: Use buffered streaming for archive import (#1397)
 * zq: Add an `ast` command that prints parsed ZQL as its underlying JSON object (#1416)
@@ -500,7 +677,7 @@ questions.
 * zqd: Add a Python `zqd` API client for use with tools like [JupyterLab](https://jupyterlab.readthedocs.io/en/stable/) (#1564)
 
 ## v0.22.0
-* zq: Change the implementation of the `union` type to conform with the [ZNG spec](docs/formats/zng.md#3114-union-typedef) (#1245)
+* zq: Change the implementation of the `union` type to conform with the [ZNG spec](docs/formats/bsup.md#3114-union-typedef) (#1245)
 * zq: Make options/flags and version reporting consistent across CLI tools (#1249, #1254, #1256, #1296, #1323, #1334, #1328)
 * zqd: Fix an issue that was preventing flows in nanosecond pcaps from opening in Brim (#1243, #1241)
 * zq: Fix an issue where the TZNG reader did not recognize a bad record type as a syntax error (#1260)
@@ -516,7 +693,7 @@ questions.
 * zqd: Fix an issue where starting `zqd listen` created excess error messages when subdirectories were present (#1303)
 * zql: Add the [`fuse` operator](docs/language/operators/fuse.md) for unifying records under a single schema (#1310, #1319, #1324)
 * zql: Fix broken links in documentation (#1321, #1339)
-* zst: Introduce the [ZST format](docs/formats/vng.md) for columnar data based on ZNG (#1268, #1338)
+* zst: Introduce the [ZST format](docs/formats/csup.md) for columnar data based on ZNG (#1268, #1338)
 * pcap: Fix an issue where certain pcapng files could fail import with a `bad option length` error (#1341)
 * zql: [Document the `**` operator](docs/language/README.md#search-syntax) for type-specific searches that look within nested records (#1337)
 * zar: Change the archive data file layout to prepare for handing chunk files with overlapping ranges and improved S3 support (#1330)
@@ -539,7 +716,7 @@ questions.
 * zq: Fix an issue where non-adjacent record fields in Zeek TSV logs could not be read (#1225, #1218)
 * zql: Fix an issue where `cut -c` sometimes returned a "bad uvarint" error (#1227)
 * zq: Add support for empty ZNG records and empty NDJSON objects (#1228)
-* zng: Fix the tag value examples in the [ZNG spec](docs/formats/zng.md) (#1230)
+* zng: Fix the tag value examples in the [ZNG spec](docs/formats/bsup.md) (#1230)
 * zq: Update LZ4 dependency to eliminate some memory allocations (#1232)
 * zar: Add a `-sortmem` flag to allow `zar import` to use more memory to improve performance (#1203)
 * zqd: Fix an issue where file paths containing URI escape codes could not be opened in Brim (#1238)
@@ -568,7 +745,7 @@ questions.
 * zqd: Fix an issue with excess characters in Space names after upgrade (#1112)
 
 ## v0.19.0
-* zq: ZNG output is now LZ4-compressed by default (#1050, #1064, #1063, [ZNG spec](docs/formats/zng.md#313-compressed-value-message-block))
+* zq: ZNG output is now LZ4-compressed by default (#1050, #1064, #1063, [ZNG spec](docs/formats/bsup.md#313-compressed-value-message-block))
 * zar: Adjust import size threshold to account for compression (#1082)
 * zqd: Support starting `zqd` with datapath set to an S3 path (#1072)
 * zq: Fix an issue with panics during pcap import (#1090)
@@ -591,19 +768,19 @@ questions.
 * zq: Introduce spill-to-disk groupby for performing very large aggregations (#932, #963)
 * zql: Use syntax `c=count()` instead of `count() as c` for naming the field that holds the value returned by an aggregate function (#950)
 * zql: Fix an issue where attempts to `tail` too much caused a panic (#958)
-* zng: Readability improvements in the [ZNG specification](docs/formats/zng.md) (#935)
+* zng: Readability improvements in the [ZNG specification](docs/formats/bsup.md) (#935)
 * zql: Fix an issue where use of `cut`, `put`, and `cut` in the same pipeline caused a panic (#980)
 * zql: Fix an issue that was preventing the `uniq` operator from  working in the Brim app (#984)
 * zq: Fix an issue where spurious type IDs were being created (#964)
 * zql: Support renaming a field via the `cut` operator (#969)
 
 ## v0.16.0
-* zng: Readability improvements in the [ZNG specification](docs/formats/zng.md) (#897, #910, #917)
+* zng: Readability improvements in the [ZNG specification](docs/formats/bsup.md) (#897, #910, #917)
 * zq: Support directory output to S3 (#898)
 * zql: Group-by no longer emits records in "deterministic but undefined" order (#914)
 * zqd: Revise constraints on Space names (#853, #926, #944, #945)
 * zqd: Fix an issue where a file replacement race could cause an "access is denied" error in Brim during pcap import (#925)
-* zng: Revise [Zeek compatibility](zeek/Data-Type-Compatibility.md) doc (#919)
+* zng: Revise [Zeek compatibility](docs/integrations/zeek/data-type-compatibility.md) doc (#919)
 * zql: Clarify [`cut` operator documentation](docs/language/operators/cut.md) (#924)
 * zqd: Fix an issue where an invalid 1970 Space start time could be created in Brim during pcap import (#938)
 

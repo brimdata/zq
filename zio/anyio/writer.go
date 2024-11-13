@@ -4,26 +4,27 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/brimdata/zed"
-	"github.com/brimdata/zed/zio"
-	"github.com/brimdata/zed/zio/arrowio"
-	"github.com/brimdata/zed/zio/csvio"
-	"github.com/brimdata/zed/zio/jsonio"
-	"github.com/brimdata/zed/zio/lakeio"
-	"github.com/brimdata/zed/zio/parquetio"
-	"github.com/brimdata/zed/zio/tableio"
-	"github.com/brimdata/zed/zio/textio"
-	"github.com/brimdata/zed/zio/vngio"
-	"github.com/brimdata/zed/zio/zeekio"
-	"github.com/brimdata/zed/zio/zjsonio"
-	"github.com/brimdata/zed/zio/zngio"
-	"github.com/brimdata/zed/zio/zsonio"
+	"github.com/brimdata/super"
+	"github.com/brimdata/super/zio"
+	"github.com/brimdata/super/zio/arrowio"
+	"github.com/brimdata/super/zio/csvio"
+	"github.com/brimdata/super/zio/jsonio"
+	"github.com/brimdata/super/zio/lakeio"
+	"github.com/brimdata/super/zio/parquetio"
+	"github.com/brimdata/super/zio/tableio"
+	"github.com/brimdata/super/zio/textio"
+	"github.com/brimdata/super/zio/vngio"
+	"github.com/brimdata/super/zio/zeekio"
+	"github.com/brimdata/super/zio/zjsonio"
+	"github.com/brimdata/super/zio/zngio"
+	"github.com/brimdata/super/zio/zsonio"
 )
 
 type WriterOpts struct {
 	Format string
 	Lake   lakeio.WriterOpts
-	VNG    vngio.WriterOpts
+	CSV    csvio.WriterOpts
+	JSON   jsonio.WriterOpts
 	ZNG    *zngio.WriterOpts // Nil means use defaults via zngio.NewWriter.
 	ZSON   zsonio.WriterOpts
 }
@@ -32,10 +33,19 @@ func NewWriter(w io.WriteCloser, opts WriterOpts) (zio.WriteCloser, error) {
 	switch opts.Format {
 	case "arrows":
 		return arrowio.NewWriter(w), nil
+	case "bsup":
+		if opts.ZNG == nil {
+			return zngio.NewWriter(w), nil
+		}
+		return zngio.NewWriterWithOpts(w, *opts.ZNG), nil
+	case "csup":
+		return vngio.NewWriter(w), nil
 	case "csv":
-		return csvio.NewWriter(w), nil
+		return csvio.NewWriter(w, opts.CSV), nil
+	case "jsup", "":
+		return zsonio.NewWriter(w, opts.ZSON), nil
 	case "json":
-		return jsonio.NewWriter(w), nil
+		return jsonio.NewWriter(w, opts.JSON), nil
 	case "lake":
 		return lakeio.NewWriter(w, opts.Lake), nil
 	case "null":
@@ -46,19 +56,13 @@ func NewWriter(w io.WriteCloser, opts WriterOpts) (zio.WriteCloser, error) {
 		return tableio.NewWriter(w), nil
 	case "text":
 		return textio.NewWriter(w), nil
-	case "vng":
-		return vngio.NewWriter(w, opts.VNG)
+	case "tsv":
+		opts.CSV.Delim = '\t'
+		return csvio.NewWriter(w, opts.CSV), nil
 	case "zeek":
 		return zeekio.NewWriter(w), nil
 	case "zjson":
 		return zjsonio.NewWriter(w), nil
-	case "zng":
-		if opts.ZNG == nil {
-			return zngio.NewWriter(w), nil
-		}
-		return zngio.NewWriterWithOpts(w, *opts.ZNG), nil
-	case "zson", "":
-		return zsonio.NewWriter(w, opts.ZSON), nil
 	default:
 		return nil, fmt.Errorf("unknown format: %s", opts.Format)
 	}
@@ -66,7 +70,7 @@ func NewWriter(w io.WriteCloser, opts WriterOpts) (zio.WriteCloser, error) {
 
 type nullWriter struct{}
 
-func (*nullWriter) Write(*zed.Value) error {
+func (*nullWriter) Write(super.Value) error {
 	return nil
 }
 

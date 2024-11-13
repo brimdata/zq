@@ -1,0 +1,11 @@
+zed: select value - + 34 + + - 26 + - 34 + - 34 + + COALESCE ( 93, COUNT (  ) + + 44 - 16, - AVG ( + 86 ) + 12 ) / 86 * + 55 * + 46;
+
+input: |
+  null
+
+# statically typed database get 2607.9302325581393 for this answer because their
+# static analysis determines that coalesce is float64 (coerced from the avg()
+# aggregate).  This is a fundamental difference between relational and
+# polymorphic models and I think we just embrace this disparity.
+output: |
+  2402

@@ -2,10 +2,11 @@ package data
 
 import (
 	"context"
+	"fmt"
 	"io"
 
-	"github.com/brimdata/zed/lake/seekindex"
-	"github.com/brimdata/zed/pkg/storage"
+	"github.com/brimdata/super/lake/seekindex"
+	"github.com/brimdata/super/pkg/storage"
 )
 
 type Reader struct {
@@ -22,7 +23,7 @@ func (o *Object) NewReader(ctx context.Context, engine storage.Engine, path *sto
 	objectPath := o.SequenceURI(path)
 	reader, err := engine.Get(ctx, objectPath)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%s: %w", objectPath, err)
 	}
 	var r io.Reader
 	var readBytes int64

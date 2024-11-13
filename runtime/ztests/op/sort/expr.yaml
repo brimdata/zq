@@ -1,0 +1,15 @@
+zed: sort lower(this)
+
+vector: true
+
+input: |
+  "foo"
+  "C"
+  "a"
+  "Bar"
+
+output: |
+  "a"
+  "Bar"
+  "C"
+  "foo"

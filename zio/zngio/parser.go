@@ -4,14 +4,14 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"slices"
 
-	"github.com/brimdata/zed/pkg/peeker"
-	"github.com/brimdata/zed/zbuf"
-	"github.com/brimdata/zed/zcode"
-	"golang.org/x/exp/slices"
+	"github.com/brimdata/super/pkg/peeker"
+	"github.com/brimdata/super/zbuf"
+	"github.com/brimdata/super/zcode"
 )
 
-var errBadFormat = errors.New("malformed zng record")
+var errBadFormat = errors.New("malformed bsup record")
 
 // parser decodes the framing protocol for ZNG updating and resetting its
 // Zed type context in conformance with ZNG frames.
@@ -33,7 +33,7 @@ func (p *parser) read() (frame, error) {
 			// decoded by a worker will still point to the old context
 			// and the old mapper and context will continue on just fine as
 			// everything gets properly mappped to the shared context
-			// under concurrent locking within zed.Context.
+			// under concurrent locking within super.Context.
 			p.types.reset()
 			continue
 		}

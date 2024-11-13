@@ -1,18 +1,18 @@
 skip: "issue #2651"
 
 script: |
-  source services.sh s3://bucket/zedlake
-  zed new -S 20KiB test
-  zed use -q test
-  zed post babble.zson >/dev/null
+  source services.sh s3://bucket/lake
+  super db new -S 20KiB test
+  super db use -q test
+  super db post babble.jsup >/dev/null
   echo ===
-  zed info | egrep -v 'id'
+  super db info |> egrep -v 'id'
   echo ===
-  zed get -z 's=="harefoot-raucous"'
+  super db get -z 's=="harefoot-raucous"'
 
 inputs:
-  - name: babble.zson
-    source: ../../../testdata/babble.zson
+  - name: babble.jsup
+    source: ../../../testdata/babble.jsup
   - name: services.sh
     source: ../services.sh
 

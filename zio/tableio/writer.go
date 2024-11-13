@@ -7,17 +7,17 @@ import (
 	"text/tabwriter"
 	"time"
 
-	"github.com/brimdata/zed"
-	"github.com/brimdata/zed/runtime/expr"
-	"github.com/brimdata/zed/zio/zeekio"
-	"github.com/brimdata/zed/zson"
+	"github.com/brimdata/super"
+	"github.com/brimdata/super/runtime/sam/expr"
+	"github.com/brimdata/super/zio/zeekio"
+	"github.com/brimdata/super/zson"
 )
 
 type Writer struct {
 	writer    io.WriteCloser
 	flattener *expr.Flattener
 	table     *tabwriter.Writer
-	typ       *zed.TypeRecord
+	typ       *super.TypeRecord
 	limit     int
 	nline     int
 }
@@ -26,27 +26,27 @@ func NewWriter(w io.WriteCloser) *Writer {
 	table := tabwriter.NewWriter(w, 0, 8, 1, ' ', 0)
 	return &Writer{
 		writer:    w,
-		flattener: expr.NewFlattener(zed.NewContext()),
+		flattener: expr.NewFlattener(super.NewContext()),
 		table:     table,
 		limit:     1000,
 	}
 }
 
-func (w *Writer) Write(r *zed.Value) error {
-	if r.Type.Kind() != zed.RecordKind {
-		return fmt.Errorf("table output encountered non-record value: %s", zson.MustFormatValue(r))
+func (w *Writer) Write(r super.Value) error {
+	if r.Type().Kind() != super.RecordKind {
+		return fmt.Errorf("table output encountered non-record value: %s", zson.FormatValue(r))
 	}
 	r, err := w.flattener.Flatten(r)
 	if err != nil {
 		return err
 	}
-	if r.Type != w.typ {
+	if r.Type() != w.typ {
 		if w.typ != nil {
 			w.flush()
 			w.nline = 0
 		}
 		// First time, or new descriptor, print header
-		typ := zed.TypeRecordOf(r.Type)
+		typ := super.TypeRecordOf(r.Type())
 		w.writeHeader(typ)
 		w.typ = typ
 	}
@@ -59,9 +59,9 @@ func (w *Writer) Write(r *zed.Value) error {
 	for k, f := range r.Fields() {
 		var v string
 		value := r.DerefByColumn(k).MissingAsNull()
-		if f.Type == zed.TypeTime {
+		if f.Type == super.TypeTime {
 			if !value.IsNull() {
-				v = zed.DecodeTime(value.Bytes).Time().Format(time.RFC3339Nano)
+				v = super.DecodeTime(value.Bytes()).Time().Format(time.RFC3339Nano)
 			}
 		} else {
 			v = zeekio.FormatValue(value)
@@ -77,7 +77,7 @@ func (w *Writer) flush() error {
 	return w.table.Flush()
 }
 
-func (w *Writer) writeHeader(typ *zed.TypeRecord) {
+func (w *Writer) writeHeader(typ *super.TypeRecord) {
 	for i, f := range typ.Fields {
 		if i > 0 {
 			w.table.Write([]byte{'\t'})

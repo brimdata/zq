@@ -8,24 +8,17 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/brimdata/zed/api"
-	"github.com/brimdata/zed/api/client"
-	"github.com/brimdata/zed/order"
-	"github.com/brimdata/zed/pkg/field"
-	"github.com/brimdata/zed/pkg/nano"
-	"github.com/brimdata/zed/pkg/storage"
-	"github.com/brimdata/zed/runtime/exec"
-	"github.com/brimdata/zed/service"
+	"github.com/brimdata/super/api"
+	"github.com/brimdata/super/api/client"
+	"github.com/brimdata/super/pkg/nano"
+	"github.com/brimdata/super/pkg/storage"
+	"github.com/brimdata/super/runtime/exec"
+	"github.com/brimdata/super/service"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/segmentio/ksuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-var defaultLayout = order.Layout{
-	Order: order.Desc,
-	Keys:  field.DottedList("ts"),
-}
 
 func TestQuery(t *testing.T) {
 	src := `
@@ -35,14 +28,14 @@ func TestQuery(t *testing.T) {
 	expected := `{_path:"b",ts:1970-01-01T00:00:01Z}
 `
 	_, conn := newCore(t)
-	poolID := conn.TestPoolPost(api.PoolPostRequest{Name: "test", Layout: defaultLayout})
+	poolID := conn.TestPoolPost(api.PoolPostRequest{Name: "test"})
 	conn.TestLoad(poolID, "main", strings.NewReader(src))
-	assert.Equal(t, expected, conn.TestQuery("from test | _path == 'b'"))
+	assert.Equal(t, expected, conn.TestQuery("from test |> _path == 'b'"))
 }
 
 func TestQueryEmptyPool(t *testing.T) {
 	_, conn := newCore(t)
-	conn.TestPoolPost(api.PoolPostRequest{Name: "test", Layout: defaultLayout})
+	conn.TestPoolPost(api.PoolPostRequest{Name: "test"})
 	assert.Equal(t, "", conn.TestQuery("from test"))
 }
 
@@ -57,9 +50,9 @@ func TestQueryGroupByReverse(t *testing.T) {
 {ts:1970-01-01T00:00:01Z,count:2(uint64)}
 `
 	_, conn := newCore(t)
-	poolID := conn.TestPoolPost(api.PoolPostRequest{Name: "test", Layout: defaultLayout})
+	poolID := conn.TestPoolPost(api.PoolPostRequest{Name: "test"})
 	conn.TestLoad(poolID, "main", strings.NewReader(src))
-	require.Equal(t, counts, "\n"+conn.TestQuery("from test | count() by every(1s)"))
+	require.Equal(t, counts, "\n"+conn.TestQuery("from test |> count() by every(1s)"))
 }
 
 func TestPoolStats(t *testing.T) {
@@ -68,7 +61,7 @@ func TestPoolStats(t *testing.T) {
 {_path:"conn",ts:1970-01-01T00:00:02Z,uid:"C8Tful1TvM3Zf5x8fl"}
 `
 	_, conn := newCore(t)
-	poolID := conn.TestPoolPost(api.PoolPostRequest{Name: "test", Layout: defaultLayout})
+	poolID := conn.TestPoolPost(api.PoolPostRequest{Name: "test"})
 	conn.TestLoad(poolID, "main", strings.NewReader(src))
 
 	span := nano.Span{Ts: 1e9, Dur: 1e9 + 1}
@@ -81,7 +74,7 @@ func TestPoolStats(t *testing.T) {
 
 func TestPoolStatsNoData(t *testing.T) {
 	_, conn := newCore(t)
-	poolID := conn.TestPoolPost(api.PoolPostRequest{Name: "test", Layout: defaultLayout})
+	poolID := conn.TestPoolPost(api.PoolPostRequest{Name: "test"})
 	info := conn.TestPoolStats(poolID)
 	expected := exec.PoolStats{
 		Size: 0,
@@ -204,60 +197,6 @@ func TestEventsHandler(t *testing.T) {
 	require.NoError(t, ev.Close())
 }
 
-/*
-	Not yet
-
-	func TestIndexSearch(t *testing.T) {
-		t.Skip("issue #2532")
-		thresh := int64(1000)
-
-		pool, err := conn.TestPoolPost(context.Background(), api.PoolPostRequest{
-			Name:   "TestIndexSearch",
-			Thresh: thresh,
-		})
-		require.NoError(t, err)
-		// babbleSorted must be used because regular babble isn't fully sorted and
-		// generates an overlap which on compaction deletes certain indices. We
-		// should be able to remove this once #1656 is completed and we have some
-		// api way of determining if compactions are complete.
-		_, err = conn.LogPost(context.Background(), pool.ID, nil, babbleSorted)
-		require.NoError(t, err)
-		err = conn.IndexPost(context.Background(), pool.ID, api.IndexPostRequest{
-			Patterns: []string{"v"},
-		})
-		require.NoError(t, err)
-
-		exp := `
-
-{key:257,count:1(uint64),first:2020-04-22T01:23:02.06699522Z,last:2020-04-22T01:13:34.06491752Z}(=0)
-{key:257,count:1,first:2020-04-22T00:52:28.0632538Z,last:2020-04-22T00:43:20.06892251Z}(0)
-{key:257,count:1,first:2020-04-21T23:37:25.0693411Z,last:2020-04-21T23:28:29.06845389Z}(0)
-{key:257,count:1,first:2020-04-21T23:28:23.06774599Z,last:2020-04-21T23:19:42.064686Z}(0)
-{key:257,count:1,first:2020-04-21T23:11:06.06396109Z,last:2020-04-21T23:01:02.069881Z}(0)
-{key:257,count:1,first:2020-04-21T22:51:17.06450528Z,last:2020-04-21T22:40:30.06852324Z}(0)
-`
-
-		res, _ := indexSearch(t, conn, pool.ID, "", []string{"v=257"})
-		assert.Equal(t, test.Trim(exp), zsonCopy(t, "drop _log", res))
-	}
-
-	func indexSearch(t *testing.T, conn *testClient, pool ksuid.KSUID, indexName string, patterns []string) (string, []interface{}) {
-		req := api.IndexSearchRequest{
-			IndexName: indexName,
-			Patterns:  patterns,
-		}
-		r, err := conn.IndexSearch(context.Background(), pool, req, nil)
-		require.NoError(t, err)
-		buf := bytes.NewBuffer(nil)
-		w := zsonio.NewWriter(zio.NopCloser(buf), zsonio.WriterOpts{})
-		var msgs []interface{}
-		r.SetOnCtrl(func(i interface{}) {
-			msgs = append(msgs, i)
-		})
-		require.NoError(t, zio.Copy(w, r))
-		return buf.String(), msgs
-	}
-*/
 func newCore(t *testing.T) (*service.Core, *testClient) {
 	root := t.TempDir()
 	return newCoreAtDir(t, root)

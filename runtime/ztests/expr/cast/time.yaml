@@ -1,0 +1,17 @@
+zed: time(this)
+
+vector: true
+
+input: |
+  "2023-10-19T23:11:20.999803Z"
+  "1e18"
+  "foo"
+  -1e9
+  1e200
+
+output: |
+  2023-10-19T23:11:20.999803Z
+  2001-09-09T01:46:40Z
+  error({message:"cannot cast to time",on:"foo"})
+  1969-12-31T23:59:59Z
+  error({message:"cannot cast to time",on:1e+200})

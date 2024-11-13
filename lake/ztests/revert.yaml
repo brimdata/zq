@@ -1,23 +1,22 @@
 script: |
-  export ZED_LAKE=test
-  zed init -q
-  zed create -q test
-  zed use -q test
-  a=$(zed load a.zson | head -1 | awk '{print $1}')
-  b=$(zed load b.zson | head -1 | awk '{print $1}')
-  zed query -z "sort this"
-  zed revert -q $a
+  export SUPER_DB_LAKE=test
+  super db init -q
+  super db create -use -q test
+  a=$(super db load a.jsup | head -1 | awk '{print $1}')
+  b=$(super db load b.jsup | head -1 | awk '{print $1}')
+  super db query -z "from test |> sort this"
+  super db revert -q $a
   echo ===
-  zed query -z "sort this"
-  zed revert -q $b
+  super db query -z "from test |> sort this"
+  super db revert -q $b
   echo ===
-  zed query -z "sort this"
+  super db query -z "from test |> sort this"
 
 inputs:
-  - name: a.zson
+  - name: a.jsup
     data: |
       {a:1}
-  - name: b.zson
+  - name: b.jsup
     data: |
       {b:1}
 

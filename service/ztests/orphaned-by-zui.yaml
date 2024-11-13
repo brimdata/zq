@@ -1,0 +1,16 @@
+script: |
+  source mockzui.sh
+  super db create test
+  echo ===
+  kill -9 $MOCKZUI_PID 2>/dev/null
+  awaitdeadservice
+
+inputs:
+  - name: mockzui.sh
+    source: mockzui.sh
+
+outputs:
+  - name: stdout
+    regexp: |
+      pool created: test \w{27}
+      ===

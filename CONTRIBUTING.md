@@ -2,27 +2,29 @@
 
 Thank you for contributing to `zed`!
 
-Per common practice, please [open an issue](https://github.com/brimdata/zed/issues)
+Per common practice, please [open an issue](https://github.com/brimdata/super/issues)
 before sending a pull request.  If you think your ideas might benefit from some
 refinement via Q&A, come talk to us on [Slack](https://www.brimdata.io/join-slack/) as well.
 
 `zed` is early in its life cycle and will be expanding quickly.  Please star and/or
 watch the repo so you can follow and track our progress.
 
-In particular, we will be adding many more processors and aggregate functions.
+In particular, we will be adding many more operators and aggregate functions.
 If you want a fun, small project to help out, pick some functionality that is missing and
-add a processor in [runtime/op](runtime/op) or an aggregate function
-in [runtime/expr/agg](runtime/expr/agg).
+add an operator in [runtime/sam/op](runtime/sam/op) or an aggregate function
+in [runtime/sam/expr/agg](runtime/sam/expr/agg).
 
 
 ## Development
 
-`zed` requires Go 1.19 or later, and uses [Go modules](https://github.com/golang/go/wiki/Modules).
+`zed` requires Go 1.23 or later, and uses [Go modules](https://github.com/golang/go/wiki/Modules).
+Compilation for 32-bit target environments is not currently supported
+(see [super/4044](https://github.com/brimdata/super/issues/4044)).
 Dependencies are specified in the [`go.mod` file](./go.mod) and fetched
 automatically by commands like `go build` and `go test`.  No explicit
 fetch commands are necessary.  However, you must set the environment
 variable `GO111MODULE=on` if your repo is at
-`$GOPATH/src/github.com/brimdata/zed`.
+`$GOPATH/src/github.com/brimdata/super`.
 
 When `go.mod` or its companion `go.sum` are modified during development, run
 `go mod tidy` and then commit the changes to both files.

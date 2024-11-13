@@ -1,19 +1,39 @@
-package zed_test
+package super_test
 
 import (
 	"testing"
 
-	"github.com/brimdata/zed"
-	"github.com/brimdata/zed/zcode"
+	"github.com/brimdata/super"
+	"github.com/brimdata/super/zcode"
 	"github.com/stretchr/testify/assert"
 )
 
+func TestNewStringNotNull(t *testing.T) {
+	assert.NotNil(t, super.NewString("").Bytes())
+}
+
+func BenchmarkValueUnder(b *testing.B) {
+	b.Run("primitive", func(b *testing.B) {
+		val := super.Null
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			val.Under()
+		}
+	})
+	b.Run("named", func(b *testing.B) {
+		typ, _ := super.NewContext().LookupTypeNamed("name", super.TypeNull)
+		val := super.NewValue(typ, nil)
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			val.Under()
+		}
+	})
+}
+
 func TestValueValidate(t *testing.T) {
-	r := zed.NewValue(
-		zed.NewTypeRecord(0, []zed.Field{
-			zed.NewField("f", zed.NewTypeSet(0, zed.TypeString)),
-		}),
-		nil)
+	recType := super.NewTypeRecord(0, []super.Field{
+		super.NewField("f", super.NewTypeSet(0, super.TypeString)),
+	})
 	t.Run("set/error/duplicate-element", func(t *testing.T) {
 		var b zcode.Builder
 		b.BeginContainer()
@@ -21,8 +41,8 @@ func TestValueValidate(t *testing.T) {
 		b.Append([]byte("dup"))
 		// Don't normalize.
 		b.EndContainer()
-		r.Bytes = b.Bytes()
-		assert.EqualError(t, r.Validate(), "invalid ZNG: duplicate set element")
+		val := super.NewValue(recType, b.Bytes())
+		assert.EqualError(t, val.Validate(), "invalid ZNG: duplicate set element")
 	})
 	t.Run("set/error/unsorted-elements", func(t *testing.T) {
 		var b zcode.Builder
@@ -32,8 +52,8 @@ func TestValueValidate(t *testing.T) {
 		b.Append([]byte("b"))
 		// Don't normalize.
 		b.EndContainer()
-		r.Bytes = b.Bytes()
-		assert.EqualError(t, r.Validate(), "invalid ZNG: set elements not sorted")
+		val := super.NewValue(recType, b.Bytes())
+		assert.EqualError(t, val.Validate(), "invalid ZNG: set elements not sorted")
 	})
 	t.Run("set/primitive-elements", func(t *testing.T) {
 		var b zcode.Builder
@@ -42,10 +62,10 @@ func TestValueValidate(t *testing.T) {
 		b.Append([]byte("dup"))
 		b.Append([]byte("z"))
 		b.Append([]byte("a"))
-		b.TransformContainer(zed.NormalizeSet)
+		b.TransformContainer(super.NormalizeSet)
 		b.EndContainer()
-		r.Bytes = b.Bytes()
-		assert.NoError(t, r.Validate())
+		val := super.NewValue(recType, b.Bytes())
+		assert.NoError(t, val.Validate())
 	})
 	t.Run("set/complex-elements", func(t *testing.T) {
 		var b zcode.Builder
@@ -55,12 +75,12 @@ func TestValueValidate(t *testing.T) {
 			b.Append([]byte(s))
 			b.EndContainer()
 		}
-		b.TransformContainer(zed.NormalizeSet)
+		b.TransformContainer(super.NormalizeSet)
 		b.EndContainer()
-		r := zed.NewValue(
-			zed.NewTypeRecord(0, []zed.Field{
-				zed.NewField("f", zed.NewTypeSet(0, zed.NewTypeRecord(0, []zed.Field{
-					zed.NewField("g", zed.TypeString),
+		r := super.NewValue(
+			super.NewTypeRecord(0, []super.Field{
+				super.NewField("f", super.NewTypeSet(0, super.NewTypeRecord(0, []super.Field{
+					super.NewField("g", super.TypeString),
 				}))),
 			}),
 			b.Bytes())

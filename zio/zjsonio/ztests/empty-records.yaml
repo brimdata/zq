@@ -1,4 +1,4 @@
-zed: '*'
+zed: pass
 
 input: |
   {ja3s:null(int32)}

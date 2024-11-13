@@ -7,10 +7,10 @@ import (
 	"io/fs"
 	"regexp"
 
-	"github.com/brimdata/zed"
-	"github.com/brimdata/zed/order"
-	"github.com/brimdata/zed/pkg/storage"
-	"github.com/brimdata/zed/runtime/expr/extent"
+	"github.com/brimdata/super"
+	"github.com/brimdata/super/order"
+	"github.com/brimdata/super/pkg/storage"
+	"github.com/brimdata/super/runtime/sam/expr/extent"
 	"github.com/segmentio/ksuid"
 )
 
@@ -48,7 +48,7 @@ func (k FileKind) Description() string {
 // eliminate round-trips, especially when you are ready sub-ranges of
 // cached data files!
 
-var fileRegex = regexp.MustCompile(`([0-9A-Za-z]{27}-(data|meta)).zng$`)
+var fileRegex = regexp.MustCompile(`([0-9A-Za-z]{27}-(data|meta)).bsup$`)
 
 // XXX this won't work right until we integrate segID
 func FileMatch(s string) (kind FileKind, id ksuid.KSUID, ok bool) {
@@ -77,8 +77,8 @@ func FileMatch(s string) (kind FileKind, id ksuid.KSUID, ok bool) {
 // persisted to storage (i.e., its compressed size).
 type Object struct {
 	ID    ksuid.KSUID `zed:"id"`
-	Min   zed.Value   `zed:"min"`
-	Max   zed.Value   `zed:"max"`
+	Min   super.Value `zed:"min"`
+	Max   super.Value `zed:"max"`
 	Count uint64      `zed:"count"`
 	Size  int64       `zed:"size"`
 }
@@ -96,10 +96,6 @@ func plural(ordinal int) string {
 		return ""
 	}
 	return "s"
-}
-
-func (o Object) StringRange() string {
-	return fmt.Sprintf("%s %s %s", o.ID, o.Min, o.Max)
 }
 
 func (o *Object) Equal(to *Object) bool {
@@ -126,11 +122,15 @@ func (o Object) SequenceURI(path *storage.URI) *storage.URI {
 }
 
 func SequenceURI(path *storage.URI, id ksuid.KSUID) *storage.URI {
-	return path.JoinPath(fmt.Sprintf("%s.zng", id))
+	return path.JoinPath(fmt.Sprintf("%s.bsup", id))
 }
 
 func (o Object) SeekIndexURI(path *storage.URI) *storage.URI {
-	return path.JoinPath(fmt.Sprintf("%s-seek.zng", o.ID))
+	return SeekIndexURI(path, o.ID)
+}
+
+func SeekIndexURI(path *storage.URI, id ksuid.KSUID) *storage.URI {
+	return path.JoinPath(fmt.Sprintf("%s-seek.bsup", id))
 }
 
 func (o Object) VectorURI(path *storage.URI) *storage.URI {
@@ -138,12 +138,7 @@ func (o Object) VectorURI(path *storage.URI) *storage.URI {
 }
 
 func VectorURI(path *storage.URI, id ksuid.KSUID) *storage.URI {
-	return path.JoinPath(fmt.Sprintf("%s.vng", id))
-}
-
-func (o Object) Range() string {
-	//XXX need to handle any key... will the String method work?
-	return fmt.Sprintf("[%d-%d]", o.Min, o.Max)
+	return path.JoinPath(fmt.Sprintf("%s.csup", id))
 }
 
 // Remove deletes the row object and its seek index.

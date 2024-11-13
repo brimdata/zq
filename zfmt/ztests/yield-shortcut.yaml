@@ -1,15 +1,15 @@
 script: |
-  zc -C '{x:1,...y}'
-  zc -C '[1,2,3]'
-  zc -C '|["foo","bar"]|'
-  zc -C '|{"foo":1,"bar":2}|'
-  zc -C '<(int64,string)>(1)'
+  super compile -C '{x:1,...y}'
+  super compile -C '[1,2,3]'
+  super compile -C '|["foo","bar"]|'
+  super compile -C '|{"foo":1,"bar":2}|'
+  super compile -C '<(int64,string)>(1)'
   echo "==="
-  zc -s -C '{x:1,...y}'
-  zc -s -C '[1,2,3]'
-  zc -s -C '|["foo","bar"]|'
-  zc -s -C '|{"foo":1,"bar":2}|'
-  zc -s -C '<(int64,string)>(1)'
+  super compile -dag -C '{x:1,...y}'
+  super compile -dag -C '[1,2,3]'
+  super compile -dag -C '|["foo","bar"]|'
+  super compile -dag -C '|{"foo":1,"bar":2}|'
+  super compile -dag -C '<(int64,string)>(1)'
 
 outputs:
   - name: stdout
@@ -20,23 +20,18 @@ outputs:
       yield |{"foo":1,"bar":2}|
       yield <(int64,string)>(1)
       ===
-      from (
-        (internal reader)
-      )
-      | yield {x:1,...y}
-      from (
-        (internal reader)
-      )
-      | yield [1,2,3]
-      from (
-        (internal reader)
-      )
-      | yield |["foo","bar"]|
-      from (
-        (internal reader)
-      )
-      | yield |{"foo":1,"bar":2}|
-      from (
-        (internal reader)
-      )
-      | yield cast(1, <(int64,string)>)
+      null
+      |> yield {x:1,...y}
+      |> output main
+      null
+      |> yield [1,2,3]
+      |> output main
+      null
+      |> yield |["foo","bar"]|
+      |> output main
+      null
+      |> yield |{"foo":1,"bar":2}|
+      |> output main
+      null
+      |> yield cast(1, <(int64,string)>)
+      |> output main

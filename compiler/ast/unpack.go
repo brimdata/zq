@@ -2,124 +2,140 @@ package ast
 
 import (
 	"encoding/json"
-	"errors"
+	"fmt"
 
-	astzed "github.com/brimdata/zed/compiler/ast/zed"
-	"github.com/brimdata/zed/pkg/unpack"
+	"github.com/brimdata/super/pkg/unpack"
 )
 
 var unpacker = unpack.New(
-	astzed.Array{},
+	Array{},
 	ArrayExpr{},
+	Assert{},
 	Assignment{},
 	OpAssignment{},
 	OpExpr{},
 	BinaryExpr{},
 	Call{},
+	CaseExpr{},
 	Cast{},
-	astzed.CastValue{},
+	CastValue{},
 	Conditional{},
 	ConstDecl{},
 	Cut{},
-	astzed.DefValue{},
+	Debug{},
+	DefValue{},
 	Drop{},
 	Explode{},
-	astzed.Enum{},
-	astzed.Error{},
-	Field{},
-	File{},
+	Enum{},
+	Error{},
+	ExprEntity{},
+	FieldExpr{},
+	FormatArg{},
 	From{},
+	FromElem{},
+	FString{},
+	FStringExpr{},
+	FStringText{},
 	FuncDecl{},
 	Fuse{},
 	Summarize{},
 	Grep{},
 	Head{},
-	HTTP{},
+	HTTPArgs{},
 	ID{},
-	astzed.ImpliedValue{},
+	ImpliedValue{},
+	IndexExpr{},
 	Join{},
-	Layout{},
-	Let{},
+	Load{},
 	Merge{},
+	Output{},
 	Over{},
-	Trunk{},
-	astzed.Map{},
+	Map{},
 	MapExpr{},
 	Shape{},
 	OverExpr{},
 	Parallel{},
 	Pass{},
-	Pool{},
-	astzed.Primitive{},
+	PoolArgs{},
+	Primitive{},
 	Put{},
-	astzed.Record{},
+	Record{},
 	Agg{},
 	Regexp{},
 	Glob{},
 	RecordExpr{},
 	Rename{},
+	Scope{},
 	Search{},
-	Sequential{},
-	astzed.Set{},
+	Set{},
 	SetExpr{},
 	Spread{},
-	SQLExpr{},
-	SQLOrderBy{},
+	SliceExpr{},
 	Sort{},
-	String{},
+	Name{},
+	OpDecl{},
 	Switch{},
 	Tail{},
 	Term{},
 	Top{},
-	astzed.TypeArray{},
-	astzed.TypeDef{},
-	astzed.TypeEnum{},
-	astzed.TypeError{},
-	astzed.TypeMap{},
-	astzed.TypeName{},
-	astzed.TypeNull{},
-	astzed.TypePrimitive{},
-	astzed.TypeRecord{},
-	astzed.TypeSet{},
-	astzed.TypeUnion{},
-	astzed.TypeValue{},
+	TypeArray{},
+	TypeDef{},
+	TypeDecl{},
+	TypeEnum{},
+	TypeError{},
+	TypeMap{},
+	TypeName{},
+	TypeNull{},
+	TypePrimitive{},
+	TypeRecord{},
+	TypeSet{},
+	TypeUnion{},
+	TypeValue{},
 	UnaryExpr{},
 	Uniq{},
 	VectorValue{},
 	Where{},
 	Yield{},
+	Sample{},
+	Delete{},
+	LakeMeta{},
+	// SuperSQL
+	SQLPipe{},
+	Select{},
+	Ordinality{},
+	CrossJoin{},
+	SQLJoin{},
+	Union{},
+	OrderBy{},
+	Limit{},
+	With{},
+	JoinOnExpr{},
+	JoinUsingExpr{},
 )
 
-func UnpackJSON(buf []byte) (interface{}, error) {
-	if len(buf) == 0 {
-		return nil, nil
-	}
-	return unpacker.Unmarshal(buf)
-}
-
-// UnpackJSONAsOp transforms a JSON representation of an operator into an Op.
-func UnpackJSONAsOp(buf []byte) (Op, error) {
-	result, err := UnpackJSON(buf)
-	if result == nil || err != nil {
+// UnmarshalOp transforms a JSON representation of an operator into an Op.
+func UnmarshalOp(buf []byte) (Op, error) {
+	var op Op
+	if err := unpacker.Unmarshal(buf, &op); err != nil {
 		return nil, err
 	}
-	o, ok := result.(Op)
-	if !ok {
-		return nil, errors.New("not an operator")
-	}
-	return o, nil
+	return op, nil
 }
 
-func UnpackMapAsOp(m interface{}) (Op, error) {
-	object, err := unpacker.UnmarshalObject(m)
-	if object == nil || err != nil {
+func unmarshalSeq(buf []byte) (Seq, error) {
+	var seq Seq
+	if err := unpacker.Unmarshal(buf, &seq); err != nil {
 		return nil, err
 	}
-	o, ok := object.(Op)
-	if !ok {
-		return nil, errors.New("not an operator")
+	return seq, nil
+}
+
+func UnmarshalObject(anon interface{}) (Seq, error) {
+	b, err := json.Marshal(anon)
+	if err != nil {
+		return nil, fmt.Errorf("internal error: ast.UnmarshalObject: %w", err)
 	}
-	return o, nil
+	return unmarshalSeq(b)
 }
 
 func Copy(in Op) Op {
@@ -127,7 +143,19 @@ func Copy(in Op) Op {
 	if err != nil {
 		panic(err)
 	}
-	out, err := UnpackJSONAsOp(b)
+	out, err := UnmarshalOp(b)
+	if err != nil {
+		panic(err)
+	}
+	return out
+}
+
+func CopySeq(in Seq) Seq {
+	b, err := json.Marshal(in)
+	if err != nil {
+		panic(err)
+	}
+	out, err := unmarshalSeq(b)
 	if err != nil {
 		panic(err)
 	}

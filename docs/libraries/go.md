@@ -22,16 +22,16 @@ other Go projects straight from the GitHub repo.
 
 Some of the key packages are:
 
-* [zed](https://pkg.go.dev/github.com/brimdata/zed) - core Zed values and types
-* [zson](https://pkg.go.dev/github.com/brimdata/zed/zson) - ZSON support
-* [zio](https://pkg.go.dev/github.com/brimdata/zed/zio) - I/O interfaces for Zed following the Reader/Writer patterns
-* [zio/zsonio](https://pkg.go.dev/github.com/brimdata/zed/zio/zsonio) - ZSON reader/writer
-* [zio/zngio](https://pkg.go.dev/github.com/brimdata/zed/zio/zngio) - ZNG reader/writer
-* [lake/api](https://pkg.go.dev/github.com/brimdata/zed/lake/api) - interact with a Zed lake
+* [zed](https://pkg.go.dev/github.com/brimdata/super) - core Zed values and types
+* [zson](https://pkg.go.dev/github.com/brimdata/super/zson) - ZSON support
+* [zio](https://pkg.go.dev/github.com/brimdata/super/zio) - I/O interfaces for Zed following the Reader/Writer patterns
+* [zio/zsonio](https://pkg.go.dev/github.com/brimdata/super/zio/zsonio) - ZSON reader/writer
+* [zio/zngio](https://pkg.go.dev/github.com/brimdata/super/zio/zngio) - ZNG reader/writer
+* [lake/api](https://pkg.go.dev/github.com/brimdata/super/lake/api) - interact with a Zed lake
 
 To install in your local Go project, simply run:
 ```
-go get github.com/brimdata/zed
+go get github.com/brimdata/super
 ```
 
 ## Examples
@@ -39,7 +39,7 @@ go get github.com/brimdata/zed
 ### ZSON Reader
 
 Read ZSON from stdin, dereference field `s`, and print results:
-```
+```mdtest-go-example
 package main
 
 import (
@@ -47,14 +47,14 @@ import (
 	"log"
 	"os"
 
-	"github.com/brimdata/zed"
-	"github.com/brimdata/zed/zio/zsonio"
-	"github.com/brimdata/zed/zson"
+	"github.com/brimdata/super"
+	"github.com/brimdata/super/zio/zsonio"
+	"github.com/brimdata/super/zson"
 )
 
 func main() {
-	zctx := zed.NewContext()
-	reader := zsonio.NewReader(os.Stdin, zctx)
+	zctx := super.NewContext()
+	reader := zsonio.NewReader(zctx, os.Stdin)
 	for {
 		val, err := reader.Read()
 		if err != nil {
@@ -65,7 +65,7 @@ func main() {
 		}
 		s := val.Deref("s")
 		if s == nil {
-			s = zctx.Missing()
+			s = zctx.Missing().Ptr()
 		}
 		fmt.Println(zson.String(s))
 	}
@@ -105,7 +105,7 @@ zed create -lake scratch Demo
 echo '{s:"hello, world"}{x:1}{s:"good bye"}' | zed load -lake scratch -use Demo -
 ```
 Now replace `main.go` with this code:
-```
+```mdtest-go-example
 package main
 
 import (
@@ -114,10 +114,11 @@ import (
 	"log"
 	"os"
 
-	"github.com/brimdata/zed"
-	"github.com/brimdata/zed/lake/api"
-	"github.com/brimdata/zed/pkg/storage"
-	"github.com/brimdata/zed/zson"
+	"github.com/brimdata/super"
+	"github.com/brimdata/super/lake/api"
+	"github.com/brimdata/super/pkg/storage"
+	"github.com/brimdata/super/zbuf"
+	"github.com/brimdata/super/zson"
 )
 
 func main() {
@@ -129,16 +130,17 @@ func main() {
 		log.Fatalln(err)
 	}
 	ctx := context.TODO()
-	lake, err := api.OpenLake(ctx, uri.String())
+	lake, err := api.OpenLake(ctx, nil, uri.String())
 	if err != nil {
 		log.Fatalln(err)
 	}
-	reader, err := lake.Query(ctx, nil, "from Demo")
+	q, err := lake.Query(ctx, "from Demo")
 	if err != nil {
 		log.Fatalln(err)
 	}
-	defer reader.Close()
-	zctx := zed.NewContext()
+	defer q.Pull(true)
+	reader := zbuf.PullerReader(q)
+	zctx := super.NewContext()
 	for {
 		val, err := reader.Read()
 		if err != nil {
@@ -149,13 +151,14 @@ func main() {
 		}
 		s := val.Deref("s")
 		if s == nil {
-			s = zctx.Missing()
+			s = zctx.Missing().Ptr()
 		}
 		fmt.Println(zson.String(s))
 	}
 }
 ```
-Now, run this command to interact with the lake via the local file system:
+After a re-run of `go mod tidy`, run this command to interact with the lake via
+the local file system:
 ```
 go run . ./scratch
 ```

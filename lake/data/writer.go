@@ -4,13 +4,12 @@ import (
 	"context"
 	"io"
 
-	"github.com/brimdata/zed"
-	"github.com/brimdata/zed/lake/seekindex"
-	"github.com/brimdata/zed/order"
-	"github.com/brimdata/zed/pkg/bufwriter"
-	"github.com/brimdata/zed/pkg/field"
-	"github.com/brimdata/zed/pkg/storage"
-	"github.com/brimdata/zed/zio/zngio"
+	"github.com/brimdata/super"
+	"github.com/brimdata/super/lake/seekindex"
+	"github.com/brimdata/super/order"
+	"github.com/brimdata/super/pkg/bufwriter"
+	"github.com/brimdata/super/pkg/storage"
+	"github.com/brimdata/super/zio/zngio"
 )
 
 // Writer is a zio.Writer that writes a stream of sorted records into a
@@ -20,22 +19,20 @@ type Writer struct {
 	byteCounter      *writeCounter
 	count            uint64
 	writer           *zngio.Writer
-	order            order.Which
-	seekWriter       *zngio.Writer
+	sortKey          order.SortKey
 	seekIndex        *seekindex.Writer
 	seekIndexStride  int
 	seekIndexTrigger int
 	first            bool
-	seekMin          *zed.Value
-	poolKey          field.Path
+	seekMin          *super.Value
 }
 
 // NewWriter returns a writer for writing the data of a zng-row storage object as
 // well as optionally creating a seek index for the row object when the
 // seekIndexStride is non-zero.  We assume all records are non-volatile until
-// Close as zed.Values from the various record bodies are referenced across
+// Close as super.Values from the various record bodies are referenced across
 // calls to Write.
-func (o *Object) NewWriter(ctx context.Context, engine storage.Engine, path *storage.URI, order order.Which, poolKey field.Path, seekIndexStride int) (*Writer, error) {
+func (o *Object) NewWriter(ctx context.Context, engine storage.Engine, path *storage.URI, sortKey order.SortKey, seekIndexStride int) (*Writer, error) {
 	out, err := engine.Put(ctx, o.SequenceURI(path))
 	if err != nil {
 		return nil, err
@@ -45,8 +42,7 @@ func (o *Object) NewWriter(ctx context.Context, engine storage.Engine, path *sto
 		object:      o,
 		byteCounter: counter,
 		writer:      zngio.NewWriter(counter),
-		order:       order,
-		poolKey:     poolKey,
+		sortKey:     sortKey,
 		first:       true,
 	}
 	if seekIndexStride == 0 {
@@ -57,36 +53,33 @@ func (o *Object) NewWriter(ctx context.Context, engine storage.Engine, path *sto
 	if err != nil {
 		return nil, err
 	}
-	w.seekWriter = zngio.NewWriter(bufwriter.New(seekOut))
-	w.seekIndex = seekindex.NewWriter(w.seekWriter)
+	w.seekIndex = seekindex.NewWriter(zngio.NewWriter(bufwriter.New(seekOut)))
 	return w, nil
 }
 
-func (w *Writer) Write(val *zed.Value) error {
+func (w *Writer) Write(val super.Value) error {
+	key := val.DerefPath(w.sortKey.Key).MissingAsNull()
+	return w.WriteWithKey(key, val)
+}
+
+func (w *Writer) WriteWithKey(key, val super.Value) error {
 	w.count++
-	key := val.DerefPath(w.poolKey).MissingAsNull()
-	if w.seekIndex != nil {
-		if err := w.writeIndex(key); err != nil {
-			return err
-		}
-	}
 	if err := w.writer.Write(val); err != nil {
 		return err
 	}
 	w.object.Max.CopyFrom(key)
-	return nil
+	return w.writeIndex(key)
 }
 
-func (w *Writer) writeIndex(key *zed.Value) error {
-	w.seekIndexTrigger += len(key.Bytes)
+func (w *Writer) writeIndex(key super.Value) error {
+	w.seekIndexTrigger += len(key.Bytes())
 	if w.first {
 		w.first = false
 		w.object.Min.CopyFrom(key)
 	}
 	if w.seekMin == nil {
-		w.seekMin = key.Copy()
+		w.seekMin = key.Copy().Ptr()
 	}
-	w.object.Max.CopyFrom(key)
 	if w.seekIndexTrigger < w.seekIndexStride {
 		return nil
 	}
@@ -99,9 +92,9 @@ func (w *Writer) writeIndex(key *zed.Value) error {
 func (w *Writer) flushSeekIndex() error {
 	if w.seekMin != nil {
 		w.seekIndexTrigger = 0
-		min := w.seekMin
-		max := w.object.Max.Copy()
-		if w.order == order.Desc {
+		min := *w.seekMin
+		max := w.object.Max
+		if w.sortKey.Order == order.Desc {
 			min, max = max, min
 		}
 		w.seekMin = nil
@@ -114,7 +107,7 @@ func (w *Writer) flushSeekIndex() error {
 // because the write error will be more informative and should be returned.
 func (w *Writer) Abort() {
 	w.writer.Close()
-	w.seekWriter.Close()
+	w.seekIndex.Close()
 }
 
 func (w *Writer) Close(ctx context.Context) error {
@@ -126,13 +119,13 @@ func (w *Writer) Close(ctx context.Context) error {
 		w.Abort()
 		return err
 	}
-	if err := w.seekWriter.Close(); err != nil {
+	if err := w.seekIndex.Close(); err != nil {
 		w.Abort()
 		return err
 	}
 	w.object.Count = w.count
 	w.object.Size = w.writer.Position()
-	if w.order == order.Desc {
+	if w.sortKey.Order == order.Desc {
 		w.object.Min, w.object.Max = w.object.Max, w.object.Min
 	}
 	return nil

@@ -8,22 +8,15 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/brimdata/zed"
-	"github.com/brimdata/zed/pkg/nano"
-	"github.com/brimdata/zed/zio"
-	"github.com/brimdata/zed/zio/zngio"
-	"github.com/brimdata/zed/zio/zsonio"
-	"github.com/brimdata/zed/zson"
+	"github.com/brimdata/super"
+	"github.com/brimdata/super/pkg/nano"
+	"github.com/brimdata/super/zio"
+	"github.com/brimdata/super/zio/zngio"
+	"github.com/brimdata/super/zson"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/x448/float16"
 )
-
-func toZSON(t *testing.T, rec *zed.Value) string {
-	var buf strings.Builder
-	require.NoError(t, zsonio.NewWriter(zio.NopCloser(&buf), zsonio.WriterOpts{}).Write(rec))
-	return strings.TrimRight(buf.String(), "\n")
-}
 
 func boomerang(t *testing.T, in interface{}, out interface{}) {
 	rec, err := zson.NewZNGMarshaler().Marshal(in)
@@ -33,12 +26,12 @@ func boomerang(t *testing.T, in interface{}, out interface{}) {
 	err = zw.Write(rec)
 	require.NoError(t, err)
 	require.NoError(t, zw.Close())
-	zctx := zed.NewContext()
+	zctx := super.NewContext()
 	zr := zngio.NewReader(zctx, &buf)
 	defer zr.Close()
-	rec, err = zr.Read()
+	val, err := zr.Read()
 	require.NoError(t, err)
-	err = zson.UnmarshalZNGRecord(rec, out)
+	err = zson.UnmarshalZNG(*val, out)
 	require.NoError(t, err)
 }
 
@@ -61,7 +54,7 @@ func TestMarshalZNG(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.NotNil(t, rec)
-	assert.Equal(t, `{Field1:"value1",Sub1:{f2:"value2",Field3:-1},PField1:null(bool)}`, toZSON(t, rec))
+	assert.Equal(t, `{Field1:"value1",Sub1:{f2:"value2",Field3:-1},PField1:null(bool)}`, zson.FormatValue(rec))
 }
 
 func TestMarshalMap(t *testing.T) {
@@ -102,20 +95,19 @@ func TestMarshalSlice(t *testing.T) {
 	rec, err := m.Marshal(r)
 	require.NoError(t, err)
 	require.NotNil(t, rec)
-	assert.Equal(t, `{Things:[{a:"hello",B:123}(=ZNGThing),{a:"world",B:0}(ZNGThing)]}(=ZNGThings)`,
-		toZSON(t, rec))
+	assert.Equal(t, `{Things:[{a:"hello",B:123}(=ZNGThing),{a:"world",B:0}(ZNGThing)]}(=ZNGThings)`, zson.FormatValue(rec))
 
 	empty := []ZNGThing{}
 	r2 := ZNGThings{empty}
 	rec2, err := m.Marshal(r2)
 	require.NoError(t, err)
 	require.NotNil(t, rec2)
-	assert.Equal(t, "{Things:[]([ZNGThing={a:string,B:int64}])}(=ZNGThings)", toZSON(t, rec2))
+	assert.Equal(t, "{Things:[]([ZNGThing={a:string,B:int64}])}(=ZNGThings)", zson.FormatValue(rec2))
 
 	rec3, err := m.Marshal(ZNGThings{nil})
 	require.NoError(t, err)
 	require.NotNil(t, rec3)
-	assert.Equal(t, "{Things:null([ZNGThing={a:string,B:int64}])}(=ZNGThings)", toZSON(t, rec3))
+	assert.Equal(t, "{Things:null([ZNGThing={a:string,B:int64}])}(=ZNGThings)", zson.FormatValue(rec3))
 
 }
 
@@ -157,16 +149,15 @@ type TestIP struct {
 
 func TestIPType(t *testing.T) {
 	s := TestIP{Addr: netip.MustParseAddr("192.168.1.1")}
-	zctx := zed.NewContext()
+	zctx := super.NewContext()
 	m := zson.NewZNGMarshalerWithContext(zctx)
 	rec, err := m.Marshal(s)
 	require.NoError(t, err)
 	require.NotNil(t, rec)
-
-	assert.Equal(t, "{Addr:192.168.1.1}", toZSON(t, rec))
+	assert.Equal(t, "{Addr:192.168.1.1}", zson.FormatValue(rec))
 
 	var tip TestIP
-	err = zson.UnmarshalZNGRecord(rec, &tip)
+	err = zson.UnmarshalZNG(rec, &tip)
 	require.NoError(t, err)
 	require.Equal(t, s, tip)
 }
@@ -191,13 +182,11 @@ func TestUnmarshalRecord(t *testing.T) {
 	require.NotNil(t, rec)
 
 	const expected = `{top:{T2f1:{T3f1:1(int32),T3f2:1.(float32)},T2f2:"t2f2-string1"}}`
-	require.Equal(t, expected, toZSON(t, rec))
+	require.Equal(t, expected, zson.FormatValue(rec))
 
-	rec, err = zsonio.NewReader(zed.NewContext(), strings.NewReader(expected)).Read()
-	require.NoError(t, err)
-
+	val := zson.MustParseValue(super.NewContext(), expected)
 	var v2 T1
-	err = zson.UnmarshalZNGRecord(rec, &v2)
+	err = zson.UnmarshalZNG(val, &v2)
 	require.NoError(t, err)
 	require.Equal(t, v1, v2)
 
@@ -205,7 +194,7 @@ func TestUnmarshalRecord(t *testing.T) {
 		T4f1 *T2 `zed:"top"`
 	}
 	var v3 *T4
-	err = zson.UnmarshalZNGRecord(rec, &v3)
+	err = zson.UnmarshalZNG(rec, &v3)
 	require.NoError(t, err)
 	require.NotNil(t, v3)
 	require.NotNil(t, v3.T4f1)
@@ -215,36 +204,36 @@ func TestUnmarshalRecord(t *testing.T) {
 func TestUnmarshalNull(t *testing.T) {
 	t.Run("slice", func(t *testing.T) {
 		slice := []int{1}
-		require.NoError(t, zson.UnmarshalZNG(zed.Null, &slice))
+		require.NoError(t, zson.UnmarshalZNG(super.Null, &slice))
 		assert.Nil(t, slice)
 		slice = []int{1}
-		assert.EqualError(t, zson.UnmarshalZNG(zed.NullInt64, &slice), `unmarshaling type "int64": not an array`)
+		assert.EqualError(t, zson.UnmarshalZNG(super.NullInt64, &slice), `unmarshaling type "int64": not an array`)
 		slice = []int{1}
-		v := zson.MustParseValue(zed.NewContext(), "null([int64])")
+		v := zson.MustParseValue(super.NewContext(), "null([int64])")
 		require.NoError(t, zson.UnmarshalZNG(v, &slice))
 		assert.Nil(t, slice)
-		v = zson.MustParseValue(zed.NewContext(), "null(bytes)")
+		v = zson.MustParseValue(super.NewContext(), "null(bytes)")
 		buf := []byte("testing")
 		require.NoError(t, zson.UnmarshalZNG(v, &buf))
 		assert.Nil(t, buf)
 	})
 	t.Run("primitive", func(t *testing.T) {
 		integer := -1
-		require.NoError(t, zson.UnmarshalZNG(zed.Null, &integer))
+		require.NoError(t, zson.UnmarshalZNG(super.Null, &integer))
 		assert.Equal(t, integer, 0)
 		intptr := &integer
-		require.NoError(t, zson.UnmarshalZNG(zed.Null, &intptr))
+		require.NoError(t, zson.UnmarshalZNG(super.Null, &intptr))
 		assert.Nil(t, intptr)
-		assert.EqualError(t, zson.UnmarshalZNG(zed.NullIP, &intptr), "incompatible type translation: zng type ip go type int go kind int")
+		assert.EqualError(t, zson.UnmarshalZNG(super.NullIP, &intptr), "incompatible type translation: zng type ip go type int go kind int")
 	})
 	t.Run("map", func(t *testing.T) {
 		m := map[string]string{"key": "value"}
-		require.NoError(t, zson.UnmarshalZNG(zed.Null, &m))
+		require.NoError(t, zson.UnmarshalZNG(super.Null, &m))
 		assert.Nil(t, m)
-		val := zson.MustParseValue(zed.NewContext(), "null({foo:int64})")
+		val := zson.MustParseValue(super.NewContext(), "null({foo:int64})")
 		require.EqualError(t, zson.UnmarshalZNG(val, &m), "not a map")
 		m = map[string]string{"key": "value"}
-		val = zson.MustParseValue(zed.NewContext(), "null(|{string:string}|)")
+		val = zson.MustParseValue(super.NewContext(), "null(|{string:string}|)")
 		require.NoError(t, zson.UnmarshalZNG(val, &m))
 		assert.Nil(t, m)
 	})
@@ -255,16 +244,16 @@ func TestUnmarshalNull(t *testing.T) {
 		var obj struct {
 			Test *testobj `zed:"test"`
 		}
-		val := zson.MustParseValue(zed.NewContext(), "{test:null({Val:int64})}")
+		val := zson.MustParseValue(super.NewContext(), "{test:null({Val:int64})}")
 		require.NoError(t, zson.UnmarshalZNG(val, &obj))
 		require.Nil(t, obj.Test)
-		val = zson.MustParseValue(zed.NewContext(), "{test:null(ip)}")
+		val = zson.MustParseValue(super.NewContext(), "{test:null(ip)}")
 		require.EqualError(t, zson.UnmarshalZNG(val, &obj), `cannot unmarshal Zed value "null(ip)" into Go struct`)
 		var slice struct {
 			Test []string `zed:"test"`
 		}
 		slice.Test = []string{"1"}
-		val = zson.MustParseValue(zed.NewContext(), "{test:null}")
+		val = zson.MustParseValue(super.NewContext(), "{test:null}")
 		require.NoError(t, zson.UnmarshalZNG(val, &slice))
 		require.Nil(t, slice.Test)
 	})
@@ -277,13 +266,13 @@ func TestUnmarshalSlice(t *testing.T) {
 	v1 := T1{
 		T1f1: []bool{true, false, true},
 	}
-	zctx := zed.NewContext()
+	zctx := super.NewContext()
 	rec, err := zson.NewZNGMarshalerWithContext(zctx).Marshal(v1)
 	require.NoError(t, err)
 	require.NotNil(t, rec)
 
 	var v2 T1
-	err = zson.UnmarshalZNGRecord(rec, &v2)
+	err = zson.UnmarshalZNG(rec, &v2)
 	require.NoError(t, err)
 	require.Equal(t, v1, v2)
 
@@ -294,24 +283,24 @@ func TestUnmarshalSlice(t *testing.T) {
 	v3 := T2{
 		Field1: []*int{intp(1), intp(2)},
 	}
-	zctx = zed.NewContext()
+	zctx = super.NewContext()
 	rec, err = zson.NewZNGMarshalerWithContext(zctx).Marshal(v3)
 	require.NoError(t, err)
 	require.NotNil(t, rec)
 
 	var v4 T2
-	err = zson.UnmarshalZNGRecord(rec, &v4)
+	err = zson.UnmarshalZNG(rec, &v4)
 	require.NoError(t, err)
 	require.Equal(t, v1, v2)
 }
 
 type testMarshaler string
 
-func (m testMarshaler) MarshalZNG(mc *zson.MarshalZNGContext) (zed.Type, error) {
+func (m testMarshaler) MarshalZNG(mc *zson.MarshalZNGContext) (super.Type, error) {
 	return mc.MarshalValue("marshal-" + string(m))
 }
 
-func (m *testMarshaler) UnmarshalZNG(mc *zson.UnmarshalZNGContext, val *zed.Value) error {
+func (m *testMarshaler) UnmarshalZNG(mc *zson.UnmarshalZNGContext, val super.Value) error {
 	var s string
 	if err := mc.Unmarshal(val, &s); err != nil {
 		return err
@@ -334,10 +323,10 @@ func TestMarshalInterface(t *testing.T) {
 	rec, err := zson.NewZNGMarshaler().Marshal(r1)
 	require.NoError(t, err)
 	require.NotNil(t, rec)
-	assert.Equal(t, `{M1:"marshal-m1",M2:"marshal-m2"}`, toZSON(t, rec))
+	assert.Equal(t, `{M1:"marshal-m1",M2:"marshal-m2"}`, zson.FormatValue(rec))
 
 	var r2 rectype
-	err = zson.UnmarshalZNGRecord(rec, &r2)
+	err = zson.UnmarshalZNG(rec, &r2)
 	require.NoError(t, err)
 	assert.Equal(t, "m1", string(*r2.M1))
 	assert.Equal(t, "m2", string(r2.M2))
@@ -355,10 +344,10 @@ func TestMarshalArray(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, rec)
 	const expected = `{A1:[1(int8),2(int8)],A2:["foo","bar"],A3:null([bytes])}`
-	assert.Equal(t, expected, toZSON(t, rec))
+	assert.Equal(t, expected, zson.FormatValue(rec))
 
 	var r2 rectype
-	err = zson.UnmarshalZNGRecord(rec, &r2)
+	err = zson.UnmarshalZNG(rec, &r2)
 	require.NoError(t, err)
 	assert.Equal(t, r1.A1, r2.A1)
 	assert.Equal(t, *r2.A2, *r2.A2)
@@ -400,10 +389,10 @@ func TestNumbers(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, rec)
 	const expected = "{I:-9223372036854775808,I8:-128(int8),I16:-32768(int16),I32:-2147483648(int32),I64:-9223372036854775808,U:18446744073709551615(uint64),UI8:255(uint8),UI16:65535(uint16),UI32:4294967295(uint32),UI64:18446744073709551615(uint64),F16:65504.(float16),F32:3.4028235e+38(float32),F64:1.7976931348623157e+308}"
-	assert.Equal(t, expected, toZSON(t, rec))
+	assert.Equal(t, expected, zson.FormatValue(rec))
 
 	var r2 rectype
-	err = zson.UnmarshalZNGRecord(rec, &r2)
+	err = zson.UnmarshalZNG(rec, &r2)
 	require.NoError(t, err)
 	assert.Equal(t, r1, r2)
 }
@@ -416,7 +405,7 @@ func TestCustomRecord(t *testing.T) {
 	m := zson.NewZNGMarshaler()
 	rec, err := m.MarshalCustom([]string{"foo", "bar"}, vals)
 	require.NoError(t, err)
-	assert.Equal(t, `{foo:{a:"hello",B:123},bar:99}`, toZSON(t, rec))
+	assert.Equal(t, `{foo:{a:"hello",B:123},bar:99}`, zson.FormatValue(rec))
 
 	vals = []interface{}{
 		ZNGThing{"hello", 123},
@@ -424,7 +413,7 @@ func TestCustomRecord(t *testing.T) {
 	}
 	rec, err = m.MarshalCustom([]string{"foo", "bar"}, vals)
 	require.NoError(t, err)
-	assert.Equal(t, `{foo:{a:"hello",B:123},bar:null}`, toZSON(t, rec))
+	assert.Equal(t, `{foo:{a:"hello",B:123},bar:null}`, zson.FormatValue(rec))
 }
 
 type ThingTwo struct {
@@ -456,23 +445,23 @@ func TestInterfaceZNGMarshal(t *testing.T) {
 	m.Decorate(zson.StylePackage)
 	zv, err := m.Marshal(t1)
 	require.NoError(t, err)
-	assert.Equal(t, "zson_test.ThingTwo={c:string}", zson.String(zv.Type))
+	assert.Equal(t, "zson_test.ThingTwo={c:string}", zson.String(zv.Type()))
 
 	m.Decorate(zson.StyleSimple)
 	rolls := Rolls{1, 2, 3}
 	zv, err = m.Marshal(rolls)
 	require.NoError(t, err)
-	assert.Equal(t, "Rolls=[int64]", zson.String(zv.Type))
+	assert.Equal(t, "Rolls=[int64]", zson.String(zv.Type()))
 
 	m.Decorate(zson.StyleFull)
 	zv, err = m.Marshal(rolls)
 	require.NoError(t, err)
-	assert.Equal(t, `"github.com/brimdata/zed/zson_test.Rolls"=[int64]`, zson.String(zv.Type))
+	assert.Equal(t, `"github.com/brimdata/super/zson_test.Rolls"=[int64]`, zson.String(zv.Type()))
 
 	plain := []int32{1, 2, 3}
 	zv, err = m.Marshal(plain)
 	require.NoError(t, err)
-	assert.Equal(t, "[int32]", zson.String(zv.Type))
+	assert.Equal(t, "[int32]", zson.String(zv.Type()))
 }
 
 func TestInterfaceUnmarshal(t *testing.T) {
@@ -481,7 +470,7 @@ func TestInterfaceUnmarshal(t *testing.T) {
 	m.Decorate(zson.StylePackage)
 	zv, err := m.Marshal(t1)
 	require.NoError(t, err)
-	assert.Equal(t, "zson_test.ZNGThing={a:string,B:int64}", zson.String(zv.Type))
+	assert.Equal(t, "zson_test.ZNGThing={a:string,B:int64}", zson.String(zv.Type()))
 
 	u := zson.NewZNGUnmarshaler()
 	u.Bind(ZNGThing{}, ThingTwo{})
@@ -514,7 +503,7 @@ func TestBindings(t *testing.T) {
 	})
 	zv, err := m.Marshal(t1)
 	require.NoError(t, err)
-	assert.Equal(t, "SpecialThingOne={a:string,B:int64}", zson.String(zv.Type))
+	assert.Equal(t, "SpecialThingOne={a:string,B:int64}", zson.String(zv.Type()))
 
 	u := zson.NewZNGUnmarshaler()
 	u.NamedBindings([]zson.Binding{
@@ -531,7 +520,7 @@ func TestBindings(t *testing.T) {
 func TestEmptyInterface(t *testing.T) {
 	zv, err := zson.MarshalZNG(int8(123))
 	require.NoError(t, err)
-	assert.Equal(t, "int8", zson.String(zv.Type))
+	assert.Equal(t, "int8", zson.String(zv.Type()))
 
 	var v interface{}
 	err = zson.UnmarshalZNG(zv, &v)
@@ -555,7 +544,7 @@ func TestNamedNormal(t *testing.T) {
 
 	zv, err := m.Marshal(t1)
 	require.NoError(t, err)
-	assert.Equal(t, "CustomInt8=int8", zson.String(zv.Type))
+	assert.Equal(t, "CustomInt8=int8", zson.String(zv.Type()))
 
 	var actual CustomInt8
 	u := zson.NewZNGUnmarshaler()
@@ -588,7 +577,7 @@ func TestEmbeddedInterface(t *testing.T) {
 	m.Decorate(zson.StyleSimple)
 	zv, err := m.Marshal(t1)
 	require.NoError(t, err)
-	assert.Equal(t, "EmbeddedA={A:ZNGThing={a:string,B:int64}}", zson.String(zv.Type))
+	assert.Equal(t, "EmbeddedA={A:ZNGThing={a:string,B:int64}}", zson.String(zv.Type()))
 
 	u := zson.NewZNGUnmarshaler()
 	u.Bind(ZNGThing{}, ThingTwo{})
@@ -610,31 +599,31 @@ func TestEmbeddedInterface(t *testing.T) {
 func TestMultipleZedValues(t *testing.T) {
 	bytes := []byte("foo")
 	u := zson.NewZNGUnmarshaler()
-	var foo zed.Value
-	err := u.Unmarshal(zed.NewValue(zed.TypeString, bytes), &foo)
+	var foo super.Value
+	err := u.Unmarshal(super.NewValue(super.TypeString, bytes), &foo)
 	require.NoError(t, err)
 	// clobber bytes slice
 	copy(bytes, []byte("bar"))
-	var bar zed.Value
-	err = u.Unmarshal(zed.NewValue(zed.TypeString, bytes), &bar)
+	var bar super.Value
+	err = u.Unmarshal(super.NewValue(super.TypeString, bytes), &bar)
 	require.NoError(t, err)
-	assert.Equal(t, "foo", string(foo.Bytes))
-	assert.Equal(t, "bar", string(bar.Bytes))
+	assert.Equal(t, "foo", string(foo.Bytes()))
+	assert.Equal(t, "bar", string(bar.Bytes()))
 }
 
 func TestZedValues(t *testing.T) {
 	test := func(t *testing.T, name, s string, v interface{}) {
 		t.Run(name, func(t *testing.T) {
-			val := zson.MustParseValue(zed.NewContext(), s)
+			val := zson.MustParseValue(super.NewContext(), s)
 			err := zson.UnmarshalZNG(val, v)
 			require.NoError(t, err)
 			val, err = zson.MarshalZNG(v)
 			require.NoError(t, err)
-			assert.Equal(t, s, zson.MustFormatValue(val))
+			assert.Equal(t, s, zson.FormatValue(val))
 		})
 	}
 	var testptr struct {
-		Value *zed.Value `zed:"value"`
+		Value *super.Value `zed:"value"`
 	}
 	t.Run("pointer", func(t *testing.T) {
 		test(t, "string", "{value:\"foo\"}", &testptr)
@@ -643,7 +632,7 @@ func TestZedValues(t *testing.T) {
 		test(t, "record", "{value:{foo:1,bar:\"baz\"}}", &testptr)
 	})
 	var teststruct struct {
-		Value zed.Value `zed:"value"`
+		Value super.Value `zed:"value"`
 	}
 	t.Run("struct", func(t *testing.T) {
 		test(t, "string", "{value:\"foo\"}", &teststruct)

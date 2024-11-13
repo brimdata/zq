@@ -1,5 +1,5 @@
 script: |
-  zq -I bug.zed -z -
+  super -I bug.zed -z -
 
 inputs:
   - name: stdin
@@ -9,7 +9,7 @@ inputs:
     data: |
       type netx=uint16
       type foo={bar:netx}
-      *
+      pass
 
 outputs:
   - name: stdout

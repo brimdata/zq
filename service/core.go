@@ -10,25 +10,25 @@ import (
 	"net/http/pprof"
 	"strings"
 	"sync"
-	"sync/atomic"
 	"time"
 
-	"github.com/brimdata/zed/api"
-	"github.com/brimdata/zed/compiler"
-	"github.com/brimdata/zed/lake"
-	"github.com/brimdata/zed/pkg/storage"
-	"github.com/brimdata/zed/runtime"
-	"github.com/brimdata/zed/zson"
+	"github.com/brimdata/super/api"
+	"github.com/brimdata/super/compiler"
+	"github.com/brimdata/super/lake"
+	"github.com/brimdata/super/pkg/storage"
+	"github.com/brimdata/super/runtime"
+	"github.com/brimdata/super/zson"
 	"github.com/gorilla/mux"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.uber.org/zap"
 )
 
-// DefaultZedFormat is the default Zed format that the server will assume if the
+// DefaultFormat is the default Zed format that the server will assume if the
 // value for a request's "Accept" or "Content-Type" headers are not set or set
 // to "*/*".
-const DefaultZedFormat = "zson"
+const DefaultFormat = "jsup"
 
 const indexPage = `
 <!DOCTYPE html>
@@ -36,9 +36,9 @@ const indexPage = `
   <title>Zed lake service</title>
   <body style="padding:10px">
     <h2>zed serve</h2>
-    <p>A <a href="https://github.com/brimdata/zed/tree/main/cmd/zed/serve">zed service</a> is listening on this host/port.</p>
-    <p>If you're a <a href="https://www.brimdata.io/">Brim</a> user, connect to this host/port from the <a href="https://github.com/brimdata/brim">Brim application</a> in the graphical desktop interface in your operating system (not a web browser).</p>
-    <p>If your goal is to perform command line operations against this Zed lake, use the <a href="https://github.com/brimdata/zed/tree/main/cmd/zed"><code>zed</code></a> command.</p>
+    <p>A <a href="https://super.brimdata.io/docs/commands/zed#213-serve">Zed lake service</a> is listening on this host/port.</p>
+    <p>If you're a <a href="https://zui.brimdata.io/">Zui</a> user, connect to this host/port from Zui app in the graphical desktop interface in your operating system (not a web browser).</p>
+    <p>If your goal is to perform command line operations against this Zed lake, use the <a href="https://super.brimdata.io/docs/commands/zed"><code>zed</code></a> command.</p>
   </body>
 </html>`
 
@@ -53,23 +53,24 @@ type Config struct {
 }
 
 type Core struct {
-	auth            *Auth0Authenticator
-	compiler        runtime.Compiler
-	conf            Config
-	engine          storage.Engine
-	logger          *zap.Logger
-	registry        *prometheus.Registry
-	root            *lake.Root
-	routerAPI       *mux.Router
-	routerAux       *mux.Router
-	taskCount       int64
-	subscriptions   map[chan event]struct{}
-	subscriptionsMu sync.RWMutex
+	auth             *Auth0Authenticator
+	compiler         runtime.Compiler
+	conf             Config
+	engine           storage.Engine
+	logger           *zap.Logger
+	registry         *prometheus.Registry
+	root             *lake.Root
+	routerAPI        *mux.Router
+	routerAux        *mux.Router
+	runningQueries   map[string]*queryStatus
+	runningQueriesMu sync.Mutex
+	subscriptions    map[chan event]struct{}
+	subscriptionsMu  sync.RWMutex
 }
 
 func NewCore(ctx context.Context, conf Config) (*Core, error) {
 	if conf.DefaultResponseFormat == "" {
-		conf.DefaultResponseFormat = DefaultZedFormat
+		conf.DefaultResponseFormat = DefaultFormat
 	}
 	if _, err := api.FormatToMediaType(conf.DefaultResponseFormat); err != nil {
 		return nil, fmt.Errorf("invalid default response format: %w", err)
@@ -85,7 +86,7 @@ func NewCore(ctx context.Context, conf Config) (*Core, error) {
 	}
 
 	registry := prometheus.NewRegistry()
-	registry.MustRegister(prometheus.NewGoCollector())
+	registry.MustRegister(collectors.NewGoCollector())
 
 	var authenticator *Auth0Authenticator
 	if conf.Auth.Enabled {
@@ -135,27 +136,32 @@ func NewCore(ctx context.Context, conf Config) (*Core, error) {
 		json.NewEncoder(w).Encode(&api.VersionResponse{Version: conf.Version})
 	})
 
-	routerAPI := mux.NewRouter()
+	routerAPI := mux.NewRouter().UseEncodedPath()
 	routerAPI.Use(requestIDMiddleware())
 	routerAPI.Use(accessLogMiddleware(conf.Logger))
 	routerAPI.Use(panicCatchMiddleware(conf.Logger))
 	routerAPI.Use(corsMiddleware(conf.CORSAllowedOrigins))
 
 	c := &Core{
-		auth:          authenticator,
-		compiler:      compiler.NewLakeCompiler(root),
-		conf:          conf,
-		engine:        engine,
-		logger:        conf.Logger.Named("core"),
-		root:          root,
-		registry:      registry,
-		routerAPI:     routerAPI,
-		routerAux:     routerAux,
-		subscriptions: make(map[chan event]struct{}),
+		auth:           authenticator,
+		compiler:       compiler.NewLakeCompiler(root),
+		conf:           conf,
+		engine:         engine,
+		logger:         conf.Logger.Named("core"),
+		root:           root,
+		registry:       registry,
+		routerAPI:      routerAPI,
+		routerAux:      routerAux,
+		runningQueries: make(map[string]*queryStatus),
+		subscriptions:  make(map[chan event]struct{}),
 	}
 
 	c.addAPIServerRoutes()
-	c.logger.Info("Started")
+	c.logger.Info("Started",
+		zap.Bool("auth_enabled", conf.Auth.Enabled),
+		zap.Stringer("root", path),
+		zap.String("version", conf.Version),
+	)
 	return c, nil
 }
 
@@ -163,9 +169,8 @@ func (c *Core) addAPIServerRoutes() {
 	c.authhandle("/auth/identity", handleAuthIdentityGet).Methods("GET")
 	// /auth/method intentionally requires no authentication
 	c.routerAPI.Handle("/auth/method", c.handler(handleAuthMethodGet)).Methods("GET")
+	c.authhandle("/compile", handleCompile).Methods("POST")
 	c.authhandle("/events", handleEvents).Methods("GET")
-	c.authhandle("/index", handleIndexRulesDelete).Methods("DELETE")
-	c.authhandle("/index", handleIndexRulesPost).Methods("POST")
 	c.authhandle("/pool", handlePoolPost).Methods("POST")
 	c.authhandle("/pool/{pool}", handlePoolDelete).Methods("DELETE")
 	c.authhandle("/pool/{pool}", handleBranchPost).Methods("POST")
@@ -175,12 +180,15 @@ func (c *Core) addAPIServerRoutes() {
 	c.authhandle("/pool/{pool}/branch/{branch}", handleBranchLoad).Methods("POST")
 	c.authhandle("/pool/{pool}/branch/{branch}/compact", handleCompact).Methods("POST")
 	c.authhandle("/pool/{pool}/branch/{branch}/delete", handleDelete).Methods("POST")
-	c.authhandle("/pool/{pool}/branch/{branch}/index", branchHandle(handleIndexApply)).Methods("POST")
-	c.authhandle("/pool/{pool}/branch/{branch}/index/update", branchHandle(handleIndexUpdate)).Methods("POST")
 	c.authhandle("/pool/{pool}/branch/{branch}/merge/{child}", handleBranchMerge).Methods("POST")
 	c.authhandle("/pool/{pool}/branch/{branch}/revert/{commit}", handleRevertPost).Methods("POST")
+	c.authhandle("/pool/{pool}/revision/{revision}/vacuum", handleVacuum).Methods("POST")
+	c.authhandle("/pool/{pool}/revision/{revision}/vector", handleVectorPost).Methods("POST")
+	c.authhandle("/pool/{pool}/revision/{revision}/vector", handleVectorDelete).Methods("DELETE")
 	c.authhandle("/pool/{pool}/stats", handlePoolStats).Methods("GET")
 	c.authhandle("/query", handleQuery).Methods("OPTIONS", "POST")
+	c.authhandle("/query/describe", handleQueryDescribe).Methods("OPTIONS", "POST")
+	c.authhandle("/query/status/{requestID}", handleQueryStatus).Methods("GET")
 }
 
 func (c *Core) handler(f func(*Core, *ResponseWriter, *Request)) http.Handler {
@@ -198,30 +206,6 @@ func (c *Core) authhandle(path string, f func(*Core, *ResponseWriter, *Request))
 	return c.routerAPI.Handle(path, c.handler(f))
 }
 
-func branchHandle(f func(*Core, *ResponseWriter, *Request, *lake.Branch)) func(*Core, *ResponseWriter, *Request) {
-	return func(c *Core, w *ResponseWriter, r *Request) {
-		poolID, ok := r.PoolID(w, c.root)
-		if !ok {
-			return
-		}
-		branchName, ok := r.StringFromPath(w, "branch")
-		if !ok {
-			return
-		}
-		pool, err := c.root.OpenPool(r.Context(), poolID)
-		if err != nil {
-			w.Error(err)
-			return
-		}
-		branch, err := pool.OpenBranchByName(r.Context(), branchName)
-		if err != nil {
-			w.Error(err)
-			return
-		}
-		f(c, w, r, branch)
-	}
-}
-
 func (c *Core) Registry() *prometheus.Registry {
 	return c.registry
 }
@@ -233,18 +217,6 @@ func (c *Core) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	c.routerAPI.ServeHTTP(w, r)
-}
-
-func (c *Core) Shutdown() {
-	c.logger.Info("Shutdown")
-}
-
-func (c *Core) nextTaskID() int64 {
-	return atomic.AddInt64(&c.taskCount, 1)
-}
-
-func (c *Core) requestLogger(r *http.Request) *zap.Logger {
-	return c.logger.With(zap.String("request_id", api.RequestIDFromContext(r.Context())))
 }
 
 func (c *Core) publishEvent(w *ResponseWriter, name string, data interface{}) {
@@ -263,4 +235,39 @@ func (c *Core) publishEvent(w *ResponseWriter, name string, data interface{}) {
 		}
 		c.subscriptionsMu.RUnlock()
 	}()
+}
+
+func (c *Core) newQueryStatus(r *Request) *queryStatus {
+	id := r.ID()
+	remove := func() {
+		// Have query status wait around for a few seconds after done is signaled
+		// so late arriving queryStatus requests can still get the status.
+		time.Sleep(10 * time.Second)
+		c.runningQueriesMu.Lock()
+		delete(c.runningQueries, id)
+		c.runningQueriesMu.Unlock()
+	}
+	q := &queryStatus{remove: remove}
+	q.wg.Add(1)
+	c.runningQueriesMu.Lock()
+	c.runningQueries[id] = q
+	c.runningQueriesMu.Unlock()
+	return q
+}
+
+type queryStatus struct {
+	wg     sync.WaitGroup
+	remove func()
+	error  string
+}
+
+func (q *queryStatus) setError(err error) {
+	if err != nil {
+		q.error = err.Error()
+	}
+}
+
+func (q *queryStatus) Done() {
+	q.wg.Done()
+	go q.remove()
 }

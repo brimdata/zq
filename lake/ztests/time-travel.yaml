@@ -1,26 +1,25 @@
 script: |
-  export ZED_LAKE=test
-  zed init -q
-  zed create -q POOL
-  zed use -q POOL
-  a=$(zed load a.zson | head -1 | awk '{print $1}')
-  b=$(zed load b.zson | head -1 | awk '{print $1}')
-  zed query -z "from POOL | sort this"
+  export SUPER_DB_LAKE=test
+  super db init -q
+  super db create -use -q POOL
+  a=$(super db load a.jsup | head -1 | awk '{print $1}')
+  b=$(super db load b.jsup | head -1 | awk '{print $1}')
+  super db query -z "from POOL |> sort this"
   echo === AT a
-  zed query -z "from POOL@$a | sort this"
+  super db query -z "from POOL@$a |> sort this"
   echo === AT b
-  zed query -z "from POOL@$b | sort this"
-  zed revert -q $a
+  super db query -z "from POOL@$b |> sort this"
+  super db revert -q $a
   echo === with A deleted
-  zed query -z "from POOL | sort this"
+  super db query -z "from POOL |> sort this"
   echo === at B before A deleted
-  zed query -z "from POOL@$b | sort this"
+  super db query -z "from POOL@$b |> sort this"
 
 inputs:
-  - name: a.zson
+  - name: a.jsup
     data: |
       {a:1}
-  - name: b.zson
+  - name: b.jsup
     data: |
       {b:1}
 

@@ -7,6 +7,7 @@
 ```
 flatten(val: record) -> [{key:[string],value:<any>}]
 ```
+
 ### Description
 The _flatten_ function returns an array of records `[{key:[string],value:<any>}]`
 where `key` is a string array of the path of each record field of `val` and
@@ -17,7 +18,7 @@ inner type is a union of the record types present.
 ### Examples
 
 ```mdtest-command
-echo '{a:1,b:{c:"foo"}}' | zq -z 'yield flatten(this)' -
+echo '{a:1,b:{c:"foo"}}' | super -z -c 'yield flatten(this)' -
 ```
 =>
 ```mdtest-output

@@ -1,0 +1,9 @@
+script: |
+  ! super compile -dag 'from x with ordinality'
+
+outputs:
+  - name: stderr
+    data: |
+      WITH ORDINALITY clause is not yet supported at line 1, column 7:
+      from x with ordinality
+            ~~~~~~~~~~~~~~~~

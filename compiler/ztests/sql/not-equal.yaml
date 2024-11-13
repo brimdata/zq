@@ -1,0 +1,8 @@
+zed: yield 1 <> 2, 'foo' <> 'foo'
+
+input: |
+  null
+
+output: |
+  true
+  false

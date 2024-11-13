@@ -1,0 +1,12 @@
+# Tests writing a new record
+zed: put r2 := r
+
+vector: true
+
+input: |
+  {r:{s:"hello"}}
+  {r:{s:"world"}}
+
+output: |
+  {r:{s:"hello"},r2:{s:"hello"}}
+  {r:{s:"world"},r2:{s:"world"}}

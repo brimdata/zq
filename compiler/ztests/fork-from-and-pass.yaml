@@ -1,0 +1,15 @@
+skip: XXX let's discuss this one
+
+script: |
+  super -c 'fork (=> from (file a.jsup) => pass)' a.jsup
+
+inputs:
+  - name: a.jsup
+    data: |
+      {a:1}
+
+outputs:
+  - name: stdout
+    data: |
+      {a:1}
+      {a:1}

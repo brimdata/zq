@@ -1,10 +1,10 @@
 package kernel
 
 import (
-	"github.com/brimdata/zed"
-	"github.com/brimdata/zed/compiler/ast/dag"
-	"github.com/brimdata/zed/runtime/expr"
-	"github.com/brimdata/zed/zson"
+	"github.com/brimdata/super"
+	"github.com/brimdata/super/compiler/dag"
+	"github.com/brimdata/super/runtime/sam/expr"
+	"github.com/brimdata/super/zson"
 	"golang.org/x/text/unicode/norm"
 )
 
@@ -13,7 +13,7 @@ import (
 // encoding of a record matching e. (It may also return true for some byte
 // slices that do not match.) compileBufferFilter returns a nil pointer and nil
 // error if it cannot construct a useful filter.
-func CompileBufferFilter(zctx *zed.Context, e dag.Expr) (*expr.BufferFilter, error) {
+func CompileBufferFilter(zctx *super.Context, e dag.Expr) (*expr.BufferFilter, error) {
 	switch e := e.(type) {
 	case *dag.BinaryExpr:
 		literal, err := isFieldEqualOrIn(zctx, e)
@@ -21,7 +21,7 @@ func CompileBufferFilter(zctx *zed.Context, e dag.Expr) (*expr.BufferFilter, err
 			return nil, err
 		}
 		if literal != nil {
-			return newBufferFilterForLiteral(literal)
+			return newBufferFilterForLiteral(*literal)
 		}
 		if e.Op == "and" {
 			left, err := CompileBufferFilter(zctx, e.LHS)
@@ -57,11 +57,11 @@ func CompileBufferFilter(zctx *zed.Context, e dag.Expr) (*expr.BufferFilter, err
 		if err != nil {
 			return nil, err
 		}
-		switch zed.TypeUnder(literal.Type) {
-		case zed.TypeNet:
+		switch super.TypeUnder(literal.Type()) {
+		case super.TypeNet:
 			return nil, nil
-		case zed.TypeString:
-			pattern := norm.NFC.Bytes(literal.Bytes)
+		case super.TypeString:
+			pattern := norm.NFC.Bytes(literal.Bytes())
 			left := expr.NewBufferFilterForStringCase(string(pattern))
 			if left == nil {
 				return nil, nil
@@ -80,35 +80,32 @@ func CompileBufferFilter(zctx *zed.Context, e dag.Expr) (*expr.BufferFilter, err
 	}
 }
 
-// XXX isFieldEqualOrIn should work for any paths not just top-level fields.
-// See issue #3412
-
-func isFieldEqualOrIn(zctx *zed.Context, e *dag.BinaryExpr) (*zed.Value, error) {
-	if dag.IsTopLevelField(e.LHS) && e.Op == "==" {
+func isFieldEqualOrIn(zctx *super.Context, e *dag.BinaryExpr) (*super.Value, error) {
+	if _, ok := e.LHS.(*dag.This); ok && e.Op == "==" {
 		if literal, ok := e.RHS.(*dag.Literal); ok {
 			val, err := zson.ParseValue(zctx, literal.Value)
 			if err != nil {
 				return nil, err
 			}
-			return val, nil
+			return &val, nil
 		}
-	} else if dag.IsTopLevelField(e.RHS) && e.Op == "in" {
+	} else if _, ok := e.RHS.(*dag.This); ok && e.Op == "in" {
 		if literal, ok := e.LHS.(*dag.Literal); ok {
 			val, err := zson.ParseValue(zctx, literal.Value)
 			if err != nil {
 				return nil, err
 			}
-			if val.Type == zed.TypeNet {
+			if val.Type() == super.TypeNet {
 				return nil, err
 			}
-			return val, nil
+			return &val, nil
 		}
 	}
 	return nil, nil
 }
 
-func newBufferFilterForLiteral(val *zed.Value) (*expr.BufferFilter, error) {
-	if id := val.Type.ID(); zed.IsNumber(id) || id == zed.IDNull {
+func newBufferFilterForLiteral(val super.Value) (*expr.BufferFilter, error) {
+	if id := val.Type().ID(); super.IsNumber(id) || id == super.IDNull {
 		// All numbers are comparable, so they can require up to three
 		// patterns: float, varint, and uvarint.
 		return nil, nil

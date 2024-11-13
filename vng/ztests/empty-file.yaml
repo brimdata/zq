@@ -1,7 +1,7 @@
 script: |
-  ! zq -i vng /dev/null
+  ! super -i csup /dev/null
 
 outputs:
   - name: stderr
-    regexp: |
-      .*: trailer not found
+    data: |
+      /dev/null: EOF

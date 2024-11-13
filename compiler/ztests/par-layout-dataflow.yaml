@@ -1,27 +1,37 @@
 script: |
-  export ZED_LAKE=test
-  zed init -q
-  zed create -q -orderby ts:asc ASC
-  zed create -q -orderby ts:desc DESC
-  zc -C -P 2 "from ASC | cut x:=ts,ts:=1" | sed -e 's/pool .* =>/pool POOL =>/'
+  export SUPER_DB_LAKE=test
+  super db init -q
+  super db create -q -orderby ts:asc ASC
+  super db create -q -orderby ts:desc DESC
+  super db compile -C -P 2 "from ASC |> cut x:=ts,ts:=1" | sed -e 's/pool .*/.../'
   echo ===
-  zc -C -P 2 "from DESC | cut x:=ts,ts:=1" | sed -e 's/pool .* =>/pool POOL =>/'
+  super db compile -C -P 2 "from DESC |> cut x:=ts,ts:=1" | sed -e 's/pool .*/.../'
 
 outputs:
   - name: stdout
     data: |
-      from (
-        pool POOL =>
-          cut x:=ts,ts:=1
-        pool POOL =>
-          cut x:=ts,ts:=1
+      lister ...
+      |> slicer
+      |> scatter (
+        =>
+          seqscan ...
+          |> cut x:=ts,ts:=1
+        =>
+          seqscan ...
+          |> cut x:=ts,ts:=1
       )
-      | merge x:asc
+      |> merge x:asc
+      |> output main
       ===
-      from (
-        pool POOL =>
-          cut x:=ts,ts:=1
-        pool POOL =>
-          cut x:=ts,ts:=1
+      lister ...
+      |> slicer
+      |> scatter (
+        =>
+          seqscan ...
+          |> cut x:=ts,ts:=1
+        =>
+          seqscan ...
+          |> cut x:=ts,ts:=1
       )
-      | merge x:desc
+      |> merge x:desc
+      |> output main

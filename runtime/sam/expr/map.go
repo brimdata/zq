@@ -1,0 +1,71 @@
+package expr
+
+import (
+	"github.com/brimdata/super"
+	"github.com/brimdata/super/zcode"
+)
+
+type mapCall struct {
+	builder zcode.Builder
+	eval    Evaluator
+	inner   Evaluator
+	zctx    *super.Context
+
+	// vals is used to reduce allocations
+	vals []super.Value
+	// types is used to reduce allocations
+	types []super.Type
+}
+
+func NewMapCall(zctx *super.Context, e, inner Evaluator) Evaluator {
+	return &mapCall{eval: e, inner: inner, zctx: zctx}
+}
+
+func (a *mapCall) Eval(ectx Context, in super.Value) super.Value {
+	val := a.eval.Eval(ectx, in)
+	if val.IsError() {
+		return val
+	}
+	elems, err := val.Elements()
+	if err != nil {
+		return a.zctx.WrapError(err.Error(), in)
+	}
+	if len(elems) == 0 {
+		return val
+	}
+	a.vals = a.vals[:0]
+	a.types = a.types[:0]
+	for _, elem := range elems {
+		val := a.inner.Eval(ectx, elem)
+		a.vals = append(a.vals, val)
+		a.types = append(a.types, val.Type())
+	}
+	inner := a.innerType(a.types)
+	bytes := a.buildVal(inner, a.vals)
+	if _, ok := super.TypeUnder(val.Type()).(*super.TypeSet); ok {
+		return super.NewValue(a.zctx.LookupTypeSet(inner), super.NormalizeSet(bytes))
+	}
+	return super.NewValue(a.zctx.LookupTypeArray(inner), bytes)
+}
+
+func (a *mapCall) buildVal(inner super.Type, vals []super.Value) []byte {
+	a.builder.Reset()
+	if union, ok := inner.(*super.TypeUnion); ok {
+		for _, val := range a.vals {
+			super.BuildUnion(&a.builder, union.TagOf(val.Type()), val.Bytes())
+		}
+	} else {
+		for _, val := range a.vals {
+			a.builder.Append(val.Bytes())
+		}
+	}
+	return a.builder.Bytes()
+}
+
+func (a *mapCall) innerType(types []super.Type) super.Type {
+	types = super.UniqueTypes(types)
+	if len(types) == 1 {
+		return types[0]
+	}
+	return a.zctx.LookupTypeUnion(types)
+}

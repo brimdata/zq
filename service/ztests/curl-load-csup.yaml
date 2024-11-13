@@ -1,0 +1,21 @@
+script: |
+  source service.sh
+  super db create -q test
+  super -f csup in.jsup |
+    curl -H Content-Type:application/x-csup --data-binary @- \
+    --fail $SUPER_DB_LAKE/pool/test/branch/main | super -z -c commit:=0 -
+  echo //
+  super db query -z 'from test'
+
+inputs:
+  - name: in.jsup
+    data: |
+      {x:1}
+  - name: service.sh
+
+outputs:
+  - name: stdout
+    data: |
+      {commit:0,warnings:[]([string])}
+      //
+      {x:1}

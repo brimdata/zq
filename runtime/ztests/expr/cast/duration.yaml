@@ -1,0 +1,15 @@
+zed: duration(this)
+
+vector: true
+
+input: |
+  "1d"
+  "1.5e9"
+  -1.5e12
+  1e+19
+
+output: |
+  1d
+  1.5s
+  -25m
+  error({message:"cannot cast to duration",on:1e+19})

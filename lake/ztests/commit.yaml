@@ -1,11 +1,11 @@
 script: |
-  export ZED_LAKE=test
-  zed init -q
-  zed create -q test
-  zed load -use test in.zson
+  export SUPER_DB_LAKE=test
+  super db init -q
+  super db create -q test
+  super db load -use test in.jsup
 
 inputs:
-  - name: in.zson
+  - name: in.jsup
     data: |
       {x:1}
 

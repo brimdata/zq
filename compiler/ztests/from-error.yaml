@@ -1,26 +1,23 @@
 script: |
-  ! zc -C -s 'from p'
+  export SUPER_DB_LAKE=test
+  super db init -q
+  ! super db compile -C -dag 'from test'
   echo === >&2
-  export ZED_LAKE=test
-  zed init
-  ! zc -C -s 'from test'
+  ! super db compile -C -dag 'from test*'
   echo === >&2
-  ! zc -C -s 'from test*'
-  echo === >&2
-  ! zc -C -s 'from /test/'
-  echo === >&2
-  zed create -q test
-  ! zc -C -s 'from (pool * => count())'
+  ! super db compile -C -dag 'from /test/'
 
 outputs:
   - name: stderr
     data: |
-      semantic analyzer: from pool cannot be used without a lake
+      test: pool not found at line 1, column 6:
+      from test
+           ~~~~
       ===
-      test: pool not found
+      test*: pool matching glob not found at line 1, column 6:
+      from test*
+           ~~~~~
       ===
-      test*: pool matching glob not found
-      ===
-      test: pool matching regexp not found
-      ===
-      => not allowed after pool pattern in 'from' operator
+      test: pool matching regexp not found at line 1, column 6:
+      from /test/
+           ~~~~~~

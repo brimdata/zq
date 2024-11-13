@@ -1,21 +1,19 @@
 script: |
   source service.sh
-  zed create -q test
-  zed load -q -use test babble.zson
-  zed query -s -Z "from test | count()"
+  super db create -q test
+  super db load -q -use test babble.jsup
+  super db query -s -z "from test |> count()"
 
 inputs:
   - name: service.sh
     source: service.sh
-  - name: babble.zson
-    source: ../../testdata/babble.zson
+  - name: babble.jsup
+    source: ../../testdata/babble.jsup
 
 outputs:
   - name: stdout
     data: |
-      {
-          count: 1000 (uint64)
-      }
+      1000(uint64)
   - name: stderr
     data: |
       {bytes_read:32889,bytes_matched:32889,records_read:1000,records_matched:1000}

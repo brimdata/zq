@@ -3,9 +3,10 @@ package zngio
 import (
 	"encoding/binary"
 	"io"
+	"slices"
 
-	"github.com/brimdata/zed"
-	"github.com/brimdata/zed/zcode"
+	"github.com/brimdata/super"
+	"github.com/brimdata/super/zcode"
 	"github.com/pierrec/lz4/v4"
 )
 
@@ -99,18 +100,18 @@ func (w *Writer) EndStream() error {
 	return nil
 }
 
-func (w *Writer) Write(val *zed.Value) error {
-	typ := w.types.Lookup(val.Type)
+func (w *Writer) Write(val super.Value) error {
+	typ := w.types.Lookup(val.Type())
 	if typ == nil {
 		var err error
-		typ, err = w.types.Encode(val.Type)
+		typ, err = w.types.Encode(val.Type())
 		if err != nil {
 			return err
 		}
 	}
-	id := zed.TypeID(typ)
+	id := super.TypeID(typ)
 	w.values = binary.AppendUvarint(w.values, uint64(id))
-	w.values = zcode.Append(w.values, val.Bytes)
+	w.values = zcode.Append(w.values, val.Bytes())
 	if thresh := w.opts.FrameThresh; len(w.values) >= thresh || len(w.types.bytes) >= thresh {
 		return w.flush()
 	}
@@ -190,9 +191,7 @@ func (c *compressor) compress(b []byte) ([]byte, error) {
 	if c == nil || len(b) == 0 {
 		return nil, nil
 	}
-	if cap(c.zbuf) < len(b) {
-		c.zbuf = make([]byte, len(b))
-	}
+	c.zbuf = slices.Grow(c.zbuf[:0], len(b))
 	zbuf := c.zbuf[:len(b)]
 	zlen, err := c.compressor.CompressBlock(b, zbuf)
 	if err != nil && err != lz4.ErrInvalidSourceShortBuffer {

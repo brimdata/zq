@@ -1,4 +1,4 @@
-script: zq - | zq -z -
+script: super - | super -z -
 
 inputs:
   - name: stdin

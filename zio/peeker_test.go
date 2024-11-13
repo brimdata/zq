@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/brimdata/zed"
-	"github.com/brimdata/zed/zio/zsonio"
+	"github.com/brimdata/super"
+	"github.com/brimdata/super/zio/zsonio"
 )
 
 func TestPeeker(t *testing.T) {
@@ -18,41 +18,41 @@ func TestPeeker(t *testing.T) {
 {key:"key5",value:"value5"}
 {key:"key6",value:"value6"}
 `
-	stream := zsonio.NewReader(zed.NewContext(), strings.NewReader(input))
+	stream := zsonio.NewReader(super.NewContext(), strings.NewReader(input))
 	peeker := NewPeeker(stream)
 	rec1, err := peeker.Peek()
 	if err != nil {
 		t.Error(err)
 	}
-	rec1 = rec1.Copy()
+	rec1 = rec1.Copy().Ptr()
 	rec2, err := peeker.Peek()
 	if err != nil {
 		t.Error(err)
 	}
-	if !bytes.Equal(rec1.Bytes, rec2.Bytes) {
+	if !bytes.Equal(rec1.Bytes(), rec2.Bytes()) {
 		t.Error("rec1 != rec2")
 	}
 	rec3, err := peeker.Read()
 	if err != nil {
 		t.Error(err)
 	}
-	rec3 = rec3.Copy()
-	if !bytes.Equal(rec1.Bytes, rec3.Bytes) {
+	rec3 = rec3.Copy().Ptr()
+	if !bytes.Equal(rec1.Bytes(), rec3.Bytes()) {
 		t.Error("rec1 != rec3")
 	}
 	rec4, err := peeker.Peek()
 	if err != nil {
 		t.Error(err)
 	}
-	rec4 = rec4.Copy()
-	if bytes.Equal(rec3.Bytes, rec4.Bytes) {
+	rec4 = rec4.Copy().Ptr()
+	if bytes.Equal(rec3.Bytes(), rec4.Bytes()) {
 		t.Error("rec3 == rec4")
 	}
 	rec5, err := peeker.Read()
 	if err != nil {
 		t.Error(err)
 	}
-	if !bytes.Equal(rec4.Bytes, rec5.Bytes) {
+	if !bytes.Equal(rec4.Bytes(), rec5.Bytes()) {
 		t.Error("rec4 != rec5")
 	}
 }

@@ -13,17 +13,15 @@ import (
 	"strings"
 	"time"
 
-	"github.com/brimdata/zed"
-	"github.com/brimdata/zed/api"
-	"github.com/brimdata/zed/api/client/auth0"
-	"github.com/brimdata/zed/compiler/parser"
-	"github.com/brimdata/zed/lake"
-	"github.com/brimdata/zed/lake/branches"
-	"github.com/brimdata/zed/lake/index"
-	"github.com/brimdata/zed/lakeparse"
-	"github.com/brimdata/zed/runtime/exec"
-	"github.com/brimdata/zed/zio/zngio"
-	"github.com/brimdata/zed/zson"
+	"github.com/brimdata/super"
+	"github.com/brimdata/super/api"
+	"github.com/brimdata/super/api/client/auth0"
+	"github.com/brimdata/super/compiler/srcfiles"
+	"github.com/brimdata/super/lake"
+	"github.com/brimdata/super/lake/branches"
+	"github.com/brimdata/super/runtime/exec"
+	"github.com/brimdata/super/zio/zngio"
+	"github.com/brimdata/super/zson"
 	"github.com/segmentio/ksuid"
 )
 
@@ -62,8 +60,8 @@ func NewConnection() *Connection {
 // and a base URL derived from the hostURL argument.
 func NewConnectionTo(hostURL string) *Connection {
 	defaultHeader := http.Header{
-		"Accept":       []string{api.MediaTypeZNG},
-		"Content-Type": []string{api.MediaTypeZNG},
+		"Accept":       []string{api.MediaTypeBSUP},
+		"Content-Type": []string{api.MediaTypeBSUP},
 	}
 	return &Connection{
 		client:        &http.Client{},
@@ -141,7 +139,7 @@ func (c *Connection) doAndUnmarshal(req *Request, v interface{}, templates ...in
 		return err
 	}
 	defer res.Body.Close()
-	zr := zngio.NewReader(zed.NewContext(), res.Body)
+	zr := zngio.NewReader(super.NewContext(), res.Body)
 	defer zr.Close()
 	rec, err := zr.Read()
 	if err != nil || rec == nil {
@@ -149,7 +147,7 @@ func (c *Connection) doAndUnmarshal(req *Request, v interface{}, templates ...in
 	}
 	m := zson.NewZNGUnmarshaler()
 	m.Bind(templates...)
-	return m.Unmarshal(rec, v)
+	return m.Unmarshal(*rec, v)
 }
 
 // parseError parses an error from an http.Response with an error status code. For now the content type of errors is assumed to be JSON.
@@ -297,30 +295,26 @@ func (c *Connection) Revert(ctx context.Context, poolID ksuid.KSUID, branchName 
 //
 // As for Connection.Do, if the returned error is nil, the user is expected to
 // call Response.Body.Close.
-func (c *Connection) Query(ctx context.Context, head *lakeparse.Commitish, src string, filenames ...string) (*Response, error) {
-	src, srcInfo, err := parser.ConcatSource(filenames, src)
+func (c *Connection) Query(ctx context.Context, src string, filenames ...string) (*Response, error) {
+	files, err := srcfiles.Concat(filenames, src)
 	if err != nil {
 		return nil, err
 	}
-	body := api.QueryRequest{Query: src}
-	if head != nil {
-		body.Head = *head
-	}
+	body := api.QueryRequest{Query: string(files.Text)}
 	req := c.NewRequest(ctx, http.MethodPost, "/query?ctrl=T", body)
 	res, err := c.Do(req)
-	var ae *api.Error
-	if errors.As(err, &ae) {
-		if m, ok := ae.Info.(map[string]interface{}); ok {
-			if offset, ok := m["parse_error_offset"].(float64); ok {
-				return res, parser.NewError(src, srcInfo, int(offset))
-			}
-		}
+	if ae := (*api.Error)(nil); errors.As(err, &ae) && len(ae.CompilationErrors) > 0 {
+		ae.CompilationErrors.Bind(files)
+		return nil, ae.CompilationErrors
 	}
 	return res, err
 }
 
-func (c *Connection) Compact(ctx context.Context, poolID ksuid.KSUID, branchName string, objects []ksuid.KSUID, message api.CommitMessage) (api.CommitResponse, error) {
+func (c *Connection) Compact(ctx context.Context, poolID ksuid.KSUID, branchName string, objects []ksuid.KSUID, writeVectors bool, message api.CommitMessage) (api.CommitResponse, error) {
 	path := urlPath("pool", poolID.String(), "branch", branchName, "compact")
+	if writeVectors {
+		path += "?vectors=T"
+	}
 	req := c.NewRequest(ctx, http.MethodPost, path, api.CompactRequest{ObjectIDs: objects})
 	if err := encodeCommitMessage(req, message); err != nil {
 		return api.CommitResponse{}, err
@@ -339,48 +333,6 @@ func (c *Connection) Load(ctx context.Context, poolID ksuid.KSUID, branchName, c
 	if err := encodeCommitMessage(req, message); err != nil {
 		return api.CommitResponse{}, err
 	}
-	var commit api.CommitResponse
-	err := c.doAndUnmarshal(req, &commit)
-	return commit, err
-}
-
-func (c *Connection) AddIndexRules(ctx context.Context, rules []index.Rule) error {
-	body := api.IndexRulesAddRequest{Rules: rules}
-	req := c.NewRequest(ctx, http.MethodPost, "/index", body)
-	res, err := c.Do(req)
-	if err != nil {
-		return err
-	}
-	res.Body.Close()
-	return nil
-}
-
-func (c *Connection) DeleteIndexRules(ctx context.Context, ids []ksuid.KSUID) (api.IndexRulesDeleteResponse, error) {
-	var request api.IndexRulesDeleteRequest
-	for _, id := range ids {
-		request.RuleIDs = append(request.RuleIDs, id.String())
-	}
-	req := c.NewRequest(ctx, http.MethodDelete, "/index", request)
-	var deleted api.IndexRulesDeleteResponse
-	err := c.doAndUnmarshal(req, &deleted, index.RuleTypes...)
-	return deleted, err
-}
-
-func (c *Connection) ApplyIndexRules(ctx context.Context, poolID ksuid.KSUID, branchName string, rules []string, oids []ksuid.KSUID) (api.CommitResponse, error) {
-	path := urlPath("pool", poolID.String(), "branch", branchName, "index")
-	tags := make([]string, len(oids))
-	for i, oid := range oids {
-		tags[i] = oid.String()
-	}
-	req := c.NewRequest(ctx, http.MethodPost, path, api.IndexApplyRequest{Rules: rules, Tags: tags})
-	var commit api.CommitResponse
-	err := c.doAndUnmarshal(req, &commit)
-	return commit, err
-}
-
-func (c *Connection) UpdateIndex(ctx context.Context, poolID ksuid.KSUID, branchName string, rules []string) (api.CommitResponse, error) {
-	path := urlPath("pool", poolID.String(), "branch", branchName, "index", "update")
-	req := c.NewRequest(ctx, http.MethodPost, path, api.IndexUpdateRequest{Rules: rules})
 	var commit api.CommitResponse
 	err := c.doAndUnmarshal(req, &commit)
 	return commit, err
@@ -421,9 +373,39 @@ func (c *Connection) delete(ctx context.Context, poolID ksuid.KSUID, branchName 
 	return commit, err
 }
 
+func (c *Connection) Vacuum(ctx context.Context, pool, revision string, dryrun bool) (api.VacuumResponse, error) {
+	path := urlPath("pool", pool, "revision", revision, "vacuum")
+	if dryrun {
+		path += "?dryrun=true"
+	}
+	req := c.NewRequest(ctx, http.MethodPost, path, nil)
+	var res api.VacuumResponse
+	err := c.doAndUnmarshal(req, &res)
+	return res, err
+}
+
+func (c *Connection) AddVectors(ctx context.Context, pool, revision string, objectIDs []ksuid.KSUID, message api.CommitMessage) (api.CommitResponse, error) {
+	return c.doVector(ctx, pool, revision, objectIDs, message, http.MethodPost)
+}
+
+func (c *Connection) DeleteVectors(ctx context.Context, pool, revision string, objectIDs []ksuid.KSUID, message api.CommitMessage) (api.CommitResponse, error) {
+	return c.doVector(ctx, pool, revision, objectIDs, message, http.MethodDelete)
+}
+
+func (c *Connection) doVector(ctx context.Context, pool, revision string, objectIDs []ksuid.KSUID, message api.CommitMessage, method string) (api.CommitResponse, error) {
+	path := urlPath("pool", pool, "revision", revision, "vector")
+	req := c.NewRequest(ctx, method, path, api.VectorRequest{ObjectIDs: objectIDs})
+	if err := encodeCommitMessage(req, message); err != nil {
+		return api.CommitResponse{}, err
+	}
+	var res api.CommitResponse
+	err := c.doAndUnmarshal(req, &res)
+	return res, err
+}
+
 func (c *Connection) SubscribeEvents(ctx context.Context) (*EventsClient, error) {
 	req := c.NewRequest(ctx, http.MethodGet, "/events", nil)
-	req.Header.Set("Accept", api.MediaTypeZSON)
+	req.Header.Set("Accept", api.MediaTypeJSUP)
 	resp, err := c.Do(req)
 	if err != nil {
 		return nil, err

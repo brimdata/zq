@@ -1,0 +1,12 @@
+script: |
+  super -z -c 'const pi=3.14 select 1,sqrt(2)/pi,2+3 as five' 
+  echo ===
+  echo "null null" | super -z -c 'select 1,2,2+3 as five' -
+
+outputs:
+  - name: stdout
+    data: |
+      {"1":1,"sqrt(2)/3.14":0.4503864848321959,five:5}
+      ===
+      {"1":1,"2":2,five:5}
+      {"1":1,"2":2,five:5}

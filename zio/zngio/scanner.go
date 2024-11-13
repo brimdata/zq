@@ -7,12 +7,12 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/brimdata/zed"
-	"github.com/brimdata/zed/pkg/peeker"
-	"github.com/brimdata/zed/runtime/expr"
-	"github.com/brimdata/zed/runtime/op"
-	"github.com/brimdata/zed/zbuf"
-	"github.com/brimdata/zed/zcode"
+	"github.com/brimdata/super"
+	"github.com/brimdata/super/pkg/peeker"
+	"github.com/brimdata/super/runtime/sam/expr"
+	"github.com/brimdata/super/runtime/sam/op"
+	"github.com/brimdata/super/zbuf"
+	"github.com/brimdata/super/zcode"
 )
 
 type scanner struct {
@@ -29,7 +29,7 @@ type scanner struct {
 	eof        bool
 }
 
-func newScanner(ctx context.Context, zctx *zed.Context, r io.Reader, filter zbuf.Filter, opts ReaderOpts) (zbuf.Scanner, error) {
+func newScanner(ctx context.Context, zctx *super.Context, r io.Reader, filter zbuf.Filter, opts ReaderOpts) (zbuf.Scanner, error) {
 	ctx, cancel := context.WithCancel(ctx)
 	s := &scanner{
 		ctx:    ctx,
@@ -40,7 +40,7 @@ func newScanner(ctx context.Context, zctx *zed.Context, r io.Reader, filter zbuf
 			maxSize: opts.Max,
 		},
 		validate:   opts.Validate,
-		workerCh:   make(chan *worker),
+		workerCh:   make(chan *worker, opts.Threads+1),
 		resultChCh: make(chan chan op.Result, opts.Threads+1),
 	}
 	for i := 0; i < opts.Threads; i++ {
@@ -57,7 +57,7 @@ func newScanner(ctx context.Context, zctx *zed.Context, r io.Reader, filter zbuf
 				return nil, err
 			}
 		}
-		s.workers = append(s.workers, newWorker(ctx, &s.progress, bf, f, expr.NewContext(), s.validate))
+		s.workers = append(s.workers, newWorker(ctx, &s.progress, bf, f, s.validate))
 	}
 	return s, nil
 }
@@ -84,9 +84,9 @@ func (s *scanner) Pull(done bool) (zbuf.Batch, error) {
 				continue
 			}
 			if result.Batch == nil || result.Err != nil {
-				if err, ok := result.Err.(*zbuf.Control); !ok {
+				if _, ok := result.Err.(*zbuf.Control); !ok {
 					s.eof = true
-					s.err = err
+					s.err = result.Err
 					s.cancel()
 				}
 			}
@@ -184,7 +184,7 @@ type worker struct {
 	ectx         expr.Context
 	validate     bool
 
-	mapperLookupCache zed.MapperLookupCache
+	mapperLookupCache super.MapperLookupCache
 }
 
 type work struct {
@@ -196,14 +196,14 @@ type work struct {
 	resultCh chan op.Result
 }
 
-func newWorker(ctx context.Context, p *zbuf.Progress, bf *expr.BufferFilter, f expr.Evaluator, ectx expr.Context, validate bool) *worker {
+func newWorker(ctx context.Context, p *zbuf.Progress, bf *expr.BufferFilter, f expr.Evaluator, validate bool) *worker {
 	return &worker{
 		ctx:          ctx,
 		progress:     p,
 		workCh:       make(chan work),
 		bufferFilter: bf,
 		filter:       f,
-		ectx:         ectx, //XXX
+		ectx:         expr.NewContext(),
 		validate:     validate,
 	}
 }
@@ -282,7 +282,7 @@ func (w *worker) scanBatch(buf *buffer, local localctx) (zbuf.Batch, error) {
 			buf.free()
 			return nil, err
 		}
-		if w.wantValue(valRef, &progress) {
+		if w.wantValue(*valRef, &progress) {
 			valRef = batch.extend()
 		}
 	}
@@ -295,7 +295,7 @@ func (w *worker) scanBatch(buf *buffer, local localctx) (zbuf.Batch, error) {
 	return batch, nil
 }
 
-func (w *worker) decodeVal(buf *buffer, valRef *zed.Value) error {
+func (w *worker) decodeVal(buf *buffer, valRef *super.Value) error {
 	id, err := readUvarintAsInt(buf)
 	if err != nil {
 		return err
@@ -320,8 +320,7 @@ func (w *worker) decodeVal(buf *buffer, valRef *zed.Value) error {
 	if typ == nil {
 		return fmt.Errorf("zngio: type ID %d not in context", id)
 	}
-	valRef.Type = typ
-	valRef.Bytes = b
+	*valRef = super.NewValue(typ, b)
 	if w.validate {
 		if err := valRef.Validate(); err != nil {
 			return err
@@ -330,8 +329,8 @@ func (w *worker) decodeVal(buf *buffer, valRef *zed.Value) error {
 	return nil
 }
 
-func (w *worker) wantValue(val *zed.Value, progress *zbuf.Progress) bool {
-	progress.BytesRead += int64(len(val.Bytes))
+func (w *worker) wantValue(val super.Value, progress *zbuf.Progress) bool {
+	progress.BytesRead += int64(len(val.Bytes()))
 	progress.RecordsRead++
 	// It's tempting to call w.bufferFilter.Eval on rec.Bytes here, but that
 	// might call FieldNameFinder.Find, which could explode or return false
@@ -339,14 +338,14 @@ func (w *worker) wantValue(val *zed.Value, progress *zbuf.Progress) bool {
 	// rec.Bytes is just a ZNG value.  (A ZNG value message is a header
 	// indicating a type ID followed by a value of that type.)
 	if w.filter == nil || check(w.ectx, val, w.filter) {
-		progress.BytesMatched += int64(len(val.Bytes))
+		progress.BytesMatched += int64(len(val.Bytes()))
 		progress.RecordsMatched++
 		return true
 	}
 	return false
 }
 
-func check(ectx expr.Context, this *zed.Value, filter expr.Evaluator) bool {
+func check(ectx expr.Context, this super.Value, filter expr.Evaluator) bool {
 	val := filter.Eval(ectx, this)
-	return val.Type == zed.TypeBool && zed.IsTrue(val.Bytes)
+	return val.Type() == super.TypeBool && val.Bool()
 }

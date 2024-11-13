@@ -17,13 +17,13 @@
 # explicitly returning the intended error code.
 
 cd zed-sample-data
-scripts/check_md5sums.sh zng
+scripts/check_md5sums.sh bsup
 ZNG_SUCCESS="$?"
 echo
-scripts/check_md5sums.sh zng-uncompressed
+scripts/check_md5sums.sh bsup-uncompressed
 ZNG_UNCOMPRESSED_SUCCESS="$?"
 echo
-scripts/check_md5sums.sh zson
+scripts/check_md5sums.sh jsup
 ZSON_SUCCESS="$?"
 echo
 

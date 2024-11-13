@@ -2,121 +2,62 @@ package vcache
 
 import (
 	"context"
-	"fmt"
 
-	"github.com/brimdata/zed"
-	"github.com/brimdata/zed/pkg/storage"
-	"github.com/brimdata/zed/vng"
-	"github.com/segmentio/ksuid"
-	"golang.org/x/sync/errgroup"
+	"github.com/brimdata/super"
+	"github.com/brimdata/super/pkg/storage"
+	"github.com/brimdata/super/vector"
+	"github.com/brimdata/super/vng"
 )
 
-const MaxTypesPerObject = 2500
-
-// Object represents the collection of vectors that are loaded into
-// memory for a given data object as referenced by its ID.
-// An Object structure mirrors the metadata structures used in VNG but here
-// we support dynamic loading of vectors as they are needed and data and
-// metadata are all cached in memory.
+// Object is the interface to load a given VNG object from storage into
+// memory and perform projections (or whole value reads) of the in-memory data.
+// This is also suitable for one-pass use where the data is read on demand,
+// used for processing, then discarded.  Objects maybe be persisted across
+// multiple callers of Cache and the super.Context in use is passed in for
+// each vector constructed from its in-memory shadow.
 type Object struct {
-	id     ksuid.KSUID
-	uri    *storage.URI
-	engine storage.Engine
-	reader storage.Reader
-	// We keep a local context for each object since a new type context is created
-	// for each query and we need to map the VNG object context to the query
-	// context.  Of course, with Zed, this is very cheap.
-	local *zed.Context
-	// There is one vector per Zed type and the typeIDs array provides
-	// the sequence order of each vector to be accessed.  When
-	// ordering doesn't matter, the vectors can be traversed directly
-	// without an indirection through the typeIDs array.
-	vectors []Vector
-	types   []zed.Type
-	typeIDs []int32
+	object *vng.Object
+	root   shadow
 }
 
 // NewObject creates a new in-memory Object corresponding to a VNG object
-// residing in storage.  It loads the list of VNG root types (one per value
-// in the file) and the VNG metadata for vector reassembly.  This provides
-// the metadata needed to load vector chunks on demand only as they are
-// referenced.
-func NewObject(ctx context.Context, engine storage.Engine, uri *storage.URI, id ksuid.KSUID) (*Object, error) {
+// residing in storage.  The VNG header and metadata section are read and
+// the metadata is deserialized so that vectors can be loaded into the cache
+// on demand only as needed and retained in memory for future use.
+func NewObject(ctx context.Context, engine storage.Engine, uri *storage.URI) (*Object, error) {
 	// XXX currently we open a storage.Reader for every object and never close it.
 	// We should either close after a timeout and reopen when needed or change the
 	// storage API to have a more reasonable semantics around the Put/Get not leaving
 	// a file descriptor open for every long Get.  Perhaps there should be another
-	// method for intermitted random access.
+	// method for intermittent random access.
+	// XXX maybe open the reader inside Fetch if needed?
 	reader, err := engine.Get(ctx, uri)
 	if err != nil {
 		return nil, err
 	}
-	size, err := storage.Size(reader)
+	object, err := vng.NewObject(reader)
 	if err != nil {
 		return nil, err
 	}
-	zctx := zed.NewContext()
-	z, err := vng.NewObject(zctx, reader, size)
-	if err != nil {
-		return nil, err
-	}
-	typeIDs, metas, err := z.FetchMetadata()
-	if err != nil {
-		return nil, err
-	}
-	if len(metas) == 0 {
-		return nil, fmt.Errorf("empty VNG object: %s", uri)
-	}
-	if len(metas) > MaxTypesPerObject {
-		return nil, fmt.Errorf("too many types is VNG object: %s", uri)
-	}
-	types := make([]zed.Type, 0, len(metas))
-	for _, meta := range metas {
-		types = append(types, meta.Type(zctx))
-	}
-	var group errgroup.Group
-	vectors := make([]Vector, len(metas))
-	for k, meta := range metas {
-		which := k
-		this := meta
-		group.Go(func() error {
-			v, err := NewVector(this, reader)
-			if err != nil {
-				return err
-			}
-			vectors[which] = v
-			return nil
-		})
-	}
-	if err := group.Wait(); err != nil {
-		return nil, err
-	}
+	return NewObjectFromVNG(object), nil
+}
+
+func NewObjectFromVNG(object *vng.Object) *Object {
 	return &Object{
-		id:      id,
-		uri:     uri,
-		engine:  engine,
-		reader:  reader,
-		local:   zctx,
-		vectors: vectors,
-		types:   types,
-		typeIDs: typeIDs,
-	}, nil
+		object: object,
+		root:   newShadow(object.Metadata(), nil, 0),
+	}
 }
 
 func (o *Object) Close() error {
-	if o.reader != nil {
-		return o.reader.Close()
-	}
-	return nil
+	return o.object.Close()
 }
 
-func (o *Object) NewReader() *Reader {
-	return &Reader{
-		object: o,
-		iters:  make([]iterator, len(o.vectors)),
-	}
-}
-
-func (o *Object) NewProjection(fields []string) (*Projection, error) {
-	return NewProjection(o, fields)
+// Fetch returns the indicated projection of data in this VNG object.
+// If any required data is not memory resident, it will be fetched from
+// storage and cached in memory so that subsequent calls run from memory.
+// The vectors returned will have types from the provided zctx.  Multiple
+// Fetch calls to the same object may run concurrently.
+func (o *Object) Fetch(zctx *super.Context, projection Path) (vector.Any, error) {
+	return (&loader{zctx, o.object.DataReader()}).load(projection, o.root)
 }

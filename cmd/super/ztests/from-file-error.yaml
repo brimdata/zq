@@ -1,0 +1,12 @@
+script: |
+  ! super -I query.spq
+
+inputs:
+  - name: query.spq
+    data: |
+      file a.jsup
+
+outputs:
+  - name: stderr
+    regexp: |
+      a.jsup: file does not exist.*

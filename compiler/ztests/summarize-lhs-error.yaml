@@ -1,0 +1,17 @@
+script: |
+  ! super compile -dag 'count() by this[a] := key'
+  ! super compile -dag 'this[a] := count() by key'
+  ! super compile -dag 'this[a] := count()'
+
+outputs:
+  - name: stderr
+    data: |
+      output field must be static at line 1, column 12:
+      count() by this[a] := key
+                 ~~~~~~~
+      output field must be static at line 1, column 1:
+      this[a] := count() by key
+      ~~~~~~~
+      aggregate output field must be static at line 1, column 1:
+      this[a] := count()
+      ~~~~~~~

@@ -1,8 +1,0 @@
-zed: fork (=> pass => pass)
-
-input: |
-  {a:1}
-
-output: |
-  {a:1}
-  {a:1}

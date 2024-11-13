@@ -1,0 +1,11 @@
+zed: |
+  over this => (where this > 1)
+
+vector: true
+
+input: |
+  [1]
+  [2]
+
+output: |
+  2

@@ -1,0 +1,25 @@
+script: |
+  source service.sh
+  super db create -q test
+  curl -w 'code %{response_code}\n' -d '' $SUPER_DB_LAKE/query
+  curl -w 'code %{response_code}\n' -d '{"query":""}' $SUPER_DB_LAKE/query
+  curl -w 'code %{response_code}\n' -d '{"query":"from HEAD"}' $SUPER_DB_LAKE/query
+  curl -w 'code %{response_code}\n' -d '{"query":"from :unknownmeta"}' $SUPER_DB_LAKE/query
+  curl -w 'code %{response_code}\n' -d '{"query":"from doesnotexist"}' $SUPER_DB_LAKE/query
+
+inputs:
+  - name: service.sh
+
+outputs:
+  - name: stdout
+    data: |
+      {"type":"Error","kind":"invalid operation","error":"query text is missing"}
+      code 400
+      {"type":"Error","kind":"invalid operation","error":"query text is missing"}
+      code 400
+      {"type":"Error","kind":"invalid operation","error":"HEAD: pool not found at line 1, column 6:\nfrom HEAD\n     ~~~~","compilation_errors":[{"Msg":"HEAD: pool not found","Pos":5,"End":8}]}
+      code 400
+      {"type":"Error","kind":"invalid operation","error":"unknown lake metadata type \"unknownmeta\" in from operator at line 1, column 6:\nfrom :unknownmeta\n     ~~~~~~~~~~~~","compilation_errors":[{"Msg":"unknown lake metadata type \"unknownmeta\" in from operator","Pos":5,"End":16}]}
+      code 400
+      {"type":"Error","kind":"invalid operation","error":"doesnotexist: pool not found at line 1, column 6:\nfrom doesnotexist\n     ~~~~~~~~~~~~","compilation_errors":[{"Msg":"doesnotexist: pool not found","Pos":5,"End":16}]}
+      code 400

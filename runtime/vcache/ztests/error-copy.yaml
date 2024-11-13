@@ -1,0 +1,15 @@
+script: |
+  super -f csup -o test.csup -
+  super dev vector copy -z test.csup
+
+inputs:
+  - name: stdin
+    data: &input |
+      error("error1")
+      error("error2")
+      error("error3")
+      null(error(string))
+
+outputs:
+  - name: stdout
+    data: *input

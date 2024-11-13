@@ -5,8 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/brimdata/zed"
-	"github.com/brimdata/zed/pkg/nano"
+	"github.com/brimdata/super"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -33,7 +32,7 @@ func makeHeader(name string, rest []string) string {
 // directives, expecting them to all be parsed successfully.
 // A parser object ready for further testing is returned.
 func startTest(t *testing.T, headers []string) *Parser {
-	p := NewParser(zed.NewContext())
+	p := NewParser(super.NewContext())
 	for _, h := range headers {
 		require.NoError(t, p.ParseDirective([]byte(h)))
 	}
@@ -62,7 +61,7 @@ func startLegacyTest(t *testing.T, fields, types []string, path string) *Parser 
 
 // sendLegacyValues() formats the array of values as a legacy zeek log line
 // and parses it.
-func sendLegacyValues(p *Parser, vals []string) (*zed.Value, error) {
+func sendLegacyValues(p *Parser, vals []string) (*super.Value, error) {
 	return p.ParseValue([]byte(strings.Join(vals, "\t")))
 }
 
@@ -79,8 +78,7 @@ func TestLegacyZeekValid(t *testing.T) {
 	record, err := sendLegacyValues(parser, values)
 	require.NoError(t, err)
 
-	assert.Equal(t, record.Deref("ts").MissingAsNull(), zed.Null)
-	assert.Equal(t, record.Deref("ts").MissingAsNull().AsTime(), nano.Ts(0))
+	assert.Equal(t, record.Deref("ts").MissingAsNull(), super.Null)
 	// XXX check contents of other fields?
 
 	// Test standard headers with a timestamp in records
@@ -109,12 +107,6 @@ func TestLegacyZeekValid(t *testing.T) {
 	// XXX test overriding separator, setSeparator
 }
 
-func assertInt64(t *testing.T, i int64, val *zed.Value, what string) {
-	ok := val.Type == zed.TypeInt64
-	assert.Truef(t, ok, "%s is type int", what)
-	assert.Equalf(t, i, zed.DecodeInt(val.Bytes), "%s has value %d", what, i)
-}
-
 func TestNestedRecords(t *testing.T) {
 	// Test the parser handling of nested records.
 	// The schema used here touches several edge cases:
@@ -132,28 +124,28 @@ func TestNestedRecords(t *testing.T) {
 	require.NoError(t, record.Validate())
 
 	// First check that the descriptor was created correctly
-	fields := zed.TypeRecordOf(record.Type).Fields
+	fields := super.TypeRecordOf(record.Type()).Fields
 	assert.Equal(t, 5, len(fields), "Descriptor has 5 fields")
 	assert.Equal(t, "a", fields[0].Name, "Field 0 is a")
 	assert.Equal(t, "nest1", fields[1].Name, "Field 1 is nest1")
-	nest1Type, ok := fields[1].Type.(*zed.TypeRecord)
+	nest1Type, ok := fields[1].Type.(*super.TypeRecord)
 	assert.True(t, ok, "Fields nest1 is a record")
 	assert.Equal(t, 3, len(nest1Type.Fields), "nest1 has 3 fields")
 	assert.Equal(t, "a", nest1Type.Fields[0].Name, "First field in nest1 is a")
 	assert.Equal(t, "b", nest1Type.Fields[1].Name, "Second field in nest1 is b")
 	assert.Equal(t, "nestnest", nest1Type.Fields[2].Name, "Third field in nest1 is nestnest")
-	nestnestType, ok := nest1Type.Fields[2].Type.(*zed.TypeRecord)
+	nestnestType, ok := nest1Type.Fields[2].Type.(*super.TypeRecord)
 	assert.True(t, ok, "nest1.nestnest is a record")
 	assert.Equal(t, 1, len(nestnestType.Fields), "nest1.nestnest has 1 field")
 	assert.Equal(t, "c", nestnestType.Fields[0].Name, "First field in nest1.nestnest is c")
 	assert.Equal(t, "b", fields[2].Name, "Field 2 is b")
 	assert.Equal(t, "nest2", fields[3].Name, "Field 3 is nest2")
-	nest2Type, ok := fields[3].Type.(*zed.TypeRecord)
+	nest2Type, ok := fields[3].Type.(*super.TypeRecord)
 	assert.True(t, ok, "Fields nest2 is a record")
 	assert.Equal(t, 1, len(nest2Type.Fields), "nest2 has 1 field")
 	assert.Equal(t, "y", nest2Type.Fields[0].Name, "field in nest2 is y")
 	assert.Equal(t, "nest3", fields[4].Name, "Field 4 is nest3")
-	nest3Type, ok := fields[4].Type.(*zed.TypeRecord)
+	nest3Type, ok := fields[4].Type.(*super.TypeRecord)
 	assert.True(t, ok, "Field nest3 is a record")
 	assert.Equal(t, 1, len(nest3Type.Fields), "nest3 has 1 field")
 	assert.Equal(t, "z", nest3Type.Fields[0].Name, "field in nest3 is z")
@@ -162,22 +154,22 @@ func TestNestedRecords(t *testing.T) {
 	assert.Equal(t, 1, int(record.Deref("a").AsInt()), "Field a has value 1")
 
 	e := record.Deref("nest1")
-	assert.Equal(t, nest1Type, e.Type, "Got right type for field nest1")
+	assert.Equal(t, nest1Type, e.Type(), "Got right type for field nest1")
 	assert.Equal(t, 2, int(e.Deref("a").AsInt()), "nest1.a")
 	assert.Equal(t, 3, int(e.Deref("b").AsInt()), "nest1.b")
 
 	e = e.Deref("nestnest")
-	assert.Equal(t, nestnestType, e.Type, "Got right type for field nest1.nestnest")
+	assert.Equal(t, nestnestType, e.Type(), "Got right type for field nest1.nestnest")
 	assert.Equal(t, 6, int(e.Deref("c").AsInt()), "nest1.nestnest.c")
 
 	assert.Equal(t, 4, int(record.Deref("b").AsInt()), "Field b has value 4")
 
 	e = record.Deref("nest2")
-	assert.Equal(t, nest2Type, e.Type, "Got right type for field nest2")
+	assert.Equal(t, nest2Type, e.Type(), "Got right type for field nest2")
 	assert.Equal(t, 5, int(e.Deref("y").AsInt()), "nest2.y")
 
 	e = record.Deref("nest3")
-	assert.Equal(t, nest3Type, e.Type, "Got right type for field nest3")
+	assert.Equal(t, nest3Type, e.Type(), "Got right type for field nest3")
 	assert.Equal(t, 7, int(e.Deref("z").AsInt()), "nest3.z")
 }
 

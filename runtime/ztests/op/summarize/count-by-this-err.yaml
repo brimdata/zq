@@ -1,0 +1,8 @@
+zed: count() by this
+
+vector: true
+
+error: |
+  cannot assign to 'this' at line 1, column 12:
+  count() by this
+             ~~~~

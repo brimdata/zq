@@ -1,15 +1,15 @@
 script: |
-  export ZED_LAKE=test
-  zed init -q
+  export SUPER_DB_LAKE=test
+  super db init -q
   for o in asc desc; do
     echo // $o
-    zed create -q -orderby k:$o $o
-    zed load -q -use $o in.zson
-    zed query -z "from $o | k >= 1 k <= 3"
+    super db create -q -orderby k:$o $o
+    super db load -q -use $o in.jsup
+    super db query -z "from $o |> k >= 1 and k <= 3"
   done
 
 inputs:
-  - name: in.zson
+  - name: in.jsup
     data: |
       {k:null(int64),v:"null"}
       {k:0,v:"zero"}

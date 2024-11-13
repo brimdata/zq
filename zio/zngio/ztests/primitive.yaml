@@ -1,5 +1,5 @@
 script: |
-  zq -i zson - | zq -i zng -z -
+  super -i jsup - | super -i bsup -z -
 
 inputs:
   - name: stdin

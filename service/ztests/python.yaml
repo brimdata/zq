@@ -2,18 +2,18 @@ script: |
   python3 -m venv v
   . v/bin/activate
 
-  mkdir zed
-  mv setup.py zed.py zed
+  mkdir superdb
+  mv setup.py superdb.py superdb
   # -qq supresses warnings about availability of newer pip versions.
-  pip install -qq ./zed
+  pip install -qq ./superdb
 
   source service.sh
 
   python <<EOF
-  import zed
-  c = zed.Client('$ZED_LAKE')
+  import superdb
+  c = superdb.Client('$SUPER_DB_LAKE')
   c.create_pool('test')
-  with open('in.zson') as f:
+  with open('in.jsup') as f:
     c.load('test', f)
   for rec in c.query('from test'):
     print(rec)
@@ -36,7 +36,7 @@ script: |
   EOF
 
 inputs:
-  - name: in.zson
+  - name: in.jsup
     data: |
       {
         u8: 0 (myuint8=uint8),
@@ -50,7 +50,8 @@ inputs:
         dur: 0s (=myduration),
         tim: 1970-01-01T00:00:00Z (=mytime),
         f64: 0. (=myfloat64),
-        boo: false (=mybool),
+        false: false (=mybool),
+        true: true,
         byt: 0x00 (=mybytes),
         str: "" (=mystring),
         ip: 0.0.0.0 (=myip),
@@ -137,9 +138,9 @@ inputs:
   - name: service.sh
     source: service.sh
   - name: setup.py
-    source: ../../python/zed/setup.py
-  - name: zed.py
-    source: ../../python/zed/zed.py
+    source: ../../python/superdb/setup.py
+  - name: superdb.py
+    source: ../../python/superdb/superdb.py
 
 outputs:
   - name: stdout
@@ -152,12 +153,12 @@ outputs:
       {'array': [{'a': 1}, {'a': 2}]}
       {'union': 123}
       {'enum': 'bar'}
-      {'u8': 0, 'u16': 0, 'u32': 0, 'u64': 0, 'i8': 0, 'i16': 0, 'i32': 0, 'i64': 0, 'dur': datetime.timedelta(0), 'tim': datetime.datetime(1970, 1, 1, 0, 0, tzinfo=tzutc()), 'f64': 0.0, 'boo': False, 'byt': b'\x00', 'str': '', 'ip': IPv4Address('0.0.0.0'), 'net': IPv4Network('0.0.0.0/0'), 'err': '', 'nul': None}
+      {'u8': 0, 'u16': 0, 'u32': 0, 'u64': 0, 'i8': 0, 'i16': 0, 'i32': 0, 'i64': 0, 'dur': datetime.timedelta(0), 'tim': datetime.datetime(1970, 1, 1, 0, 0, tzinfo=tzutc()), 'f64': 0.0, 'false': False, 'true': True, 'byt': b'\x00', 'str': '', 'ip': IPv4Address('0.0.0.0'), 'net': IPv4Network('0.0.0.0/0'), 'err': '', 'nul': None}
       {'u8': 0, 'u16': 0, 'u32': 0, 'u64': 0, 'i8': 0, 'i16': 0, 'i32': 0, 'i64': 0, 'dur': datetime.timedelta(0), 'tim': datetime.datetime(1970, 1, 1, 0, 0, tzinfo=tzutc()), 'f64': 0.0, 'boo': False, 'byt': b'\x00', 'str': '', 'ip': IPv4Address('0.0.0.0'), 'net': IPv4Network('0.0.0.0/0'), 'err': '', 'nul': None}
       === JSON
-      [{"map":[{"key":"a","value":{"a":1,"b":2}},{"key":"b","value":{"a":2,"b":3}},{"key":"c","value":{"a":3,"b":4}}]},{"set":[1,2,3,4]},{"union":["a","b"]},{"union":[1,2]},{"union":"hello"},{"array":[{"a":1},{"a":2}]},{"union":123},{"enum":"bar"},{"u8":0,"u16":0,"u32":0,"u64":0,"i8":0,"i16":0,"i32":0,"i64":0,"dur":"0s","tim":"1970-01-01T00:00:00Z","f64":0,"boo":false,"byt":"0x00","str":"","ip":"0.0.0.0","net":"0.0.0.0/0","err":{"error":""},"nul":null},{"u8":0,"u16":0,"u32":0,"u64":0,"i8":0,"i16":0,"i32":0,"i64":0,"dur":"0s","tim":"1970-01-01T00:00:00Z","f64":0,"boo":false,"byt":"0x00","str":"","ip":"0.0.0.0","net":"0.0.0.0/0","err":{"error":""},"nul":null}]
+      [{"map":{"a":{"a":1,"b":2},"b":{"a":2,"b":3},"c":{"a":3,"b":4}}},{"set":[1,2,3,4]},{"union":["a","b"]},{"union":[1,2]},{"union":"hello"},{"array":[{"a":1},{"a":2}]},{"union":123},{"enum":"bar"},{"u8":0,"u16":0,"u32":0,"u64":0,"i8":0,"i16":0,"i32":0,"i64":0,"dur":"0s","tim":"1970-01-01T00:00:00Z","f64":0,"false":false,"true":true,"byt":"0x00","str":"","ip":"0.0.0.0","net":"0.0.0.0/0","err":{"error":""},"nul":null},{"u8":0,"u16":0,"u32":0,"u64":0,"i8":0,"i16":0,"i32":0,"i64":0,"dur":"0s","tim":"1970-01-01T00:00:00Z","f64":0,"boo":false,"byt":"0x00","str":"","ip":"0.0.0.0","net":"0.0.0.0/0","err":{"error":""},"nul":null}]
 
       ===
       RequestError('test: pool already exists')
       ===
-      RequestError('nosuchpool: pool not found')
+      RequestError('nosuchpool: pool not found at line 1, column 6:\nfrom nosuchpool\n     ~~~~~~~~~~')

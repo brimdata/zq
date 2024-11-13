@@ -1,0 +1,22 @@
+# Second input has bad middle line (detection succeeds).
+script: |
+  ! super -z -e=false good.jsup bad.jsup
+
+inputs:
+  - name: good.jsup
+    data: |
+      {_path:"conn",ts:1970-01-01T00:00:01Z}
+  - name: bad.jsup
+    data: |
+      {_path:"conn",ts:1970-01-01T00:00:01Z}
+      {_path:"conn",ts:1970-01-01T00:00:01Z}
+      {_path:"conn",ts:1970-01-01T00:00:01Z} (1)
+      {_path:"conn",ts:1970-01-01T00:00:01Z}
+
+outputs:
+  - name: stdout
+    data: |
+      {_path:"conn",ts:1970-01-01T00:00:01Z}
+  - name: stderr
+    data: |
+      bad.jsup: no such type name: "1"

@@ -5,9 +5,9 @@ import (
 	"io"
 	"reflect"
 
-	"github.com/brimdata/zed"
-	"github.com/brimdata/zed/zio"
-	"github.com/brimdata/zed/zio/zjsonio"
+	"github.com/brimdata/super"
+	"github.com/brimdata/super/zio"
+	"github.com/brimdata/super/zio/zjsonio"
 )
 
 type ZJSONWriter struct {
@@ -24,7 +24,7 @@ func NewZJSONWriter(w io.Writer) *ZJSONWriter {
 	}
 }
 
-func (w *ZJSONWriter) Write(rec *zed.Value) error {
+func (w *ZJSONWriter) Write(rec super.Value) error {
 	return w.writer.Write(rec)
 }
 

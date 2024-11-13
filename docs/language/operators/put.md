@@ -9,7 +9,7 @@
 ### Description
 
 The `put` operator modifies its input with
-one or more [field assignments](../overview.md#25-field-assignments).
+one or more [field assignments](../pipeline-model.md#field-assignments).
 Each expression is evaluated based on the input record
 and the result is either assigned to a new field of the input record if it does not
 exist, or the existing field is modified in its original location with the result.
@@ -23,19 +23,19 @@ a computed value cannot be referenced in another expression.  If you need
 to re-use a computed result, this can be done by chaining multiple `put` operators.
 
 The `put` keyword is optional since it is an
-[implied operator](../overview.md#26-implied-operators).
+[implied operator](../pipeline-model.md#implied-operators).
 
 Each `<field>` expression must be a field reference expressed as a dotted path or one more
 constant index operations on `this`, e.g., `a.b`, `this["a"]["b"]`,
 etc.
 
-Each right-hand side `<expr>` can be any Zed expression.
+Each right-hand side `<expr>` can be any SuperPipe expression.
 
 For any input value that is not a record, an error is emitted.
 
 Note that when the field references are all top level,
 `put` is a special case of a `yield` with a
-[record literal](../overview.md#7112-record-expressions)
+[record literal](../expressions.md#record-expressions)
 using a spread operator of the form:
 ```
 yield {...this, <field>:<expr> [, <field>:<expr>...]}
@@ -45,7 +45,7 @@ yield {...this, <field>:<expr> [, <field>:<expr>...]}
 
 _A simple put_
 ```mdtest-command
-echo '{a:1,b:2}' | zq -z 'put c:=3' -
+echo '{a:1,b:2}' | super -z -c 'put c:=3' -
 ```
 =>
 ```mdtest-output
@@ -53,7 +53,7 @@ echo '{a:1,b:2}' | zq -z 'put c:=3' -
 ```
 _The `put` keyword may be omitted_
 ```mdtest-command
-echo '{a:1,b:2}' | zq -z 'c:=3' -
+echo '{a:1,b:2}' | super -z -c 'c:=3' -
 ```
 =>
 ```mdtest-output
@@ -61,7 +61,7 @@ echo '{a:1,b:2}' | zq -z 'c:=3' -
 ```
 _A `put` operation can also be done with a record literal_
 ```mdtest-command
-echo '{a:1,b:2}' | zq -z 'yield {...this, c:3}' -
+echo '{a:1,b:2}' | super -z -c 'yield {...this, c:3}' -
 ```
 =>
 ```mdtest-output
@@ -69,7 +69,7 @@ echo '{a:1,b:2}' | zq -z 'yield {...this, c:3}' -
 ```
 _Missing fields show up as missing errors_
 ```mdtest-command
-echo '{a:1,b:2,c:3}' | zq -z 'put d:=e' -
+echo '{a:1,b:2,c:3}' | super -z -c 'put d:=e' -
 ```
 =>
 ```mdtest-output
@@ -77,10 +77,10 @@ echo '{a:1,b:2,c:3}' | zq -z 'put d:=e' -
 ```
 _Non-record input values generate errors_
 ```mdtest-command
-echo '{a:1} 1' | zq -z 'b:=2' -
+echo '{a:1} 1' | super -z -c 'b:=2' -
 ```
 =>
 ```mdtest-output
 {a:1,b:2}
-error("put: not a record: 1")
+error({message:"put: not a record",on:1})
 ```

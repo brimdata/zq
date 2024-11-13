@@ -2,67 +2,102 @@ package vcache
 
 import (
 	"io"
+	"sync"
 
-	"github.com/brimdata/zed/vng/vector"
-	"github.com/brimdata/zed/zcode"
+	"github.com/brimdata/super/vector"
+	"github.com/brimdata/super/vng"
+	"golang.org/x/sync/errgroup"
 )
 
-type Nulls struct {
-	// The runs array encodes the run lengths of values and nulls in
-	// the same fashion as the VNG Nulls vector.
-	// This data structure provides a nice way to creator an iterator closure
-	// and (somewhat) efficiently build all the values that comprise a field
-	// into an zcode.Builder while allowing projections to intermix the calls
-	// to the iterator.  There's probably a better data structure for this
-	// but this is a prototype for now.
-	runs   []int
-	values Vector
+type nulls struct {
+	mu    sync.Mutex
+	meta  *vng.Nulls
+	local *vector.Bool
+	flat  *vector.Bool
 }
 
-func NewNulls(nulls *vector.Nulls, values Vector, r io.ReaderAt) (*Nulls, error) {
-	// The runlengths are typically small so we load them with the metadata
-	// and don't bother waiting for a reference.
-	runlens := vector.NewInt64Reader(nulls.Runs, r)
-	var runs []int
-	for {
-		run, err := runlens.Read()
-		if err != nil {
-			if err == io.EOF {
-				break
-			}
-			return nil, err
-		}
-		runs = append(runs, int(run))
+func (n *nulls) fetch(g *errgroup.Group, reader io.ReaderAt) {
+	if n == nil {
+		return
 	}
-	return &Nulls{
-		runs:   runs,
-		values: values,
-	}, nil
-}
-
-func (n *Nulls) NewIter(reader io.ReaderAt) (iterator, error) {
-	null := true
-	var run, off int
-	values, err := n.values.NewIter(reader)
-	if err != nil {
-		return nil, err
+	n.mu.Lock()
+	if n.meta == nil {
+		n.mu.Unlock()
+		return
 	}
-	return func(b *zcode.Builder) error {
-		for run == 0 {
-			if off >= len(n.runs) {
-				//XXX this shouldn't happen... call panic?
-				b.Append(nil)
-				return nil
-			}
-			null = !null
-			run = n.runs[off]
-			off++
-		}
-		run--
-		if null {
-			b.Append(nil)
+	n.mu.Unlock()
+	g.Go(func() error {
+		n.mu.Lock()
+		defer n.mu.Unlock()
+		if n.meta == nil {
 			return nil
 		}
-		return values(b)
-	}, nil
+		length := n.meta.Count + n.meta.Values.Len()
+		n.local = vector.NewBoolEmpty(length, nil)
+		runlens := vng.NewInt64Decoder(n.meta.Runs, reader) //XXX 32-bit reader?
+		var null bool
+		var off int
+		b := n.local
+		for {
+			run, err := runlens.Next()
+			if err != nil {
+				if err == io.EOF {
+					n.meta = nil
+					err = nil
+				}
+				return err
+			}
+			if null {
+				for i := 0; int64(i) < run; i++ {
+					slot := uint32(off + i)
+					b.Set(slot)
+				}
+			}
+			off += int(run)
+			null = !null
+		}
+	})
+}
+
+func (n *nulls) flatten(parent *vector.Bool) *vector.Bool {
+	if n == nil {
+		return parent
+	}
+	n.mu.Lock()
+	defer n.mu.Unlock()
+	if n.flat != nil {
+		return n.flat
+	}
+	var flat *vector.Bool
+	if parent == nil {
+		flat = n.local
+	} else if n.local != nil {
+		flat = convolve(parent, n.local)
+	} else {
+		flat = parent
+	}
+	n.flat = flat
+	n.local = nil
+	return flat
+}
+
+func convolve(parent, child *vector.Bool) *vector.Bool {
+	// convolve mixes the parent nulls boolean with a child to compute
+	// a new boolean representing the overall sets of nulls by expanding
+	// the child to be the same size as the parent and returning that results.
+	//XXX this can go faster, but lets make it correct first
+	n := parent.Len()
+	out := vector.NewBoolEmpty(n, nil)
+	var childSlot uint32
+	for slot := uint32(0); slot < n; slot++ {
+		if parent.Value(slot) {
+			out.Set(slot)
+		} else {
+			if child.Value(childSlot) {
+				out.Set(slot)
+			}
+			childSlot++
+		}
+	}
+	return out
 }

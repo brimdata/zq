@@ -1,0 +1,34 @@
+# This test exercises the partials paths in the reduducers by doing a group-by
+# with a single-row limit.  We also make sure the partials consumer can handle
+# an empty input by inncluding a record for key "a" with no value field.
+script: |
+  super -z -c "avg(n) by key with -limit 1" in.jsup > avg.jsup
+  super -z -c "count() by key with -limit 1" in.jsup > count.jsup
+  super -z -c "min(n) by key with -limit 1" in.jsup > min.jsup
+  super -z -c "max(n) by key with -limit 1" in.jsup > max.jsup
+
+inputs:
+  - name: in.jsup
+    data: |
+      {key:"a",n:0(int32)}
+      {key:"a",n:5(int32)}
+      {key:"b",n:10(int32)}
+      {key:"a"}
+
+outputs:
+  - name: avg.jsup
+    data: |
+      {key:"a",avg:2.5}
+      {key:"b",avg:10.}
+  - name: count.jsup
+    data: |
+      {key:"a",count:3(uint64)}
+      {key:"b",count:1(uint64)}
+  - name: min.jsup
+    data: |
+      {key:"a",min:0}
+      {key:"b",min:10}
+  - name: max.jsup
+    data: |
+      {key:"a",max:5}
+      {key:"b",max:10}

@@ -1,24 +1,21 @@
 script: |
-  export ZED_LAKE=test
-  zed init -q
-  zed create -q -orderby a:asc poolA
-  zed create -q -orderby b:desc poolB
-  zed load -q -use poolA a.zson
-  zed load -q -use poolB b.zson
-  zed query -Z 'from :pools | drop id | sort name | drop ts'
+  export SUPER_DB_LAKE=test
+  super db init -q
+  super db create -q -orderby a:asc poolA
+  super db create -q -orderby b:desc poolB
+  super db load -q -use poolA a.jsup
+  super db load -q -use poolB b.jsup
+  super db query -Z 'from :pools |> drop id |> sort name |> drop ts'
   echo ===
-  zed query -Z 'from poolA@main:objects | {nameof:nameof(this),...this} | drop id'
-  zed query -Z 'from poolA:log | cut nameof(this) | drop ts'
-  echo ===
-  zed index create -q Rule field a
-  zed query -Z 'from :index_rules | nameof:=nameof(this) | drop ts,id'
+  super db query -Z 'from poolA@main:objects |> {nameof:nameof(this),...this} |> drop id'
+  super db query -Z 'from poolA:log |> cut nameof(this) |> drop ts'
 
 inputs:
-  - name: a.zson
+  - name: a.jsup
     data: |
       {a:1}
       {a:2}
-  - name: b.zson
+  - name: b.jsup
     data: |
       {b:3}
       {b:2}
@@ -36,7 +33,7 @@ outputs:
                       "a"
                   ] (=field.Path)
               ] (=field.List)
-          } (=order.Layout),
+          } (=order.SortKey),
           seek_stride: 65536,
           threshold: 524288000
       }
@@ -49,7 +46,7 @@ outputs:
                       "b"
                   ] (=field.Path)
               ] (=field.List)
-          } (=order.Layout),
+          } (=order.SortKey),
           seek_stride: 65536,
           threshold: 524288000
       }
@@ -66,14 +63,4 @@ outputs:
       }
       {
           nameof: "Commit"
-      }
-      ===
-      {
-          name: "Rule",
-          fields: [
-              [
-                  "a"
-              ] (=field.Path)
-          ] (=field.List),
-          nameof: "index.FieldRule"
       }

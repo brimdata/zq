@@ -4,13 +4,12 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/brimdata/zed/api"
-	"github.com/brimdata/zed/pkg/nano"
-	"github.com/brimdata/zed/zbuf"
-	"github.com/brimdata/zed/zio"
-	"github.com/brimdata/zed/zio/anyio"
-	"github.com/brimdata/zed/zio/jsonio"
-	"github.com/brimdata/zed/zio/vngio"
+	"github.com/brimdata/super/api"
+	"github.com/brimdata/super/pkg/nano"
+	"github.com/brimdata/super/zbuf"
+	"github.com/brimdata/super/zio"
+	"github.com/brimdata/super/zio/anyio"
+	"github.com/brimdata/super/zio/jsonio"
 )
 
 type controlWriter interface {
@@ -19,7 +18,7 @@ type controlWriter interface {
 }
 
 type Writer struct {
-	cid     int
+	channel string
 	start   nano.Ts
 	writer  zio.WriteCloser
 	ctrl    bool
@@ -28,14 +27,13 @@ type Writer struct {
 
 func NewWriter(w io.WriteCloser, format string, flusher http.Flusher, ctrl bool) (*Writer, error) {
 	d := &Writer{
-		cid:     -1,
 		ctrl:    ctrl,
 		start:   nano.Now(),
 		flusher: flusher,
 	}
 	var err error
 	switch format {
-	case "zng":
+	case "bsup":
 		d.writer = NewZNGWriter(w)
 	case "zjson":
 		d.writer = NewZJSONWriter(w)
@@ -43,23 +41,19 @@ func NewWriter(w io.WriteCloser, format string, flusher http.Flusher, ctrl bool)
 		// A JSON response is always an array.
 		d.writer = jsonio.NewArrayWriter(w)
 	case "ndjson":
-		d.writer = jsonio.NewWriter(w)
+		d.writer = jsonio.NewWriter(w, jsonio.WriterOpts{})
 	default:
 		d.writer, err = anyio.NewWriter(zio.NopCloser(w), anyio.WriterOpts{
 			Format: format,
-			VNG: vngio.WriterOpts{
-				ColumnThresh: vngio.DefaultColumnThresh,
-				SkewThresh:   vngio.DefaultSkewThresh,
-			},
 		})
 	}
 	return d, err
 }
 
-func (w *Writer) WriteBatch(cid int, batch zbuf.Batch) error {
-	if w.cid != cid {
-		w.cid = cid
-		if err := w.WriteControl(api.QueryChannelSet{ChannelID: cid}); err != nil {
+func (w *Writer) WriteBatch(channel string, batch zbuf.Batch) error {
+	if w.channel != channel {
+		w.channel = channel
+		if err := w.WriteControl(api.QueryChannelSet{Channel: channel}); err != nil {
 			return err
 		}
 	}
@@ -67,8 +61,8 @@ func (w *Writer) WriteBatch(cid int, batch zbuf.Batch) error {
 	return zbuf.WriteBatch(w.writer, batch)
 }
 
-func (w *Writer) WhiteChannelEnd(channelID int) error {
-	return w.WriteControl(api.QueryChannelEnd{ChannelID: channelID})
+func (w *Writer) WhiteChannelEnd(channel string) error {
+	return w.WriteControl(api.QueryChannelEnd{Channel: channel})
 }
 
 func (w *Writer) WriteProgress(stats zbuf.Progress) error {

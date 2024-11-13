@@ -7,6 +7,7 @@
 ```
 coalesce(val: any [, ... val: any]) -> bool
 ```
+
 ### Description
 
 The _coalesce_ function returns the first of its arguments that is not null,
@@ -16,7 +17,7 @@ are null, `error("missing")`, or `error("quiet")`.
 ### Examples
 
 ```mdtest-command
-zq -z 'yield coalesce(null, error("missing"), error("quiet"), 1)'
+super -z -c 'yield coalesce(null, error("missing"), error("quiet"), 1)'
 ```
 =>
 ```mdtest-output
@@ -24,7 +25,7 @@ zq -z 'yield coalesce(null, error("missing"), error("quiet"), 1)'
 ```
 
 ```mdtest-command
-zq -z 'yield coalesce(null, error("missing"), error("quiet"))'
+super -z -c 'yield coalesce(null, error("missing"), error("quiet"))'
 ```
 =>
 ```mdtest-output

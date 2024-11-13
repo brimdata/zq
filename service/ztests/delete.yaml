@@ -1,22 +1,21 @@
 script: |
   source service.sh
-  zed create -q -orderby x:desc test
-  zed use -q test
-  zed load -q 1.zson
-  id=$(zed query -f text "from test@main:objects | cut id:=ksuid(id) | tail 1")
-  zed load -q 2.zson
-  zed query -z "*"
+  super db create -use -q -orderby x:desc test
+  super db load -q 1.jsup
+  id=$(super db query -f text "from test@main:objects |> cut id:=ksuid(id) |> tail 1")
+  super db load -q 2.jsup
+  super db query -z "from test"
   echo === | tee /dev/stderr
-  zed delete -q $id
-  zed query -z "*"
+  super db delete -q $id
+  super db query -z "from test"
   echo === | tee /dev/stderr
-  ! zed delete -q 27aaaaaaaaaaaaaaaaaaaaaaaaa
+  ! super db delete -q 27aaaaaaaaaaaaaaaaaaaaaaaaa
 
 inputs:
   - name: service.sh
-  - name: 1.zson
+  - name: 1.jsup
     data: "{x:1}"
-  - name: 2.zson
+  - name: 2.jsup
     data: "{x:2}"
 
 outputs:

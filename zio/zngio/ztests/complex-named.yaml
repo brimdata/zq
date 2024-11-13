@@ -1,6 +1,6 @@
 # Do a round-trip into serialized ZNG to make sure named types are encoded properly.
 
-script: zq - | zq -z -
+script: super - | super -z -
 
 inputs:
   - name: stdin

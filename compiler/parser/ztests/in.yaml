@@ -1,0 +1,12 @@
+zed: |
+  yield { x: 2 in a, y: b In a[1:], z: '1' IN <[string]>(a)}
+
+input: |
+  {a:[1],b:2}
+  {a:[2,3],b:2}
+  {a:[1,2,3],b:2}
+
+output: |
+  {x:false,y:false,z:true}
+  {x:true,y:false,z:false}
+  {x:true,y:true,z:true}

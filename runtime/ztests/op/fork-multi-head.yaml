@@ -1,0 +1,18 @@
+zed: |
+  fork (
+    => head 1
+    => head 2
+  )
+  |> head 1
+
+vector: true
+
+input: |
+  1
+  2
+  3
+  4
+  5
+
+output: |
+  1

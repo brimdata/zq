@@ -1,19 +1,19 @@
-script: zq -z -I src.zed
+script: super -z -I src.zed
 
 inputs:
   - name: src.zed
     data: |
       const A=1
       from (
-        file a.zson => put x:=A+1
-        file b.zson => put x:=A
-      ) | sort x
+        file a.jsup => put x:=A+1
+        file b.jsup => put x:=A
+      ) |> sort x
 
-  - name: a.zson
+  - name: a.jsup
     data: |
       {a:1}
 
-  - name: b.zson
+  - name: b.jsup
     data: |
       {b:2}
 

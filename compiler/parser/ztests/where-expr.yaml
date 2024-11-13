@@ -1,10 +1,10 @@
 script: |
-  zq -z "_path == 'conn' | count()" in.zson
+  super -z -c "_path == 'conn' |> count()" in.jsup
   echo ===
-  zq -z "count() where _path == 'conn'" in.zson
+  super -z -c "count() where _path == 'conn'" in.jsup
 
 inputs:
-  - name: in.zson
+  - name: in.jsup
     data: |
       {_path:"conn"}
       {_path:"dns"}
@@ -13,6 +13,6 @@ inputs:
 outputs:
   - name: stdout
     data: |
-      {count:2(uint64)}
+      2(uint64)
       ===
-      {count:2(uint64)}
+      2(uint64)

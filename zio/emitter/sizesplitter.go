@@ -6,11 +6,11 @@ import (
 	"io"
 	"strconv"
 
-	"github.com/brimdata/zed"
-	"github.com/brimdata/zed/pkg/bufwriter"
-	"github.com/brimdata/zed/pkg/storage"
-	"github.com/brimdata/zed/zio"
-	"github.com/brimdata/zed/zio/anyio"
+	"github.com/brimdata/super"
+	"github.com/brimdata/super/pkg/bufwriter"
+	"github.com/brimdata/super/pkg/storage"
+	"github.com/brimdata/super/zio"
+	"github.com/brimdata/super/zio/anyio"
 )
 
 type sizeSplitter struct {
@@ -61,7 +61,7 @@ func (s *sizeSplitter) Close() error {
 	return s.zwc.Close()
 }
 
-func (s *sizeSplitter) Write(val *zed.Value) error {
+func (s *sizeSplitter) Write(val super.Value) error {
 	if s.zwc == nil {
 		if err := s.nextFile(); err != nil {
 			return err

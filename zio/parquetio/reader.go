@@ -1,52 +1,80 @@
 package parquetio
 
 import (
+	"context"
 	"errors"
 	"io"
 
-	"github.com/brimdata/zed"
-	goparquet "github.com/fraugster/parquet-go"
+	"github.com/apache/arrow-go/v18/arrow/memory"
+	"github.com/apache/arrow-go/v18/parquet"
+	"github.com/apache/arrow-go/v18/parquet/file"
+	"github.com/apache/arrow-go/v18/parquet/pqarrow"
+	"github.com/brimdata/super"
+	"github.com/brimdata/super/pkg/field"
+	"github.com/brimdata/super/zio/arrowio"
 )
 
-type Reader struct {
-	fr  *goparquet.FileReader
-	typ *zed.TypeRecord
-
-	builder builder
-	val     zed.Value
-}
-
-func NewReader(zctx *zed.Context, r io.Reader) (*Reader, error) {
-	rs, ok := r.(io.ReadSeeker)
+func NewReader(zctx *super.Context, r io.Reader, fields []field.Path) (*arrowio.Reader, error) {
+	ras, ok := r.(parquet.ReaderAtSeeker)
 	if !ok {
 		return nil, errors.New("reader cannot seek")
 	}
-	fr, err := goparquet.NewFileReader(rs)
+	pr, err := file.NewParquetReader(ras)
 	if err != nil {
 		return nil, err
 	}
-	typ, err := newRecordType(zctx, fr.GetSchemaDefinition().RootColumn.Children)
+	props := pqarrow.ArrowReadProperties{
+		Parallel:  true,
+		BatchSize: 256 * 1024,
+	}
+	fr, err := pqarrow.NewFileReader(pr, props, memory.DefaultAllocator)
 	if err != nil {
+		pr.Close()
 		return nil, err
 	}
-	return &Reader{
-		fr:  fr,
-		typ: typ,
-	}, nil
+	cols := columnIndexes(fr.Manifest, fields)
+	rr, err := fr.GetRecordReader(context.TODO(), cols, nil)
+	if err != nil {
+		pr.Close()
+		return nil, err
+	}
+	ar, err := arrowio.NewReaderFromRecordReader(zctx, rr)
+	if err != nil {
+		pr.Close()
+		return nil, err
+	}
+	return ar, nil
 }
 
-func (r *Reader) Read() (*zed.Value, error) {
-	data, err := r.fr.NextRow()
-	if err != nil {
-		if err == io.EOF {
-			return nil, nil
+func columnIndexes(manifest *pqarrow.SchemaManifest, fields []field.Path) []int {
+	var indexes []int
+	for _, f := range fields {
+		for _, schemaField := range manifest.Fields {
+			indexes = appendColumnIndexesForPath(indexes, schemaField, f)
 		}
-		return nil, err
 	}
-	r.builder.Truncate()
-	for _, f := range r.typ.Fields {
-		r.builder.appendValue(f.Type, data[f.Name])
+	return indexes
+}
+
+func appendColumnIndexesForPath(indexes []int, sf pqarrow.SchemaField, path field.Path) []int {
+	if len(path) == 0 || sf.Field.Name != path[0] {
+		return indexes
 	}
-	r.val = *zed.NewValue(r.typ, r.builder.Bytes())
-	return &r.val, nil
+	if len(path) == 1 {
+		return appendColumnIndexes(indexes, sf)
+	}
+	for _, c := range sf.Children {
+		indexes = appendColumnIndexesForPath(indexes, c, path[1:])
+	}
+	return indexes
+}
+
+func appendColumnIndexes(indexes []int, sf pqarrow.SchemaField) []int {
+	if len(sf.Children) == 0 {
+		return append(indexes, sf.ColIndex)
+	}
+	for _, c := range sf.Children {
+		indexes = appendColumnIndexes(indexes, c)
+	}
+	return indexes
 }

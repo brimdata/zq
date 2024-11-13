@@ -1,9 +1,12 @@
 package zbuf
 
 import (
-	"github.com/brimdata/zed"
-	"github.com/brimdata/zed/runtime/expr"
-	"github.com/brimdata/zed/zio"
+	"slices"
+	"sync"
+	"sync/atomic"
+
+	"github.com/brimdata/super"
+	"github.com/brimdata/super/zio"
 )
 
 // Batch is an interface to a bundle of values.  Reference counting allows
@@ -23,10 +26,11 @@ import (
 // Regardless of reference count or implementation, an unreachable Batch will
 // eventually be reclaimed by the garbage collector.
 type Batch interface {
-	expr.Context
 	Ref()
 	Unref()
-	Values() []zed.Value
+	Values() []super.Value
+	// Vars accesses the variables reachable in the current scope.
+	Vars() []super.Value
 }
 
 // WriteBatch writes the values in batch to zw.  If an error occurs, WriteBatch
@@ -34,35 +38,11 @@ type Batch interface {
 func WriteBatch(zw zio.Writer, batch Batch) error {
 	vals := batch.Values()
 	for i := range vals {
-		if err := zw.Write(&vals[i]); err != nil {
+		if err := zw.Write(vals[i]); err != nil {
 			return err
 		}
 	}
 	return nil
-}
-
-// readBatch reads up to n records from zr and returns them as a Batch.  At EOS,
-// it returns a nil or short (fewer than n records) Batch and nil error.  If an
-// error is encoutered, it returns a nil Batch and the error.  Otherwise,
-// readBatch returns a full Batch of n records and nil error.
-func readBatch(zr zio.Reader, n int) (Batch, error) {
-	recs := make([]zed.Value, 0, n)
-	for len(recs) < n {
-		rec, err := zr.Read()
-		if err != nil {
-			return nil, err
-		}
-		if rec == nil {
-			break
-		}
-		// Copy the underlying buffer because the next call to
-		// zr.Read may overwrite it.
-		recs = append(recs, *rec.Copy())
-	}
-	if len(recs) == 0 {
-		return nil, nil
-	}
-	return NewArray(recs), nil
 }
 
 // A Puller produces Batches of records, signaling end-of-stream (EOS) by returning
@@ -78,32 +58,107 @@ type Puller interface {
 	Pull(bool) (Batch, error)
 }
 
-// PullerBatchSize is the maximum number of values per batch for a [Puller]
+// PullerBatchBytes is the maximum number of bytes (in the super.Value.Byte
+// sense) per batch for a [Puller] created by [NewPuller].
+const PullerBatchBytes = 512 * 1024
+
+// PullerBatchValues is the maximum number of values per batch for a [Puller]
 // created by [NewPuller].
-var PullerBatchSize = 100
+var PullerBatchValues = 100
 
 // NewPuller returns a puller for zr that returns batches containing up to
-// [PullerBatchSize] values.
+// [PullerBatchBytes] bytes and [PullerBatchValues] values.
 func NewPuller(zr zio.Reader) Puller {
-	return &puller{zr: zr}
+	return &puller{zr}
 }
 
 type puller struct {
 	zr zio.Reader
-
-	eos bool
 }
 
-func (p *puller) Pull(bool) (Batch, error) {
-	if p.eos {
+func (p *puller) Pull(done bool) (Batch, error) {
+	if done {
+		p.zr = nil
+	}
+	if p.zr == nil {
 		return nil, nil
 	}
-	batch, err := readBatch(p.zr, PullerBatchSize)
-	if err == nil && (batch == nil || len(batch.Values()) < PullerBatchSize) {
-		p.eos = true
+	batch := newPullerBatch()
+	for {
+		val, err := p.zr.Read()
+		if err != nil {
+			return nil, err
+		}
+		if val == nil {
+			p.zr = nil
+			if len(batch.vals) == 0 {
+				return nil, nil
+			}
+			return batch, nil
+		}
+		if batch.appendVal(*val) {
+			return batch, nil
+		}
 	}
-	return batch, err
 }
+
+type pullerBatch struct {
+	buf  []byte
+	refs atomic.Int32
+	vals []super.Value
+}
+
+var pullerBatchPool sync.Pool
+
+func newPullerBatch() *pullerBatch {
+	b, ok := pullerBatchPool.Get().(*pullerBatch)
+	if !ok {
+		b = &pullerBatch{
+			buf:  make([]byte, PullerBatchBytes),
+			vals: make([]super.Value, PullerBatchValues),
+		}
+	}
+	b.buf = b.buf[:0]
+	b.refs.Store(1)
+	b.vals = b.vals[:0]
+	return b
+}
+
+// appendVal appends a copy of val to b.  appendVal returns true if b is full
+// (i.e., b.buf is full, b.buf had insufficient space for val.Bytes, or b.val is
+// full).  appendVal never reallocates b.buf or b.vals.
+func (b *pullerBatch) appendVal(val super.Value) bool {
+	var bytes []byte
+	var bufFull bool
+	if !val.IsNull() {
+		if avail := cap(b.buf) - len(b.buf); avail >= len(val.Bytes()) {
+			// Append to b.buf since that won't reallocate.
+			start := len(b.buf)
+			b.buf = append(b.buf, val.Bytes()...)
+			bytes = b.buf[start:]
+			bufFull = avail == len(val.Bytes())
+		} else {
+			// Copy since appending to b.buf would reallocate.
+			bytes = slices.Clone(val.Bytes())
+			bufFull = true
+		}
+	}
+	b.vals = append(b.vals, super.NewValue(val.Type(), bytes))
+	return bufFull || len(b.vals) == cap(b.vals)
+}
+
+func (b *pullerBatch) Ref() { b.refs.Add(1) }
+
+func (b *pullerBatch) Unref() {
+	if refs := b.refs.Add(-1); refs == 0 {
+		pullerBatchPool.Put(b)
+	} else if refs < 0 {
+		panic("zbuf: negative batch reference count")
+	}
+}
+
+func (p *pullerBatch) Values() []super.Value { return p.vals }
+func (*pullerBatch) Vars() []super.Value     { return nil }
 
 func CopyPuller(w zio.Writer, p Puller) error {
 	for {
@@ -125,10 +180,10 @@ func PullerReader(p Puller) zio.Reader {
 type pullerReader struct {
 	p     Puller
 	batch Batch
-	vals  []zed.Value
+	vals  []super.Value
 }
 
-func (r *pullerReader) Read() (*zed.Value, error) {
+func (r *pullerReader) Read() (*super.Value, error) {
 	// Loop handles zero-length batches.
 	for len(r.vals) == 0 {
 		if r.batch != nil {
@@ -159,26 +214,26 @@ func (r *pullerReader) Read() (*zed.Value, error) {
 
 type batch struct {
 	Batch
-	vars []zed.Value
+	vars []super.Value
 }
 
-func NewBatch(b Batch, vals []zed.Value) Batch {
+func NewBatch(b Batch, vals []super.Value) Batch {
 	return &batch{
 		Batch: NewArray(vals),
 		vars:  CopyVars(b),
 	}
 }
 
-func (b *batch) Vars() []zed.Value {
+func (b *batch) Vars() []super.Value {
 	return b.vars
 }
 
-func CopyVars(b Batch) []zed.Value {
+func CopyVars(b Batch) []super.Value {
 	vars := b.Vars()
 	if len(vars) > 0 {
-		newvars := make([]zed.Value, len(vars))
+		newvars := make([]super.Value, len(vars))
 		for k, v := range vars {
-			newvars[k] = *v.Copy()
+			newvars[k] = v.Copy()
 		}
 		vars = newvars
 	}

@@ -1,19 +1,18 @@
 package zngio
 
 import (
+	"slices"
 	"sync"
 	"sync/atomic"
 
-	"github.com/brimdata/zed"
-	"github.com/brimdata/zed/runtime/expr"
-	"github.com/brimdata/zed/zbuf"
-	"github.com/brimdata/zed/zcode"
+	"github.com/brimdata/super"
+	"github.com/brimdata/super/zbuf"
 )
 
 type batch struct {
 	buf  *buffer
 	refs int32
-	vals []zed.Value
+	vals []super.Value
 }
 
 var _ zbuf.Batch = (*batch)(nil)
@@ -23,7 +22,7 @@ var batchPool sync.Pool
 func newBatch(buf *buffer) *batch {
 	b, ok := batchPool.Get().(*batch)
 	if !ok {
-		b = &batch{vals: make([]zed.Value, 200)}
+		b = &batch{vals: make([]super.Value, 200)}
 	}
 	b.buf = buf
 	b.refs = 1
@@ -31,31 +30,15 @@ func newBatch(buf *buffer) *batch {
 	return b
 }
 
-func (b *batch) extend() *zed.Value {
+func (b *batch) extend() *super.Value {
 	n := len(b.vals)
-	if n < cap(b.vals) {
-		b.vals = b.vals[:n+1]
-	} else {
-		// Let the Go runtime figure out how to grow and copy the vals array.
-		b.vals = append(b.vals, zed.Value{})
-	}
+	b.vals = slices.Grow(b.vals, 1)[:n+1]
 	return &b.vals[n]
 }
 
 // unextend undoes what extend did.
 func (b *batch) unextend() {
 	b.vals = b.vals[:len(b.vals)-1]
-}
-
-func (b *batch) Values() []zed.Value { return b.vals }
-
-// XXX
-func (b *batch) NewValue(typ zed.Type, bytes zcode.Bytes) *zed.Value {
-	return zed.NewValue(typ, bytes)
-}
-
-func (b *batch) CopyValue(val *zed.Value) *zed.Value {
-	return zed.NewValue(val.Type, val.Bytes)
 }
 
 func (b *batch) Ref() { atomic.AddInt32(&b.refs, 1) }
@@ -72,8 +55,8 @@ func (b *batch) Unref() {
 	}
 }
 
+func (b *batch) Values() []super.Value { return b.vals }
+
 // XXX this should be ok, but we should handle nil receiver in scope so push
 // will do the right thing
-func (*batch) Vars() []zed.Value { return nil }
-
-func (b *batch) Context() expr.Context { return b }
+func (*batch) Vars() []super.Value { return nil }

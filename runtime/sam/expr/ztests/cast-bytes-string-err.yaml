@@ -1,0 +1,7 @@
+zed: 'put s:=string(b)'
+
+input: |
+  {b:0xc328}
+
+output: |
+  {b:0xc328,s:error({message:"cannot cast to string: invalid UTF-8",on:0xc328})}

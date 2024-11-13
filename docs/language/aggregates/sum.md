@@ -6,24 +6,25 @@
 ```
 sum(number) -> number
 ```
+
 ### Description
 
 The _sum_ aggregate function computes the mathematical sum of its input.
 
 ### Examples
 
-Sume of simple sequence:
+Sum of simple sequence:
 ```mdtest-command
-echo '1 2 3 4' | zq -z 'sum(this)' -
+echo '1 2 3 4' | super -z -c 'sum(this)' -
 ```
 =>
 ```mdtest-output
-{sum:10}
+10
 ```
 
 Continuous sum of simple sequence:
 ```mdtest-command
-echo '1 2 3 4' | zq -z 'yield sum(this)' -
+echo '1 2 3 4' | super -z -c 'yield sum(this)' -
 ```
 =>
 ```mdtest-output
@@ -32,11 +33,23 @@ echo '1 2 3 4' | zq -z 'yield sum(this)' -
 6
 10
 ```
+
 Unrecognized types are ignored:
 ```mdtest-command
-echo '1 2 3 4 "foo"' | zq -z 'sum(this)' -
+echo '1 2 3 4 "foo"' | super -z -c 'sum(this)' -
 ```
 =>
 ```mdtest-output
-{sum:10}
+10
+```
+
+Sum of values bucketed by key:
+```mdtest-command
+echo '{a:1,k:1} {a:2,k:1} {a:3,k:2} {a:4,k:2}' |
+  super -z -c 'sum(a) by k |> sort' -
+```
+=>
+```mdtest-output
+{k:1,sum:3}
+{k:2,sum:7}
 ```

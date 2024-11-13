@@ -1,5 +1,5 @@
 script: |
-  ! zq -f parquet -o /dev/null -
+  ! super -f parquet -o /dev/null -
 
 inputs:
   - name: stdin
@@ -10,4 +10,4 @@ inputs:
 outputs:
   - name: stderr
     data: |
-      Parquet output encountered non-record value: 1
+      parquetio: not a record: 1

@@ -7,16 +7,17 @@
 // takes a byte slice and a Type and returns a boolean indicating whether the
 // the byte slice with the indicated Type matches the value.  The package also
 // provides mechanism for coercing values in well-defined and natural ways.
-package zed
+package super
 
 import (
+	"cmp"
 	"encoding/binary"
 	"errors"
 	"fmt"
 	"sort"
 	"strings"
 
-	"github.com/brimdata/zed/zcode"
+	"github.com/brimdata/super/zcode"
 )
 
 var (
@@ -171,6 +172,11 @@ func IsFloat(id int) bool {
 // True iff the type id is encoded as a number encoding and is signed.
 func IsSigned(id int) bool {
 	return id >= IDInt8 && id <= IDTime
+}
+
+// True iff the type id is encoded as a number encoding and is unsigned.
+func IsUnsigned(id int) bool {
+	return id <= IDUint256
 }
 
 func LookupPrimitive(name string) Type {
@@ -388,18 +394,36 @@ func UniqueTypes(types []Type) []Type {
 }
 
 func CompareTypes(a, b Type) int {
-	a, b = TypeUnder(a), TypeUnder(b)
-	if cmp := compareInts(int(a.Kind()), int(b.Kind())); cmp != 0 {
+	aID, bID := a.ID(), b.ID()
+	if aID == bID {
+		if a, ok := a.(*TypeNamed); ok {
+			if b, ok := b.(*TypeNamed); ok {
+				// Named types sharing an underlying type are
+				// ordered by name.
+				return strings.Compare(a.Name, b.Name)
+			}
+			// Named type a is ordered after its underlying type b.
+			return 1
+		}
+		if _, ok := b.(*TypeNamed); ok {
+			// Named type b is ordered after its underlying type a.
+			return -1
+		}
+		// a == b
+		return 0
+	}
+	if cmp := cmp.Compare(a.Kind(), b.Kind()); cmp != 0 {
 		return cmp
 	}
+	a, b = TypeUnder(a), TypeUnder(b)
 	switch a.Kind() {
 	case PrimitiveKind:
-		return compareInts(a.ID(), b.ID())
+		return cmp.Compare(aID, bID)
 	case RecordKind:
 		ra, rb := TypeRecordOf(a), TypeRecordOf(b)
 		// First compare number of fields.
-		if len(ra.Fields) != len(rb.Fields) {
-			return compareInts(len(ra.Fields), len(rb.Fields))
+		if cmp := cmp.Compare(len(ra.Fields), len(rb.Fields)); cmp != 0 {
+			return cmp
 		}
 		// Second compare field names.
 		for i := 0; i < len(ra.Fields); i++ {
@@ -425,7 +449,7 @@ func CompareTypes(a, b Type) int {
 		return CompareTypes(ma.ValType, mb.ValType)
 	case UnionKind:
 		ua, ub := a.(*TypeUnion), b.(*TypeUnion)
-		if cmp := compareInts(len(ua.Types), len(ub.Types)); cmp != 0 {
+		if cmp := cmp.Compare(len(ua.Types), len(ub.Types)); cmp != 0 {
 			return cmp
 		}
 		for i := 0; i < len(ua.Types); i++ {
@@ -436,7 +460,7 @@ func CompareTypes(a, b Type) int {
 		return 0
 	case EnumKind:
 		ea, eb := a.(*TypeEnum), b.(*TypeEnum)
-		if cmp := compareInts(len(ea.Symbols), len(eb.Symbols)); cmp != 0 {
+		if cmp := cmp.Compare(len(ea.Symbols), len(eb.Symbols)); cmp != 0 {
 			return cmp
 		}
 		for i := 0; i < len(ea.Symbols); i++ {
@@ -448,15 +472,6 @@ func CompareTypes(a, b Type) int {
 	case ErrorKind:
 		ea, eb := a.(*TypeError), b.(*TypeError)
 		return CompareTypes(ea.Type, eb.Type)
-	}
-	return 0
-}
-
-func compareInts(a, b int) int {
-	if a < b {
-		return -1
-	} else if a > b {
-		return 1
 	}
 	return 0
 }

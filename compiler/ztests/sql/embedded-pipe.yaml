@@ -1,0 +1,30 @@
+script: |
+  super -z -I query.sql
+
+inputs:
+  - name: query.sql
+    data: |
+      select value this
+      from (
+        select value this from "a.jsup"
+        |> drop c
+        |> put a:=a-10
+      ) l
+      join "b.jsup" r on l.a==r.c
+  - name: a.jsup
+    data: |
+      {c:1,a:11}
+      {c:2,a:12}
+      {c:3,a:13}
+      {c:4,a:14}
+  - name: b.jsup
+    data: |
+      {b:[1,2],c:2}
+      {b:[3,4,5],c:3}
+      {b:[6,7],c:5}
+
+outputs:
+  - name: stdout
+    data: |
+      {l:{a:2},r:{b:[1,2],c:2}}
+      {l:{a:3},r:{b:[3,4,5],c:3}}

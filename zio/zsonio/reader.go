@@ -3,20 +3,21 @@ package zsonio
 import (
 	"io"
 
-	"github.com/brimdata/zed"
-	"github.com/brimdata/zed/zcode"
-	"github.com/brimdata/zed/zson"
+	"github.com/brimdata/super"
+	"github.com/brimdata/super/zcode"
+	"github.com/brimdata/super/zson"
 )
 
 type Reader struct {
 	reader   io.Reader
-	zctx     *zed.Context
+	zctx     *super.Context
 	parser   *zson.Parser
 	analyzer zson.Analyzer
 	builder  *zcode.Builder
+	val      super.Value
 }
 
-func NewReader(zctx *zed.Context, r io.Reader) *Reader {
+func NewReader(zctx *super.Context, r io.Reader) *Reader {
 	return &Reader{
 		reader:   r,
 		zctx:     zctx,
@@ -25,7 +26,7 @@ func NewReader(zctx *zed.Context, r io.Reader) *Reader {
 	}
 }
 
-func (r *Reader) Read() (*zed.Value, error) {
+func (r *Reader) Read() (*super.Value, error) {
 	if r.parser == nil {
 		r.parser = zson.NewParser(r.reader)
 	}
@@ -37,5 +38,6 @@ func (r *Reader) Read() (*zed.Value, error) {
 	if err != nil {
 		return nil, err
 	}
-	return zson.Build(r.builder, val)
+	r.val, err = zson.Build(r.builder, val)
+	return &r.val, err
 }

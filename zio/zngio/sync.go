@@ -4,10 +4,10 @@ import (
 	"context"
 	"io"
 
-	"github.com/brimdata/zed"
-	"github.com/brimdata/zed/pkg/peeker"
-	"github.com/brimdata/zed/runtime/expr"
-	"github.com/brimdata/zed/zbuf"
+	"github.com/brimdata/super"
+	"github.com/brimdata/super/pkg/peeker"
+	"github.com/brimdata/super/runtime/sam/expr"
+	"github.com/brimdata/super/zbuf"
 )
 
 type scannerSync struct {
@@ -20,7 +20,7 @@ type scannerSync struct {
 	eof      bool
 }
 
-func newScannerSync(ctx context.Context, zctx *zed.Context, r io.Reader, filter zbuf.Filter, opts ReaderOpts) (*scannerSync, error) {
+func newScannerSync(ctx context.Context, zctx *super.Context, r io.Reader, filter zbuf.Filter, opts ReaderOpts) (*scannerSync, error) {
 	ctx, cancel := context.WithCancel(ctx)
 	s := &scannerSync{
 		ctx:    ctx,
@@ -44,7 +44,7 @@ func newScannerSync(ctx context.Context, zctx *zed.Context, r io.Reader, filter 
 			return nil, err
 		}
 	}
-	s.worker = newWorker(ctx, &s.progress, bf, f, expr.NewContext(), opts.Validate)
+	s.worker = newWorker(ctx, &s.progress, bf, f, opts.Validate)
 	return s, nil
 }
 

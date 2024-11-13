@@ -1,0 +1,9 @@
+zed: put b:=null
+
+vector: true
+
+input: |
+  {a:1(int32)}
+
+output: |
+  {a:1(int32),b:null}

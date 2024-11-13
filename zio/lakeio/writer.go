@@ -6,19 +6,17 @@ import (
 	"io"
 	"strings"
 
-	"github.com/brimdata/zed"
-	"github.com/brimdata/zed/lake"
-	"github.com/brimdata/zed/lake/commits"
-	"github.com/brimdata/zed/lake/data"
-	"github.com/brimdata/zed/lake/index"
-	"github.com/brimdata/zed/lake/pools"
-	"github.com/brimdata/zed/lakeparse"
-	"github.com/brimdata/zed/pkg/charm"
-	"github.com/brimdata/zed/pkg/field"
-	"github.com/brimdata/zed/pkg/terminal/color"
-	"github.com/brimdata/zed/pkg/units"
-	"github.com/brimdata/zed/runtime/op/meta"
-	"github.com/brimdata/zed/zson"
+	"github.com/brimdata/super"
+	"github.com/brimdata/super/lake"
+	"github.com/brimdata/super/lake/commits"
+	"github.com/brimdata/super/lake/data"
+	"github.com/brimdata/super/lake/pools"
+	"github.com/brimdata/super/lakeparse"
+	"github.com/brimdata/super/pkg/charm"
+	"github.com/brimdata/super/pkg/terminal/color"
+	"github.com/brimdata/super/pkg/units"
+	"github.com/brimdata/super/runtime/sam/op/meta"
+	"github.com/brimdata/super/zson"
 	"github.com/segmentio/ksuid"
 )
 
@@ -41,7 +39,7 @@ type Writer struct {
 func NewWriter(w io.WriteCloser, opts WriterOpts) *Writer {
 	writer := &Writer{
 		writer:   w,
-		zson:     zson.NewFormatter(0, nil),
+		zson:     zson.NewFormatter(0, false, nil),
 		commits:  make(table),
 		branches: make(map[ksuid.KSUID][]string),
 		width:    80, //XXX
@@ -57,7 +55,7 @@ func NewWriter(w io.WriteCloser, opts WriterOpts) *Writer {
 	return writer
 }
 
-func (w *Writer) Write(rec *zed.Value) error {
+func (w *Writer) Write(rec super.Value) error {
 	var v interface{}
 	if err := unmarshaler.Unmarshal(rec, &v); err != nil {
 		return w.WriteZSON(rec)
@@ -72,15 +70,11 @@ func (w *Writer) Close() error {
 	return w.writer.Close()
 }
 
-func (w *Writer) WriteZSON(rec *zed.Value) error {
-	s, err := w.zson.FormatRecord(rec)
-	if err != nil {
+func (w *Writer) WriteZSON(rec super.Value) error {
+	if _, err := io.WriteString(w.writer, w.zson.FormatRecord(rec)); err != nil {
 		return err
 	}
-	if _, err := io.WriteString(w.writer, s); err != nil {
-		return err
-	}
-	_, err = io.WriteString(w.writer, "\n")
+	_, err := io.WriteString(w.writer, "\n")
 	return err
 }
 
@@ -99,16 +93,6 @@ func (w *Writer) formatValue(t table, b *bytes.Buffer, v interface{}, width int,
 	case *commits.Commit:
 		branches := w.branches[v.ID]
 		t.formatCommit(b, v, branches, w.headName, w.headID, width, colors)
-	case index.Rule:
-		name := v.RuleName()
-		if name != w.rulename {
-			w.rulename = name
-			b.WriteString(name)
-			b.WriteByte('\n')
-		}
-		tab(b, 4)
-		b.WriteString(v.String())
-		b.WriteByte('\n')
 	case *lake.BranchTip:
 		w.branches[v.Commit] = append(w.branches[v.Commit], v.Name)
 	default:
@@ -125,9 +109,9 @@ func formatPoolConfig(b *bytes.Buffer, p *pools.Config) {
 	b.WriteByte(' ')
 	b.WriteString(p.ID.String())
 	b.WriteString(" key ")
-	b.WriteString(field.List(p.Layout.Keys).String())
+	b.WriteString(p.SortKeys.Primary().Key.String())
 	b.WriteString(" order ")
-	b.WriteString(p.Layout.Order.String())
+	b.WriteString(p.SortKeys.Primary().Order.String())
 	b.WriteByte('\n')
 }
 
@@ -238,12 +222,8 @@ func (t table) formatActions(b *bytes.Buffer, id ksuid.KSUID) {
 		switch action := action.(type) {
 		case *commits.Add:
 			formatAdd(b, 4, action)
-		case *commits.AddIndex:
-			formatAddIndex(b, 4, action)
 		case *commits.Delete:
 			formatDelete(b, 4, action)
-		case *commits.DeleteIndex:
-			formatDeleteIndex(b, 4, action)
 		}
 	}
 	b.WriteString("\n")
@@ -258,22 +238,4 @@ func formatDelete(b *bytes.Buffer, indent int, delete *commits.Delete) {
 
 func formatAdd(b *bytes.Buffer, indent int, add *commits.Add) {
 	formatDataObject(b, &add.Object, "Add", indent)
-}
-
-func formatAddIndex(b *bytes.Buffer, indent int, addx *commits.AddIndex) {
-	formatIndexObject(b, addx.Object.Rule.RuleID(), addx.Object.ID, "AddIndex", indent)
-}
-
-func formatDeleteIndex(b *bytes.Buffer, indent int, delx *commits.DeleteIndex) {
-	formatIndexObject(b, delx.RuleID, delx.ID, "DeleteIndex", indent)
-}
-
-func formatIndexObject(b *bytes.Buffer, ruleID, id ksuid.KSUID, prefix string, indent int) {
-	tab(b, indent)
-	if prefix != "" {
-		b.WriteString(prefix)
-		b.WriteByte(' ')
-	}
-	fmt.Fprintf(b, "%s index %s object", ruleID, id) //XXX
-	b.WriteByte('\n')
 }

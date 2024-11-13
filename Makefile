@@ -1,8 +1,12 @@
 export GO111MODULE=on
 
 VERSION = $(shell git describe --tags --dirty --always)
-LDFLAGS = -s -X github.com/brimdata/zed/cli.version=$(VERSION)
-BUILD_COMMANDS = ./cmd/zed ./cmd/zq
+LDFLAGS = -s -X github.com/brimdata/super/cli.version=$(VERSION)
+BUILD_COMMANDS = ./cmd/super
+
+ifeq "$(filter-out 386 arm mips mipsle, $(shell go env GOARCH))" ""
+$(error 32-bit architectures are unsupported; see https://github.com/brimdata/super/issues/4044)
+endif
 
 # This enables a shortcut to run a single test from the ./ztests suite, e.g.:
 #  make TEST=TestZed/ztests/suite/cut/cut
@@ -79,23 +83,18 @@ install:
 installdev:
 	@go install -ldflags='$(LDFLAGS)' ./cmd/...
 
-PEG_GEN := $(addprefix compiler/parser/parser., go js es.js)
-$(PEG_GEN): compiler/parser/Makefile compiler/parser/support.js compiler/parser/parser.peg
+compiler/parser/parser.go: compiler/parser/Makefile compiler/parser/support.go compiler/parser/parser.peg
 	$(MAKE) -C compiler/parser
 
 # This rule is best for edit-compile-debug cycle of peg development.  It should
 # properly trigger rebuilds of peg-generated code, but best to run
-# "make -C compiler/parser" when changing versions of pigeon, pegjs, or JavaScript
-# dependencies.
-.PHONY: peg peg-run
-peg: $(PEG_GEN)
-
-peg-run: $(PEG_GEN)
-	go run ./cmd/zc -repl
+# "make -C compiler/parser" when changing versions of pigeon.
+.PHONY: peg
+peg: compiler/parser/parser.go
 
 .PHONY: markdown-lint
 markdown-lint:
-	@npm install --no-save markdownlint-cli
+	@npm install --no-save markdownlint-cli@0.35.0
 	@npx markdownlint docs
 
 # CI performs these actions individually since that looks nicer in the UI;

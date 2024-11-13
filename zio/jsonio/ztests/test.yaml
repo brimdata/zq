@@ -1,4 +1,4 @@
-script: zq -i json -f zng - | zq -f json -
+script: super -i json -f bsup - | super -f json -
 
 inputs:
   - name: stdin
@@ -8,4 +8,8 @@ inputs:
 outputs:
   - name: stdout
     data: |
-      {"a":{"b":"1"}}
+      {
+          "a": {
+              "b": "1"
+          }
+      }

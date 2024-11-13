@@ -30,6 +30,8 @@ POST /pool
 | layout.order | string | body | Order of storage by primary key(s) in pool. Possible values: desc, asc. Default: asc. |
 | layout.keys | [[string]] | body | Primary key(s) of pool. The element of each inner string array should reflect the hierarchical ordering of named fields within indexed records. Default: [[ts]]. |
 | thresh | int | body | The size in bytes of each seek index. |
+| Content-Type | string | header | [MIME type](#mime-types) of the request payload. |
+| Accept | string | header | Preferred [MIME type](#mime-types) of the response. |
 
 **Example Request**
 
@@ -85,12 +87,12 @@ PUT /pool/{pool}
 | ---- | ---- | -- | ----------- |
 | pool | string | path | **Required.** ID or name of the requested pool. |
 | name | string | body | **Required.** The desired new name of the pool. Must be unique to lake. |
+| Content-Type | string | header | [MIME type](#mime-types) of the request payload. |
 
 **Example Request**
 
 ```
 curl -X PUT \
-     -H 'Accept: application/json' \
      -H 'Content-Type: application/json' \
      -d '{"name": "catalog"}' \
      http://localhost:9867/pool/inventory
@@ -118,10 +120,43 @@ DELETE /pool/{pool}
 
 ```
 curl -X DELETE \
-      http://localhost:9867/pool/inventory
+     http://localhost:9867/pool/inventory
 ```
 
 On success, HTTP 204 is returned with no response payload.
+
+---
+
+#### Vacuum pool
+
+Free storage space by permanently removing underlying data objects that have
+previously been subject to a [delete](#delete-data) operation.
+
+```
+POST /pool/{pool}/revision/{revision}/vacuum
+```
+
+**Params**
+
+| Name | Type | In | Description |
+| ---- | ---- | -- | ----------- |
+| pool | string | path | **Required.** ID or name of the requested pool. |
+| revision | string | path | **Required.** The starting point for locating objects that can be vacuumed. Can be the name of a branch (whose tip would be used) or a commit ID. |
+| dryrun | string | query | Set to "T" to return the list of objects that could be vacuumed, but don't actually remove them. Defaults to "F". |
+
+**Example Request**
+
+```
+curl -X POST \
+     -H 'Accept: application/json' \
+     http://localhost:9867/pool/inventory/revision/main/vacuum
+```
+
+**Example Response**
+
+```
+{"object_ids":["0x10f5a24253887eaf179ee385532ee411c2ed8050","0x10f5a2410ccd08f72e5d98f6d054477173b4f13f"]}
+```
 
 ---
 
@@ -142,8 +177,9 @@ POST /pool/{pool}/branch/{branch}
 | pool | string | path | **Required.** ID or name of the pool. |
 | branch | string | path | **Required.** Name of branch to which data will be loaded. |
 |   | various | body | **Required.** Contents of the posted data. |
-| Content-Type | string | header | MIME type of the posted content. If undefined, the service will attempt to introspect the data and determine type automatically. |
 | csv.delim | string | query | Exactly one character specifying the field delimiter for CSV data. Defaults to ",". |
+| Content-Type | string | header | [MIME type](#mime-types) of the posted content. If undefined, the service will attempt to introspect the data and determine type automatically. |
+| Accept | string | header | Preferred [MIME type](#mime-types) of the response. |
 
 **Example Request**
 
@@ -179,6 +215,7 @@ GET /pool/{pool}/branch/{branch}
 | ---- | ---- | -- | ----------- |
 | pool | string | path | **Required.** ID or name of the pool. |
 | branch | string | path | **Required.** Name of branch. |
+| Accept | string | header | Preferred [MIME type](#mime-types) of the response. |
 
 **Example Request**
 
@@ -215,7 +252,7 @@ DELETE /pool/{pool}/branch/{branch}
 
 ```
 curl -X DELETE \
-      http://localhost:9867/pool/inventory/branch/staging
+     http://localhost:9867/pool/inventory/branch/staging
 ```
 
 On success, HTTP 204 is returned with no response payload.
@@ -226,7 +263,12 @@ On success, HTTP 204 is returned with no response payload.
 
 Create a commit that reflects the deletion of some data in the branch. The data
 to delete can be specified via a list of object IDs or
-as a filter expression (see [limitations](../commands/zed.md#24-delete)).
+as a filter expression (see [limitations](../commands/super-db.md#delete)).
+
+This simply removes the data from the branch without actually removing the
+underlying data objects thereby allowing [time travel](../commands/super-db.md#time-travel) to work in the face
+of deletes. Permanent removal of underlying data objects is handled by a
+separate [vacuum](#vacuum-pool) operation.
 
 ```
 POST /pool/{pool}/branch/{branch}/delete
@@ -239,7 +281,9 @@ POST /pool/{pool}/branch/{branch}/delete
 | pool | string | path | **Required.** ID of the pool. |
 | branch | string | path | **Required.** Name of branch. |
 | object_ids | [string] | body | Object IDs to be deleted. |
-| where | string | body | Filter expression (see [limitations](../commands/zed.md#24-delete)). |
+| where | string | body | Filter expression (see [limitations](../commands/super-db.md#delete)). |
+| Content-Type | string | header | [MIME type](#mime-types) of the request payload. |
+| Accept | string | header | Preferred [MIME type](#mime-types) of the response. |
 
 **Example Request**
 
@@ -291,6 +335,7 @@ POST /pool/{pool}/branch/{branch}/merge/{child}
 | pool | string | path | **Required.** ID of the pool. |
 | branch | string | path | **Required.** Name of branch selected as merge destination. |
 | child | string | path | **Required.** Name of child branch selected as source of merge. |
+| Accept | string | header | Preferred [MIME type](#mime-types) of the response. |
 
 **Example Request**
 
@@ -323,6 +368,7 @@ POST /pool/{pool}/branch/{branch}/revert/{commit}
 | pool | string | path | **Required.** ID of the pool. |
 | branch | string | path | **Required.** Name of branch on which to revert commit. |
 | commit | string | path | **Required.** ID of commit to be reverted. |
+| Accept | string | header | Preferred [MIME type](#mime-types) of the response. |
 
 **Example Request**
 
@@ -340,75 +386,6 @@ curl -X POST \
 
 ---
 
-#### Index Objects
-
-Create an index of object(s) for the specified rule.
-
-```
-POST /pool/{pool}/branch/{branch}/index
-```
-
-**Params**
-
-| Name | Type | In | Description |
-| ---- | ---- | -- | ----------- |
-| pool | string | path | **Required.** ID of the pool. |
-| branch | string | path | **Required.** Name of branch. |
-| rule_name | string | body | **Required.** Name of indexing rule. |
-| tags | [string] | body | IDs of data objects to index. |
-
-**Example Request**
-
-```
-curl -X POST \
-     -H 'Accept: application/json' \
-     -H 'Content-Type: application/json' \
-     -d '{"rule_name": "MyRuleGroup", "tags": ["27DAbmqxukfABARaAHauARBJOXH", "27DAbeUBW7llN2mXAadYz00Zjpk"]}' \
-     http://localhost:9867/pool/inventory/branch/main/index
-
-```
-
-**Example Response**
-
-```
-{"commit":"0x0ed510f4648da9742e8e9c35e3439d5b708843e1","warnings":null}
-```
-
----
-
-#### Update Index
-
-Apply all rules or a range of index rules for all objects that are not indexed
-in a branch.
-
-```
-POST /pool/{pool}/branch/{branch}/index/update
-```
-
-**Params**
-
-| Name | Type | In | Description |
-| ---- | ---- | -- | ----------- |
-| pool | string | path | **Required.** ID of the pool. |
-| branch | string | path | **Required.** Name of branch. |
-| rule_names | [string] | body | Name(s) of index rule(s) to apply. If undefined, all rules will be applied. |
-
-**Example Request**
-
-```
-curl -X POST \
-     -H 'Accept: application/json' \
-     -H 'Content-Type: application/json' \
-     -d '{"rule_names": ["MyRuleGroup", "AnotherRuleGroup"]}' \
-     http://localhost:9867/pool/inventory/branch/main/index/update
-```
-
-**Example Response**
-
-```
-{"commit":"0x0ed51322b7d69bd0bddad10e31e3211408e34a88","warnings":null}
-```
-
 ### Query
 
 Execute a Zed query against data in a data lake.
@@ -425,6 +402,8 @@ POST /query
 | head.pool | string | body | Pool to query against Not required if pool is specified in query. |
 | head.branch | string | body | Branch to query against. Defaults to "main". |
 | ctrl | string | query | Set to "T" to include control messages in ZNG or ZJSON responses. Defaults to "F". |
+| Content-Type | string | header | [MIME type](#mime-types) of the request payload. |
+| Accept | string | header | Preferred [MIME type](#mime-types) of the response. |
 
 **Example Request**
 
@@ -432,7 +411,7 @@ POST /query
 curl -X POST \
      -H 'Accept: application/x-zson' \
      -H 'Content-Type: application/json' \
-     http://localhost:9867/query -d '{"query":"from inventory@main | count() by warehouse"}'
+     http://localhost:9867/query -d '{"query":"from inventory@main |> count() by warehouse"}'
 ```
 
 **Example Response**
@@ -448,17 +427,46 @@ curl -X POST \
 curl -X POST \
      -H 'Accept: application/x-zjson' \
      -H 'Content-Type: application/json' \
-     http://localhost:9867/query?ctrl=T -d '{"query":"from inventory@main | count() by warehouse"}'
+     http://localhost:9867/query?ctrl=T -d '{"query":"from inventory@main |> count() by warehouse"}'
 ```
 
 **Example Response**
 
 ```
-{"type":"QueryChannelSet","value":{"channel_id":0}}
+{"type":"QueryChannelSet","value":{"channel":"main"}}
 {"type":{"kind":"record","id":30,"fields":[{"name":"warehouse","type":{"kind":"primitive","name":"string"}},{"name":"count","type":{"kind":"primitive","name":"uint64"}}]},"value":["miami","1"]}
 {"type":{"kind":"ref","id":30},"value":["chicago","2"]}
-{"type":"QueryChannelEnd","value":{"channel_id":0}}
+{"type":"QueryChannelEnd","value":{"channel":"main"}}
 {"type":"QueryStats","value":{"start_time":{"sec":1658193276,"ns":964207000},"update_time":{"sec":1658193276,"ns":964592000},"bytes_read":55,"bytes_matched":55,"records_read":3,"records_matched":3}}
+```
+
+#### Query Status
+
+Retrieve any runtime errors from a specific query. This endpoint only responds
+after the query has exited and is only available for a limited time afterwards.
+
+```
+GET /query/status/{request_id}
+```
+
+**Params**
+
+| Name | Type | In | Description |
+| ---- | ---- | -- | ----------- |
+| request_id | string | path | **Required.** The value of the response header `X-Request-Id` of the target query. |
+
+**Example Request**
+
+```
+curl -X GET \
+     -H 'Accept: application/json' \
+     http://localhost:9867/query/status/2U1oso7btnCXfDenqFOSExOBEIv
+```
+
+**Example Response**
+
+```
+{"error":"parquetio: unsupported type: empty record"}
 ```
 
 ---
@@ -467,7 +475,7 @@ curl -X POST \
 
 Subscribe to an events feed, which returns an event stream in the format of
 [server-sent events](https://html.spec.whatwg.org/multipage/server-sent-events.html).
-The MIME type specified in the request's Accept HTTP header determines the format
+The [MIME type](#mime-types) specified in the request's Accept HTTP header determines the format
 of `data` field values in the event stream.
 
 ```
@@ -506,24 +514,47 @@ data: {"pool_id": "1sMDXpVwqxm36Rc2vfrmgizc3jz"}
 
 ## Media Types
 
-For response content types, the service can produce a variety of formats. To
-receive responses in the desired format, include the MIME type of the format in
-the request's Accept HTTP header.
+For both request and response payloads, the service supports a variety of
+formats.
 
-If the Accept header is not specified, the service will return ZSON as the
-default response format for the endpoints described above. A different default
-response format can be specified by invoking the `-defaultfmt` option when
-running [`zed serve`](../commands/zed.md#213-serve).
+### Request Payloads
 
-The supported MIME types are as follows:
+When sending request payloads, include the MIME type of the format in the
+request's Content-Type header. If the Content-Type header is not specified, the
+service will expect ZSON as the payload format.
 
-| Format | MIME Type |
-| ------ | --------- |
-| Arrow IPC Stream | application/vnd.apache.arrow.stream |
-| CSV | text/csv |
-| JSON | application/json |
-| NDJSON | application/x-ndjson |
-| Parquet | application/x-parquet |
-| ZJSON | application/x-zjson |
-| ZSON | application/x-zson |
-| ZNG | application/x-zng |
+An exception to this is when [loading data](#load-data) and Content-Type is not
+specified. In this case the service will attempt to introspect the data and may
+determine the type automatically. The
+[input formats](../commands/super.md#input-formats) table describes which
+formats may be successfully auto-detected.
+
+### Response Payloads
+
+To receive successful (2xx) responses in a preferred format, include the MIME
+type of the format in the request's Accept HTTP header. If the Accept header is
+not specified, the service will return ZSON as the default response format. A
+different default response format can be specified by invoking the
+`-defaultfmt` option when running [`super db serve`](../commands/super-db.md#serve).
+
+For non-2xx responses, the content type of the response will be
+`application/json` or `text/plain`.
+
+### MIME Types
+
+The following table shows the supported MIME types and where they can be used.
+
+| Format           | Request   | Response | MIME Type                             |
+| ---------------- | --------- | -------- | ------------------------------------- |
+| Arrow IPC Stream | yes       | yes      | `application/vnd.apache.arrow.stream` |
+| CSV              | yes       | yes      | `text/csv`                            |
+| JSON             | yes       | yes      | `application/json`                    |
+| Line             | yes       | no       | `application/x-line`                  |
+| NDJSON           | no        | yes      | `application/x-ndjson`                |
+| Parquet          | yes       | yes      | `application/x-parquet`               |
+| TSV              | yes       | yes      | `text/tab-separated-values`           |
+| VNG              | yes       | yes      | `application/x-vng`                   |
+| Zeek             | yes       | yes      | `application/x-zeek`                  |
+| ZJSON            | yes       | yes      | `application/x-zjson`                 |
+| ZSON             | yes       | yes      | `application/x-zson`                  |
+| ZNG              | yes       | yes      | `application/x-zng`                   |

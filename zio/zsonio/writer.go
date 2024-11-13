@@ -4,8 +4,8 @@ import (
 	"io"
 	"regexp"
 
-	"github.com/brimdata/zed"
-	"github.com/brimdata/zed/zson"
+	"github.com/brimdata/super"
+	"github.com/brimdata/super/zson"
 )
 
 type Writer struct {
@@ -14,13 +14,14 @@ type Writer struct {
 }
 
 type WriterOpts struct {
-	Pretty  int
-	Persist *regexp.Regexp
+	ColorDisabled bool
+	Pretty        int
+	Persist       *regexp.Regexp
 }
 
 func NewWriter(w io.WriteCloser, opts WriterOpts) *Writer {
 	return &Writer{
-		formatter: zson.NewFormatter(opts.Pretty, opts.Persist),
+		formatter: zson.NewFormatter(opts.Pretty, opts.ColorDisabled, opts.Persist),
 		writer:    w,
 	}
 }
@@ -29,14 +30,10 @@ func (w *Writer) Close() error {
 	return w.writer.Close()
 }
 
-func (w *Writer) Write(rec *zed.Value) error {
-	s, err := w.formatter.FormatRecord(rec)
-	if err != nil {
+func (w *Writer) Write(rec super.Value) error {
+	if _, err := io.WriteString(w.writer, w.formatter.FormatRecord(rec)); err != nil {
 		return err
 	}
-	if _, err := io.WriteString(w.writer, s); err != nil {
-		return err
-	}
-	_, err = w.writer.Write([]byte("\n"))
+	_, err := w.writer.Write([]byte("\n"))
 	return err
 }

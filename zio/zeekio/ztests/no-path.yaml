@@ -1,4 +1,4 @@
-zed: '*'
+zed: pass
 
 input: |
   #fields foo

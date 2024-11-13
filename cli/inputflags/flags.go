@@ -7,12 +7,12 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/brimdata/zed"
-	"github.com/brimdata/zed/cli/auto"
-	"github.com/brimdata/zed/pkg/storage"
-	"github.com/brimdata/zed/zio"
-	"github.com/brimdata/zed/zio/anyio"
-	"github.com/brimdata/zed/zio/zngio"
+	"github.com/brimdata/super"
+	"github.com/brimdata/super/cli/auto"
+	"github.com/brimdata/super/pkg/storage"
+	"github.com/brimdata/super/zio"
+	"github.com/brimdata/super/zio/anyio"
+	"github.com/brimdata/super/zio/zngio"
 )
 
 type Flags struct {
@@ -27,7 +27,7 @@ func (f *Flags) Options() anyio.ReaderOpts {
 }
 
 func (f *Flags) SetFlags(fs *flag.FlagSet, validate bool) {
-	fs.StringVar(&f.Format, "i", "auto", "format of input data [auto,arrows,csv,json,line,parquet,vng,zeek,zjson,zng,zson]")
+	fs.StringVar(&f.Format, "i", "auto", "format of input data [auto,arrows,bsup,csup,csv,json,jsup,line,parquet,tsv,zeek,zjson]")
 	f.CSV.Delim = ','
 	fs.Func("csv.delim", `CSV field delimiter (default ",")`, func(s string) error {
 		if len(s) != 1 {
@@ -37,12 +37,12 @@ func (f *Flags) SetFlags(fs *flag.FlagSet, validate bool) {
 		return nil
 
 	})
-	fs.BoolVar(&f.ZNG.Validate, "zng.validate", validate, "validate format when reading ZNG")
-	fs.IntVar(&f.ZNG.Threads, "zng.threads", 0, "number of ZNG read threads (0=GOMAXPROCS)")
+	fs.BoolVar(&f.ZNG.Validate, "bsup.validate", validate, "validate format when reading Super Binary")
+	fs.IntVar(&f.ZNG.Threads, "bsup.threads", 0, "number of Super Binary read threads (0=GOMAXPROCS)")
 	f.ReadMax = auto.NewBytes(zngio.MaxSize)
-	fs.Var(&f.ReadMax, "zng.readmax", "maximum ZNG read buffer size in MiB, MB, etc.")
+	fs.Var(&f.ReadMax, "bsup.readmax", "maximum Super Binary read buffer size in MiB, MB, etc.")
 	f.ReadSize = auto.NewBytes(zngio.ReadSize)
-	fs.Var(&f.ReadSize, "zng.readsize", "target ZNG read buffer size in MiB, MB, etc.")
+	fs.Var(&f.ReadSize, "bsup.readsize", "target Super Binary read buffer size in MiB, MB, etc.")
 }
 
 // Init is called after flags have been parsed.
@@ -58,7 +58,7 @@ func (f *Flags) Init() error {
 	return nil
 }
 
-func (f *Flags) Open(ctx context.Context, zctx *zed.Context, engine storage.Engine, paths []string, stopOnErr bool) ([]zio.Reader, error) {
+func (f *Flags) Open(ctx context.Context, zctx *super.Context, engine storage.Engine, paths []string, stopOnErr bool) ([]zio.Reader, error) {
 	var readers []zio.Reader
 	for _, path := range paths {
 		if path == "-" {

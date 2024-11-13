@@ -8,6 +8,7 @@ to nested records.
 ```
 nest_dotted(val: record) -> record
 ```
+
 ### Description
 The _nest_dotted_ function returns a copy of `val` with all dotted field names
 converted into nested records. If no argument is supplied to `nest_dotted`,
@@ -16,7 +17,7 @@ converted into nested records. If no argument is supplied to `nest_dotted`,
 ### Examples
 
 ```mdtest-command
-echo '{"a.b.c":"foo"}' | zq -z 'yield nest_dotted()' -
+echo '{"a.b.c":"foo"}' | super -z -c 'yield nest_dotted()' -
 ```
 =>
 ```mdtest-output
