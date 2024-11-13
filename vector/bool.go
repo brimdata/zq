@@ -171,3 +171,46 @@ func NullsOf(v Any) *Bool {
 	}
 	panic(v)
 }
+
+func setNulls(v Any, nulls *Bool) {
+	switch v := v.(type) {
+	case *Array:
+		v.Nulls = nulls
+	case *Bytes:
+		v.Nulls = nulls
+	case *Bool:
+		v.Nulls = nulls
+	case *Const:
+		v.Nulls = nulls
+	case *Dict:
+		v.Nulls = nulls
+	case *Error:
+		v.Nulls = nulls
+	case *Float:
+		v.Nulls = nulls
+	case *Int:
+		v.Nulls = nulls
+	case *IP:
+		v.Nulls = nulls
+	case *Map:
+		v.Nulls = nulls
+	case *Named:
+		setNulls(v.Any, nulls)
+	case *Net:
+		v.Nulls = nulls
+	case *Record:
+		v.Nulls = nulls
+	case *Set:
+		v.Nulls = nulls
+	case *String:
+		v.Nulls = nulls
+	case *TypeValue:
+		v.Nulls = nulls
+	case *Uint:
+		v.Nulls = nulls
+	case *Union:
+		v.Nulls = nulls
+	default:
+		panic(v)
+	}
+}

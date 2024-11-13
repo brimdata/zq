@@ -220,15 +220,15 @@ func (b *Builder) compileVamRecordExpr(e *dag.RecordExpr) (vamexpr.Evaluator, er
 }
 
 func (b *Builder) compileVamArrayExpr(e *dag.ArrayExpr) (vamexpr.Evaluator, error) {
-	elems, err := b.compileVamVectorElems(e.Elems)
+	elems, err := b.compileVamListElems(e.Elems)
 	if err != nil {
 		return nil, err
 	}
 	return vamexpr.NewArrayExpr(b.zctx(), elems), nil
 }
 
-func (b *Builder) compileVamVectorElems(elems []dag.VectorElem) ([]vamexpr.VectorElem, error) {
-	var out []vamexpr.VectorElem
+func (b *Builder) compileVamListElems(elems []dag.VectorElem) ([]vamexpr.ListElem, error) {
+	var out []vamexpr.ListElem
 	for _, elem := range elems {
 		switch elem := elem.(type) {
 		case *dag.Spread:
@@ -236,13 +236,15 @@ func (b *Builder) compileVamVectorElems(elems []dag.VectorElem) ([]vamexpr.Vecto
 			if err != nil {
 				return nil, err
 			}
-			out = append(out, vamexpr.VectorElem{Spread: e})
+			out = append(out, vamexpr.ListElem{Spread: e})
 		case *dag.VectorValue:
 			e, err := b.compileVamExpr(elem.Expr)
 			if err != nil {
 				return nil, err
 			}
-			out = append(out, vamexpr.VectorElem{Value: e})
+			out = append(out, vamexpr.ListElem{Value: e})
+		default:
+			panic(elem)
 		}
 	}
 	return out, nil

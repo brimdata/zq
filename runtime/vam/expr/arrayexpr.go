@@ -3,19 +3,20 @@ package expr
 import (
 	"github.com/brimdata/super"
 	"github.com/brimdata/super/vector"
+	"github.com/brimdata/super/zcode"
 )
 
-type VectorElem struct {
+type ListElem struct {
 	Value  Evaluator
 	Spread Evaluator
 }
 
 type ArrayExpr struct {
-	elems []VectorElem
+	elems []ListElem
 	zctx  *super.Context
 }
 
-func NewArrayExpr(zctx *super.Context, elems []VectorElem) *ArrayExpr {
+func NewArrayExpr(zctx *super.Context, elems []ListElem) *ArrayExpr {
 	return &ArrayExpr{
 		elems: elems,
 		zctx:  zctx,
@@ -34,17 +35,27 @@ func (a *ArrayExpr) Eval(this vector.Any) vector.Any {
 	return vector.Apply(false, a.eval, vecs...)
 }
 
-func (a *ArrayExpr) eval(vecs ...vector.Any) vector.Any {
-	n := vecs[0].Len()
+func (a *ArrayExpr) eval(in ...vector.Any) vector.Any {
+	n := in[0].Len()
 	if n == 0 {
 		return vector.NewConst(super.Null, 0, nil)
 	}
-	spreadOffs := make([][]uint32, len(a.elems))
-	viewIndexes := make([][]uint32, len(a.elems))
+	var spreadOffs [][]uint32
+	var viewIndexes [][]uint32
+	var vecs []vector.Any
 	for i, elem := range a.elems {
+		vec := in[i]
+		var offsets, index []uint32
 		if elem.Spread != nil {
-			vecs[i], spreadOffs[i], viewIndexes[i] = a.unwrapSpread(vecs[i])
+			vec, offsets, index = a.unwrapSpread(in[i])
+			if vec == nil {
+				// drop unspreadable elements.
+				continue
+			}
 		}
+		vecs = append(vecs, vec)
+		spreadOffs = append(spreadOffs, offsets)
+		viewIndexes = append(viewIndexes, index)
 	}
 	offsets := []uint32{0}
 	var tags []uint32
@@ -54,7 +65,6 @@ func (a *ArrayExpr) eval(vecs ...vector.Any) vector.Any {
 			if len(spreadOff) == 0 {
 				tags = append(tags, uint32(tag))
 				size++
-				continue
 			} else {
 				if index := viewIndexes[tag]; index != nil {
 					i = index[i]
@@ -81,7 +91,7 @@ func (a *ArrayExpr) eval(vecs ...vector.Any) vector.Any {
 		types := super.UniqueTypes(all)
 		if len(types) == 1 {
 			typ = types[0]
-			innerVec = vector.NewDynamic(tags, vecs)
+			innerVec = mergeSameTypeVecs(typ, tags, vecs)
 		} else {
 			typ = a.zctx.LookupTypeUnion(types)
 			innerVec = vector.NewUnion(typ.(*super.TypeUnion), tags, vecs, nil)
@@ -100,5 +110,20 @@ func (a *ArrayExpr) unwrapSpread(vec vector.Any) (vector.Any, []uint32, []uint32
 		vals, offsets, _ := a.unwrapSpread(vec.Any)
 		return vals, offsets, vec.Index
 	}
-	return vec, nil, nil
+	return nil, nil, nil
+}
+
+func mergeSameTypeVecs(typ super.Type, tags []uint32, vecs []vector.Any) vector.Any {
+	// XXX This is going to be slow. At some point would nice to write a native
+	// merge of same type vectors.
+	counts := make([]uint32, len(vecs))
+	vb := vector.NewBuilder(typ)
+	var b zcode.Builder
+	for _, tag := range tags {
+		b.Truncate()
+		vecs[tag].Serialize(&b, counts[tag])
+		vb.Write(b.Bytes().Body())
+		counts[tag]++
+	}
+	return vb.Build()
 }
