@@ -1,5 +1,5 @@
 script: |
-  super -z -c 'from which.jsup | select value this from ["a"+string(this)+".jsup","a"+string(this+1)+".jsup"]'
+  super -z -c 'from which.jsup | select value this from eval(["a"+string(this)+".jsup","a"+string(this+1)+".jsup"])'
 
 inputs:
   - name: which.jsup

@@ -678,7 +678,7 @@ FromEntity
   / Regexp
   / Glob
   / "*" !ExprGuard { return &ast.Glob{Kind: "Glob", Pattern: "*", Loc: loc(c)}, nil }
-  / e:Array {
+  / EVAL __ "(" __ e:Expr __ ")" {
       return &ast.ExprEntity{
         Kind: "ExprEntity",
         Expr: e.(ast.Expr),
@@ -2227,6 +2227,7 @@ DISTINCT   = "DISTINCT"i        !IdentifierRest
 DROP       = "DROP"i            !IdentifierRest 
 END        = "END"i             !IdentifierRest
 ERROR      = "ERROR"i           !IdentifierRest
+EVAL       = "EVAL"i            !IdentifierRest
 EXPLODE    = "EXPLODE"i         !IdentifierRest
 FALSE      = "FALSE"i           !IdentifierRest
 FIRST      = "FIRST"i           !IdentifierRest

@@ -1,7 +1,7 @@
 script: |
-  super -z -c 'from files.jsup | from [f]'
+  super -z -c 'from files.jsup | from eval(f)'
   echo ===
-  super -z -c 'from files.jsup | select value this from [f]'
+  super -z -c 'from files.jsup | select value this from eval(f)'
 
 inputs:
   - name: files.jsup

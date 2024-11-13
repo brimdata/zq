@@ -13,9 +13,9 @@ inputs:
       op stamp(assignee): ( yield {...this, assignee, ts: now()} )
       op nop(foo): ( pass )
       op joinTest(left_file, right_file, left_key, right_key, left_dest, right_source): (
-        from [left_file]
+        from eval(left_file)
         |> inner join (
-          from [right_file]
+          from eval(right_file)
         ) on left_key = right_key left_dest := right_source
       )
       joinTest("fruit.json", "people.json", flavor, likes, eater, name)
@@ -39,9 +39,9 @@ outputs:
         pass
       )
       op joinTest(left_file, right_file, left_key, right_key, left_dest, right_source): (
-        from [left_file]
+        from eval(left_file)
         |> join (
-          from [right_file]
+          from eval(right_file)
         ) on left_key=right_key left_dest:=right_source
       )
       joinTest("fruit.json", "people.json", flavor, likes, eater, name)

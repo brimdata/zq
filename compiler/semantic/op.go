@@ -146,9 +146,12 @@ func (a *analyzer) hasFromParent(loc ast.Node, seq dag.Seq) dag.Seq {
 }
 
 func (a *analyzer) semFromConstVal(val super.Value, entity *ast.ExprEntity, args ast.FromArgs) dag.Seq {
+	if super.TypeUnder(val.Type()) == super.TypeString {
+		return dag.Seq{a.semFromName(entity, val.AsString(), args)}
+	}
 	vals, err := val.Elements()
 	if err != nil {
-		a.error(entity.Expr, errors.New("from expression requires a string array"))
+		a.error(entity.Expr, fmt.Errorf("from expression requires a string but encountered %s", zson.String(val)))
 		return dag.Seq{badOp()}
 	}
 	names := make([]string, 0, len(vals))

@@ -2,14 +2,14 @@ script: |
   export SUPER_DB_LAKE=test
   super db init -q
   super db create -q test
-  super db compile -dag -C 'const POOL = "test" from [POOL]' | sed -e "s/[a-zA-Z0-9]\{27\}/XXX/"
+  super db compile -dag -C 'const POOL = "test" from eval(POOL)' | sed -e "s/[a-zA-Z0-9]\{27\}/XXX/"
   echo "==="
-  super compile -dag -C 'const FILE = "A.jsup" from [FILE]'
+  super compile -dag -C 'const FILE = "A.jsup" from eval(FILE)'
   echo "==="
-  super db compile -dag -C 'const URL = "http://brimdata.io" get [URL]'
-  ! super db compile -dag -C 'const POOL = 3.14 from [POOL]'
-  ! super db compile -dag -C 'const FILE = 127.0.0.1 file [FILE]'
-  ! super db compile -dag -C 'const URL = true get [URL]'
+  super db compile -dag -C 'const URL = "http://brimdata.io" get eval(URL)'
+  ! super db compile -dag -C 'const POOL = 3.14 from eval(POOL)'
+  ! super db compile -dag -C 'const FILE = 127.0.0.1 file eval(FILE)'
+  ! super db compile -dag -C 'const URL = true get eval(URL)'
 
 outputs:
   - name: stdout
@@ -36,12 +36,12 @@ outputs:
       )
   - name: stderr
     data: |
-      from expression requires a string but encountered 3.14 at line 1, column 24:
-      const POOL = 3.14 from [POOL]
-                             ~~~~~~
-      from expression requires a string but encountered 127.0.0.1 at line 1, column 29:
-      const FILE = 127.0.0.1 file [FILE]
-                                  ~~~~~~
-      from expression requires a string but encountered true at line 1, column 22:
-      const URL = true get [URL]
-                           ~~~~~
+      from expression requires a string but encountered 3.14 at line 1, column 29:
+      const POOL = 3.14 from eval(POOL)
+                                  ~~~~
+      from expression requires a string but encountered 127.0.0.1 at line 1, column 34:
+      const FILE = 127.0.0.1 file eval(FILE)
+                                       ~~~~
+      from expression requires a string but encountered true at line 1, column 27:
+      const URL = true get eval(URL)
+                                ~~~

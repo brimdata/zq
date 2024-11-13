@@ -631,7 +631,9 @@ func (c *canon) fromElem(elem *ast.FromElem) {
 func (c *canon) fromEntity(e ast.FromEntity) {
 	switch e := e.(type) {
 	case *ast.ExprEntity:
+		c.write("eval(")
 		c.expr(e.Expr, "")
+		c.write(")")
 	case *ast.Glob, *ast.Regexp:
 		c.pattern(e)
 	case *ast.Name:
