@@ -43,7 +43,7 @@ expression syntax.
 
 So LALR parsers can't handle a SQL that simultaneously uses `|` for pipes
 and bitwise-OR.  Sure enough, it appears that GoogleSQL uses an
-[LALR parser](https://github.com/google/zetasql/blob/master/zetasql/parser/bison_parser.y).
+[LALR parser](https://github.com/google/zetasql/blob/master/bazel/bison.bzl).
 
 SuperSQL on the other hand uses a
 [PEG parser](https://en.wikipedia.org/wiki/Parsing_expression_grammar)
