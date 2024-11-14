@@ -1,4 +1,3 @@
-
 script: |
   super -z -I query.sql
 
