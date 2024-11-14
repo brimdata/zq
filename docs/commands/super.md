@@ -28,7 +28,7 @@ a log-search experience despite its SQL foundation.
 
 The `super` command works with data from ephemeral sources like files and URLs.
 If you want to persist your data into a data lake for persistent storage,
-check out the [`super db`](zed.md) set of commands.
+check out the [`super db`](super-db.md) set of commands.
 
 By invoking the `-c` option, a query expressed in the [SuperSQL language](../language/README.md)
 may be specified and applied to the input stream.
