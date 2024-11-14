@@ -655,7 +655,7 @@ produces
 
 You might think that the overhead involved in managing super-structured types
 and the generality of heterogeneous data would confound the performance of
-the `super` command, but it turns out that `super` can hold its own when 
+the `super` command, but it turns out that `super` can hold its own when
 compared to other analytics systems.
 
 To illustrate comparative performance, we'll present some informal performance
@@ -667,7 +667,7 @@ measurements among `super`,
 We'll use the Parquet format to compare apples to apples
 and also report results for the custom columnar database format of DuckDB
 and the Super Binary format used by `super`.
-We tried loading our test data into a ClickHouse table using its 
+We tried loading our test data into a ClickHouse table using its
 [new experimental JSON type](https://clickhouse.com/blog/a-new-powerful-json-data-type-for-clickhouse)
 but those attempts failed with "too many open files".
 
@@ -690,7 +690,7 @@ wget https://data.gharchive.org/2023-02-08-1.json.gz
 wget https://data.gharchive.org/2023-02-08-23.json.gz
 ```
 We downloadied these files into a directory called `gharchive_gz`
-and created a duckdb database file called `gha.db` and a table called `gha` 
+and created a duckdb database file called `gha.db` and a table called `gha`
 using this command:
 ```
 duckdb gha.db -c "CREATE TABLE gha AS FROM read_json('gharchive_gz/*.json.gz', union_by_name=true)"
@@ -703,7 +703,7 @@ We then created a Parquet file called `gha.parquet` with this command:
 ```
 duckdb gha.db -c "COPY (from gha) TO 'gha.parquet'"
 ```
-To create a super-structed file for the `super` command, there is no need to 
+To create a super-structed file for the `super` command, there is no need to
 fuse the data into a single schema (though `super` can still work with the fused
 schema in the Parquet file), and we simply ran this command to create a Super Binary
 file:
@@ -744,7 +744,7 @@ and we'll just count the number of matches found.
 The number of matches is small (3) so the query performance is dominated
 by the search.
 
-The SQL for this query is 
+The SQL for this query is
 ```sql
 SELECT count()
 FROM 'gha.parquet' -- or gha
@@ -761,8 +761,8 @@ WHERE grep('in case you have any feedback 😊', payload.pull_request.body)
 
 #### Search+
 
-For search across multiple columns, SQL doesn't have a `grep` function so 
-we must enumerate all the fields of such a query.  The SQL for a string search 
+For search across multiple columns, SQL doesn't have a `grep` function so
+we must enumerate all the fields of such a query.  The SQL for a string search
 over our GitHub Archive dataset involves the following fields:
 ```sql
 SELECT count() FROM gha
@@ -795,7 +795,7 @@ This query has the form:
 ```
 SELECT count(),type
 FROM 'gha.parquet' -- or 'gha' or 'gha.bsup'
-WHERE repo.name='duckdb/duckdb' 
+WHERE repo.name='duckdb/duckdb'
 GROUP BY type
 ```
 
@@ -806,7 +806,7 @@ The `union` test is straight out of the DuckDB blog at the end of
 This query computes the GitHub users that were assigned as a PR reviewer the most often
 and returns the top 5 such users.
 Because the assignees can appear in either a list of strings
-or within a single string field, the relational model requires that two different 
+or within a single string field, the relational model requires that two different
 subqueries run for the two cases and the result unioned together; then,
 this intermediary table can be counted using the unnested
 assignee as the group-by key.
@@ -831,7 +831,7 @@ For DataFusion, we needed to rewrite this SELECT
 SELECT unnest(payload.pull_request.assignees).login
 FROM 'gha.parquet'
 ```
-as 
+as
 ```sql
 SELECT rec.login as assignee FROM (
     SELECT unnest(payload.pull_request.assignees) rec
@@ -840,8 +840,8 @@ SELECT rec.login as assignee FROM (
 ```
 and for ClickHouse, we had to use `arrayJoin` instead of `unnest`.
 
-SuperSQL's data model does not require these sorts of gymnastics as 
-everything does not have to be jammed into a table.  Instead, we can use the 
+SuperSQL's data model does not require these sorts of gymnastics as
+everything does not have to be jammed into a table.  Instead, we can use the
 `UNNEST` pipe operator combined with the spread operator applied to the array of
 string fields to easily produce a stream of string values representing the
 assignees.  Then we simply aggregate the assignee stream:
@@ -876,7 +876,7 @@ Since DuckDB with its native format is overall the best performing,
 we used it as the baseline for all of the speedup factors.
 
 To summarize,
-`super` with Super Binary is substantially faster than the relational systems for 
+`super` with Super Binary is substantially faster than the relational systems for
 the search use cases and performs on par with the others for traditional OLAP queries,
 except for the union query, where the super-structured data model trounces the relational
 model (by over 100X!) for stiching together disparate data types for analysis in an aggregation.
@@ -884,7 +884,7 @@ model (by over 100X!) for stiching together disparate data types for analysis in
 ## Appendix 1: Preparing the Test Data
 
 For our tests, We diverged a bit from the methodology in the DuckDB blog and wanted
-to put all the JSON data in a single table.  It wasn't obvious how to go about this 
+to put all the JSON data in a single table.  It wasn't obvious how to go about this
 and this section documents the difficulties we encountered trying to do so.
 
 First, we simply tried this:
@@ -939,8 +939,8 @@ duckdb gha.db -c "CREATE TABLE gha AS FROM read_json('gharchive_gz/*.json.gz', s
 and again `duckdb` runs out of memory.
 
 So we looked at the other options suggested by the error message and
-`union_by_name` appeared promising.  Enabling this option causes DuckDB 
-to combine all the JSON objects into a single fused schema. 
+`union_by_name` appeared promising.  Enabling this option causes DuckDB
+to combine all the JSON objects into a single fused schema.
 Maybe this would work better?
 
 Sure enough, this works:
@@ -976,7 +976,7 @@ time duckdb gha.db -c "
   SELECT count()
   FROM gha
   WHERE payload.pull_request.body LIKE '%in case you have any feedback 😊%'
-" 
+"
 ┌──────────────┐
 │ count_star() │
 │    int64     │
@@ -989,7 +989,7 @@ duckdb gha.db -c   26.66s user 6.90s system 406% cpu 8.266 total
   SELECT count()
   FROM gha.parquet
   WHERE payload.pull_request.body LIKE '%in case you have any feedback 😊%'
-" 
+"
 ┌──────────────┐
 │ count_star() │
 │    int64     │
@@ -998,7 +998,7 @@ duckdb gha.db -c   26.66s user 6.90s system 406% cpu 8.266 total
 └──────────────┘
 duckdb -c   42.71s user 6.06s system 582% cpu 8.380 total
 
-; time datafusion-cli -c "  
+; time datafusion-cli -c "
   SELECT count()
   FROM 'gha.parquet'
   WHERE payload.pull_request.body LIKE '%in case you have any feedback 😊%'
@@ -1009,7 +1009,7 @@ DataFusion CLI v43.0.0
 +---------+
 | 2       |
 +---------+
-1 row(s) fetched. 
+1 row(s) fetched.
 Elapsed 8.819 seconds.
 
 datafusion-cli -c   40.75s user 6.72s system 521% cpu 9.106 total
@@ -1030,7 +1030,7 @@ clickhouse -q   50.81s user 1.83s system 94% cpu 55.994 total
   SELECT count()
   FROM 'gha.bsup'
   WHERE grep('in case you have any feedback 😊')
-" 
+"
 {count:3(uint64)}
 super -c   43.80s user 0.71s system 669% cpu 6.653 total
 
@@ -1043,7 +1043,7 @@ super -c   43.80s user 0.71s system 669% cpu 6.653 total
 └──────────────┘
 duckdb gha.db < search.sql  73.60s user 33.29s system 435% cpu 24.563 total
 
-; time duckdb < search-parquet.sql 
+; time duckdb < search-parquet.sql
 ┌──────────────┐
 │ count_star() │
 │    int64     │
@@ -1059,7 +1059,7 @@ DataFusion CLI v43.0.0
 +---------+
 | 3       |
 +---------+
-1 row(s) fetched. 
+1 row(s) fetched.
 Elapsed 18.184 seconds.
 datafusion-cli -f search-parquet.sql  83.84s user 11.13s system 513% cpu 18.494 total
 
@@ -1118,7 +1118,7 @@ DataFusion CLI v43.0.0
 +---------+
 | 879     |
 +---------+
-1 row(s) fetched. 
+1 row(s) fetched.
 Elapsed 0.203 seconds.
 
 datafusion-cli -c   0.93s user 0.15s system 453% cpu 0.238 total
@@ -1228,7 +1228,7 @@ DataFusion CLI v43.0.0
 | 29      | WatchEvent                    |
 | 3       | ForkEvent                     |
 +---------+-------------------------------+
-8 row(s) fetched. 
+8 row(s) fetched.
 Elapsed 0.200 seconds.
 
 datafusion-cli -c   0.80s user 0.15s system 398% cpu 0.238 total
@@ -1351,7 +1351,7 @@ DataFusion CLI v43.0.0
 | AMatutat        | 260   |
 | danwinship      | 208   |
 +-----------------+-------+
-5 row(s) fetched. 
+5 row(s) fetched.
 Elapsed 39.012 seconds.
 
 datafusion-cli -c   116.97s user 44.50s system 408% cpu 39.533 total
