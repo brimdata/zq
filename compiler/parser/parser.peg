@@ -384,11 +384,13 @@ AssertOp
     }
 
 SortOp
-  = SORT &EOKW args:SortArgs exprs:(__ e:SortExprs { return e, nil })? {
+  = (SORT / ORDER _ BY) &EOKW args:SortArgs exprs:(__ e:OrderByList { return e, nil })? {
       o := &ast.Sort{
         Kind: "Sort",
-        Args: sliceOf[ast.SortExpr](exprs),
         Loc: loc(c),
+      }
+      if exprs != nil {
+        o.Args = exprs.([]ast.SortExpr)
       }
       argm := args.(map[string]any)
       if _, ok := argm["r"]; ok {
@@ -445,7 +447,7 @@ DropOp
     }
 
 HeadOp
-  = HEAD _ !EndOfOp count:Expr {
+  = (HEAD / LIMIT) _ !EndOfOp count:Expr {
       return &ast.Head{
         Kind: "Head",
         Count: count.(ast.Expr),
@@ -764,25 +766,6 @@ PoolCommit
 PoolMeta
   = ":" n:Name { return n, nil }
 
-SortExprs
-  = first:SortExpr rest:(__ "," __ s:SortExpr { return s, nil })* {
-      return prepend(first, rest), nil
-    }
-
-SortExpr
-  = e:Expr order:(_ o:OrderSpec { return o, nil })? {
-      s := ast.SortExpr{Kind: "SortExpr", Expr: e.(ast.Expr), Loc:loc(c)}
-      if order != nil {
-        s.Order = order.(*ast.ID)
-      }
-      return s, nil
-    }
-
-OrderSpec
-  = o:(ASC / DESC) {
-      return &ast.ID{Kind: "ID", Name: o.(string), Loc: loc(c)}, nil
-    }
-
 TapArg
   = _ TAP { return true, nil }
   / "" { return false, nil }
@@ -818,7 +801,7 @@ MergeOp
     }
 
 OverOp
-  = OVER _ exprs:Exprs locals:Locals? body:Lateral? {
+  = (OVER / UNNEST) _ exprs:Exprs locals:Locals? body:Lateral? {
       o := &ast.Over{
         Kind: "Over",
         Exprs: sliceOf[ast.Expr](exprs),
@@ -950,7 +933,16 @@ BetweenExpr
   / ComparisonExpr
 
 ComparisonExpr
-  = lhs:AdditiveExpr opAndRHS:(__ Comparator __ AdditiveExpr / __ ("~" { return string(c.text), nil }) __ Regexp)? {
+  = lhs:AdditiveExpr _ op:IsNull {
+      return &ast.BinaryExpr{
+        Kind: "BinaryExpr",
+        Op: op.(string),
+        LHS: lhs.(ast.Expr),
+        RHS: newPrimitive(c, "null", ""),
+        Loc: loc(c),
+      }, nil
+    }   
+  / lhs:AdditiveExpr opAndRHS:(__ Comparator __ AdditiveExpr / __ ("~" { return string(c.text), nil }) __ Regexp)? {
       if opAndRHS == nil {
         return lhs, nil
       }
@@ -962,6 +954,10 @@ ComparisonExpr
         Loc: loc(c),
       }, nil
     }
+ 
+ IsNull
+  = IS _ NULL { return "==", nil }
+  / IS _ NOT _ NULL { return "!=", nil }
 
 AdditiveExpr
   = first:MultiplicativeExpr
@@ -2241,6 +2237,7 @@ HEAD       = "HEAD"i            !IdentifierRest
 HEADERS    = "HEADERS"i         !IdentifierRest
 IN         = "IN"i              !IdentifierRest
 INNER      = "INNER"i           !IdentifierRest
+IS         = "IS"i              !IdentifierRest
 JOIN       = "JOIN"i            !IdentifierRest
 LAST       = "LAST"i            !IdentifierRest
 LEFT       = "LEFT"i            !IdentifierRest
@@ -2286,6 +2283,7 @@ TRUE       = "TRUE"i            !IdentifierRest
 TYPE       = "TYPE"i            !IdentifierRest
 UNION      = "UNION"i           !IdentifierRest
 UNIQ       = "UNIQ"i            !IdentifierRest 
+UNNEST     = "UNNEST"i          !IdentifierRest
 USING      = "USING"i           !IdentifierRest
 VALUE      = "VALUE"i           !IdentifierRest
 WHEN       = "WHEN"i            !IdentifierRest

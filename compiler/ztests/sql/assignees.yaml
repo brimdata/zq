@@ -1,0 +1,26 @@
+
+script: |
+  super -z -I query.sql
+
+inputs:
+  - name: query.sql
+    data: |
+      FROM in.jsup
+      | UNNEST [...assignees,assignee]
+      | WHERE this IS NOT NULL
+      | AGGREGATE count() BY assignee:=login
+      | ORDER BY count DESC, assignee DESC 
+      | LIMIT 5
+  - name: in.jsup
+    data: |
+      {assignees:[{login:"joe"},{login:"fred"}]}
+      {assignee:{login:"sue"}}
+      {assignee:{login:"joe"}}
+      {assignees:[{login:"sue"}]}
+
+outputs:
+  - name: stdout
+    data: |
+      {assignee:"sue",count:2(uint64)}
+      {assignee:"joe",count:2(uint64)}
+      {assignee:"fred",count:1(uint64)}
