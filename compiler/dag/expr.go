@@ -27,11 +27,6 @@ type (
 		Kind  string       `json:"kind" unpack:""`
 		Elems []VectorElem `json:"elems"`
 	}
-	Assignment struct {
-		Kind string `json:"kind" unpack:""`
-		LHS  Expr   `json:"lhs"`
-		RHS  Expr   `json:"rhs"`
-	}
 	// A BadExpr node is a placeholder for an expression containing semantic
 	// errors.
 	BadExpr struct {
