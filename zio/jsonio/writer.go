@@ -6,14 +6,15 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"io"
-	"time"
-
 	"github.com/brimdata/super"
 	"github.com/brimdata/super/pkg/nano"
 	"github.com/brimdata/super/pkg/terminal/color"
 	"github.com/brimdata/super/zcode"
 	"github.com/brimdata/super/zson"
+	"gopkg.in/yaml.v3"
+	"io"
+	"log"
+	"time"
 )
 
 var (
@@ -27,8 +28,11 @@ var (
 
 type Writer struct {
 	io.Closer
-	writer *bufio.Writer
-	tab    int
+	writer     *bufio.Writer
+	writer0    io.WriteCloser
+	byteWriter *ByteArrayWriter
+	tab        int
+	isYaml     bool
 
 	// Use json.Encoder for primitive Values. Have to use
 	// json.Encoder instead of json.Marshal because it's
@@ -36,20 +40,66 @@ type Writer struct {
 	primEnc *json.Encoder
 	primBuf bytes.Buffer
 }
+type ByteArrayWriter struct {
+	data []byte // 用于保存写入的字节数据
+}
+
+func NewByteArrayWriter() *ByteArrayWriter {
+	return &ByteArrayWriter{}
+}
+
+// Write 实现 io.Writer 接口，将数据写入 data
+func (w *ByteArrayWriter) Write(p []byte) (n int, err error) {
+	w.data = append(w.data, p...)
+	return len(p), nil
+}
+
+// Close 实现 io.Closer 接口，关闭数据流
+func (w *ByteArrayWriter) Close() error {
+	// 对于简单的内存写入，这里不需要做复杂的清理操作
+	// 但如果是文件流等，通常会做清理工作
+	// 这里我们可以清空数据或者做其他的关闭操作
+	return nil
+}
+
+// GetData 获取写入的数据
+func (w *ByteArrayWriter) GetData() []byte {
+	return w.data
+}
 
 type WriterOpts struct {
 	Pretty int
+	IsYaml bool
 }
 
 func NewWriter(writer io.WriteCloser, opts WriterOpts) *Writer {
+	b := NewByteArrayWriter()
 	w := &Writer{
-		Closer: writer,
-		writer: bufio.NewWriter(writer),
-		tab:    opts.Pretty,
+		Closer:     writer,
+		writer:     bufio.NewWriter(b),
+		byteWriter: b,
+		writer0:    writer,
+		tab:        opts.Pretty,
+		isYaml:     opts.IsYaml,
 	}
 	w.primEnc = json.NewEncoder(&w.primBuf)
 	w.primEnc.SetEscapeHTML(false)
 	return w
+}
+func JsonToYaml(jsonData []byte) []byte {
+	// 1. 解析 JSON 数据到 Go 数据结构
+	var jsonObj interface{}
+	err := json.Unmarshal(jsonData, &jsonObj)
+	if err != nil {
+		log.Fatal("Error unmarshalling JSON:", err)
+	}
+
+	// 2. 将 Go 数据结构转换为 YAML 格式
+	yamlData, err := yaml.Marshal(jsonObj)
+	if err != nil {
+		log.Fatal("Error marshalling to YAML:", err)
+	}
+	return yamlData
 }
 
 func (w *Writer) Write(val super.Value) error {
@@ -57,7 +107,15 @@ func (w *Writer) Write(val super.Value) error {
 	// surfaced with w.writer.Flush is called.
 	w.writeAny(0, val)
 	w.writer.WriteByte('\n')
-	return w.writer.Flush()
+	w.writer.Flush()
+	data := w.byteWriter.GetData()
+	var err error
+	if w.isYaml {
+		_, err = w.writer0.Write(JsonToYaml(data))
+	} else {
+		_, err = w.writer0.Write(data)
+	}
+	return err
 }
 
 func (w *Writer) writeAny(tab int, val super.Value) {

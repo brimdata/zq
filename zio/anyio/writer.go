@@ -46,6 +46,9 @@ func NewWriter(w io.WriteCloser, opts WriterOpts) (zio.WriteCloser, error) {
 		return zsonio.NewWriter(w, opts.ZSON), nil
 	case "json":
 		return jsonio.NewWriter(w, opts.JSON), nil
+	case "yaml":
+		opts.JSON.IsYaml = true
+		return jsonio.NewWriter(w, opts.JSON), nil
 	case "lake":
 		return lakeio.NewWriter(w, opts.Lake), nil
 	case "null":
