@@ -73,7 +73,7 @@ providing a convenient means to convert files from one format to another, e.g.,
 super -f arrows file1.json file2.parquet file3.csv > file-combined.arrows
 ```
 When `super` is run with a query that has no "from" operator and no input arguments,
-the SuperSQL query is fed a single `null` value analagous to SQL's default
+the SuperSQL query is fed a single `null` value analogous to SQL's default
 input of a single empty row of an unnamed table.
 This provides a convenient means to explore examples or run in a
 "calculator mode", e.g.,
@@ -94,7 +94,7 @@ is equivalent to
 select value 1+1
 ```
 To learn more about shortcuts, refer to the SuperSQL
-[documenation on shortcuts](../language/pipeline-model.md#implied-operators).
+[documentation on shortcuts](../language/pipeline-model.md#implied-operators).
 
 For built-in command help and a listing of all available options,
 simply run `super` with no arguments.
@@ -104,7 +104,7 @@ simply run `super` with no arguments.
 `super` supports a number of [input](#input-formats) and [output](#output-formats) formats, but the super formats
 ([Super Binary](../formats/bsup.md),
 [Super Columnar](../formats/csup.md),
-and [Super JSON](../formats/jsup.md)) tend to the most versatile and
+and [Super JSON](../formats/jsup.md)) tend to be the most versatile and
 easy to work with.
 
 `super` typically operates on binary-encoded data and when you want to inspect
@@ -689,7 +689,7 @@ wget https://data.gharchive.org/2023-02-08-1.json.gz
 ...
 wget https://data.gharchive.org/2023-02-08-23.json.gz
 ```
-We downloadied these files into a directory called `gharchive_gz`
+We downloaded these files into a directory called `gharchive_gz`
 and created a duckdb database file called `gha.db` and a table called `gha`
 using this command:
 ```
@@ -879,11 +879,11 @@ To summarize,
 `super` with Super Binary is substantially faster than the relational systems for
 the search use cases and performs on par with the others for traditional OLAP queries,
 except for the union query, where the super-structured data model trounces the relational
-model (by over 100X!) for stiching together disparate data types for analysis in an aggregation.
+model (by over 100X!) for stitching together disparate data types for analysis in an aggregation.
 
 ## Appendix 1: Preparing the Test Data
 
-For our tests, We diverged a bit from the methodology in the DuckDB blog and wanted
+For our tests, we diverged a bit from the methodology in the DuckDB blog and wanted
 to put all the JSON data in a single table.  It wasn't obvious how to go about this
 and this section documents the difficulties we encountered trying to do so.
 
@@ -947,7 +947,7 @@ Sure enough, this works:
 ```
 duckdb gha.db -c "CREATE TABLE gha AS FROM read_json('gharchive_gz/*.json.gz', union_by_name=true)"
 ```
-We now have the `duckdb` database file for out GitHub Archive data called `gha.db`
+We now have the `duckdb` database file for our GitHub Archive data called `gha.db`
 containing a single table called `gha` embedded in that database.
 What about the super-structured
 format for the `super` command?  There is no need to futz with sample sizes,
