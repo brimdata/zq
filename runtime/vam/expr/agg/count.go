@@ -18,11 +18,11 @@ func (a *count) Result(*super.Context) super.Value {
 }
 
 func (a *count) ConsumeAsPartial(partial vector.Any) {
-	c, ok := partial.(*vector.Const)
-	if !ok || c.Len() != 1 || partial.Type() != super.TypeUint64 {
+	if partial.Len() != 1 || partial.Type() != super.TypeUint64 {
 		panic("count: bad partial")
 	}
-	a.count += c.Value().Uint()
+	count, _ := vector.UintValue(partial, 0)
+	a.count += count
 }
 
 func (a *count) ResultAsPartial(*super.Context) super.Value {

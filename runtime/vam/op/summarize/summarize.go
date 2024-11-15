@@ -111,7 +111,7 @@ func (s *Summarize) newAggTable(keyTypes []super.Type) aggTable {
 		builder:     s.builder,
 		partialsIn:  s.partialsIn,
 		partialsOut: s.partialsOut,
-		table:       make(map[string]aggRow),
+		table:       make(map[string]int),
 		zctx:        s.zctx,
 	}
 }

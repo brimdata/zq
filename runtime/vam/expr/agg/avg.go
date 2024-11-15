@@ -43,13 +43,15 @@ func (a *avg) ConsumeAsPartial(partial vector.Any) {
 	if !ok1 || !ok2 {
 		panic("avg: invalid partial")
 	}
-	sumVal, ok1 := rec.Fields[si].(*vector.Const)
-	countVal, ok2 := rec.Fields[ci].(*vector.Const)
-	if !ok1 || !ok2 || sumVal.Type() != super.TypeFloat64 || countVal.Type() != super.TypeUint64 {
+	sumVal := rec.Fields[si]
+	countVal := rec.Fields[ci]
+	if sumVal.Type() != super.TypeFloat64 || countVal.Type() != super.TypeUint64 {
 		panic("avg: invalid partial")
 	}
-	a.sum += sumVal.Value().Float()
-	a.count += countVal.Value().Uint()
+	sum, _ := vector.FloatValue(sumVal, 0)
+	count, _ := vector.UintValue(countVal, 0)
+	a.sum += sum
+	a.count += count
 }
 
 func (a *avg) ResultAsPartial(zctx *super.Context) super.Value {
