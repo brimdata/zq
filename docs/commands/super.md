@@ -33,7 +33,7 @@ check out the [`super db`](super-db.md) set of commands.
 By invoking the `-c` option, a query expressed in the [SuperSQL language](../language/README.md)
 may be specified and applied to the input stream.
 
-Super's data model is based on super-structured data, meaning that all data
+The [super data model](../formats/zed.md) is based on [super-structured data](../formats/README.md#2-a-super-structured-pattern), meaning that all data
 is both strongly _and_ dynamically typed and need not conform to a homogeneous
 schema.  The type structure is self-describing so it's easy to daisy-chain
 queries and inspect data at any point in a complex query or data pipeline.
@@ -52,19 +52,23 @@ do not haphazardly change when input data changes in subtle ways.
 
 Each `input` argument to `super` must be a file path, an HTTP or HTTPS URL,
 an S3 URL, or standard input specified with `-`.
-These input arguments are treated as if a SQL "from" operator precedes
+These input arguments are treated as if a SQL `FROM` operator precedes
 the provided query, e.g.,
 ```
-super -c "from example.json | select typeof(this)"
+super -c "FROM example.json | SELECT typeof(this)"
 ```
 is equivalent to
 ```
-super -c "select typeof(this)" example.json
+super -c "SELECT typeof(this)" example.json
+```
+and both are equivalent to the classic SQL
+```
+super -c "SELECT typeof(this) FROM example.json"
 ```
 Output is written to one or more files or to standard output in the format specified.
 
 When multiple input files are specified, they are processed in the order given as
-if the data were provided by a single, concatenated "from" clause.
+if the data were provided by a single, concatenated `FROM` clause.
 
 If no query is specified with `-c`, the inputs are scanned without modification
 and output in the desired format as [described below](#input-formats),
@@ -72,7 +76,7 @@ providing a convenient means to convert files from one format to another, e.g.,
 ```
 super -f arrows file1.json file2.parquet file3.csv > file-combined.arrows
 ```
-When `super` is run with a query that has no "from" operator and no input arguments,
+When `super` is run with a query that has no `FROM` operator and no input arguments,
 the SuperSQL query is fed a single `null` value analogous to SQL's default
 input of a single empty row of an unnamed table.
 This provides a convenient means to explore examples or run in a
@@ -85,13 +89,13 @@ emits
 2
 ```
 Note that SuperSQL's has syntactic shortcuts for interactive data exploration and
-an expression that stands alone is a shortcut for `select value`, e.g., the query text
+an expression that stands alone is a shortcut for `SELECT VALUE`, e.g., the query text
 ```
 1+1
 ```
 is equivalent to
 ```
-select value 1+1
+SELECT VALUE 1+1
 ```
 To learn more about shortcuts, refer to the SuperSQL
 [documentation on shortcuts](../language/pipeline-model.md#implied-operators).
@@ -139,14 +143,14 @@ The input format is typically [detected automatically](#auto-detection) and the 
 "Auto" is "yes" in the table above support _auto-detection_.
 Formats without auto-detection require the `-i` option.
 
-### Hard-wired Input Format
+#### Hard-wired Input Format
 
 The input format is specified with the `-i` flag.
 
 When `-i` is specified, all of the inputs on the command-line must be
 in the indicated format.
 
-### Auto-detection
+#### Auto-detection
 
 When using _auto-detection_, each input's format is independently determined
 so it is possible to easily blend different input formats into a unified
@@ -173,11 +177,11 @@ would produce this output in the default Super JSON format
 {a:3,b:"baz"}
 ```
 
-### JSON Auto-detection: Super vs. Plain
+#### JSON Auto-detection: Super vs. Plain
 
 Since [Super JSON](../formats/jsup.md) is a superset of plain JSON, `super` must be careful how it distinguishes the two cases when performing auto-inference.
 While you can always clarify your intent
-with the `-i jsup` or `-i json`, `super` attempts to "just do the right thing"
+via `-i jsup` or `-i json`, `super` attempts to "just do the right thing"
 when you run it with Super JSON vs. plain JSON.
 
 While `super` can parse any JSON using its built-in Super JSON parser this is typically
@@ -231,7 +235,7 @@ Since Super JSON is a common format choice, the `-z` flag is a shortcut for
 And since plain JSON is another common format choice, the `-j` flag is a shortcut for
 `-f json` and `-J` is a shortcut for pretty printing JSON.
 
-### Output Format Selection
+#### Output Format Selection
 
 When the format is not specified with `-f`, it defaults to Super JSON if the output
 is a terminal and to Super Binary otherwise.
@@ -250,7 +254,7 @@ binary output to their terminal when forgetting to type `-f jsup`.
 In practice, we have found that the output defaults
 "just do the right thing" almost all of the time.
 
-### Pretty Printing
+#### Pretty Printing
 
 Super JSON and plain JSON text may be "pretty printed" with the `-pretty` option, which takes
 the number of spaces to use for indentation.  As this is a common option,
@@ -295,7 +299,7 @@ produces
 When pretty printing, colorization is enabled by default when writing to a terminal,
 and can be disabled with `-color false`.
 
-### Pipeline-friendly Super Binary
+#### Pipeline-friendly Super Binary
 
 Though it's a compressed format, Super Binary data is self-describing and stream-oriented
 and thus is pipeline friendly.
@@ -330,7 +334,7 @@ produces
 00000012
 ```
 
-### Schema-rigid Outputs
+#### Schema-rigid Outputs
 
 Certain data formats like [Arrow](https://arrow.apache.org/docs/format/Columnar.html#ipc-streaming-format)
 and [Parquet](https://github.com/apache/parquet-format) are "schema rigid" in the sense that
@@ -351,7 +355,7 @@ causes this error
 parquetio: encountered multiple types (consider 'fuse'): {x:int64} and {s:string}
 ```
 
-#### Fusing Schemas
+##### Fusing Schemas
 
 As suggested by the error above, the [`fuse` operator](../language/operators/fuse.md) can merge different record
 types into a blended type, e.g., here we create the file and read it back:
@@ -365,7 +369,7 @@ but the data was necessarily changed (by inserting nulls):
 {x:null(int64),s:"hello"}
 ```
 
-#### Splitting Schemas
+##### Splitting Schemas
 
 Another common approach to dealing with the schema-rigid limitation of Arrow and
 Parquet is to create a separate file for each schema.
@@ -393,7 +397,7 @@ produces the original data
 While the `-split` option is most useful for schema-rigid formats, it can
 be used with any output format.
 
-### Simplified Text Outputs
+#### Simplified Text Outputs
 
 The `text` and `table` formats simplify data to fit within the
 limitations of text-based output. Because they do not capture all the
@@ -461,7 +465,7 @@ one   1     -
 hello -     greeting
 ```
 
-### SuperDB Data Lake Metadata Output
+#### SuperDB Data Lake Metadata Output
 
 The `lake` format is used to pretty-print lake metadata, such as in
 [`super db` sub-command](super-db.md) outputs.  Because it's `super db`'s default output format,
@@ -582,7 +586,7 @@ have many examples, but here are a few more simple `super` use cases.
 
 _Hello, world_
 ```mdtest-command
-super -z -c "select value 'hello, world'"
+super -z -c "SELECT VALUE 'hello, world'"
 ```
 produces this Super JSON output
 ```mdtest-output
@@ -602,7 +606,7 @@ produces
 ```
 _The types of various data_
 ```mdtest-command
-echo '1 1.5 [1,"foo"] |["apple","banana"]|' | super -z -c 'select value typeof(this)' -
+echo '1 1.5 [1,"foo"] |["apple","banana"]|' | super -z -c 'SELECT VALUE typeof(this)' -
 ```
 produces
 ```mdtest-output
