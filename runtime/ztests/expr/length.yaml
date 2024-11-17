@@ -1,0 +1,9 @@
+zed: SELECT LENGTH('W3Schools.com');
+
+vector: true
+
+input: |
+  null
+
+output: |
+  {length:13}
