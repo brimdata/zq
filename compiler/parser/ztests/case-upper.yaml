@@ -1,0 +1,30 @@
+script: super -z -I query.sql
+
+inputs:
+  - name: query.sql
+    data: |
+      SELECT OrderID, Quantity,
+      CASE
+          WHEN Quantity > 30 THEN 'The quantity is greater than 30'
+          WHEN Quantity = 30 THEN 'The quantity is 30'
+          ELSE 'The quantity is under 30'
+      END AS QuantityText
+      FROM order_details.csv;
+
+  - name: order_details.csv
+    data: |
+      OrderID,Quantity
+      1,10
+      2,20
+      3,35
+      4,20
+      5,30
+
+outputs:
+  - name: stdout
+    data: |
+      {OrderID:1.,Quantity:10.,QuantityText:"The quantity is under 30"}
+      {OrderID:2.,Quantity:20.,QuantityText:"The quantity is under 30"}
+      {OrderID:3.,Quantity:35.,QuantityText:"The quantity is greater than 30"}
+      {OrderID:4.,Quantity:20.,QuantityText:"The quantity is under 30"}
+      {OrderID:5.,Quantity:30.,QuantityText:"The quantity is 30"}

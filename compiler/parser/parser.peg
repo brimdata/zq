@@ -1108,7 +1108,7 @@ Primary
   / "(" __ expr:Expr __ ")" { return expr, nil }
 
 CaseExpr
-  = CASE cases:When+ else_:(_ "else" _ Expr)? _ END (_ CASE)? {
+  = CASE cases:When+ else_:(_ ELSE _ Expr)? _ END (_ CASE)? {
         whens := sliceOf[ast.When](cases)
         cond := &ast.Conditional{
             Kind: "Conditional",
@@ -1132,7 +1132,7 @@ CaseExpr
         }
         return cond, nil
     }
-  / CASE _ expr:Expr whens:When+ else_:(_ "else" _ Expr)? _ END (_ CASE)?  {
+  / CASE _ expr:Expr whens:When+ else_:(_ ELSE _ Expr)? _ END (_ CASE)?  {
         cond := &ast.CaseExpr{
             Kind: "CaseExpr",
             Expr: expr.(ast.Expr),
@@ -2218,6 +2218,7 @@ DEFAULT    = "DEFAULT"i         !IdentifierRest
 DESC       = "DESC"i            !IdentifierRest { return "desc", nil }
 DISTINCT   = "DISTINCT"i        !IdentifierRest
 DROP       = "DROP"i            !IdentifierRest 
+ELSE       = "ELSE"i            !IdentifierRest
 END        = "END"i             !IdentifierRest
 ERROR      = "ERROR"i           !IdentifierRest
 EVAL       = "EVAL"i            !IdentifierRest
