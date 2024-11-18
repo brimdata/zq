@@ -239,6 +239,13 @@ Agg
       }
       return agg, nil
     }
+  / cs:CountStar {
+      return &ast.Agg{
+          Kind: "Agg",
+          Name: "count",
+          Loc: cs.(*ast.Call).Loc,
+      }, nil
+    }
 
 AggName
   = IdentifierName
@@ -255,6 +262,14 @@ AggAssignments
       }
       return result, nil
     }
+
+CountStar = COUNT __ "(" __ "*" __ ")" {
+    return &ast.Call{
+		Kind: "Call",
+		Name: &ast.ID{Kind:"ID", Name:"count", Loc: ast.NewLoc(c.pos.offset, c.pos.offset+5)},
+        Loc:  loc(c),
+    }, nil
+  }
 
 /// === Operators ===
 
@@ -1065,6 +1080,7 @@ Function
   / !FuncGuard fn:Identifier __ "(" __ args:FunctionArgs __ ")" where:WhereClause? {
       return newCall(c, fn, args, where), nil
     }
+  / CountStar
 
 RegexpPrimitive
   = pat:RegexpPattern { return newPrimitive(c, "string", pat.(string)), nil }
@@ -2211,6 +2227,7 @@ BODY       = "BODY"i            !IdentifierRest
 BY         = "BY"i              !IdentifierRest
 CASE       = "CASE"i            !IdentifierRest
 CONST      = "CONST"i           !IdentifierRest
+COUNT      = "COUNT"i           !IdentifierRest
 CROSS      = "CROSS"i           !IdentifierRest
 CUT        = "CUT"i             !IdentifierRest
 DEBUG      = "DEBUG"i           !IdentifierRest
