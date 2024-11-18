@@ -139,7 +139,7 @@ func (f *Flags) Open(ctx context.Context, engine storage.Engine) (zio.WriteClose
 		}
 		return d, nil
 	}
-	if f.outputFile == "" && f.color && terminal.IsTerminalFile(os.Stdout) {
+	if f.outputFile == "" && f.color && terminal.IsTerminalFile(os.Stdout) && f.Format != "yaml" {
 		color.Enabled = true
 	}
 	w, err := emitter.NewFileFromPath(ctx, engine, f.outputFile, f.unbuffered, f.WriterOpts)
