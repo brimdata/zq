@@ -25,6 +25,9 @@ func NewDCount() *DCount {
 }
 
 func (d *DCount) Consume(val super.Value) {
+	if val.IsNull() {
+		return
+	}
 	d.scratch = d.scratch[:0]
 	// append type id to vals so we get a unique count where the bytes are same
 	// but the super.Type is different.
