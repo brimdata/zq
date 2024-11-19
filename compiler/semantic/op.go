@@ -1184,6 +1184,8 @@ func (a *analyzer) isBool(e dag.Expr) bool {
 			return false
 		}
 		return function.HasBoolResult(e.Name)
+	case *dag.IsNullExpr:
+		return true
 	case *dag.Search, *dag.RegexpMatch, *dag.RegexpSearch:
 		return true
 	default:

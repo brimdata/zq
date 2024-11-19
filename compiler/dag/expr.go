@@ -70,6 +70,10 @@ type (
 		Expr  Expr   `json:"expr"`
 		Index Expr   `json:"index"`
 	}
+	IsNullExpr struct {
+		Kind string `json:"kind" unpack:""`
+		Expr Expr   `json:"expr"`
+	}
 	Literal struct {
 		Kind  string `json:"kind" unpack:""`
 		Value string `json:"value"`
@@ -148,6 +152,7 @@ func (*Conditional) ExprDAG()  {}
 func (*Dot) ExprDAG()          {}
 func (*Func) ExprDAG()         {}
 func (*IndexExpr) ExprDAG()    {}
+func (*IsNullExpr) ExprDAG()   {}
 func (*Literal) ExprDAG()      {}
 func (*MapCall) ExprDAG()      {}
 func (*MapExpr) ExprDAG()      {}

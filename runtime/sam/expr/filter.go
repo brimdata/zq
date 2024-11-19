@@ -36,7 +36,7 @@ func (s *searchByPred) Eval(ectx Context, val super.Value) super.Value {
 		if s.searchType(typ) {
 			return errMatch
 		}
-		if s.pred(super.NewValue(typ, body)) {
+		if s.pred(super.NewValue(typ, body)).Ptr().AsBool() {
 			return errMatch
 		}
 		return nil
@@ -56,7 +56,7 @@ func (s *searchByPred) searchType(typ super.Type) bool {
 		var nameIter FieldNameIter
 		nameIter.Init(recType)
 		for !nameIter.Done() {
-			if s.pred(super.NewString(string(nameIter.Next()))) {
+			if s.pred(super.NewString(string(nameIter.Next()))).Ptr().AsBool() {
 				match = true
 				break
 			}
@@ -129,7 +129,7 @@ func (s *search) Eval(ectx Context, val super.Value) super.Value {
 			}
 			return nil
 		}
-		if s.compare(super.NewValue(typ, body)) {
+		if s.compare(super.NewValue(typ, body)).Ptr().AsBool() {
 			return errMatch
 		}
 		return nil
@@ -241,10 +241,7 @@ func (f *filter) Eval(ectx Context, this super.Value) super.Value {
 	if val.IsError() {
 		return val
 	}
-	if f.pred(val) {
-		return super.True
-	}
-	return super.False
+	return f.pred(val)
 }
 
 type filterApplier struct {

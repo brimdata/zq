@@ -175,6 +175,9 @@ func (e *Equal) Eval(ectx Context, this super.Value) super.Value {
 	if errVal != nil {
 		return *errVal
 	}
+	if lhsVal.IsNull() || rhsVal.IsNull() {
+		return super.NullBool
+	}
 	result := coerce.Equal(lhsVal, rhsVal)
 	if !e.equality {
 		result = !result
@@ -292,17 +295,9 @@ func (c *Compare) Eval(ectx Context, this super.Value) super.Value {
 		return rhs
 	}
 	lhs, rhs = lhs.Under(), rhs.Under()
-
-	if lhs.IsNull() {
-		if rhs.IsNull() {
-			return c.result(0)
-		}
-		return super.False
-	} else if rhs.IsNull() {
-		// We know lhs isn't null.
-		return super.False
+	if lhs.IsNull() || rhs.IsNull() {
+		return super.NullBool
 	}
-
 	switch lid, rid := lhs.Type().ID(), rhs.Type().ID(); {
 	case super.IsNumber(lid) && super.IsNumber(rid):
 		return c.result(compareNumbers(lhs, rhs, lid, rid))
@@ -353,6 +348,23 @@ func compareNumbers(a, b super.Value, aid, bid int) int {
 		return cmp.Compare(a.Int(), bv)
 	}
 	return cmp.Compare(a.Uint(), b.Uint())
+}
+
+type isNullExpr struct {
+	eval Evaluator
+}
+
+func NewIsNullExpr(e Evaluator) Evaluator {
+	return &isNullExpr{e}
+}
+
+func (i *isNullExpr) Eval(ectx Context, this super.Value) super.Value {
+	val := i.eval.Eval(ectx, this)
+	if val.IsError() {
+		return val
+	}
+	return super.NewBool(val.IsNull())
+
 }
 
 func toFloat(val super.Value) float64 { return coerce.ToNumeric[float64](val) }

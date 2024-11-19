@@ -5,5 +5,5 @@ input: |
   {a:"s",b:null}
 
 output: |
-  {a:"s",b:null(string),eq:false,ne:true}
-  {a:"s",b:null,eq:false,ne:true}
+  {a:"s",b:null(string),eq:null(bool),ne:null(bool)}
+  {a:"s",b:null,eq:null(bool),ne:null(bool)}
