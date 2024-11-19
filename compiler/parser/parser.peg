@@ -239,6 +239,13 @@ Agg
       }
       return agg, nil
     }
+  / cs:CountStar {
+      return &ast.Agg{
+          Kind: "Agg",
+          Name: "count",
+          Loc: cs.(*ast.Call).Loc,
+      }, nil
+    }
 
 AggName
   = IdentifierName
@@ -255,6 +262,14 @@ AggAssignments
       }
       return result, nil
     }
+
+CountStar = COUNT __ "(" __ "*" __ ")" {
+    return &ast.Call{
+		Kind: "Call",
+		Name: &ast.ID{Kind:"ID", Name:"count", Loc: ast.NewLoc(c.pos.offset, c.pos.offset+5)},
+        Loc:  loc(c),
+    }, nil
+  }
 
 /// === Operators ===
 
@@ -1065,6 +1080,7 @@ Function
   / !FuncGuard fn:Identifier __ "(" __ args:FunctionArgs __ ")" where:WhereClause? {
       return newCall(c, fn, args, where), nil
     }
+  / CountStar
 
 RegexpPrimitive
   = pat:RegexpPattern { return newPrimitive(c, "string", pat.(string)), nil }
@@ -1108,7 +1124,7 @@ Primary
   / "(" __ expr:Expr __ ")" { return expr, nil }
 
 CaseExpr
-  = CASE cases:When+ else_:(_ "else" _ Expr)? _ END (_ CASE)? {
+  = CASE cases:When+ else_:(_ ELSE _ Expr)? _ END (_ CASE)? {
         whens := sliceOf[ast.When](cases)
         cond := &ast.Conditional{
             Kind: "Conditional",
@@ -1132,7 +1148,7 @@ CaseExpr
         }
         return cond, nil
     }
-  / CASE _ expr:Expr whens:When+ else_:(_ "else" _ Expr)? _ END (_ CASE)?  {
+  / CASE _ expr:Expr whens:When+ else_:(_ ELSE _ Expr)? _ END (_ CASE)?  {
         cond := &ast.CaseExpr{
             Kind: "CaseExpr",
             Expr: expr.(ast.Expr),
@@ -2211,6 +2227,7 @@ BODY       = "BODY"i            !IdentifierRest
 BY         = "BY"i              !IdentifierRest
 CASE       = "CASE"i            !IdentifierRest
 CONST      = "CONST"i           !IdentifierRest
+COUNT      = "COUNT"i           !IdentifierRest
 CROSS      = "CROSS"i           !IdentifierRest
 CUT        = "CUT"i             !IdentifierRest
 DEBUG      = "DEBUG"i           !IdentifierRest
@@ -2218,6 +2235,7 @@ DEFAULT    = "DEFAULT"i         !IdentifierRest
 DESC       = "DESC"i            !IdentifierRest { return "desc", nil }
 DISTINCT   = "DISTINCT"i        !IdentifierRest
 DROP       = "DROP"i            !IdentifierRest 
+ELSE       = "ELSE"i            !IdentifierRest
 END        = "END"i             !IdentifierRest
 ERROR      = "ERROR"i           !IdentifierRest
 EVAL       = "EVAL"i            !IdentifierRest

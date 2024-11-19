@@ -34,7 +34,7 @@ func New(zctx *super.Context, name string, narg int) (expr.Function, field.Path,
 	case "grok":
 		argmin, argmax = 2, 3
 		f = newGrok(zctx)
-	case "len":
+	case "len", "length":
 		f = &LenFn{zctx: zctx}
 	case "abs":
 		f = &Abs{zctx: zctx}

@@ -5,13 +5,10 @@ title: super
 
 > **TL;DR** `super` is a command-line tool that uses [SuperSQL](../language/README.md)
 > to query a variety of data formats in files, over HTTP, or in [S3](../integrations/amazon-s3.md)
-> storage. It is particularly fast when operating on data in binary formats such as
-> [Super Binary](../formats/bsup.md), [Super Columnar](../formats/csup.md), and
-> [Parquet](https://github.com/apache/parquet-format).
->
-> The `super` design philosophy blends the command-line, embedded database
-> approach of SQLite and DuckDB with the query/search-tool approach
-> of `jq`, `awk`, and `grep`.
+> storage. Best performance is achieved when operating on data in binary formats such as
+> [Super Binary](../formats/bsup.md), [Super Columnar](../formats/csup.md),
+> [Parquet](https://github.com/apache/parquet-format), or
+> [Arrow](https://arrow.apache.org/docs/format/Columnar.html#ipc-streaming-format).
 
 ## Usage
 
@@ -20,13 +17,14 @@ super [ options ] [ -c query ] input [ input ... ]
 ```
 
 `super` is a command-line tool for processing data in diverse input
-formats, powering data wrangling, search, analytics, and extensive transformations
-using the [SuperSQL language](../language/README.md). A SuperSQL query may be extended with
-[pipe syntax](https://research.google/pubs/sql-has-problems-we-can-fix-them-pipe-syntax-in-sql/)
-to apply Boolean logic or keyword search to filter the input, transform, and/or analyze
-the filtered stream.  Output is written to one or more files or to
-standard output.
+formats, providing data wrangling, search, analytics, and extensive transformations
+using the [SuperSQL](../language/README.md) dialect of SQL. Any SQL query expression
+may be extended with [pipe syntax](https://research.google/pubs/sql-has-problems-we-can-fix-them-pipe-syntax-in-sql/)
+to filter, transform, and/or analyze input data.
+Super's SQL pipes dialect is extensive, so much so that it can resemble
+a log-search experience despite its SQL foundation.
 
+<<<<<<< HEAD
 Each `input` argument must be a file path, an HTTP or HTTPS URL,
 an S3 URL, or standard input specified with `-`.
 
@@ -51,23 +49,63 @@ when redirecting to a non-terminal output like a file or pipe.
 When run with input arguments, each input's format is [automatically inferred](#auto-detection)
 and each input is scanned
 in the order appearing on the command line forming the input stream.
+=======
+The `super` command works with data from ephemeral sources like files and URLs.
+If you want to persist your data into a data lake for persistent storage,
+check out the [`super db`](super-db.md) set of commands.
+>>>>>>> origin/main
 
 By invoking the `-c` option, a query expressed in the [SuperSQL language](../language/README.md)
 may be specified and applied to the input stream.
 
-If no query is specified, the inputs are scanned without modification
-and output in the desired format as [described below](#input-formats).  This latter approach
-provides a convenient means to convert files from one format to another.
+The [super data model](../formats/zed.md) is based on [super-structured data](../formats/README.md#2-a-super-structured-pattern), meaning that all data
+is both strongly _and_ dynamically typed and need not conform to a homogeneous
+schema.  The type structure is self-describing so it's easy to daisy-chain
+queries and inspect data at any point in a complex query or data pipeline.
+For example, there's no need for a set of Parquet input files to all be
+schema-compatible and it's easy to mix and match Parquet with JSON across
+queries.
 
-When `super` is run with a query and no input arguments, then the query must
-begin with
-* a [`from`, `file`, or `get` operator](../language/operators/from.md), or
-* an explicit or implied [`yield` operator](../language/operators/yield.md).
+When processing JSON data, all values are converted to strongly typed values
+that fit naturally alongside relational data so there is no need for a separate
+"JSON type".  Unlike SQL systems that integrate JSON data,
+there isn't a JSON way to do things and a separate relational way
+to do things.
 
-In the case of a `yield` with no inputs, the query is run with
-a single input value of `null`.  This provides a convenient means to run in a
-"calculator mode" where input is produced by the `yield` and can be operated upon
-by the query, e.g.,
+Because there are no schemas, there is no schema inference, so inferred schemas
+do not haphazardly change when input data changes in subtle ways.
+
+Each `input` argument to `super` must be a file path, an HTTP or HTTPS URL,
+an S3 URL, or standard input specified with `-`.
+These input arguments are treated as if a SQL `FROM` operator precedes
+the provided query, e.g.,
+```
+super -c "FROM example.json | SELECT typeof(this)"
+```
+is equivalent to
+```
+super -c "SELECT typeof(this)" example.json
+```
+and both are equivalent to the classic SQL
+```
+super -c "SELECT typeof(this) FROM example.json"
+```
+Output is written to one or more files or to standard output in the format specified.
+
+When multiple input files are specified, they are processed in the order given as
+if the data were provided by a single, concatenated `FROM` clause.
+
+If no query is specified with `-c`, the inputs are scanned without modification
+and output in the desired format as [described below](#input-formats),
+providing a convenient means to convert files from one format to another, e.g.,
+```
+super -f arrows file1.json file2.parquet file3.csv > file-combined.arrows
+```
+When `super` is run with a query that has no `FROM` operator and no input arguments,
+the SuperSQL query is fed a single `null` value analogous to SQL's default
+input of a single empty row of an unnamed table.
+This provides a convenient means to explore examples or run in a
+"calculator mode", e.g.,
 ```mdtest-command
 super -z -c '1+1'
 ```
@@ -75,10 +113,40 @@ emits
 ```mdtest-output
 2
 ```
-Note here that the query `1+1` [implies](../language/pipeline-model.md#implied-operators)
-`yield 1+1`.
+Note that SuperSQL's has syntactic shortcuts for interactive data exploration and
+an expression that stands alone is a shortcut for `SELECT VALUE`, e.g., the query text
+```
+1+1
+```
+is equivalent to
+```
+SELECT VALUE 1+1
+```
+To learn more about shortcuts, refer to the SuperSQL
+[documentation on shortcuts](../language/pipeline-model.md#implied-operators).
 
-## Input Formats
+For built-in command help and a listing of all available options,
+simply run `super` with no arguments.
+
+## Data Formats
+
+`super` supports a number of [input](#input-formats) and [output](#output-formats) formats, but the super formats
+([Super Binary](../formats/bsup.md),
+[Super Columnar](../formats/csup.md),
+and [Super JSON](../formats/jsup.md)) tend to be the most versatile and
+easy to work with.
+
+`super` typically operates on binary-encoded data and when you want to inspect
+human-readable bits of output, you merely format it as Super JSON, which is the
+default format when output is directed to the terminal.  Super Binary is the default
+when redirecting to a non-terminal output like a file or pipe.
+
+Unless the `-i` option specifies a specific input format,
+each input's format is [automatically inferred](#auto-detection)
+and each input is scanned
+in the order appearing on the command line forming the input stream.
+
+### Input Formats
 
 `super` currently supports the following input formats:
 
@@ -100,14 +168,14 @@ The input format is typically [detected automatically](#auto-detection) and the 
 "Auto" is "yes" in the table above support _auto-detection_.
 Formats without auto-detection require the `-i` option.
 
-### Hard-wired Input Format
+#### Hard-wired Input Format
 
 The input format is specified with the `-i` flag.
 
 When `-i` is specified, all of the inputs on the command-line must be
 in the indicated format.
 
-### Auto-detection
+#### Auto-detection
 
 When using _auto-detection_, each input's format is independently determined
 so it is possible to easily blend different input formats into a unified
@@ -134,11 +202,11 @@ would produce this output in the default Super JSON format
 {a:3,b:"baz"}
 ```
 
-### JSON Auto-detection: Super vs. Plain
+#### JSON Auto-detection: Super vs. Plain
 
-Since [Super JSON](../formats/jsup.md) is a superset of plain JSON, `super` must be careful in whether it
-interprets input as either format.  While you can always clarify your intent
-with the `-i jsup` or `-i json`, `super` attempts to "just do the right thing"
+Since [Super JSON](../formats/jsup.md) is a superset of plain JSON, `super` must be careful how it distinguishes the two cases when performing auto-inference.
+While you can always clarify your intent
+via `-i jsup` or `-i json`, `super` attempts to "just do the right thing"
 when you run it with Super JSON vs. plain JSON.
 
 While `super` can parse any JSON using its built-in Super JSON parser this is typically
@@ -162,7 +230,7 @@ as an outer object or as a value nested somewhere within a JSON array.
 This heuristic almost always works in practice because Super JSON records
 typically omit quotes around field names.
 
-## Output Formats
+### Output Formats
 
 `super` currently supports the following output formats:
 
@@ -192,7 +260,7 @@ Since Super JSON is a common format choice, the `-z` flag is a shortcut for
 And since plain JSON is another common format choice, the `-j` flag is a shortcut for
 `-f json` and `-J` is a shortcut for pretty printing JSON.
 
-### Output Format Selection
+#### Output Format Selection
 
 When the format is not specified with `-f`, it defaults to Super JSON if the output
 is a terminal and to Super Binary otherwise.
@@ -211,7 +279,7 @@ binary output to their terminal when forgetting to type `-f jsup`.
 In practice, we have found that the output defaults
 "just do the right thing" almost all of the time.
 
-### Pretty Printing
+#### Pretty Printing
 
 Super JSON and plain JSON text may be "pretty printed" with the `-pretty` option, which takes
 the number of spaces to use for indentation.  As this is a common option,
@@ -256,7 +324,7 @@ produces
 When pretty printing, colorization is enabled by default when writing to a terminal,
 and can be disabled with `-color false`.
 
-### Pipeline-friendly Super Binary
+#### Pipeline-friendly Super Binary
 
 Though it's a compressed format, Super Binary data is self-describing and stream-oriented
 and thus is pipeline friendly.
@@ -268,8 +336,8 @@ or register schemas or "protos" with the downstream entities.
 
 In particular, Super Binary data can simply be concatenated together, e.g.,
 ```mdtest-command
-super -f bsup -c 'yield 1,[1,2,3]' > a.bsup
-super -f bsup -c 'yield {s:"hello"},{s:"world"}' > b.bsup
+super -f bsup -c 'select value 1, [1,2,3]' > a.bsup
+super -f bsup -c 'select value {s:"hello"}, {s:"world"}' > b.bsup
 cat a.bsup b.bsup | super -z -
 ```
 produces
@@ -281,7 +349,7 @@ produces
 ```
 And while this Super JSON output is human readable, the Super Binary files are binary, e.g.,
 ```mdtest-command
-super -f bsup -c 'yield 1,[1,2,3]' > a.bsup
+super -f bsup -c 'select value 1,[ 1,2,3]' > a.bsup
 hexdump -C a.bsup
 ```
 produces
@@ -291,7 +359,7 @@ produces
 00000012
 ```
 
-### Schema-rigid Outputs
+#### Schema-rigid Outputs
 
 Certain data formats like [Arrow](https://arrow.apache.org/docs/format/Columnar.html#ipc-streaming-format)
 and [Parquet](https://github.com/apache/parquet-format) are "schema rigid" in the sense that
@@ -312,7 +380,7 @@ causes this error
 parquetio: encountered multiple types (consider 'fuse'): {x:int64} and {s:string}
 ```
 
-#### Fusing Schemas
+##### Fusing Schemas
 
 As suggested by the error above, the [`fuse` operator](../language/operators/fuse.md) can merge different record
 types into a blended type, e.g., here we create the file and read it back:
@@ -326,7 +394,7 @@ but the data was necessarily changed (by inserting nulls):
 {x:null(int64),s:"hello"}
 ```
 
-#### Splitting Schemas
+##### Splitting Schemas
 
 Another common approach to dealing with the schema-rigid limitation of Arrow and
 Parquet is to create a separate file for each schema.
@@ -354,7 +422,7 @@ produces the original data
 While the `-split` option is most useful for schema-rigid formats, it can
 be used with any output format.
 
-### Simplified Text Outputs
+#### Simplified Text Outputs
 
 The `text` and `table` formats simplify data to fit within the
 limitations of text-based output. Because they do not capture all the
@@ -422,7 +490,7 @@ one   1     -
 hello -     greeting
 ```
 
-### SuperDB Data Lake Metadata Output
+#### SuperDB Data Lake Metadata Output
 
 The `lake` format is used to pretty-print lake metadata, such as in
 [`super db` sub-command](super-db.md) outputs.  Because it's `super db`'s default output format,
@@ -543,7 +611,7 @@ have many examples, but here are a few more simple `super` use cases.
 
 _Hello, world_
 ```mdtest-command
-echo '"hello, world"' | super -z -c 'yield this' -
+super -z -c "SELECT VALUE 'hello, world'"
 ```
 produces this Super JSON output
 ```mdtest-output
@@ -552,7 +620,7 @@ produces this Super JSON output
 
 _Some values of available [data types](../language/data-types.md)_
 ```mdtest-command
-echo '1 1.5 [1,"foo"] |["apple","banana"]|' | super -z -c 'yield this' -
+echo '1 1.5 [1,"foo"] |["apple","banana"]|' | super -z -
 ```
 produces
 ```mdtest-output
@@ -563,7 +631,7 @@ produces
 ```
 _The types of various data_
 ```mdtest-command
-echo '1 1.5 [1,"foo"] |["apple","banana"]|' | super -z -c 'yield typeof(this)' -
+echo '1 1.5 [1,"foo"] |["apple","banana"]|' | super -z -c 'SELECT VALUE typeof(this)' -
 ```
 produces
 ```mdtest-output
@@ -614,200 +682,728 @@ produces
 
 ## Performance
 
-Your mileage may vary, but many new users of `super` are surprised by its speed
-compared to tools like `jq`, `grep`, `awk`, or `sqlite` especially when running
-`super` over files in the Super Binary format.
+You might think that the overhead involved in managing super-structured types
+and the generality of heterogeneous data would confound the performance of
+the `super` command, but it turns out that `super` can hold its own when
+compared to other analytics systems.
 
-### Fast Pattern Matching
+To illustrate comparative performance, we'll present some informal performance
+measurements among `super`,
+[`DuckDB`](https://duckdb.org/),
+[`ClickHouse`](https://clickhouse.com/), and
+[`DataFusion`](https://datafusion.apache.org/).
 
-One important technique that helps `super` run fast is to take advantage of queries
-that involve fine-grained searches.
+We'll use the Parquet format to compare apples to apples
+and also report results for the custom columnar database format of DuckDB
+and the Super Binary format used by `super`.
+We tried loading our test data into a ClickHouse table using its
+[new experimental JSON type](https://clickhouse.com/blog/a-new-powerful-json-data-type-for-clickhouse)
+but those attempts failed with "too many open files".
 
-When a query begins with a logical expression containing either a search
-or a predicate match with a constant value, and presuming the input data format
-is Super Binary, then the runtime optimizes the query by performing an efficient,
-byte-oriented "pre-search" of the values required in the predicate.  This pre-search
-scans the bytes that comprise a large buffer of values and looks for these values
-and, if they are not present, the entire buffer is discarded knowing no individual
-value in that buffer could match because the required serialized
-values were not present in the buffer.
+As of this writing in November 2024, we're using the latest version 1.1.3 of `duckdb`.
+version 24.11.1.1393 of `clickhouse`, and v43.0.0 of `datafusion-cli`.
 
-For example, if the query is
+### The Test Data
+
+These tests are based on the data and exemplary queries
+published by the DuckDB team on their blog
+[Shredding Deeply Nested JSON, One Vector at a Time](https://duckdb.org/2023/03/03/json.html).  We'll follow their script starting at the
+[GitHub Archive Examples](https://duckdb.org/2023/03/03/json.html#github-archive-examples).
+
+If you want to reproduce these results for yourself,
+you can fetch the 2.2GB of gzipped JSON data:
 ```
-"http error" and ipsrc==10.0.0.1 | count()
+wget https://data.gharchive.org/2023-02-08-0.json.gz
+wget https://data.gharchive.org/2023-02-08-1.json.gz
+...
+wget https://data.gharchive.org/2023-02-08-23.json.gz
 ```
-then the pre-search would look for the string "http error" and the encoding
-of the IP address 10.0.0.1 and unless both those values are present, then the
-buffer is discarded.
-
-Moreover, Super Binary data is compressed and arranged into frames that can be decompressed
-and processed in parallel.  This allows the decompression and pre-search to
-run in parallel very efficiently across a large number of threads.  When searching
-for sparse results, many frames are discarded without their uncompressed bytes
-having to be processed any further.
-
-### Efficient JSON Processing
-
-While processing data in the Super Binary format is far more efficient than JSON,
-there is substantial JSON data in the world and it is important for JSON
-input to perform well.
-
-This proved a challenge as `super` is written in [Go](https://go.dev/) and Go's JSON package
-is not particularly performant.  To this end, `super` has its own lean and simple
-[JSON tokenizer](https://pkg.go.dev/github.com/brimdata/super/pkg/jsonlexer),
-which performs quite well,
-and is
-[integrated tightly](https://github.com/brimdata/super/blob/main/zio/jsonio/reader.go)
-with SuperDB's internal data representation.
-Moreover, like `jq`,
-`super`'s JSON parser does not require objects to be newline delimited and can
-incrementally parse the input to minimize memory overhead and improve
-processor cache performance.
-
-The net effect is a JSON parser that is typically a bit faster than the
-native C implementation in `jq`.
-
-### Performance Comparisons
-
-To provide a rough sense of the performance tradeoffs between `super` and
-other tooling, this section provides results of a few simple speed tests.
-
-#### Test Data
-
-These tests are easy to reproduce.  The input data comes from a
-[repository of sample security log data](https://github.com/brimdata/zed-sample-data),
-where we used a semi-structured Zeek "conn" log from the `zeek-default` directory.
-
-It is easy to convert the Zeek logs to a local Super Binary file using
-`super`'s built-in [`get` operator](../language/operators/get.md):
+We downloaded these files into a directory called `gharchive_gz`
+and created a duckdb database file called `gha.db` and a table called `gha`
+using this command:
 ```
-super -o conn.bsup -c 'get https://raw.githubusercontent.com/brimdata/zed-sample-data/main/zeek-default/conn.log.gz'
+duckdb gha.db -c "CREATE TABLE gha AS FROM read_json('gharchive_gz/*.json.gz', union_by_name=true)"
 ```
-This creates a new file `conn.bsup` from the Zeek log file fetched from GitHub.
+To create a relational table from the input JSON, we utilized DuckDB's
+`union_by_name` parameter to fuse all of the different shapes of JSON encountered
+into a single monolithic schema.
 
-Note that this data is a gzip'd file in the Zeek format and `super`'s auto-detector
-figures out both that it is gzip'd and that the uncompressed format is Zeek.
-There's no need to specify flags for this.
+We then created a Parquet file called `gha.parquet` with this command:
+```
+duckdb gha.db -c "COPY (from gha) TO 'gha.parquet'"
+```
+To create a super-structed file for the `super` command, there is no need to
+fuse the data into a single schema (though `super` can still work with the fused
+schema in the Parquet file), and we simply ran this command to create a Super Binary
+file:
+```
+super gharchive_gz/*.json.gz > gha.bsup
+```
+This code path in `super` is not multi-threaded so not particularly performant but,
+on our test machine, it takes about the same time as the `duckdb` method of creating
+a schema-fused table.
 
-Next, a JSON file can be converted from Super Binary using:
+Here are the resulting file sizes:
 ```
-super -f json conn.bsup > conn.json
-```
-Note here that we lose information in this conversion because the rich data types
-of the [super data model](../formats/zed.md) (that were [translated from the Zeek format](../integrations/zeek/data-type-compatibility.md)) are lost.
-
-We'll also make a SQLite database in the file `conn.db` as the table named `conn`.
-One easy way to do this is to install
-[sqlite-utils](https://sqlite-utils.datasette.io/en/stable/)
-and run
-```
-sqlite-utils insert conn.db conn conn.json --nl
-```
-(If you need a cup of coffee, a good time to get it would be when
-loading the JSON into SQLite.)
-
-#### File Sizes
-
-Note the resulting file sizes:
-```
-% du -h conn.json conn.db conn.bsup
-416M	conn.json
-192M	conn.db
- 38M	conn.bsup
-```
-Much of the performance of Super Binary derives from an efficient, parallelizable
-structure where frames of data are compressed
-(currently with [LZ4](http://lz4.github.io/lz4/) though the
-specification supports multiple algorithms) and the sequence of values
-can be processed with only partial deserialization.
-
-That said, there are quite a few more opportunities to further improve
-the performance of `super` and the SuperDB system and we have a number of projects
-forthcoming on this front.
-
-#### Tests
-
-We ran three styles of tests on a Mac quad-core 2.3GHz i7:
-* `count` - compute the number of values present
-* `search` - find a value in a field
-* `agg` - sum a field grouped by another field
-
-Each test was run for `jq`, `super` on JSON, `sqlite3`, and `super` on Super Binary.
-
-We used the Bash `time` command to measure elapsed time.
-
-The command lines for the `count` test were:
-```
-jq -s length conn.json
-sqlite3 conn.db 'select count(*) from conn'
-super -c 'count()' conn.bsup
-super -c 'count()' conn.json
-```
-The command lines for the `search` test were:
-```
-jq 'select(.id.orig_h=="10.47.23.5")' conn.json
-sqlite3 conn.db 'select * from conn where json_extract(id, "$.orig_h")=="10.47.23.5"'
-super -c 'id.orig_h==10.47.23.5' conn.bsup
-super -c 'id.orig_h==10.47.23.5' conn.json
-```
-Here, we look for an IP address (10.47.23.5) in a specific
-field `id.orig_h` in the semi-structured data.  Note when using Super Binary,
-the IP is a native type whereas for `jq` and SQLite it is a string.
-Note that `sqlite` must use its `json_extract` function since nested JSON objects
-are stored as minified JSON text.
-
-The command lines for the `agg` test were:
-```
-jq -n -f agg.jq conn.json
-sqlite3 conn.db 'select sum(orig_bytes),json_extract(id, "$.orig_h") as orig_h from conn group by orig_h'
-super -c "sum(orig_bytes) by id.orig_h" conn.bsup
-super -c "sum(orig_bytes) by id.orig_h" conn.json
-```
-where the `agg.jq` script is:
-```
-def adder(stream):
-  reduce stream as $s ({}; .[$s.key] += $s.val);
-adder(inputs | {key:.id.orig_h,val:.orig_bytes})
-| to_entries[]
-| {orig_h: (.key), sum: .value}
+% du -h gha.db gha.parquet gha.bsup gharchive_gz
+9.3G	gha.db
+4.6G	gha.parquet
+2.8G	gha.bsup
+2.2G	gharchive_gz
 ```
 
-#### Results
+### The Test Queries
+
+The test queries involve these patterns:
+* simple search (single and multicolumn)
+* count-where aggregation
+* count by field aggregation
+* rank over union of disparate field types
+
+We will call these tests `search`, `search+`, `count`, `agg`, and `union`, respectively
+
+#### Search
+
+For the search test, we'll search for the string pattern
+```
+    "in case you have any feedback 😊"
+```
+in the field `payload.pull_request.body`
+and we'll just count the number of matches found.
+The number of matches is small (3) so the query performance is dominated
+by the search.
+
+The SQL for this query is
+```sql
+SELECT count()
+FROM 'gha.parquet' -- or gha
+WHERE payload.pull_request.body LIKE '%in case you have any feedback 😊%'
+```
+SuperSQL has a function called `grep` that is similar to the SQL `LIKE` clause but
+can operate over specified fields or default to all the string fields in any value.
+The SuperSQL query is
+```sql
+SELECT count()
+FROM 'gha.bsup'
+WHERE grep('in case you have any feedback 😊', payload.pull_request.body)
+```
+
+#### Search+
+
+For search across multiple columns, SQL doesn't have a `grep` function so
+we must enumerate all the fields of such a query.  The SQL for a string search
+over our GitHub Archive dataset involves the following fields:
+```sql
+SELECT count() FROM gha
+WHERE id LIKE '%in case you have any feedback 😊%'
+  OR type LIKE '%in case you have any feedback 😊%'
+  OR actor.login LIKE '%in case you have any feedback 😊%'
+  OR actor.display_login LIKE '%in case you have any feedback 😊%'
+  ...
+  OR payload.member.type LIKE '%in case you have any feedback 😊%'
+```
+There are 486 such fields.  You can review the entire query in
+[docs/commands/search.sql](search.sql).
+
+#### Count
+
+In the `count` test, we filter the input with a WHERE clause and count the results.
+We chose a random GitHub user name for the filter.
+This query has the form:
+```
+SELECT count()
+FROM 'gha.parquet' -- or gha or 'gha.bsup'
+WHERE actor.login='johnbieren'"
+```
+
+#### Agg
+
+In the `agg` test, we filter the input and count the results grouped by the field `type`
+as in the DuckDB blog.
+This query has the form:
+```
+SELECT count(),type
+FROM 'gha.parquet' -- or 'gha' or 'gha.bsup'
+WHERE repo.name='duckdb/duckdb'
+GROUP BY type
+```
+
+#### Union
+
+The `union` test is straight out of the DuckDB blog at the end of
+[this section](https://duckdb.org/2023/03/03/json.html#handling-inconsistent-json-schemas).
+This query computes the GitHub users that were assigned as a PR reviewer the most often
+and returns the top 5 such users.
+Because the assignees can appear in either a list of strings
+or within a single string field, the relational model requires that two different
+subqueries run for the two cases and the result unioned together; then,
+this intermediary table can be counted using the unnested
+assignee as the group-by key.
+This query is:
+```sql
+WITH assignees AS (
+  SELECT payload.pull_request.assignee.login assignee
+  FROM 'gha.parquet'
+  UNION ALL
+  SELECT unnest(payload.pull_request.assignees).login assignee
+  FROM 'gha.parquet'
+)
+SELECT assignee, count(*) count
+FROM assignees
+WHERE assignee IS NOT NULL
+GROUP BY assignee
+ORDER BY count DESC
+LIMIT 5
+```
+For DataFusion, we needed to rewrite this SELECT
+```sql
+SELECT unnest(payload.pull_request.assignees).login
+FROM 'gha.parquet'
+```
+as
+```sql
+SELECT rec.login as assignee FROM (
+    SELECT unnest(payload.pull_request.assignees) rec
+    FROM 'gha.parquet'
+)
+```
+and for ClickHouse, we had to use `arrayJoin` instead of `unnest`.
+
+SuperSQL's data model does not require these sorts of gymnastics as
+everything does not have to be jammed into a table.  Instead, we can use the
+`UNNEST` pipe operator combined with the spread operator applied to the array of
+string fields to easily produce a stream of string values representing the
+assignees.  Then we simply aggregate the assignee stream:
+```
+FROM 'gha.bsup'
+| UNNEST [...payload.pull_request.assignees, payload.pull_request.assignee]
+| WHERE this IS NOT NULL
+| AGGREGATE count() BY assignee:=login
+| ORDER BY count DESC
+| LIMIT 5
+```
+
+### The Test Results
 
 The following table summarizes the results of each test as a column and
-each tool as a row with the speed-up factor (relative to `jq`)
-shown in parentheses:
+each tool as a row with the speed-up factor shown in parentheses:
 
-|  | `count` | `search` | `agg` |
-|------|---------------|---------------|---------------|
-| `jq` | 11,540ms (1X) | 10,730ms (1X) | 20,175ms (1X) |
-| `super-json` | 7,150ms (1.6X) | 7,230ms (1.5X)  | 7,390ms (2.7X) |
-| `sqlite` | 100ms (115X) | 620ms (17X) | 1,475ms (14X) |
-| `super-bsup` | 110ms (105X) | 135ms (80X) | 475ms (42X) |
+| tool | format | search | search+ | count | agg | union |
+|--------------|---------------|---------------|---------------|----|------|-------|
+| `super` | `bsup` | 3.2 (2.6X) | 6.7 (3.6X) | 3.2 (0.04X) | 3.1 (0.04X) | 3.8 (117X) |
+| `super` | `parquet` | note 1 | note 1  | 0.18 (0.7X) | 0.27 (0.4X) | note 2 |
+| `duckdb` | `db` | 8.2  | 24  | 0.13 | 0.12  | 446  |
+| `duckdb` | `parquet` | 8.4 (1) | 23 (1X)  | 0.26 (0.5X) | 0.21 (0.6X) | 419 (1.1X) |
+| `datafusion` | `parquet` | 9.1 (0.9X) | 18 (1.3X)  | 0.24 (0.5X) | 0.24 (0.5X) | 40 (11x) |
+| `clickhouse` | `parquet` | 56 (0.1X) | 463 (0.1X)  | 1 (0.1X) | 0.91 (0.1X) | 66 (7X) |
 
-To summarize, `super` with Super Binary is consistently fastest though `sqlite`
-was a bit faster counting rows.
+_Note 1: the `super` vectorized runtime does not yet support `grep`_
 
-In particular, `super` is substantially faster (40-100X) than `jq` with the efficient
-Super Binary format but more modestly faster (50-170%) when processing the bulky JSON input.
-This is expected because parsing JSON becomes the bottleneck.
+_Note 2: the `super` vectorized runtime does not yet support array expressions_
 
-While SQLite is much faster than `jq`, it is not as fast as `super`.  The primary
-reason for this is that SQLite stores its semi-structured columns as minified JSON text,
-so it must scan and parse the JSON when executing the _where_ clause above
-as well as the aggregated fields.
+Since DuckDB with its native format is overall the best performing,
+we used it as the baseline for all of the speedup factors.
 
-Also, note that the inferior performance of `sqlite` is in areas where databases
-perform extraordinarily well if you do the work to
-(1) transform semi-structured columns to relational columns by flattening
-nested JSON objects (which are not indexable by `sqlite`) and
-(2) configuring database indexes.
+To summarize,
+`super` with Super Binary is substantially faster than the relational systems for
+the search use cases and performs on par with the others for traditional OLAP queries,
+except for the union query, where the super-structured data model trounces the relational
+model (by over 100X!) for stitching together disparate data types for analysis in an aggregation.
 
-In fact, if you implement these changes, `sqlite` performs better than `super` on these tests.
+## Appendix 1: Preparing the Test Data
 
-However, the benefit of SuperDB is that no flattening is required.  And unlike `sqlite`,
-`super` is not intended to be a database.  That said, there is no reason why database
-performance techniques cannot be applied to the super data model and this is precisely what the
-open-source SuperDB project intends to do.
+For our tests, we diverged a bit from the methodology in the DuckDB blog and wanted
+to put all the JSON data in a single table.  It wasn't obvious how to go about this
+and this section documents the difficulties we encountered trying to do so.
 
-Stay tuned!
+First, we simply tried this:
+```
+duckdb gha.db -c "CREATE TABLE gha AS FROM 'gharchive_gz/*.json.gz'"
+```
+which fails with
+```
+Invalid Input Error: JSON transform error in file "gharchive_gz/2023-02-08-10.json.gz", in line 4903: Object {"url":"https://api.github.com/repos/aws/aws-sam-c... has unknown key "reactions"
+Try increasing 'sample_size', reducing 'maximum_depth', specifying 'columns', 'format' or 'records' manually, setting 'ignore_errors' to true, or setting 'union_by_name' to true when reading multiple files with a different structure.
+```
+Clearly the schema inference algorithm relies upon sampling and the sample doesn't
+cover enough data to capture all of its variations.
+
+Okay, maybe there is a reason the blog first explores the structure of
+the data to specify `columns` arguments to `read_json` as suggested by the error
+message above.  To this end, you can run this query:
+```
+SELECT json_group_structure(json)
+FROM (
+  SELECT *
+  FROM read_ndjson_objects('gharchive_gz/*.json.gz')
+  LIMIT 2048
+);
+```
+Unfortunately, if you use the resulting structure to create the `columns` argument
+then `duckdb` fails also because the first 2048 records don't have enough coverage.
+So let's try removing the `LIMIT` clause:
+```
+SELECT json_group_structure(json)
+FROM (
+  SELECT *
+  FROM read_ndjson_objects('gharchive_gz/*.json.gz')
+);
+```
+Hmm, now `duckdb` runs out of memory.
+
+We then thought we'd see if the sampling algorithm of `read_json` is more efficient,
+so we ran tried this command with successively larger sample sizes:
+```
+duckdb scratch -c "CREATE TABLE gha AS FROM read_json('gharchive_gz/*.json.gz', sample_size=1000000)"
+```
+even with a million rows as the sample, `duckdb` fails with
+```
+Invalid Input Error: JSON transform error in file "gharchive_gz/2023-02-08-14.json.gz", in line 49745: Object {"issues":"write","metadata":"read","pull_requests... has unknown key "repository_hooks"
+Try increasing 'sample_size', reducing 'maximum_depth', specifying 'columns', 'format' or 'records' manually, setting 'ignore_errors' to true, or setting 'union_by_name' to true when reading multiple files with a different structure.
+```
+Ok, there 4434953 JSON objects in the input so let's try this:
+```
+duckdb gha.db -c "CREATE TABLE gha AS FROM read_json('gharchive_gz/*.json.gz', sample_size=4434953)"
+```
+and again `duckdb` runs out of memory.
+
+So we looked at the other options suggested by the error message and
+`union_by_name` appeared promising.  Enabling this option causes DuckDB
+to combine all the JSON objects into a single fused schema.
+Maybe this would work better?
+
+Sure enough, this works:
+```
+duckdb gha.db -c "CREATE TABLE gha AS FROM read_json('gharchive_gz/*.json.gz', union_by_name=true)"
+```
+We now have the `duckdb` database file for our GitHub Archive data called `gha.db`
+containing a single table called `gha` embedded in that database.
+What about the super-structured
+format for the `super` command?  There is no need to futz with sample sizes,
+schema inference, or union by name, just run this to create a Super Binary file:
+```
+super gharchive_gz/*.json.gz > gha.bsup
+```
+
+## Appendix 2: Running the Tests
+
+This appendix provides the raw tests and output that we run on a MacBook Pro to generate
+the table of results above.
+
+### Search Test
+
+```
+; time super -c "
+  SELECT count()
+  FROM 'gha.bsup'
+  WHERE grep('in case you have any feedback 😊', payload.pull_request.body)
+"
+{count:2(uint64)}
+super -c   12.70s user 0.69s system 415% cpu 3.223 total
+
+time duckdb gha.db -c "
+  SELECT count()
+  FROM gha
+  WHERE payload.pull_request.body LIKE '%in case you have any feedback 😊%'
+"
+┌──────────────┐
+│ count_star() │
+│    int64     │
+├──────────────┤
+│            2 │
+└──────────────┘
+duckdb gha.db -c   26.66s user 6.90s system 406% cpu 8.266 total
+
+; time duckdb -c "
+  SELECT count()
+  FROM gha.parquet
+  WHERE payload.pull_request.body LIKE '%in case you have any feedback 😊%'
+"
+┌──────────────┐
+│ count_star() │
+│    int64     │
+├──────────────┤
+│            2 │
+└──────────────┘
+duckdb -c   42.71s user 6.06s system 582% cpu 8.380 total
+
+; time datafusion-cli -c "
+  SELECT count()
+  FROM 'gha.parquet'
+  WHERE payload.pull_request.body LIKE '%in case you have any feedback 😊%'
+"
+DataFusion CLI v43.0.0
++---------+
+| count() |
++---------+
+| 2       |
++---------+
+1 row(s) fetched.
+Elapsed 8.819 seconds.
+
+datafusion-cli -c   40.75s user 6.72s system 521% cpu 9.106 total
+
+; time clickhouse -q "
+  SELECT count()
+  FROM 'gha.parquet'
+  WHERE payload.pull_request.body LIKE '%in case you have any feedback 😊%'
+"
+2
+clickhouse -q   50.81s user 1.83s system 94% cpu 55.994 total
+```
+
+### Search+ Test
+
+```
+; time super -c "
+  SELECT count()
+  FROM 'gha.bsup'
+  WHERE grep('in case you have any feedback 😊')
+"
+{count:3(uint64)}
+super -c   43.80s user 0.71s system 669% cpu 6.653 total
+
+; time duckdb gha.db < search.sql
+┌──────────────┐
+│ count_star() │
+│    int64     │
+├──────────────┤
+│            3 │
+└──────────────┘
+duckdb gha.db < search.sql  73.60s user 33.29s system 435% cpu 24.563 total
+
+; time duckdb < search-parquet.sql
+┌──────────────┐
+│ count_star() │
+│    int64     │
+├──────────────┤
+│            3 │
+└──────────────┘
+duckdb < search-parquet.sql  89.57s user 29.21s system 513% cpu 23.113 total
+
+; time datafusion-cli -f search-parquet.sql
+DataFusion CLI v43.0.0
++---------+
+| count() |
++---------+
+| 3       |
++---------+
+1 row(s) fetched.
+Elapsed 18.184 seconds.
+datafusion-cli -f search-parquet.sql  83.84s user 11.13s system 513% cpu 18.494 total
+
+; time clickhouse --queries-file search-parquet.sql
+3
+clickhouse --queries-file search-parquet.sql  515.68s user 5.50s system 112% cpu 7:43.37 total
+```
+### Count Test
+
+```
+; time super -c "
+  SELECT count()
+  FROM 'gha.bsup'
+  WHERE actor.login='johnbieren'
+"
+{count:879(uint64)}
+super -c   13.81s user 0.71s system 449% cpu 3.233 total
+
+; time SUPER_VAM=1 super -c "
+  SELECT count()
+  FROM 'gha.parquet'
+  WHERE actor.login='johnbieren'
+"
+{count:879(uint64)}
+SUPER_VAM=1 super -c   0.43s user 0.08s system 277% cpu 0.182 total
+
+; time duckdb gha.db -c "
+  SELECT count()
+  FROM gha
+  WHERE actor.login='johnbieren'
+"
+┌──────────────┐
+│ count_star() │
+│    int64     │
+├──────────────┤
+│          879 │
+└──────────────┘
+duckdb gha.db -c   0.64s user 0.06s system 517% cpu 0.134 total
+
+; time duckdb -c "
+  SELECT count()
+  FROM 'gha.parquet'
+  WHERE actor.login='johnbieren'
+"
+┌──────────────┐
+│ count_star() │
+│    int64     │
+├──────────────┤
+│          879 │
+└──────────────┘
+duckdb gha.db -c   1.14s user 0.14s system 490% cpu 0.261 total
+
+DataFusion CLI v43.0.0
++---------+
+| count() |
++---------+
+| 879     |
++---------+
+1 row(s) fetched.
+Elapsed 0.203 seconds.
+
+datafusion-cli -c   0.93s user 0.15s system 453% cpu 0.238 total
+
+; time clickhouse -q "
+  SELECT count()
+  FROM 'gha.parquet'
+  WHERE actor.login='johnbieren'
+"
+879
+clickhouse -q   0.86s user 0.07s system 93% cpu 1.001 total
+```
+
+### Agg Test
+
+```
+; time super -c "
+  SELECT count(),type
+  FROM 'gha.bsup'
+  WHERE repo.name='duckdb/duckdb'
+  GROUP BY type
+"
+{type:"PullRequestReviewEvent",count:14(uint64)}
+{type:"IssueCommentEvent",count:30(uint64)}
+{type:"WatchEvent",count:29(uint64)}
+{type:"PullRequestEvent",count:35(uint64)}
+{type:"PushEvent",count:15(uint64)}
+{type:"IssuesEvent",count:9(uint64)}
+{type:"ForkEvent",count:3(uint64)}
+{type:"PullRequestReviewCommentEvent",count:7(uint64)}
+super -c   12.24s user 0.68s system 413% cpu 3.129 total
+
+; time SUPER_VAM=1 super -c "
+  SELECT count(),type
+  FROM 'gha.parquet'
+  WHERE repo.name='duckdb/duckdb'
+  GROUP BY type
+"
+{type:"IssueCommentEvent",count:30(uint64)}
+{type:"PullRequestEvent",count:35(uint64)}
+{type:"PushEvent",count:15(uint64)}
+{type:"WatchEvent",count:29(uint64)}
+{type:"PullRequestReviewEvent",count:14(uint64)}
+{type:"ForkEvent",count:3(uint64)}
+{type:"PullRequestReviewCommentEvent",count:7(uint64)}
+{type:"IssuesEvent",count:9(uint64)}
+SUPER_VAM=1 super -c   1.01s user 0.13s system 421% cpu 0.271 total
+
+; time duckdb gha.db -c "
+  SELECT count(),type
+  FROM gha
+  WHERE repo.name='duckdb/duckdb'
+  GROUP BY type
+"
+┌──────────────┬───────────────────────────────┐
+│ count_star() │             type              │
+│    int64     │            varchar            │
+├──────────────┼───────────────────────────────┤
+│            3 │ ForkEvent                     │
+│           35 │ PullRequestEvent              │
+│           29 │ WatchEvent                    │
+│            7 │ PullRequestReviewCommentEvent │
+│           15 │ PushEvent                     │
+│            9 │ IssuesEvent                   │
+│           14 │ PullRequestReviewEvent        │
+│           30 │ IssueCommentEvent             │
+└──────────────┴───────────────────────────────┘
+duckdb gha.db -c   0.49s user 0.06s system 466% cpu 0.119 total
+
+; time duckdb -c "
+  SELECT count(),type
+  FROM 'gha.parquet'
+  WHERE repo.name='duckdb/duckdb'
+  GROUP BY type
+"
+┌──────────────┬───────────────────────────────┐
+│ count_star() │             type              │
+│    int64     │            varchar            │
+├──────────────┼───────────────────────────────┤
+│            9 │ IssuesEvent                   │
+│            7 │ PullRequestReviewCommentEvent │
+│           15 │ PushEvent                     │
+│           14 │ PullRequestReviewEvent        │
+│            3 │ ForkEvent                     │
+│           29 │ WatchEvent                    │
+│           35 │ PullRequestEvent              │
+│           30 │ IssueCommentEvent             │
+└──────────────┴───────────────────────────────┘
+duckdb -c   0.73s user 0.14s system 413% cpu 0.211 total
+
+; time datafusion-cli -c "
+  SELECT count(),type
+  FROM 'gha.parquet'
+  WHERE repo.name='duckdb/duckdb'
+  GROUP BY type
+"
+DataFusion CLI v43.0.0
++---------+-------------------------------+
+| count() | type                          |
++---------+-------------------------------+
+| 15      | PushEvent                     |
+| 35      | PullRequestEvent              |
+| 7       | PullRequestReviewCommentEvent |
+| 14      | PullRequestReviewEvent        |
+| 30      | IssueCommentEvent             |
+| 9       | IssuesEvent                   |
+| 29      | WatchEvent                    |
+| 3       | ForkEvent                     |
++---------+-------------------------------+
+8 row(s) fetched.
+Elapsed 0.200 seconds.
+
+datafusion-cli -c   0.80s user 0.15s system 398% cpu 0.238 total
+
+; time clickhouse -q "
+  SELECT count(),type
+  FROM 'gha.parquet'
+  WHERE repo.name='duckdb/duckdb'
+  GROUP BY type
+"
+30	IssueCommentEvent
+14	PullRequestReviewEvent
+15	PushEvent
+29	WatchEvent
+9	IssuesEvent
+7	PullRequestReviewCommentEvent
+3	ForkEvent
+35	PullRequestEvent
+clickhouse -q   0.77s user 0.11s system 97% cpu 0.908 total
+```
+
+### Union Test
+
+```
+time super -c "
+  FROM 'gha.bsup'
+  | SELECT VALUE payload.pull_request
+  | WHERE this IS NOT NULL
+  | UNNEST [...assignees, assignee]
+  | WHERE this IS NOT NULL
+  | AGGREGATE count() BY assignee:=login
+  | ORDER BY count DESC
+  | LIMIT 5
+"
+{assignee:"poad",count:1966(uint64)}
+{assignee:"vinayakkulkarni",count:508(uint64)}
+{assignee:"tmtmtmtm",count:356(uint64)}
+{assignee:"AMatutat",count:260(uint64)}
+{assignee:"danwinship",count:208(uint64)}
+super -c   12.39s user 0.95s system 351% cpu 3.797 total
+
+; time duckdb gha.db -c "
+  WITH assignees AS (
+    SELECT payload.pull_request.assignee.login assignee
+    FROM gha
+    UNION ALL
+    SELECT unnest(payload.pull_request.assignees).login assignee
+    FROM gha
+  )
+  SELECT assignee, count(*) count
+  FROM assignees
+  WHERE assignee NOT NULL
+  GROUP BY assignee
+  ORDER BY count DESC
+  LIMIT 5
+"
+┌─────────────────┬───────┐
+│    assignee     │ count │
+│     varchar     │ int64 │
+├─────────────────┼───────┤
+│ poad            │  1966 │
+│ vinayakkulkarni │   508 │
+│ tmtmtmtm        │   356 │
+│ AMatutat        │   260 │
+│ danwinship      │   208 │
+└─────────────────┴───────┘
+duckdb gha.db -c   3119.93s user 90.86s system 719% cpu 7:26.22 total
+
+time duckdb -c "
+  WITH assignees AS (
+    SELECT payload.pull_request.assignee.login assignee
+    FROM 'gha.parquet'
+    UNION ALL
+    SELECT unnest(payload.pull_request.assignees).login assignee
+    FROM 'gha.parquet'
+  )
+  SELECT assignee, count(*) count
+  FROM assignees
+  WHERE assignee NOT NULL
+  GROUP BY assignee
+  ORDER BY count DESC
+  LIMIT 5
+"
+┌─────────────────┬───────┐
+│    assignee     │ count │
+│     varchar     │ int64 │
+├─────────────────┼───────┤
+│ poad            │  1966 │
+│ vinayakkulkarni │   508 │
+│ tmtmtmtm        │   356 │
+│ AMatutat        │   260 │
+│ danwinship      │   208 │
+└─────────────────┴───────┘
+duckdb -c   2914.72s user 107.15s system 721% cpu 6:58.68 total
+
+time datafusion-cli -c "
+  WITH assignees AS (
+    SELECT payload.pull_request.assignee.login assignee
+    FROM 'gha.parquet'
+    UNION ALL
+    SELECT object.login as assignee FROM (
+      SELECT unnest(payload.pull_request.assignees) object
+      FROM 'gha.parquet'
+    )
+  )
+  SELECT assignee, count() count
+  FROM assignees
+  WHERE assignee IS NOT NULL
+  GROUP BY assignee
+  ORDER BY count DESC
+  LIMIT 5
+"
+DataFusion CLI v43.0.0
++-----------------+-------+
+| assignee        | count |
++-----------------+-------+
+| poad            | 1966  |
+| vinayakkulkarni | 508   |
+| tmtmtmtm        | 356   |
+| AMatutat        | 260   |
+| danwinship      | 208   |
++-----------------+-------+
+5 row(s) fetched.
+Elapsed 39.012 seconds.
+
+datafusion-cli -c   116.97s user 44.50s system 408% cpu 39.533 total
+
+; time clickhouse -q "
+ WITH assignees AS (
+    SELECT payload.pull_request.assignee.login assignee
+    FROM 'gha.parquet'
+    UNION ALL
+    SELECT arrayJoin(payload.pull_request.assignees).login assignee
+    FROM 'gha.parquet'
+  )
+  SELECT assignee, count(*) count
+  FROM assignees
+  WHERE assignee IS NOT NULL
+  GROUP BY assignee
+  ORDER BY count DESC
+  LIMIT 5
+"
+poad	1966
+vinayakkulkarni	508
+tmtmtmtm	356
+AMatutat	260
+danwinship	208
+clickhouse -q   105.49s user 6.54s system 169% cpu 1:06.27 total
+```

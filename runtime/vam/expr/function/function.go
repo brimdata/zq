@@ -37,7 +37,7 @@ func New(zctx *super.Context, name string, narg int) (expr.Function, field.Path,
 		f = &Join{zctx: zctx}
 	case "kind":
 		f = &Kind{zctx: zctx}
-	case "len":
+	case "len", "length":
 		f = &Len{zctx}
 	case "levenshtein":
 		argmin, argmax = 2, 2

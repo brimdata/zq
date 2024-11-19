@@ -8,8 +8,10 @@ type Count uint64
 
 var _ Function = (*Count)(nil)
 
-func (c *Count) Consume(super.Value) {
-	*c++
+func (c *Count) Consume(val super.Value) {
+	if val.Bytes() != nil {
+		*c++
+	}
 }
 
 func (c Count) Result(*super.Context) super.Value {
