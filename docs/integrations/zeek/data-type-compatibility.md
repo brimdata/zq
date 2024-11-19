@@ -1,9 +1,7 @@
 ---
-sidebar_position: 2
-sidebar_label: Zed/Zeek Data Type Compatibility
+weight: 2
+title: Zed/Zeek Data Type Compatibility
 ---
-
-# Zed/Zeek Data Type Compatibility
 
 As the [super data model](../../formats/zed.md) was in many ways inspired by the
 [Zeek TSV log format](https://docs.zeek.org/en/master/log-formats.html#zeek-tsv-format-logs),

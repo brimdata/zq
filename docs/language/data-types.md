@@ -1,9 +1,7 @@
 ---
-sidebar_position: 3
-sidebar_label: Data Types
+weight: 3
+title: Data Types
 ---
-
-# Data Types
 
 The SuperPipe language includes most data types of a typical programming language
 as defined in the [super data model](../formats/zed.md).
@@ -315,7 +313,7 @@ results from accessing a field that is not present.  Thus, `x==NULL` and
 `x==MISSING` could disambiguate the two cases above.
 
 SuperPipe, instead, recognizes that the SQL value `MISSING` is a paradox:
-I'm here but I'm not.  
+I'm here but I'm not.
 
 In reality, a `MISSING` value is not a value.  It's an error condition
 that resulted from trying to reference something that didn't exist.

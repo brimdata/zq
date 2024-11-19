@@ -1,9 +1,7 @@
 ---
-sidebar_position: 6
-sidebar_label: Search Expressions
+weight: 6
+title: Search Expressions
 ---
-
-# Search Expressions
 
 Search expressions provide a hybrid syntax between keyword search
 and boolean expressions.  In this way, a search is a shorthand for

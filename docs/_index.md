@@ -1,9 +1,8 @@
 ---
-sidebar_position: 1
-sidebar_label: Introduction
+weight: 1
+title: Docs
+heading: SuperDB
 ---
-
-# SuperDB
 
 SuperDB offers a new approach that makes it easier to manipulate and manage
 your data.  With its [super-structured data model](formats/README.md#2-a-super-structured-pattern),

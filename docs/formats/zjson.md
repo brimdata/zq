@@ -1,9 +1,8 @@
 ---
-sidebar_position: 5
-sidebar_label: ZJSON
+weight: 5
+title: ZJSON
+heading: ZJSON Specification
 ---
-
-# ZJSON Specification
 
 ## 1. Introduction
 

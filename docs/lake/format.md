@@ -1,9 +1,8 @@
 ---
-sidebar_position: 2
-sidebar_label: Format
+weight: 2
+title: Format
+heading: Zed Lake Format
 ---
-
-# Zed Lake Format
 
 ## _Status_
 
@@ -69,7 +68,7 @@ such an assumption).
 #### Data Objects
 
 A data object is created by a single writer using a globally unique name
-with an embedded KSUID.  
+with an embedded KSUID.
 
 New objects are written in their entirety.  No updates, appends, or modifications
 may be made once an object exists.  Given these semantics, any such object may be

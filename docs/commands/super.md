@@ -1,9 +1,7 @@
 ---
-sidebar_position: 1
-sidebar_label: super
+weight: 1
+title: super
 ---
-
-# `super`
 
 > **TL;DR** `super` is a command-line tool that uses [SuperSQL](../language/README.md)
 > to query a variety of data formats in files, over HTTP, or in [S3](../integrations/amazon-s3.md)
@@ -43,7 +41,7 @@ but its comprehensive [type system](../formats/zed.md) obviates
 the need for schema specification or registries.
 Also, the [Super JSON](../formats/jsup.md) format is human-readable and entirely one-to-one with Super Binary
 so there is no need to represent non-readable formats like Avro or Protocol Buffers
-in a clunky JSON encapsulated form.  
+in a clunky JSON encapsulated form.
 
 `super` typically operates on Super Binary-encoded data and when you want to inspect
 human-readable bits of output, you merely format it as Super JSON, which is the

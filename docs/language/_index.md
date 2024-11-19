@@ -1,4 +1,8 @@
-# The Zed Language
+---
+title: Language
+weight: 4
+heading: The Zed Language
+---
 
 The language documents:
 * provide an [overview](overview.md) of the Zed language,

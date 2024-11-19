@@ -1,9 +1,7 @@
 ---
-sidebar_position: 5
-sidebar_label: Expressions
+weight: 5
+title: Expressions
 ---
-
-# Expressions
 
 Zed expressions follow the typical patterns in programming languages.
 Expressions are typically used within pipeline operators
@@ -243,7 +241,7 @@ produces
 ```
 
 Zed includes many [built-in functions](functions/README.md), some of which take
-a variable number of arguments.  
+a variable number of arguments.
 
 Zed also allows you to create [user-defined functions](statements.md#func-statements).
 

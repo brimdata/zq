@@ -1,4 +1,7 @@
-# Command Tooling
+---
+title: Commands
+weight: 2
+---
 
 The [`super` command](super.md) is used to execute command-line queries on
 inputs from files, HTTP URLs, or [S3](../integrations/amazon-s3.md).

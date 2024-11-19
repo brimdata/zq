@@ -1,9 +1,7 @@
 ---
-sidebar_position: 3
-sidebar_label: Fluentd
+weight: 3
+title: Fluentd
 ---
-
-# Fluentd
 
 The [Fluentd](https://www.fluentd.org/) open source data collector can be used
 to push log data to a [SuperDB data lake](../commands/super-db.md) in a continuous manner.

@@ -1,9 +1,7 @@
 ---
-sidebar_position: 8
-sidebar_label: Shaping and Type Fusion
+weight: 8
+title: Shaping and Type Fusion
 ---
-
-# Shaping and Type Fusion
 
 ## Shaping
 

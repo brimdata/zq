@@ -1,9 +1,7 @@
 ---
-sidebar_position: 2
-sidebar_label: Pipeline Model
+weight: 2
+title: Pipeline Model
 ---
-
-# The Pipeline Model
 
 In SuperPipe, each operator takes its input from the output of its upstream operator beginning
 either with a data source or with an implied source.

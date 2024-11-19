@@ -1,9 +1,8 @@
 ---
-sidebar_position: 1
-sidebar_label: super
+weight: 1
+title: super
+heading: super Tutorial
 ---
-
-# super Tutorial
 
 This tour provides new users of `super` an overview of the tool and
 the [SuperPipe language](../language/README.md)
@@ -624,7 +623,7 @@ produces
 ```mdtest-output
 "array"
 ```
-Ok got it.  But, how many items are in the array?  
+Ok got it.  But, how many items are in the array?
 ```mdtest-command dir=docs/tutorials
 super -z -c 'len(this)' prs.json
 ```

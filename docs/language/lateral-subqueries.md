@@ -1,9 +1,7 @@
 ---
-sidebar_position: 7
-sidebar_label: Lateral Subqueries
+weight: 7
+title: Lateral Subqueries
 ---
-
-# Lateral Subqueries
 
 Lateral subqueries provide a powerful means to apply a Zed query
 to each subsequence of values generated from an outer sequence of values.

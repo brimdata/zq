@@ -1,9 +1,7 @@
 ---
-sidebar_position: 2
-sidebar_label: super db
+weight: 2
+title: super db
 ---
-
-# `super db`
 
 > **TL;DR** `super db` is a sub-command of `super` to manage and query SuperDB data lakes.
 > You can import data from a variety of formats and it will automatically
