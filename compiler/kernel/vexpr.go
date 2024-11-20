@@ -35,6 +35,8 @@ func (b *Builder) compileVamExpr(e dag.Expr) (vamexpr.Evaluator, error) {
 		return b.compileVamDotExpr(e)
 	case *dag.IndexExpr:
 		return b.compileVamIndexExpr(e)
+	case *dag.IsNullExpr:
+		return b.compileVamIsNullExpr(e)
 	case *dag.UnaryExpr:
 		return b.compileVamUnary(*e)
 	case *dag.BinaryExpr:
@@ -143,6 +145,14 @@ func (b *Builder) compileVamIndexExpr(idx *dag.IndexExpr) (vamexpr.Evaluator, er
 		return nil, err
 	}
 	return vamexpr.NewIndexExpr(b.zctx(), e, index), nil
+}
+
+func (b *Builder) compileVamIsNullExpr(idx *dag.IsNullExpr) (vamexpr.Evaluator, error) {
+	e, err := b.compileVamExpr(idx.Expr)
+	if err != nil {
+		return nil, err
+	}
+	return vamexpr.NewIsNull(e), nil
 }
 
 func (b *Builder) compileVamExprs(in []dag.Expr) ([]vamexpr.Evaluator, error) {

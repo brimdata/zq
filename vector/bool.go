@@ -137,6 +137,13 @@ func NullsOf(v Any) *Bool {
 	case *Bytes:
 		return v.Nulls
 	case *Const:
+		if v.Value().IsNull() {
+			out := NewBoolEmpty(v.Len(), nil)
+			for i := range out.Bits {
+				out.Bits[i] = ^uint64(0)
+			}
+			return out
+		}
 		return v.Nulls
 	case *Dict:
 		return v.Nulls
@@ -172,7 +179,7 @@ func NullsOf(v Any) *Bool {
 	panic(v)
 }
 
-func setNulls(v Any, nulls *Bool) {
+func SetNulls(v Any, nulls *Bool) {
 	switch v := v.(type) {
 	case *Array:
 		v.Nulls = nulls
@@ -195,7 +202,7 @@ func setNulls(v Any, nulls *Bool) {
 	case *Map:
 		v.Nulls = nulls
 	case *Named:
-		setNulls(v.Any, nulls)
+		SetNulls(v.Any, nulls)
 	case *Net:
 		v.Nulls = nulls
 	case *Record:

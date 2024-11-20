@@ -26,13 +26,19 @@ func (c *Compare) Eval(val vector.Any) vector.Any {
 func (c *Compare) eval(vecs ...vector.Any) vector.Any {
 	lhs := vector.Under(vecs[0])
 	rhs := vector.Under(vecs[1])
+	if _, ok := lhs.(*vector.Error); ok {
+		return vecs[0]
+	}
+	if _, ok := rhs.(*vector.Error); ok {
+		return vecs[1]
+	}
+	nulls := vector.Or(vector.NullsOf(lhs), vector.NullsOf(rhs))
 	lhs, rhs, errVal := coerceVals(c.zctx, lhs, rhs)
 	if errVal != nil {
-		return errVal
+		// if incompatible types return false
+		return vector.NewConst(super.False, vecs[0].Len(), nulls)
 	}
 	//XXX need to handle overflow (see sam)
-	//XXX nulls... for primitives we just do the compare but we need
-	// to or the nulls together
 	kind := vector.KindOf(lhs)
 	if kind != vector.KindOf(rhs) {
 		panic("vector kind mismatch after coerce")
@@ -47,7 +53,32 @@ func (c *Compare) eval(vecs ...vector.Any) vector.Any {
 	}
 	f, ok := compareFuncs[vector.FuncCode(c.opCode, kind, lform, rform)]
 	if !ok {
-		return vector.NewStringError(c.zctx, coerce.ErrIncompatibleTypes.Error(), lhs.Len())
+		return vector.NewConst(super.False, lhs.Len(), nulls)
 	}
-	return f(lhs, rhs)
+	out := f(lhs, rhs)
+	vector.SetNulls(out, nulls)
+	return out
+}
+
+type isNull struct {
+	expr Evaluator
+}
+
+func NewIsNull(e Evaluator) Evaluator {
+	return &isNull{e}
+}
+
+func (i *isNull) Eval(this vector.Any) vector.Any {
+	return vector.Apply(false, i.eval, i.expr.Eval(this))
+}
+
+func (i *isNull) eval(vecs ...vector.Any) vector.Any {
+	vec := vector.Under(vecs[0])
+	if _, ok := vec.(*vector.Error); ok {
+		return vec
+	}
+	if c, ok := vec.(*vector.Const); ok && c.Value().IsNull() {
+		return vector.NewConst(super.True, vec.Len(), nil)
+	}
+	return vector.NullsOf(vec)
 }
