@@ -3,6 +3,8 @@ package expr
 //go:generate go run gencomparefuncs.go
 
 import (
+	"bytes"
+
 	"github.com/brimdata/super"
 	"github.com/brimdata/super/runtime/sam/expr/coerce"
 	"github.com/brimdata/super/vector"
@@ -43,6 +45,9 @@ func (c *Compare) eval(vecs ...vector.Any) vector.Any {
 	if kind != vector.KindOf(rhs) {
 		panic("vector kind mismatch after coerce")
 	}
+	if kind == vector.KindType {
+		return c.compareTypeVals(lhs, rhs)
+	}
 	lform, ok := vector.FormOf(lhs)
 	if !ok {
 		return vector.NewStringError(c.zctx, coerce.ErrIncompatibleTypes.Error(), lhs.Len())
@@ -57,6 +62,25 @@ func (c *Compare) eval(vecs ...vector.Any) vector.Any {
 	}
 	out := f(lhs, rhs)
 	vector.SetNulls(out, nulls)
+	return out
+}
+
+func (c *Compare) compareTypeVals(lhs, rhs vector.Any) vector.Any {
+	if c.opCode == vector.CompLT || c.opCode == vector.CompGT {
+		return vector.NewConst(super.False, lhs.Len(), nil)
+	}
+	out := vector.NewBoolEmpty(lhs.Len(), nil)
+	for i := range lhs.Len() {
+		l, _ := vector.TypeValueValue(lhs, i)
+		r, _ := vector.TypeValueValue(rhs, i)
+		v := bytes.Equal(l, r)
+		if c.opCode == vector.CompNE {
+			v = !v
+		}
+		if v {
+			out.Set(i)
+		}
+	}
 	return out
 }
 

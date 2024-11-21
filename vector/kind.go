@@ -40,6 +40,8 @@ func KindOf(v Any) Kind {
 		return KindBytes
 	case *String:
 		return KindString
+	case *TypeValue:
+		return KindType
 	case *Dict:
 		return KindOf(v.Any)
 	case *View:
@@ -63,6 +65,8 @@ func KindFromString(v string) Kind {
 		return KindBytes
 	case "String":
 		return KindString
+	case "TypeValue":
+		return KindType
 	default:
 		return KindInvalid
 	}
