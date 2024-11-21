@@ -41,8 +41,8 @@ func (b *Builder) compileVamExpr(e dag.Expr) (vamexpr.Evaluator, error) {
 		return b.compileVamUnary(*e)
 	case *dag.BinaryExpr:
 		return b.compileVamBinary(e)
-	//case *dag.Conditional:
-	//	return b.compileVamConditional(*e)
+	case *dag.Conditional:
+		return b.compileVamConditional(*e)
 	case *dag.Call:
 		return b.compileVamCall(e)
 	//case *dag.RegexpMatch:
@@ -109,6 +109,22 @@ func (b *Builder) compileVamBinary(e *dag.BinaryExpr) (vamexpr.Evaluator, error)
 	default:
 		return nil, fmt.Errorf("invalid binary operator %s", op)
 	}
+}
+
+func (b *Builder) compileVamConditional(node dag.Conditional) (vamexpr.Evaluator, error) {
+	predicate, err := b.compileVamExpr(node.Cond)
+	if err != nil {
+		return nil, err
+	}
+	thenExpr, err := b.compileVamExpr(node.Then)
+	if err != nil {
+		return nil, err
+	}
+	elseExpr, err := b.compileVamExpr(node.Else)
+	if err != nil {
+		return nil, err
+	}
+	return vamexpr.NewConditional(b.zctx(), predicate, thenExpr, elseExpr), nil
 }
 
 func (b *Builder) compileVamUnary(unary dag.UnaryExpr) (vamexpr.Evaluator, error) {
