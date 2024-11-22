@@ -22,7 +22,7 @@ func castToBool(vec vector.Any, index []uint32) (vector.Any, []uint32, bool) {
 	}
 	out.Nulls = vector.NullsOf(vec)
 	if index != nil {
-		out.Nulls = vector.NullsView(out.Nulls, index)
+		out.Nulls = vector.NewBoolView(out.Nulls, index)
 	}
 	return out, nil, true
 }

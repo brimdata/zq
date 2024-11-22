@@ -13,8 +13,10 @@ var _ Any = (*View)(nil)
 
 func NewView(val Any, index []uint32) Any {
 	switch val := val.(type) {
+	case *Bool:
+		return NewBoolView(val, index)
 	case *Const:
-		return NewConst(val.val, uint32(len(index)), NullsView(val.Nulls, index))
+		return NewConst(val.val, uint32(len(index)), NewBoolView(val.Nulls, index))
 	case *Dict:
 		index2 := make([]byte, len(index))
 		var nulls *Bool
@@ -33,10 +35,10 @@ func NewView(val Any, index []uint32) Any {
 		}
 		return NewDict(val.Any, index2, nil, nulls)
 	case *Error:
-		return NewError(val.Typ, NewView(val.Vals, index), NullsView(val.Nulls, index))
+		return NewError(val.Typ, NewView(val.Vals, index), NewBoolView(val.Nulls, index))
 	case *Union:
 		tags, values := viewForUnionOrDynamic(index, val.Tags, val.TagMap.Forward, val.Values)
-		return NewUnion(val.Typ, tags, values, NullsView(val.Nulls, index))
+		return NewUnion(val.Typ, tags, values, NewBoolView(val.Nulls, index))
 	case *Dynamic:
 		return NewDynamic(viewForUnionOrDynamic(index, val.Tags, val.TagMap.Forward, val.Values))
 	case *View:
@@ -52,18 +54,18 @@ func NewView(val Any, index []uint32) Any {
 	return &View{val, index}
 }
 
-func NullsView(nulls *Bool, index []uint32) *Bool {
-	if nulls == nil {
+func NewBoolView(vec *Bool, index []uint32) *Bool {
+	if vec == nil {
 		return nil
 	}
-	var out *Bool
+	out := NewBoolEmpty(uint32(len(index)), nil)
 	for k, slot := range index {
-		if nulls.Value(slot) {
-			if out == nil {
-				out = NewBoolEmpty(uint32(len(index)), nil)
-			}
+		if vec.Value(slot) {
 			out.Set(uint32(k))
 		}
+	}
+	if vec.Nulls != nil {
+		out.Nulls = NewBoolView(vec.Nulls, index)
 	}
 	return out
 }
