@@ -75,7 +75,7 @@ func NewBuilder(typ super.Type) Builder {
 			case super.IsSigned(id):
 				b = &intBuilder{typ: typ}
 			case super.IsFloat(id):
-				b = &intBuilder{typ: typ}
+				b = &floatBuilder{typ: typ}
 			}
 		} else {
 			switch id {
