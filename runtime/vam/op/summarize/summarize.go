@@ -32,6 +32,7 @@ func New(parent vector.Puller, zctx *super.Context, aggNames []field.Path, aggEx
 	}
 	return &Summarize{
 		parent:      parent,
+		zctx:        zctx,
 		aggs:        aggs,
 		aggExprs:    aggExprs,
 		keyExprs:    keyExprs,

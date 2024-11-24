@@ -34,8 +34,16 @@ const (
 )
 
 func (a *avg) ConsumeAsPartial(partial vector.Any) {
+	if partial.Len() != 1 {
+		panic("avg: invalid partial")
+	}
+	idx := uint32(0)
+	if view, ok := partial.(*vector.View); ok {
+		idx = view.Index[0]
+		partial = view.Any
+	}
 	rec, ok := partial.(*vector.Record)
-	if !ok || rec.Len() != 1 {
+	if !ok {
 		panic("avg: invalid partial")
 	}
 	si, ok1 := rec.Typ.IndexOfField(sumName)
@@ -48,8 +56,8 @@ func (a *avg) ConsumeAsPartial(partial vector.Any) {
 	if sumVal.Type() != super.TypeFloat64 || countVal.Type() != super.TypeUint64 {
 		panic("avg: invalid partial")
 	}
-	sum, _ := vector.FloatValue(sumVal, 0)
-	count, _ := vector.UintValue(countVal, 0)
+	sum, _ := vector.FloatValue(sumVal, idx)
+	count, _ := vector.UintValue(countVal, idx)
 	a.sum += sum
 	a.count += count
 }
