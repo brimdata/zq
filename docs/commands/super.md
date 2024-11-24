@@ -24,36 +24,9 @@ to filter, transform, and/or analyze input data.
 Super's SQL pipes dialect is extensive, so much so that it can resemble
 a log-search experience despite its SQL foundation.
 
-<<<<<<< HEAD
-Each `input` argument must be a file path, an HTTP or HTTPS URL,
-an S3 URL, or standard input specified with `-`.
-
-For built-in command help and a listing of all available options,
-simply run `super` with no arguments.
-
-`super` supports a number of [input](#input-formats) and [output](#output-formats) formats, but [Super Binary](../formats/bsup.md)
-tends to be the most space-efficient and most performant.  Super Binary has efficiency similar to
-[Avro](https://avro.apache.org)
-and [Protocol Buffers](https://developers.google.com/protocol-buffers)
-but its comprehensive [type system](../formats/zed.md) obviates
-the need for schema specification or registries.
-Also, the [Super JSON](../formats/jsup.md) format is human-readable and entirely one-to-one with Super Binary
-so there is no need to represent non-readable formats like Avro or Protocol Buffers
-in a clunky JSON encapsulated form.
-
-`super` typically operates on Super Binary-encoded data and when you want to inspect
-human-readable bits of output, you merely format it as Super JSON, which is the
-default format when output is directed to the terminal.  Super Binary is the default
-when redirecting to a non-terminal output like a file or pipe.
-
-When run with input arguments, each input's format is [automatically inferred](#auto-detection)
-and each input is scanned
-in the order appearing on the command line forming the input stream.
-=======
 The `super` command works with data from ephemeral sources like files and URLs.
 If you want to persist your data into a data lake for persistent storage,
 check out the [`super db`](super-db.md) set of commands.
->>>>>>> origin/main
 
 By invoking the `-c` option, a query expressed in the [SuperSQL language](../language/README.md)
 may be specified and applied to the input stream.
