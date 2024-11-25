@@ -187,5 +187,5 @@ produces
 ```
 Similarly, a primitive value may be consistently produced by concluding the
 lateral scope with an operator such as [`head`](operators/head.md) or
-[`tail`](operators/tail.md), or by applying certain [aggregate functions](aggregates/README.md)
+[`tail`](operators/tail.md), or by applying certain [aggregate functions](aggregates/_index.md)
 such as done with [`sum`](aggregates/sum.md) above.

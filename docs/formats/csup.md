@@ -7,7 +7,7 @@ heading: Super Columnar Specification
 Super Columnar is a file format based on
 the [super data model](zed.md) where data is stacked to form columns.
 Its purpose is to provide for efficient analytics and search over
-bounded-length sequences of [super-structured data](./README.md#2-a-super-structured-pattern) that is stored in columnar form.
+bounded-length sequences of [super-structured data](./_index.md#2-a-super-structured-pattern) that is stored in columnar form.
 
 Like [Parquet](https://github.com/apache/parquet-format),
 Super Columnar provides an efficient representation for semi-structured data,

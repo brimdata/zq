@@ -276,7 +276,7 @@ the "in" operator, e.g.,
 
 #### Predicate Search Term
 
-Any Boolean-valued [function](functions/README.md) like `is`, `has`,
+Any Boolean-valued [function](functions/_index.md) like `is`, `has`,
 `grep`, etc. and any [comparison expression](expressions.md#comparisons)
 may be used as a search term and mixed into a search expression.
 
