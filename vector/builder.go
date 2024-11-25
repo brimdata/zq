@@ -132,7 +132,7 @@ func (n *nullsBuilder) Build() Any {
 	if !n.nulls.IsEmpty() {
 		bits := make([]uint64, (n.n+63)/64)
 		n.nulls.WriteDenseTo(bits)
-		SetNulls(vec, NewBool(bits, n.n, nil))
+		vec = CopyAndSetNulls(vec, NewBool(bits, n.n, nil))
 	}
 	return vec
 }

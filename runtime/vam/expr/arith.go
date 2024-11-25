@@ -64,8 +64,7 @@ func (a *Arith) eval(vecs ...vector.Any) (out vector.Any) {
 		}()
 	}
 	out = f(lhs, rhs)
-	vector.SetNulls(out, vector.Or(vector.NullsOf(lhs), vector.NullsOf(rhs)))
-	return out
+	return vector.CopyAndSetNulls(out, vector.Or(vector.NullsOf(lhs), vector.NullsOf(rhs)))
 }
 
 func (a *Arith) evalDivideByZero(kind vector.Kind, lhs, rhs vector.Any) vector.Any {

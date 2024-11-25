@@ -61,8 +61,7 @@ func (c *Compare) eval(vecs ...vector.Any) vector.Any {
 		return vector.NewConst(super.False, lhs.Len(), nulls)
 	}
 	out := f(lhs, rhs)
-	vector.SetNulls(out, nulls)
-	return out
+	return vector.CopyAndSetNulls(out, nulls)
 }
 
 func (c *Compare) compareTypeVals(lhs, rhs vector.Any) vector.Any {
