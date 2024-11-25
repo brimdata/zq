@@ -2,6 +2,7 @@ package vector
 
 import (
 	"math/bits"
+	"slices"
 	"strings"
 
 	"github.com/brimdata/super"
@@ -52,7 +53,7 @@ func (b *Bool) CopyWithBits(bits []uint64) *Bool {
 }
 
 func (b *Bool) Serialize(builder *zcode.Builder, slot uint32) {
-	if b.Nulls.Value(slot) {
+	if b != nil && b.Nulls.Value(slot) {
 		builder.Append(nil)
 	} else {
 		builder.Append(super.EncodeBool(b.Value(slot)))
@@ -94,6 +95,17 @@ func (b *Bool) String() string {
 	return s.String()
 }
 
+func Not(a *Bool) *Bool {
+	if a == nil {
+		panic("not: nil bool")
+	}
+	bits := slices.Clone(a.Bits)
+	for i := range bits {
+		bits[i] = ^a.Bits[i]
+	}
+	return a.CopyWithBits(bits)
+}
+
 func Or(a, b *Bool) *Bool {
 	if b == nil {
 		return a
@@ -107,6 +119,23 @@ func Or(a, b *Bool) *Bool {
 	out := NewBoolEmpty(a.Len(), nil)
 	for i := range len(a.Bits) {
 		out.Bits[i] = a.Bits[i] | b.Bits[i]
+	}
+	return out
+}
+
+func And(a, b *Bool) *Bool {
+	if b == nil {
+		return nil
+	}
+	if a == nil {
+		return nil
+	}
+	if a.Len() != b.Len() {
+		panic("and'ing two different length bool vectors")
+	}
+	out := NewBoolEmpty(a.Len(), nil)
+	for i := range len(a.Bits) {
+		out.Bits[i] = a.Bits[i] & b.Bits[i]
 	}
 	return out
 }
@@ -136,6 +165,11 @@ func NullsOf(v Any) *Bool {
 		return v.Nulls
 	case *Bytes:
 		return v.Nulls
+	case *Bool:
+		if v != nil {
+			return v.Nulls
+		}
+		return nil
 	case *Const:
 		if v.Value().IsNull() {
 			out := NewBoolEmpty(v.Len(), nil)

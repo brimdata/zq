@@ -254,8 +254,8 @@ func NewFilterApplier(zctx *super.Context, e Evaluator) Evaluator {
 }
 
 func (f *filterApplier) Eval(ectx Context, this super.Value) super.Value {
-	val, ok := EvalBool(f.zctx, ectx, this, f.expr)
-	if ok {
+	val := EvalBool(f.zctx, ectx, this, f.expr)
+	if val.Type().ID() == super.IDBool {
 		if val.Bool() {
 			return this
 		}

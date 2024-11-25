@@ -54,6 +54,18 @@ func NewView(val Any, index []uint32) Any {
 	return &View{val, index}
 }
 
+func NewInverseView(vec Any, index []uint32) Any {
+	var inverse []uint32
+	for i := range vec.Len() {
+		if len(index) > 0 && index[0] == i {
+			index = index[1:]
+			continue
+		}
+		inverse = append(inverse, i)
+	}
+	return NewView(vec, inverse)
+}
+
 func NewBoolView(vec *Bool, index []uint32) *Bool {
 	if vec == nil {
 		return nil

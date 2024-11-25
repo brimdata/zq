@@ -34,14 +34,11 @@ func NewLogicalNot(zctx *super.Context, e Evaluator) *Not {
 }
 
 func (n *Not) Eval(ectx Context, this super.Value) super.Value {
-	val, ok := EvalBool(n.zctx, ectx, this, n.expr)
-	if !ok {
+	val := EvalBool(n.zctx, ectx, this, n.expr)
+	if val.IsError() || val.IsNull() {
 		return val
 	}
-	if val.Bool() {
-		return super.False
-	}
-	return super.True
+	return super.NewBool(!val.Bool())
 }
 
 type And struct {
@@ -64,54 +61,62 @@ func NewLogicalOr(zctx *super.Context, lhs, rhs Evaluator) *Or {
 	return &Or{zctx, lhs, rhs}
 }
 
-// EvalBool evaluates e with this and if the result is a Zed bool, returns the
-// result and true.  Otherwise, a Zed error (inclusive of missing) and false
-// are returned.
-func EvalBool(zctx *super.Context, ectx Context, this super.Value, e Evaluator) (super.Value, bool) {
+// EvalBool evaluates e with this and returns the result if it is a bool or error.
+// Otherwise, EvalBool returns an error.
+func EvalBool(zctx *super.Context, ectx Context, this super.Value, e Evaluator) super.Value {
 	val := e.Eval(ectx, this)
-	if super.TypeUnder(val.Type()) == super.TypeBool {
-		return val, true
+	if super.TypeUnder(val.Type()) == super.TypeBool || val.IsError() {
+		return val
 	}
-	if val.IsError() {
-		return val, false
-	}
-	return zctx.WrapError("not type bool", val), false
+	return zctx.WrapError("not type bool", val)
 }
 
 func (a *And) Eval(ectx Context, this super.Value) super.Value {
-	lhs, ok := EvalBool(a.zctx, ectx, this, a.lhs)
-	if !ok {
+	lhs := EvalBool(a.zctx, ectx, this, a.lhs)
+	rhs := EvalBool(a.zctx, ectx, this, a.rhs)
+	if isfalse(lhs) || isfalse(rhs) {
+		// anything AND FALSE = FALSE
+		return super.False
+	}
+	// ERROR AND NULL = ERROR
+	// ERROR AND TRUE = ERROR
+	if lhs.IsError() {
 		return lhs
 	}
-	if !lhs.Bool() {
-		return super.False
-	}
-	rhs, ok := EvalBool(a.zctx, ectx, this, a.rhs)
-	if !ok {
+	if rhs.IsError() {
 		return rhs
 	}
-	if !rhs.Bool() {
-		return super.False
+	if lhs.IsNull() || rhs.IsNull() {
+		// NULL AND TRUE = NULL
+		return super.NullBool
 	}
 	return super.True
 }
 
+func isfalse(val super.Value) bool {
+	return val.Type().ID() == super.IDBool && !val.IsNull() && !val.Bool()
+}
+
 func (o *Or) Eval(ectx Context, this super.Value) super.Value {
-	lhs, ok := EvalBool(o.zctx, ectx, this, o.lhs)
-	if ok && lhs.Bool() {
+	lhs := EvalBool(o.zctx, ectx, this, o.lhs)
+	rhs := EvalBool(o.zctx, ectx, this, o.rhs)
+	if lhs.AsBool() || rhs.AsBool() {
+		// anything OR TRUE = TRUE
 		return super.True
 	}
-	if lhs.IsError() && !lhs.IsMissing() {
+	if lhs.IsNull() || rhs.IsNull() {
+		// NULL OR FALSE = NULL
+		// NULL OR ERROR = NULL
+		return super.NullBool
+	}
+	// ERROR OR FALSE = ERROR
+	if lhs.IsError() {
 		return lhs
 	}
-	rhs, ok := EvalBool(o.zctx, ectx, this, o.rhs)
-	if ok {
-		if rhs.Bool() {
-			return super.True
-		}
-		return super.False
+	if rhs.IsError() {
+		return rhs
 	}
-	return rhs
+	return super.False
 }
 
 type In struct {
