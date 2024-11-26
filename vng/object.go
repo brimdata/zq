@@ -75,6 +75,10 @@ func (o *Object) NewReader(zctx *super.Context) (zio.Reader, error) {
 	return NewZedReader(zctx, o.meta, o.readerAt)
 }
 
+func (o *Object) Size() uint64 {
+	return HeaderSize + o.header.MetaSize + o.header.DataSize
+}
+
 func readMetadata(r io.Reader) (Metadata, error) {
 	zctx := super.NewContext()
 	zr := zngio.NewReader(zctx, r)
