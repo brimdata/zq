@@ -237,8 +237,13 @@ func (a *analyzer) formatArg(args ast.FromArgs) string {
 
 func (a *analyzer) semFile(name string, args ast.FromArgs) dag.Op {
 	format := a.formatArg(args)
-	if format == "" && strings.HasSuffix(name, ".parquet") {
-		format = "parquet"
+	if format == "" {
+		switch filepath.Ext(name) {
+		case ".parquet":
+			format = "parquet"
+		case ".csup":
+			format = "csup"
+		}
 	}
 	return &dag.FileScan{
 		Kind:   "FileScan",
