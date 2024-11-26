@@ -28,7 +28,7 @@ Assuming a freshly-created `m6idn.2xlarge` instance running Ubuntu 24.04, to
 start the run:
 
 ```
-curl -s https://raw.githubusercontent.com/brimdata/super/refs/heads/super-cmd-perf/scripts/super-cmd-perf/benchmark.sh | bash -xv 2>&1 | tee runlog.txt
+curl -s https://github.com/brimdata/super/blob/main/scripts/super-cmd-perf/benchmark.sh | bash -xv 2>&1 | tee runlog.txt
 ```
 
 The run proceeds in three phases:
@@ -60,7 +60,7 @@ Then clone the [super repo](https://github.com/brimdata/super.git) and run the
 benchmarks.
 
 ```
-git clone -b super-cmd-perf https://github.com/brimdata/super.git
+git clone https://github.com/brimdata/super.git
 cd scripts/super-cmd-perf
 ./benchmark.sh
 ```
