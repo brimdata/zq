@@ -103,5 +103,8 @@ func (i *isNull) eval(vecs ...vector.Any) vector.Any {
 	if c, ok := vec.(*vector.Const); ok && c.Value().IsNull() {
 		return vector.NewConst(super.True, vec.Len(), nil)
 	}
-	return vector.NullsOf(vec)
+	if nulls := vector.NullsOf(vec); nulls != nil {
+		return nulls
+	}
+	return vector.NewConst(super.False, vec.Len(), nil)
 }
