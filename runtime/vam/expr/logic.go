@@ -175,7 +175,7 @@ func toBool(vec vector.Any) *vector.Bool {
 			out.Nulls = vec.Nulls
 			return out
 		} else {
-			return vector.NewBoolEmpty(0, vec.Nulls)
+			return vector.NewBoolEmpty(vec.Len(), vec.Nulls)
 		}
 	case *vector.Bool:
 		return vec
