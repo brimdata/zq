@@ -5,6 +5,9 @@
     },
     {
       "pattern": "^https://suricata.io"
+    },
+    {
+      "pattern": "^https://github.com/brimdata/super/blob/main/scripts/super-cmd-perf/queries/search"
     }
   ],
   "retryOn429": true,
