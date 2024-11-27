@@ -133,9 +133,8 @@ func (b *Builder) compileVamUnary(unary dag.UnaryExpr) (vamexpr.Evaluator, error
 		return nil, err
 	}
 	switch unary.Op {
-	//XXX TBD
-	//case "-":
-	//	return vamexpr.NewUnaryMinus(b.zctx(), e), nil
+	case "-":
+		return vamexpr.NewUnaryMinus(b.zctx(), e), nil
 	case "!":
 		return vamexpr.NewLogicalNot(b.zctx(), e), nil
 	default:

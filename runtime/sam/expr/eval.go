@@ -545,6 +545,26 @@ func NewUnaryMinus(zctx *super.Context, e Evaluator) *UnaryMinus {
 func (u *UnaryMinus) Eval(ectx Context, this super.Value) super.Value {
 	val := u.expr.Eval(ectx, this)
 	typ := val.Type()
+	if super.IsUnsigned(typ.ID()) {
+		switch typ.ID() {
+		case super.IDUint8:
+			typ = super.TypeInt8
+		case super.IDUint16:
+			typ = super.TypeInt16
+		case super.IDUint32:
+			typ = super.TypeInt32
+		default:
+			typ = super.TypeInt64
+		}
+		v, ok := coerce.ToInt(val, typ)
+		if !ok {
+			return u.zctx.WrapError("cannot cast to "+zson.FormatType(typ), val)
+		}
+		if val.IsNull() {
+			return super.NewValue(typ, nil)
+		}
+		val = super.NewInt(typ, v)
+	}
 	if val.IsNull() && super.IsNumber(typ.ID()) {
 		return val
 	}
@@ -575,30 +595,6 @@ func (u *UnaryMinus) Eval(ectx Context, this super.Value) super.Value {
 			return u.zctx.WrapError("unary '-' underflow", val)
 		}
 		return super.NewInt64(-v)
-	case super.IDUint8:
-		v := val.Uint()
-		if v > math.MaxInt8 {
-			return u.zctx.WrapError("unary '-' overflow", val)
-		}
-		return super.NewInt8(int8(-v))
-	case super.IDUint16:
-		v := val.Uint()
-		if v > math.MaxInt16 {
-			return u.zctx.WrapError("unary '-' overflow", val)
-		}
-		return super.NewInt16(int16(-v))
-	case super.IDUint32:
-		v := val.Uint()
-		if v > math.MaxInt32 {
-			return u.zctx.WrapError("unary '-' overflow", val)
-		}
-		return super.NewInt32(int32(-v))
-	case super.IDUint64:
-		v := val.Uint()
-		if v > math.MaxInt64 {
-			return u.zctx.WrapError("unary '-' overflow", val)
-		}
-		return super.NewInt64(int64(-v))
 	}
 	return u.zctx.WrapError("type incompatible with unary '-' operator", val)
 }

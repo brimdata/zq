@@ -39,6 +39,10 @@ func (b *Bool) Set(slot uint32) {
 	b.Bits[slot>>6] |= (1 << (slot & 0x3f))
 }
 
+func (b *Bool) SetLen(len uint32) {
+	b.len = len
+}
+
 func (b *Bool) Len() uint32 {
 	if b == nil {
 		return 0
