@@ -667,9 +667,11 @@ measurements among SuperDB,
 We'll use the Parquet format to compare apples to apples
 and also report results for the custom columnar database format of DuckDB
 and the [Super Binary](../formats/bsup.md) format used by `super`.
-We tried loading our test data into a ClickHouse table using its
-[new experimental JSON type](https://clickhouse.com/blog/a-new-powerful-json-data-type-for-clickhouse)
-but those attempts failed with "too many open files".
+
+We also experimented with loading our test data into a ClickHouse table using its
+[new beta JSON type](https://clickhouse.com/blog/a-new-powerful-json-data-type-for-clickhouse).
+Preliminary results showed a mix of good performance and failed queries.
+We'll provide more detail on these tests soon.
 
 The detailed steps shown [below](#appendix-2-running-the-tests) can be reproduced via
 [automated scripts](https://github.com/brimdata/super/blob/main/scripts/super-cmd-perf).
