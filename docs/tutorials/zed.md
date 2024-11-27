@@ -10,7 +10,7 @@ analytics? This is where the `zed` command comes in. `zed` builds on the type
 system and language found in `zq` and adds a high performance data lake on top.
 
 > Note: `zed` is currently in alpha form. Check out its current status in the
-> [`super db` command](../commands/super-db.md#status) documentation..
+> [`super db` command](../commands/super-db.md) documentation..
 
 ## Creating a Lake
 

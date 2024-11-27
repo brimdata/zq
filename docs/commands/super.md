@@ -793,7 +793,7 @@ WHERE id LIKE '%in case you have any feedback 😊%'
   OR payload.member.type LIKE '%in case you have any feedback 😊%'
 ```
 There are 486 such fields.  You can review the entire query in
-[`search+.sql`](https://github.com/brimdata/super/blob/main/scripts/super-cmd-perf/search%2B.sql).
+[`search+.sql`](https://github.com/brimdata/super/blob/main/scripts/super-cmd-perf/queries/search%2B.sql).
 
 In SuperSQL, `grep` allows for a much shorter query.
 ```sql
