@@ -28,7 +28,7 @@ Assuming a freshly-created `m6idn.2xlarge` instance running Ubuntu 24.04, to
 start the run:
 
 ```
-curl -s https://github.com/brimdata/super/blob/main/scripts/super-cmd-perf/benchmark.sh | bash -xv 2>&1 | tee runlog.txt
+curl -s https://raw.githubusercontent.com/brimdata/super/refs/heads/main/scripts/super-cmd-perf/benchmark.sh | bash -xv 2>&1 | tee runlog.txt
 ```
 
 The run proceeds in three phases:
