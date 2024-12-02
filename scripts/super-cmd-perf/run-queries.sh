@@ -55,8 +55,8 @@ function run_query {
     cmd="$cmd < $final_query"
   elif [ "$cmd" == "datafusion" ]; then
     cmd="datafusion-cli --file $final_query"
-  elif [ "$cmd" == "clickhouse" ]; then
-    cmd="clickhouse --queries-file $final_query"
+  elif [[ "$cmd" == "clickhouse"* ]]; then
+    cmd="$cmd --queries-file $final_query"
   fi
 
   echo -e "About to execute\n================\n$cmd\n\nWith query\n==========" > "$outputfile"
@@ -144,3 +144,25 @@ do
 done
 echo >> "$report"
 echo >> "$csv_report"
+
+if [ -n "$RUNNING_ON_AWS_EC2" ]; then
+  sudo systemctl start clickhouse-server
+  echo -n "|\`clickhouse\`|\`db\`|" >> "$report"
+  echo -n "clickhouse,db" >> "$csv_report"
+  for queryfile in search-clickhouse-db.sql search+-clickhouse-db.sql count-clickhouse-db.sql agg-clickhouse-db.sql union-clickhouse-db.sql
+  do
+    if [ "$queryfile" == "union-clickhouse-db.sql" ]; then
+      echo -n "N/A|" >> "$report"
+      echo -n ",N/A" >> "$csv_report"
+      continue
+    fi
+    run_query clickhouse-client $queryfile gha
+    result=$(grep Time < "$rundir/clickhouse-client-$queryfile-$source.out" | awk '{ print $4 }')
+    echo -n "$result" >> "$report"
+    echo -n "|" >> "$report"
+    echo -n ",$result" >> "$csv_report"
+  done
+  sudo systemctl stop clickhouse-server
+  echo >> "$report"
+  echo >> "$csv_report"
+fi

@@ -11,6 +11,7 @@ mkdir -p "$rundir"
 
 RUNNING_ON_AWS_EC2="${RUNNING_ON_AWS_EC2:-}"
 if [ -n "$RUNNING_ON_AWS_EC2" ]; then
+  cp clickhouse-table-create.sql /mnt
   cd /mnt
 fi
 
@@ -54,5 +55,18 @@ run_cmd \
 run_cmd \
   "$rundir/super-bsup-create.out" \
   "super -o gha.bsup gharchive_gz/*.json.gz"
+
+if [ -n "$RUNNING_ON_AWS_EC2" ]; then
+  sudo mkdir -p /var/lib/clickhouse/user_files
+  sudo chown clickhouse:clickhouse /var/lib/clickhouse/user_files
+  sudo ln -s /mnt/gharchive_gz /var/lib/clickhouse/user_files/gharchive_gz
+  sudo systemctl start clickhouse-server
+  sleep 5
+  run_cmd \
+    "$rundir/clickhouse-table-create.out" \
+    "clickhouse-client < clickhouse-table-create.sql"
+  sudo systemctl stop clickhouse-server
+  du -h clickhouse/store
+fi
 
 du -h gha.db gha.parquet gha.bsup gharchive_gz

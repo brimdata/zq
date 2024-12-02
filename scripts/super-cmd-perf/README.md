@@ -28,7 +28,7 @@ Assuming a freshly-created `m6idn.2xlarge` instance running Ubuntu 24.04, to
 start the run:
 
 ```
-curl -s https://github.com/brimdata/super/blob/main/scripts/super-cmd-perf/benchmark.sh | bash -xv 2>&1 | tee runlog.txt
+curl -s https://raw.githubusercontent.com/brimdata/super/refs/heads/main/scripts/super-cmd-perf/benchmark.sh | bash -xv 2>&1 | tee runlog.txt
 ```
 
 The run proceeds in three phases:
@@ -36,6 +36,11 @@ The run proceeds in three phases:
 1. **(AWS only)** Instance SSD is formatted and required tools & data platforms tools are downloaded/installed
 2. Test data is downloaded and loaded into needed storage formats
 3. Queries are executed on all data platforms
+
+The scripts only run with ClickHouse's [beta JSON type](https://clickhouse.com/blog/a-new-powerful-json-data-type-for-clickhouse)
+on AWS because when we attempted to load data to this type on our Macbooks
+that have 16 GB of RAM it consistently failed with a "too many open files"
+error.
 
 As the benchmarks may take a long time to run, the use of [`screen`](https://www.gnu.org/software/screen/)
 or a similar "detachable" terminal tool is recommended in case your remote

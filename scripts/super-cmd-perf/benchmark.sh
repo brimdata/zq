@@ -22,16 +22,6 @@ if command -v dmidecode && [ "$(sudo dmidecode --string system-uuid | cut -c1-3)
   echo 'export TMPDIR="/mnt/tmpdir"' >> "$HOME"/.profile
   mkdir /mnt/tmpdir
 
-  # Install ClickHouse
-  if ! command -v clickhouse-client > /dev/null 2>&1; then
-    sudo apt-get install -y apt-transport-https ca-certificates curl gnupg
-    curl -fsSL 'https://packages.clickhouse.com/rpm/lts/repodata/repomd.xml.key' | sudo gpg --dearmor -o /usr/share/keyrings/clickhouse-keyring.gpg
-    echo "deb [signed-by=/usr/share/keyrings/clickhouse-keyring.gpg] https://packages.clickhouse.com/deb stable main" | sudo tee \
-        /etc/apt/sources.list.d/clickhouse.list
-    sudo apt-get update
-    sudo DEBIAN_FRONTEND=noninteractive apt-get install -y clickhouse-client
-  fi
-
   # Install DuckDB
   if ! command -v duckdb > /dev/null 2>&1; then
     curl -L -O https://github.com/duckdb/duckdb/releases/download/v1.1.3/duckdb_cli-linux-amd64.zip
@@ -68,6 +58,19 @@ if command -v dmidecode && [ "$(sudo dmidecode --string system-uuid | cut -c1-3)
   fi
 
   cd scripts/super-cmd-perf
+
+  # Install ClickHouse
+  if ! command -v clickhouse-client > /dev/null 2>&1; then
+    sudo apt-get install -y apt-transport-https ca-certificates curl gnupg
+    curl -fsSL 'https://packages.clickhouse.com/rpm/lts/repodata/repomd.xml.key' | sudo gpg --dearmor -o /usr/share/keyrings/clickhouse-keyring.gpg
+    echo "deb [signed-by=/usr/share/keyrings/clickhouse-keyring.gpg] https://packages.clickhouse.com/deb stable main" | sudo tee \
+        /etc/apt/sources.list.d/clickhouse.list
+    sudo apt-get update
+    sudo DEBIAN_FRONTEND=noninteractive apt-get install -y clickhouse-server clickhouse-client
+    sudo cp clickhouse-storage.xml /etc/clickhouse-server/config.d
+    sudo systemctl stop clickhouse-server
+    sudo systemctl disable clickhouse-server.service
+  fi
 
 fi
 
