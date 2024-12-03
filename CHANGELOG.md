@@ -146,7 +146,7 @@
 * Fix an issue where certain ZNG files could not be read and caused a `control` error (#4579)
 * Fix an issue where `zed serve` would exit if it tried to write to a closed socket (#4587)
 * Improve JSON output for Zed [maps](docs/formats/zed.md#24-map) (#4589)
-* Add the [`zed vacuum`](docs/commands/super-db.md#215-vacuum) command (#4577, #4598, #4600)
+* Add the [`zed vacuum`](docs/commands/super-db.md#vacuum) command (#4577, #4598, #4600)
 
 ## v1.7.0
 * Add [`regexp_replace()`](docs/language/functions/regexp_replace.md) function for replacing regular expression matches in a string (#4435, #4449)
@@ -203,7 +203,7 @@
 * Improve handling of errors during [shaping](docs/language/shaping.md) (#4067, #4069)
 * Allow use of a pool name regexp/glob pattern with the [`from` operator](docs/language/operators/from.md) (#4072, #4075)
 * Add [`levenshtein()` function](docs/language/functions/levenshtein.md) for fuzzy string matching (#4104)
-* Allow use of any filter with [`zed delete -where`](docs/commands/super-db.md#24-delete) (#4100, #4124, #4126, #4125, #4127)
+* Allow use of any filter with [`zed delete -where`](docs/commands/super-db.md#delete) (#4100, #4124, #4126, #4125, #4127)
 * Add [`regexp()`](docs/language/functions/regexp.md) function for regular expression searches and capture groups (#4145, #4158)
 * Add [`coalesce()`](docs/language/functions/coalesce.md) function for locating non-null/non-error values (#4172)
 * Add `line` format for sourcing newline-delimited input as strings (#4175)
@@ -235,7 +235,7 @@
 * Allow conversion of time values to other numeric types (#3816)
 * Remove scaling from duration and time conversions (#3809)
 * Add [`over` expressions](docs/language/lateral-subqueries.md#lateral-expressions) (#3797)
-* Add `-where` flag to [`zed delete`](docs/commands/super-db.md#24-delete) (#3791)
+* Add `-where` flag to [`zed delete`](docs/commands/super-db.md#delete) (#3791)
 * Allow base62 object IDs in lake API request bodies (#3783)
 * Remove `let` operator and [`over` operator](docs/language/operators/over.md)'s `as` clause (#3785)
 
@@ -677,7 +677,7 @@ questions.
 * zqd: Add a Python `zqd` API client for use with tools like [JupyterLab](https://jupyterlab.readthedocs.io/en/stable/) (#1564)
 
 ## v0.22.0
-* zq: Change the implementation of the `union` type to conform with the [ZNG spec](docs/formats/bsup.md#3114-union-typedef) (#1245)
+* zq: Change the implementation of the `union` type to conform with the [ZNG spec](docs/formats/bsup.md#215-union-typedef) (#1245)
 * zq: Make options/flags and version reporting consistent across CLI tools (#1249, #1254, #1256, #1296, #1323, #1334, #1328)
 * zqd: Fix an issue that was preventing flows in nanosecond pcaps from opening in Brim (#1243, #1241)
 * zq: Fix an issue where the TZNG reader did not recognize a bad record type as a syntax error (#1260)
@@ -695,7 +695,7 @@ questions.
 * zql: Fix broken links in documentation (#1321, #1339)
 * zst: Introduce the [ZST format](docs/formats/csup.md) for columnar data based on ZNG (#1268, #1338)
 * pcap: Fix an issue where certain pcapng files could fail import with a `bad option length` error (#1341)
-* zql: [Document the `**` operator](docs/language/README.md#search-syntax) for type-specific searches that look within nested records (#1337)
+* zql: Document the `**` operator for type-specific searches that look within nested records (#1337)
 * zar: Change the archive data file layout to prepare for handing chunk files with overlapping ranges and improved S3 support (#1330)
 * zar: Support archive data files with overlapping time spans (#1348)
 * zqd: Add a page containing guidance for users that directly access the root `zqd` endpoint in a browser (#1350)
@@ -745,7 +745,7 @@ questions.
 * zqd: Fix an issue with excess characters in Space names after upgrade (#1112)
 
 ## v0.19.0
-* zq: ZNG output is now LZ4-compressed by default (#1050, #1064, #1063, [ZNG spec](docs/formats/bsup.md#313-compressed-value-message-block))
+* zq: ZNG output is now LZ4-compressed by default (#1050, #1064, #1063, [ZNG spec](docs/formats/bsup.md#2-the-super-binary-format))
 * zar: Adjust import size threshold to account for compression (#1082)
 * zqd: Support starting `zqd` with datapath set to an S3 path (#1072)
 * zq: Fix an issue with panics during pcap import (#1090)
