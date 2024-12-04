@@ -1,4 +1,6 @@
-zed: s==null
+zed: s IS NULL
+
+vector: true
 
 input: |
   {s:"A=B"}

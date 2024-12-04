@@ -32,6 +32,7 @@ func New(parent vector.Puller, zctx *super.Context, aggNames []field.Path, aggEx
 	}
 	return &Summarize{
 		parent:      parent,
+		zctx:        zctx,
 		aggs:        aggs,
 		aggExprs:    aggExprs,
 		keyExprs:    keyExprs,
@@ -111,7 +112,7 @@ func (s *Summarize) newAggTable(keyTypes []super.Type) aggTable {
 		builder:     s.builder,
 		partialsIn:  s.partialsIn,
 		partialsOut: s.partialsOut,
-		table:       make(map[string]aggRow),
+		table:       make(map[string]int),
 		zctx:        s.zctx,
 	}
 }

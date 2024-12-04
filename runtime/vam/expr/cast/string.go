@@ -14,7 +14,7 @@ import (
 func castToString(vec vector.Any, index []uint32) (vector.Any, []uint32, bool) {
 	nulls := vector.NullsOf(vec)
 	if index != nil {
-		nulls = vector.NullsView(nulls, index)
+		nulls = vector.NewBoolView(nulls, index)
 	}
 	n := lengthOf(vec, index)
 	var bytes []byte

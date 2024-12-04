@@ -29,7 +29,7 @@ packaged up in the easy-to-understand
 [SuperPipe language](language/_index.md).
 
 While `super` and its accompanying data formats are production quality, the project's
-[SuperDB data lake](commands/super-db.md) is a bit [earlier in development](commands/super-db.md#status).
+[SuperDB data lake](commands/super-db.md) is a bit earlier in development.
 
 ## Terminology
 

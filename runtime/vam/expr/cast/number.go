@@ -26,19 +26,19 @@ func castToNumber(vec vector.Any, typ super.Type, index []uint32) (vector.Any, [
 	case super.IsSigned(id):
 		vals, errs := toNumeric[int64](vec, typ, index)
 		if len(errs) > 0 {
-			nulls = vector.NullsView(nulls, inverseIndex(errs, nulls))
+			nulls = vector.NewBoolView(nulls, inverseIndex(errs, nulls))
 		}
 		return vector.NewInt(typ, vals, nulls), errs, true
 	case super.IsUnsigned(id):
 		vals, errs := toNumeric[uint64](vec, typ, index)
 		if len(errs) > 0 {
-			nulls = vector.NullsView(nulls, inverseIndex(errs, nulls))
+			nulls = vector.NewBoolView(nulls, inverseIndex(errs, nulls))
 		}
 		return vector.NewUint(typ, vals, nulls), errs, true
 	case super.IsFloat(id):
 		vals, errs := toNumeric[float64](vec, typ, index)
 		if errs != nil {
-			nulls = vector.NullsView(nulls, inverseIndex(errs, nulls))
+			nulls = vector.NewBoolView(nulls, inverseIndex(errs, nulls))
 		}
 		return vector.NewFloat(typ, vals, nulls), errs, true
 	default:

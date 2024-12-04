@@ -14,6 +14,41 @@ type Builder interface {
 	Build() Any
 }
 
+type DynamicBuilder struct {
+	tags   []uint32
+	values []Builder
+	which  map[super.Type]int
+}
+
+func NewDynamicBuilder() *DynamicBuilder {
+	return &DynamicBuilder{
+		which: make(map[super.Type]int),
+	}
+}
+
+func (d *DynamicBuilder) Write(val super.Value) {
+	typ := val.Type()
+	tag, ok := d.which[typ]
+	if !ok {
+		tag = len(d.values)
+		d.values = append(d.values, NewBuilder(typ))
+		d.which[typ] = tag
+	}
+	d.tags = append(d.tags, uint32(tag))
+	d.values[tag].Write(val.Bytes())
+}
+
+func (d *DynamicBuilder) Build() Any {
+	var vecs []Any
+	for _, b := range d.values {
+		vecs = append(vecs, b.Build())
+	}
+	if len(vecs) == 1 {
+		return vecs[0]
+	}
+	return NewDynamic(d.tags, vecs)
+}
+
 func NewBuilder(typ super.Type) Builder {
 	var b Builder
 	switch typ := typ.(type) {
@@ -40,7 +75,7 @@ func NewBuilder(typ super.Type) Builder {
 			case super.IsSigned(id):
 				b = &intBuilder{typ: typ}
 			case super.IsFloat(id):
-				b = &intBuilder{typ: typ}
+				b = &floatBuilder{typ: typ}
 			}
 		} else {
 			switch id {
@@ -97,7 +132,7 @@ func (n *nullsBuilder) Build() Any {
 	if !n.nulls.IsEmpty() {
 		bits := make([]uint64, (n.n+63)/64)
 		n.nulls.WriteDenseTo(bits)
-		setNulls(vec, NewBool(bits, n.n, nil))
+		vec = CopyAndSetNulls(vec, NewBool(bits, n.n, nil))
 	}
 	return vec
 }

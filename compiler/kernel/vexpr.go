@@ -35,12 +35,14 @@ func (b *Builder) compileVamExpr(e dag.Expr) (vamexpr.Evaluator, error) {
 		return b.compileVamDotExpr(e)
 	case *dag.IndexExpr:
 		return b.compileVamIndexExpr(e)
+	case *dag.IsNullExpr:
+		return b.compileVamIsNullExpr(e)
 	case *dag.UnaryExpr:
 		return b.compileVamUnary(*e)
 	case *dag.BinaryExpr:
 		return b.compileVamBinary(e)
-	//case *dag.Conditional:
-	//	return b.compileVamConditional(*e)
+	case *dag.Conditional:
+		return b.compileVamConditional(*e)
 	case *dag.Call:
 		return b.compileVamCall(e)
 	//case *dag.RegexpMatch:
@@ -109,15 +111,30 @@ func (b *Builder) compileVamBinary(e *dag.BinaryExpr) (vamexpr.Evaluator, error)
 	}
 }
 
+func (b *Builder) compileVamConditional(node dag.Conditional) (vamexpr.Evaluator, error) {
+	predicate, err := b.compileVamExpr(node.Cond)
+	if err != nil {
+		return nil, err
+	}
+	thenExpr, err := b.compileVamExpr(node.Then)
+	if err != nil {
+		return nil, err
+	}
+	elseExpr, err := b.compileVamExpr(node.Else)
+	if err != nil {
+		return nil, err
+	}
+	return vamexpr.NewConditional(b.zctx(), predicate, thenExpr, elseExpr), nil
+}
+
 func (b *Builder) compileVamUnary(unary dag.UnaryExpr) (vamexpr.Evaluator, error) {
 	e, err := b.compileVamExpr(unary.Operand)
 	if err != nil {
 		return nil, err
 	}
 	switch unary.Op {
-	//XXX TBD
-	//case "-":
-	//	return vamexpr.NewUnaryMinus(b.zctx(), e), nil
+	case "-":
+		return vamexpr.NewUnaryMinus(b.zctx(), e), nil
 	case "!":
 		return vamexpr.NewLogicalNot(b.zctx(), e), nil
 	default:
@@ -143,6 +160,14 @@ func (b *Builder) compileVamIndexExpr(idx *dag.IndexExpr) (vamexpr.Evaluator, er
 		return nil, err
 	}
 	return vamexpr.NewIndexExpr(b.zctx(), e, index), nil
+}
+
+func (b *Builder) compileVamIsNullExpr(idx *dag.IsNullExpr) (vamexpr.Evaluator, error) {
+	e, err := b.compileVamExpr(idx.Expr)
+	if err != nil {
+		return nil, err
+	}
+	return vamexpr.NewIsNull(e), nil
 }
 
 func (b *Builder) compileVamExprs(in []dag.Expr) ([]vamexpr.Evaluator, error) {
