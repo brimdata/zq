@@ -19,6 +19,7 @@ func NewView(val Any, index []uint32) Any {
 		return NewConst(val.val, uint32(len(index)), NewBoolView(val.Nulls, index))
 	case *Dict:
 		index2 := make([]byte, len(index))
+		counts := make([]uint32, val.Any.Len())
 		var nulls *Bool
 		if val.Nulls != nil {
 			nulls = NewBoolEmpty(uint32(len(index)), nil)
@@ -26,14 +27,18 @@ func NewView(val Any, index []uint32) Any {
 				if val.Nulls.Value(idx) {
 					nulls.Set(uint32(k))
 				}
-				index2[k] = val.Index[idx]
+				v := val.Index[idx]
+				index2[k] = v
+				counts[v]++
 			}
 		} else {
 			for k, idx := range index {
-				index2[k] = val.Index[idx]
+				v := val.Index[idx]
+				index2[k] = v
+				counts[v]++
 			}
 		}
-		return NewDict(val.Any, index2, nil, nulls)
+		return NewDict(val.Any, index2, counts, nulls)
 	case *Error:
 		return NewError(val.Typ, NewView(val.Vals, index), NewBoolView(val.Nulls, index))
 	case *Union:
