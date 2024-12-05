@@ -4,12 +4,15 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/brimdata/super"
 	"github.com/brimdata/super/compiler/dag"
 	"github.com/brimdata/super/pkg/field"
+	"github.com/brimdata/super/runtime/sam/expr"
 	"github.com/brimdata/super/runtime/sam/expr/function"
 	vamexpr "github.com/brimdata/super/runtime/vam/expr"
 	vamfunction "github.com/brimdata/super/runtime/vam/expr/function"
 	"github.com/brimdata/super/zson"
+	"golang.org/x/text/unicode/norm"
 )
 
 func (b *Builder) compileVamExpr(e dag.Expr) (vamexpr.Evaluator, error) {
@@ -27,8 +30,8 @@ func (b *Builder) compileVamExpr(e dag.Expr) (vamexpr.Evaluator, error) {
 		return vamexpr.NewLiteral(val), nil
 	//case *dag.Var:
 	//	return vamexpr.NewVar(e.Slot), nil
-	//case *dag.Search:
-	//	return b.compileSearch(e)
+	case *dag.Search:
+		return b.compileVamSearch(e)
 	case *dag.This:
 		return vamexpr.NewDottedExpr(b.zctx(), field.Path(e.Path)), nil
 	case *dag.Dot:
@@ -47,8 +50,8 @@ func (b *Builder) compileVamExpr(e dag.Expr) (vamexpr.Evaluator, error) {
 		return b.compileVamCall(e)
 	//case *dag.RegexpMatch:
 	//	return b.compileVamRegexpMatch(e)
-	//case *dag.RegexpSearch:
-	//	return b.compileVamRegexpSearch(e)
+	case *dag.RegexpSearch:
+		return b.compileVamRegexpSearch(e)
 	case *dag.RecordExpr:
 		return b.compileVamRecordExpr(e)
 	//case *dag.SetExpr:
@@ -242,6 +245,36 @@ func (b *Builder) compileVamRecordExpr(e *dag.RecordExpr) (vamexpr.Evaluator, er
 		})
 	}
 	return vamexpr.NewRecordExpr(b.zctx(), elems), nil
+}
+
+func (b *Builder) compileVamRegexpSearch(search *dag.RegexpSearch) (vamexpr.Evaluator, error) {
+	e, err := b.compileVamExpr(search.Expr)
+	if err != nil {
+		return nil, err
+	}
+	re, err := expr.CompileRegexp(search.Pattern)
+	if err != nil {
+		return nil, err
+	}
+	return vamexpr.NewSearchRegexp(re, e), nil
+}
+
+func (b *Builder) compileVamSearch(search *dag.Search) (vamexpr.Evaluator, error) {
+	val, err := zson.ParseValue(b.zctx(), search.Value)
+	if err != nil {
+		return nil, err
+	}
+	e, err := b.compileVamExpr(search.Expr)
+	if err != nil {
+		return nil, err
+	}
+	if super.TypeUnder(val.Type()) == super.TypeString {
+		// Do a grep-style substring search instead of an
+		// exact match on each value.
+		term := norm.NFC.Bytes(val.Bytes())
+		return vamexpr.NewSearchString(string(term), e), nil
+	}
+	return vamexpr.NewSearch(search.Text, val, e), nil
 }
 
 func (b *Builder) compileVamArrayExpr(e *dag.ArrayExpr) (vamexpr.Evaluator, error) {

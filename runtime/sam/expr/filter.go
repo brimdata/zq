@@ -49,9 +49,9 @@ func (s *searchByPred) Eval(ectx Context, val super.Value) super.Value {
 	return super.False
 }
 
-// stringSearch is like strings.Contains() but with case-insensitive
+// StringContainsFold is like strings.Contains but with case-insensitive
 // comparison.
-func stringSearch(a, b string) bool {
+func StringContainsFold(a, b string) bool {
 	alen := len(a)
 	blen := len(b)
 
@@ -107,7 +107,7 @@ func (s *search) Eval(ectx Context, val super.Value) super.Value {
 	}
 	if errMatch == val.Walk(func(typ super.Type, body zcode.Bytes) error {
 		if typ.ID() == super.IDString {
-			if stringSearch(byteconv.UnsafeString(body), s.text) {
+			if StringContainsFold(byteconv.UnsafeString(body), s.text) {
 				return errMatch
 			}
 			return nil
@@ -159,7 +159,7 @@ func NewSearchString(term string, expr Evaluator) Evaluator {
 		term: term,
 		expr: expr,
 		fnm: NewFieldNameMatcher(func(b []byte) bool {
-			return stringSearch(byteconv.UnsafeString(b), term)
+			return StringContainsFold(byteconv.UnsafeString(b), term)
 		}),
 	}
 }
@@ -176,7 +176,7 @@ func (s *searchString) Eval(ectx Context, val super.Value) super.Value {
 	}
 	if errMatch == val.Walk(func(typ super.Type, body zcode.Bytes) error {
 		if typ.ID() == super.IDString &&
-			stringSearch(byteconv.UnsafeString(body), s.term) {
+			StringContainsFold(byteconv.UnsafeString(body), s.term) {
 			return errMatch
 		}
 		return nil

@@ -1,5 +1,7 @@
 zed: '?b'
 
+vector: true
+
 input: |
   {a:[{b:"foo"}]}
   {a:[{c:"foo"}]}

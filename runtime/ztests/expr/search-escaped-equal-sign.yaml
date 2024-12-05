@@ -1,4 +1,6 @@
-zed: '? A\=*'
+zed: '? A\=B'
+
+vector: true
 
 input: |
   {s:"A=B"}
@@ -8,4 +10,3 @@ input: |
 
 output: |
   {s:"A=B"}
-  {s:"A=*"}
