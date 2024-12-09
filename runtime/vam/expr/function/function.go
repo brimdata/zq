@@ -30,6 +30,9 @@ func New(zctx *super.Context, name string, narg int) (expr.Function, field.Path,
 		f = &Bucket{zctx: zctx, name: name}
 	case "fields":
 		f = NewFields(zctx)
+	case "grep":
+		argmax = 2
+		f = &Grep{zctx: zctx}
 	case "hex":
 		f = &Hex{zctx}
 	case "join":
