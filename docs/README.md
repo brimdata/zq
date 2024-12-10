@@ -88,7 +88,7 @@ or connections to
 [schema registries](https://docs.confluent.io/platform/current/schema-registry/index.html).
 
 A SuperDB data lake is completely self-contained, requiring no auxiliary databases
-(like the [Hive metastore](https://cwiki.apache.org/confluence/display/hive/design))
+(like the [Hive metastore](https://hive.apache.org/development/gettingstarted))
 or other third-party services to interpret the lake data.
 Once copied, a new service can be instantiated by pointing a `super db serve`
 at the copy of the lake.
