@@ -90,7 +90,7 @@ same name, from the case that an existing named type is merely decorating the va
 ### 2.3 Primitive Values
 
 The type names and format for
-[primitive values](zed.md#1-primitive-types) is as follows:
+[primitive values](zed#1-primitive-types) is as follows:
 
 | Type       | Value Format                                                  |
 |------------|---------------------------------------------------------------|
@@ -225,13 +225,13 @@ record types as well as enum symbols.
 
 Complex values are built from primitive values and/or other complex values
 and conform to the super data model's complex types:
-[record](zed.md#21-record),
-[array](zed.md#22-array),
-[set](zed.md#23-set),
-[map](zed.md#24-map),
-[union](zed.md#25-union),
-[enum](zed.md#26-enum), and
-[error](zed.md#27-error).
+[record](zed#21-record),
+[array](zed#22-array),
+[set](zed#23-set),
+[map](zed#24-map),
+[union](zed#25-union),
+[enum](zed#26-enum), and
+[error](zed#27-error).
 
 Complex values have an implied type when their constituent values all have
 implied types.
