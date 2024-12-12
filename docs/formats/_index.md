@@ -271,17 +271,17 @@ A set of companion documents define a family of tightly integrated
 serialization formats that all adhere to the same super data model,
 providing a unified approach to row, columnar, and human-readable formats:
 
-* [Super JSON](jsup.md) is a human-readable format for super-structured data.  All JSON
+* [Super JSON](jsup) is a human-readable format for super-structured data.  All JSON
 documents are Super JSON values as the Super JSON format is a strict superset of the JSON syntax.
-* [Super Binary](bsup.md) is a row-based, binary representation somewhat like
+* [Super Binary](bsup) is a row-based, binary representation somewhat like
 Avro but leveraging the super data model to represent a sequence of arbitrarily-typed
 values.
-* [Super Columnar](csup.md) is columnar like Parquet or ORC but also
+* [Super Columnar](csup) is columnar like Parquet or ORC but also
 embodies the super data model for heterogeneous and self-describing schemas.
 * [Super JSON over JSON](zjson) defines a format for encapsulating Super JSON
 inside plain JSON for easy decoding by JSON-based clients, e.g.,
 the [JavaScript library used by SuperDB Desktop](https://github.com/brimdata/zui/tree/main/packages/zed-js)
-and the [SuperDB Python library](../libraries/python.md).
+and the [SuperDB Python library](../libraries/python).
 
 Because all of the formats conform to the same super data model, conversions between
 a human-readable form, a row-based binary form, and a row-based columnar form can

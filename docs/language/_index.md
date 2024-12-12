@@ -6,11 +6,11 @@ heading: The Zed Language
 
 The language documents:
 * provide an [overview](overview) of the Zed language,
-* describe Zed's [pipeline model](pipeline-model.md),
-* explain Zed's [data types](data-types.md),
-* show the syntax of [statements](statements.md) that define constants, functions, operators, and named types,
-* describe the syntax of [expressions](expressions.md) and [search expressions](search-expressions.md),
-* explain [lateral subqueries](lateral-subqueries.md),
-* describe [shaping and type fusion](shaping.md), and
-* enumerate the [operators](operators/_index.md), [functions](functions/_index.md),
-and [aggregate functions](aggregates/_index.md) in reference format.
+* describe Zed's [pipeline model](pipeline-model),
+* explain Zed's [data types](data-types),
+* show the syntax of [statements](statements) that define constants, functions, operators, and named types,
+* describe the syntax of [expressions](expressions) and [search expressions](search-expressions),
+* explain [lateral subqueries](lateral-subqueries),
+* describe [shaping and type fusion](shaping), and
+* enumerate the [operators](operators/_index), [functions](functions/_index),
+and [aggregate functions](aggregates/_index) in reference format.

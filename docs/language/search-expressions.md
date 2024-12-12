@@ -7,13 +7,13 @@ Search expressions provide a hybrid syntax between keyword search
 and boolean expressions.  In this way, a search is a shorthand for
 a "lean forward" style activity where one is interactively exploring
 data with ad hoc searches.  All shorthand searches have a corresponding
-long form built from the [expression syntax](expressions.md) in combination with the
+long form built from the [expression syntax](expressions) in combination with the
 [search term syntax](search-expressions.md#search-terms) described below.
 
 ## Search Patterns
 
 Several styles of string search can be performed with a search expression
-(as well as the [`grep` function](functions/grep.md)) using "patterns",
+(as well as the [`grep` function](functions/grep)) using "patterns",
 where a pattern is a regular expression, glob, or simple string.
 
 ### Regular Expressions
@@ -36,8 +36,8 @@ produces
 {s:"bar"}
 {foo:1}
 ```
-Regular expressions may also appear in the [`grep`](functions/grep.md),
-[`regexp`](functions/regexp.md), and [`regexp_replace`](functions/regexp_replace.md) functions:
+Regular expressions may also appear in the [`grep`](functions/grep),
+[`regexp`](functions/regexp), and [`regexp_replace`](functions/regexp_replace) functions:
 ```mdtest-command
 echo '"foo" {s:"bar"} {s:"baz"} {foo:1}' |
   super -z -c 'yield {ba_start:grep(/^ba.*/, s),last_s_char:regexp(/(.)$/,s)[1]}' -
@@ -97,7 +97,7 @@ produces
 {a:1}
 ```
 
-Globs may also appear in the [`grep` function](functions/grep.md)):
+Globs may also appear in the [`grep` function](functions/grep)):
 ```mdtest-command
 echo '"foo" {s:"bar"} {s:"baz"} {foo:1}' | super -z -c 'yield grep(ba*, s)' -
 ```
@@ -126,11 +126,11 @@ The search patterns described above can be combined with other "search terms"
 using Boolean logic to form search expressions.
 
 :::tip note
-When processing [Super Binary](../formats/bsup.md) data, the SuperDB runtime performs a multi-threaded
+When processing [Super Binary](../formats/bsup) data, the SuperDB runtime performs a multi-threaded
 Boyer-Moore scan over decompressed data buffers before parsing any data.
 This allows large buffers of data to be efficiently discarded and skipped when
-searching for rarely occurring values.  For a [SuperDB data lake](../lake/format.md),
-a planned feature will use [Super Columnar](../formats/csup.md) files to further accelerate searches.
+searching for rarely occurring values.  For a [SuperDB data lake](../lake/format),
+a planned feature will use [Super Columnar](../formats/csup) files to further accelerate searches.
 :::
 
 ### Search Terms
@@ -276,7 +276,7 @@ the "in" operator, e.g.,
 
 #### Predicate Search Term
 
-Any Boolean-valued [function](functions/_index.md) like `is`, `has`,
+Any Boolean-valued [function](functions/_index) like `is`, `has`,
 `grep`, etc. and any [comparison expression](expressions.md#comparisons)
 may be used as a search term and mixed into a search expression.
 

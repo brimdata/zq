@@ -6,7 +6,7 @@ title: Lateral Subqueries
 Lateral subqueries provide a powerful means to apply a Zed query
 to each subsequence of values generated from an outer sequence of values.
 The inner query may be _any_ pipeline operator sequence (excluding
-[`from` operators](operators/from.md)) and may refer to values from
+[`from` operators](operators/from)) and may refer to values from
 the outer sequence.
 
 :::tip Note
@@ -15,7 +15,7 @@ join", which runs a subquery for each row of the outer query's results.
 :::
 
 Lateral subqueries are created using the scoped form of the
-[`over` operator](operators/over.md). They may be nested to arbitrary depth
+[`over` operator](operators/over). They may be nested to arbitrary depth
 and accesses to variables in parent lateral query bodies follows lexical
 scoping.
 
@@ -69,7 +69,7 @@ produces
 ## Lateral Scope
 
 A lateral scope has the form `=> ( <query> )` and currently appears
-only the context of an [`over` operator](operators/over.md),
+only the context of an [`over` operator](operators/over),
 as illustrated above, and has the form:
 ```
 over ... with <elem> [, <elem> ...] => ( <query> )
@@ -101,8 +101,8 @@ This query runs to completion for each inner sequence and emits
 each subquery result as each inner sequence traversal completes.
 
 This structure is powerful because _any_ pipeline operator sequence (excluding
-[`from` operators](operators/from.md)) can appear in the body of
-the lateral scope.  In contrast to the [`yield`](operators/yield.md) example above, a [`sort`](operators/sort.md) could be
+[`from` operators](operators/from)) can appear in the body of
+the lateral scope.  In contrast to the [`yield`](operators/yield) example above, a [`sort`](operators/sort) could be
 applied to each subsequence in the subquery, where `sort`
 reads all values of the subsequence, sorts them, emits them, then
 repeats the process for the next subsequence.  For example,
@@ -126,7 +126,7 @@ parenthesized form:
 ```
 
 :::tip
-The parentheses disambiguate a lateral expression from a [lateral pipeline operator](operators/over.md).
+The parentheses disambiguate a lateral expression from a [lateral pipeline operator](operators/over).
 :::
 
 This form must always include a [lateral scope](#lateral-scope) as indicated by `<lateral>`.
@@ -186,6 +186,6 @@ produces
 {s:[4,5]}
 ```
 Similarly, a primitive value may be consistently produced by concluding the
-lateral scope with an operator such as [`head`](operators/head.md) or
-[`tail`](operators/tail.md), or by applying certain [aggregate functions](aggregates/_index.md)
-such as done with [`sum`](aggregates/sum.md) above.
+lateral scope with an operator such as [`head`](operators/head) or
+[`tail`](operators/tail), or by applying certain [aggregate functions](aggregates/_index)
+such as done with [`sum`](aggregates/sum) above.

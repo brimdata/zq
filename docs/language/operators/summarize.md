@@ -14,7 +14,7 @@
 ### Description
 
 In the first four forms, the `summarize` operator consumes all of its input,
-applies an [aggregate function](../aggregates/_index.md) to each input value
+applies an [aggregate function](../aggregates/_index) to each input value
 optionally filtered by a `where` clause and/or organized with the group-by
 keys specified after the `by` keyword, and at the end of input produces one
 or more aggregations for each unique set of group-by key values.
@@ -29,11 +29,11 @@ The `summarize` keyword is optional since it is an
 Each aggregate function may be optionally followed by a `where` clause, which
 applies a Boolean expression that indicates, for each input value,
 whether to deliver it to that aggregate. (`where` clauses are analogous
-to the [`where` operator](where.md).)
+to the [`where` operator](where).)
 
 The output field names for each aggregate and each key are optional.  If omitted,
 a field name is inferred from each right-hand side, e.g, the output field for the
-[`count` aggregate function](../aggregates/count.md) is simply `count`.
+[`count` aggregate function](../aggregates/count) is simply `count`.
 
 A key may be either an expression or a field.  If the key field is omitted,
 it is inferred from the expression, e.g., the field name for `by lower(s)`

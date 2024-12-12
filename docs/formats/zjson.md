@@ -8,12 +8,12 @@ heading: ZJSON Specification
 
 The [super data model](zed)
 is based on richly typed records with a deterministic field order,
-as is implemented by the [Super JSON](jsup.md), [Super Binary](bsup.md), and [Super Columnar](csup.md) formats.
+as is implemented by the [Super JSON](jsup), [Super Binary](bsup), and [Super Columnar](csup) formats.
 Given the ubiquity of JSON, it is desirable to also be able to serialize
 super data into the JSON format.   However, encoding super data values
 directly as JSON values would not work without loss of information.
 
-For example, consider this [Super JSON](jsup.md) data:
+For example, consider this [Super JSON](jsup) data:
 ```
 {
     ts: 2018-03-24T17:15:21.926018012Z,
@@ -268,7 +268,7 @@ and an array of union of string, and float64 --- might have a value that looks l
 
 A ZJSON file is composed of ZJSON objects formatted as
 [newline delimited JSON (NDJSON)](https://en.wikipedia.org/wiki/JSON_streaming#NDJSON).
-e.g., the [super](../commands/super.md) CLI command
+e.g., the [super](../commands/super) CLI command
 writes its ZJSON output as lines of NDJSON.
 
 ## 4. Example

@@ -8,7 +8,7 @@
 ```
 ### Description
 
-The `search` operator filters its input by applying a [search expression](../search-expressions.md) `<sexpr>`
+The `search` operator filters its input by applying a [search expression](../search-expressions) `<sexpr>`
 to each input value and dropping each value for which the expression evaluates
 to `false` or to an error.
 

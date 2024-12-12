@@ -3,13 +3,13 @@ weight: 2
 title: Zed/Zeek Data Type Compatibility
 ---
 
-As the [super data model](../../formats/zed.md) was in many ways inspired by the
+As the [super data model](../../formats/zed) was in many ways inspired by the
 [Zeek TSV log format](https://docs.zeek.org/en/master/log-formats.html#zeek-tsv-format-logs),
-SuperDB's rich storage formats ([Super JSON](../../formats/jsup.md),
-[Super Binary](../../formats/bsup.md), etc.) maintain comprehensive interoperability
+SuperDB's rich storage formats ([Super JSON](../../formats/jsup),
+[Super Binary](../../formats/bsup), etc.) maintain comprehensive interoperability
 with Zeek. When Zeek is configured to output its logs in
 JSON format, much of the rich type information is lost in translation, but
-this can be restored by following the guidance for [shaping Zeek JSON](shaping-zeek-json.md).
+this can be restored by following the guidance for [shaping Zeek JSON](shaping-zeek-json).
 On the other hand, Zeek TSV can be converted to Zed storage formats and back to
 Zeek TSV without any loss of information.
 
@@ -62,7 +62,7 @@ there is no authoritative specification of the Zeek TSV log format.
 ## Example
 
 The following example shows a TSV log that includes each Zeek data type, how
-it's output as Super JSON by [`super`](../../commands/super.md), and then how it's written back out again as a Zeek
+it's output as Super JSON by [`super`](../../commands/super), and then how it's written back out again as a Zeek
 log. You may find it helpful to refer to this example when reading the
 [type-specific details](#type-specific-details).
 
@@ -248,7 +248,7 @@ Zed that refer to the record at a higher level but affect all values lower
 down in the record hierarchy.
 
 For instance, revisiting the data from our example, we can output all fields within
-`my_record` using Zed's [`cut` operator](../../language/operators/cut.md).
+`my_record` using Zed's [`cut` operator](../../language/operators/cut).
 
 #### Command:
 

@@ -71,7 +71,7 @@ echo '1 "foo" 10.0.0.1' | super -z -c 'count() where grep("bar")' -
 0(uint64)
 ```
 
-Note that the number of input values are counted, unlike the [`len` function](../functions/len.md) which counts the number of elements in a given value:
+Note that the number of input values are counted, unlike the [`len` function](../functions/len) which counts the number of elements in a given value:
 ```mdtest-command
 echo '[1,2,3]' | super -z -c 'count()' -
 ```

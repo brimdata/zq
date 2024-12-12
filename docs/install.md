@@ -9,7 +9,7 @@ Several options for installing `super` are available:
 * [Build from source](#building-from-source).
 
 To install the SuperDB Python client, see the
-[Python library documentation](libraries/python.md).
+[Python library documentation](libraries/python).
 
 ## Homebrew
 

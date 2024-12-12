@@ -3,7 +3,7 @@ weight: 3
 title: Join Overview
 ---
 
-This is a brief primer on the SuperPipe [`join` operator](../language/operators/join.md).
+This is a brief primer on the SuperPipe [`join` operator](../language/operators/join).
 
 Currently, `join` is limited in that only equi-join (i.e., a join predicate
 containing `=`) is supported.
@@ -159,10 +159,10 @@ produces
 ## Inputs from Pools
 
 In the examples above, we used the
-[`file` operator](../language/operators/file.md) to read our respective inputs
+[`file` operator](../language/operators/file) to read our respective inputs
 from named file sources.  However, if the inputs are stored in pools in a SuperDB
 data lake, we would instead specify the sources as data pools using the
-[`from` operator](../language/operators/from.md).
+[`from` operator](../language/operators/from).
 
 Here we'll load our input data to pools in a temporary data lake, then execute
 our inner join using `super db query`.
@@ -201,9 +201,9 @@ produces
 
 In addition to the syntax shown so far, `join` supports an alternate syntax in
 which left and right inputs are specified by the two branches of a preceding
-[`fork` operator](../language/operators/fork.md),
-[`from` operator](../language/operators/from.md), or
-[`switch` operator](../language/operators/switch.md).
+[`fork` operator](../language/operators/fork),
+[`from` operator](../language/operators/from), or
+[`switch` operator](../language/operators/switch).
 
 Here we'll use the alternate syntax to perform the same inner join shown earlier
 in the [Inner Join section](#inner-join).
@@ -287,7 +287,7 @@ records. In the query `multi-value-join.spq`, we create the keys as
 embedded records inside each input record, using the same field names and data
 types in each. We'll leave the created `fruitkey` records intact to show what
 they look like, but since it represents redundant data, in practice we'd
-typically [`drop`](../language/operators/drop.md) it after the `join` in our pipeline.
+typically [`drop`](../language/operators/drop) it after the `join` in our pipeline.
 
 ```mdtest-input multi-value-join.spq
 file fruit.json |> put fruitkey:={name,color}

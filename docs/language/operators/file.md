@@ -8,5 +8,5 @@
 
 :::tip Note
 The `file` shorthand is exclusively for working with inputs to
-[`super`](../../commands/super.md) and is not available for use with [SuperDB data lakes](../../commands/super-db.md).
+[`super`](../../commands/super) and is not available for use with [SuperDB data lakes](../../commands/super-db).
 :::

@@ -14,10 +14,10 @@ by a number of commands:
 command |> command | command | ...
 ```
 However, in Zed, the entities that transform data are called
-"[operators](operators/_index.md)" instead of "commands" and unlike Unix pipelines,
+"[operators](operators/_index)" instead of "commands" and unlike Unix pipelines,
 the streams of data in a Zed query
 are typed data sequences that adhere to the
-[Zed data model](../formats/zed.md).
+[Zed data model](../formats/zed).
 Moreover, Zed sequences can be forked and joined:
 ```
 operator
@@ -48,7 +48,7 @@ much as a modern SQL engine optimizes a declarative SQL query.
 ## Search and Analytics
 
 Zed is also intended to provide a seamless transition from a simple search experience
-(e.g., typed into a search bar or as the query argument of the [`super`](../commands/super.md) command-line
+(e.g., typed into a search bar or as the query argument of the [`super`](../commands/super) command-line
 tool) to more a complex analytics experience composed of complex joins and aggregations
 where the Zed language source text would typically be authored in a editor and
 managed under source-code control.
@@ -66,7 +66,7 @@ is a search for values with both the strings "example.com" and "urgent" present.
 
 Unlike typical log search systems, the Zed language operators are uniform:
 you can specify an operator including keyword search terms, Boolean predicates,
-etc. using the same [search expression](search-expressions.md) syntax at any point
+etc. using the same [search expression](search-expressions) syntax at any point
 in the pipeline.
 
 For example,
@@ -111,12 +111,12 @@ search "example.com" AND "urgent"
 
 The following sections continue describing the Zed language.
 
-* [The Pipeline Model](pipeline-model.md)
-* [Data Types](data-types.md)
-* [Const, Func, Operator, and Type Statements](statements.md)
-* [Expressions](expressions.md)
-* [Search Expressions](search-expressions.md)
-* [Lateral Subqueries](lateral-subqueries.md)
-* [Shaping and Type Fusion](shaping.md)
+* [The Pipeline Model](pipeline-model)
+* [Data Types](data-types)
+* [Const, Func, Operator, and Type Statements](statements)
+* [Expressions](expressions)
+* [Search Expressions](search-expressions)
+* [Lateral Subqueries](lateral-subqueries)
+* [Shaping and Type Fusion](shaping)
 
-You may also be interested in the detailed reference materials on [operators](operators/_index.md), [functions](functions/_index.md), and [aggregate functions](aggregates/_index.md), as well as the [conventions](conventions.md) for how they're described.
+You may also be interested in the detailed reference materials on [operators](operators/_index), [functions](functions/_index), and [aggregate functions](aggregates/_index), as well as the [conventions](conventions) for how they're described.

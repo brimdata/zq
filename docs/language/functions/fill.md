@@ -22,7 +22,7 @@ If `val` is not a record, it is returned unmodified.
 
 :::tip
 Many users seeking the functionality of `fill` prefer to use the
-[`shape` function](./shape.md) which applies the `fill`, [`cast`](./cast.md),
+[`shape` function](./shape) which applies the `fill`, [`cast`](./cast),
 and [`order`](./order) functions simultaneously on a record.
 :::
 

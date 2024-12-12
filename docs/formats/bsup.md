@@ -128,7 +128,7 @@ but is useful to an implementation to deterministically
 size decompression buffers in advance of decoding.
 
 Values for the `format` byte are defined in the
-[Super Binary compression format specification](./compression.md).
+[Super Binary compression format specification](./compression).
 
 :::tip note
 This arrangement of frames separating types and values allows
@@ -212,7 +212,7 @@ of the length of the string followed by that many bytes of UTF-8 encoded
 string data.
 
 :::tip note
-As defined by [Super JSON](jsup.md), a field name can be any valid UTF-8 string much like JSON
+As defined by [Super JSON](jsup), a field name can be any valid UTF-8 string much like JSON
 objects can be indexed with arbitrary string keys (via index operator)
 even if the field names available to the dot operator are restricted
 by language syntax for identifiers.

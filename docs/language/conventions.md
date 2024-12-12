@@ -4,8 +4,8 @@ title: Conventions
 heading: Type Conventions
 ---
 
-[Function](functions/_index.md) arguments and [operator](operators/_index.md) input values are all dynamically typed,
-yet certain functions expect certain specific [data types](data-types.md)
+[Function](functions/_index) arguments and [operator](operators/_index) input values are all dynamically typed,
+yet certain functions expect certain specific [data types](data-types)
 or classes of data types. To this end, the function and operator prototypes
 in the Zed documentation include several type classes as follows:
 * _any_ - any Zed data type

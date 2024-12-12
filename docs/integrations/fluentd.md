@@ -4,7 +4,7 @@ title: Fluentd
 ---
 
 The [Fluentd](https://www.fluentd.org/) open source data collector can be used
-to push log data to a [SuperDB data lake](../commands/super-db.md) in a continuous manner.
+to push log data to a [SuperDB data lake](../commands/super-db) in a continuous manner.
 This allows for querying near-"live" event data to enable use cases such as
 dashboarding and alerting in addition to creating a long-running historical
 record for archiving and analytics.
@@ -188,10 +188,10 @@ produced the following response:
 ## Shaping Example
 
 The query result just shown reflects the minimal data typing available in JSON
-format. Meanwhile, the [Zed data model](../formats/zed.md) provides much
+format. Meanwhile, the [Zed data model](../formats/zed) provides much
 richer data typing options, including some types well-suited to Zeek data such
 as `ip`, `time`, and `duration`. In Zed, the task of cleaning up data to
-improve its typing is known as [shaping](../language/shaping.md).
+improve its typing is known as [shaping](../language/shaping).
 
 For Zeek data specifically, a [reference shaper](zeek/shaping-zeek-json.md#reference-shaper-contents)
 is available that reflects the field and type information in the logs
@@ -391,10 +391,10 @@ options. Varying these may impact how quickly events appear in the pool and
 the size of the commit objects to which they're initially stored.
 
 2. **ZNG format** - In the [shaping example](#shaping-example) shown above, we
-used the [Super JSON format](../formats/jsup.md) format for the shaped data output from
-[`super`](../commands/super.md). This text format is typically used in contexts
+used the [Super JSON format](../formats/jsup) format for the shaped data output from
+[`super`](../commands/super). This text format is typically used in contexts
 where human readability is required. Due to its compact nature,
-[Super Binary](../formats/bsup.md) format would have been preferred, but in our research
+[Super Binary](../formats/bsup) format would have been preferred, but in our research
 we found Fluentd consistently steered us toward using only text formats.
 However, someone more proficient with Fluentd may be able to employ ZNG
 instead.

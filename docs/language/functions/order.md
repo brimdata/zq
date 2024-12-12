@@ -28,7 +28,7 @@ order(val, <{}>)
 ```
 :::tip
 Many users seeking the functionality of `order` prefer to use the
-[`shape` function](./shape.md) which applies the `order`, [`cast`](./cast.md),
+[`shape` function](./shape) which applies the `order`, [`cast`](./cast),
 and [`fill`](./fill) functions simultaneously on a record.
 :::
 

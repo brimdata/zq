@@ -13,7 +13,7 @@ as we add new capabilities to the system.
 ## Introduction
 
 To support the client-facing [SuperDB data lake semantics](../commands/super-db.md#the-lake-model)
-implemented by the [`super db` command](../commands/super-db.md), we are developing
+implemented by the [`super db` command](../commands/super-db), we are developing
 an open specification for the Zed lake storage format described in this document.
 As we make progress on the Zed lake model, we will update this document
 as we go.
@@ -198,7 +198,7 @@ the HEAD of the journal is accessed.
 > a file for exclusive access and checking that it has zero length after
 > a successful open.
 
-Second, strong read/write ordering semantics (as exists in [Amazon S3](../integrations/amazon-s3.md))
+Second, strong read/write ordering semantics (as exists in [Amazon S3](../integrations/amazon-s3))
 can be used to implement transactional journal updates as follows:
 * _TBD: this is worked out but needs to be written up_
 

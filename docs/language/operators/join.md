@@ -18,7 +18,7 @@
 The first `join` syntax shown above was more recently introduced and is in some
 ways similar to other languages such as SQL.  The second was the original `join`
 syntax in SuperPipe.  Most joins can be expressed using either syntax.  See the
-[join tutorial](../../tutorials/join.md)
+[join tutorial](../../tutorials/join)
 for details.
 :::
 
@@ -44,4 +44,4 @@ For anti join, the `<right-expr>` is undefined and thus cannot be specified.
 
 ### Examples
 
-The [join tutorial](../../tutorials/join.md) includes several examples.
+The [join tutorial](../../tutorials/join) includes several examples.

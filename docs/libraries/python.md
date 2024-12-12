@@ -6,12 +6,12 @@ title: Python
 Zed includes preliminary support for Python-based interaction
 with a Zed lake.
 The Zed Python package supports loading data into a Zed lake as well as
-querying and retrieving results in the [ZJSON format](../formats/zjson.md).
+querying and retrieving results in the [ZJSON format](../formats/zjson).
 The Python client interacts with the Zed lake via the REST API served by
 [`super db serve`](../commands/super-db.md#serve).
 
 This approach works adequately when high data throughput is not required.
-We plan to introduce native [Super Binary](../formats/bsup.md) support for
+We plan to introduce native [Super Binary](../formats/bsup) support for
 Python that should increase performance substantially for more
 data intensive workloads.
 

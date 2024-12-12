@@ -13,7 +13,7 @@ The `top` operator returns the top N values from a sequence sorted in descending
 order by one or more expressions. N is given by `<const-expr>`, a compile-time
 constant expression that evaluates to a positive integer.
 
-`top` is functionally similar to [`sort`](sort.md) but is less resource
+`top` is functionally similar to [`sort`](sort) but is less resource
 intensive because only the top N values are stored in memory (i.e., values
 less than the minimum are discarded).
 

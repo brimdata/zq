@@ -10,7 +10,7 @@ Constants may be defined and assigned to a symbolic name with the syntax
 ```
 const <id> = <expr>
 ```
-where `<id>` is an identifier and `<expr>` is a constant [expression](expressions.md)
+where `<id>` is an identifier and `<expr>` is a constant [expression](expressions)
 that must evaluate to a constant at compile time and not reference any
 runtime state such as `this`, e.g.,
 ```mdtest-command
@@ -26,7 +26,7 @@ One or more `const` statements may appear only at the beginning of a scope
 (i.e., the main scope at the start of a query,
 the start of the body of a [user-defined operator](#operator-statements),
 or a [lateral scope](lateral-subqueries.md/#lateral-scope)
-defined by an [`over` operator](operators/over.md))
+defined by an [`over` operator](operators/over))
 and binds the identifier to the value in the scope in which it appears in addition
 to any contained scopes.
 
@@ -42,7 +42,7 @@ User-defined functions may be created with the syntax
 func <id> ( [<param> [, <param> ...]] ) : ( <expr> )
 ```
 where `<id>` and `<param>` are identifiers and `<expr>` is an
-[expression](expressions.md) that may refer to parameters but not to runtime
+[expression](expressions) that may refer to parameters but not to runtime
 state such as `this`.
 
 For example,
@@ -61,7 +61,7 @@ One or more `func` statements may appear at the beginning of a scope
 (i.e., the main scope at the start of a query,
 the start of the body of a [user-defined operator](#operator-statements),
 or a [lateral scope](lateral-subqueries.md/#lateral-scope)
-defined by an [`over` operator](operators/over.md))
+defined by an [`over` operator](operators/over))
 and binds the identifier to the expression in the scope in which it appears in addition
 to any contained scopes.
 
@@ -88,14 +88,14 @@ A user-defined operator can then be called with using the familiar call syntax
 <id> ( [<expr> [, <expr> ...]] )
 ```
 where `<id>` is the identifier of the user-defined operator and `<expr>` is a list
-of [expressions](expressions.md) matching the number of `<param>`s defined in
+of [expressions](expressions) matching the number of `<param>`s defined in
 the operator's signature.
 
 One or more `op` statements may appear only at the beginning of a scope
 (i.e., the main scope at the start of a query,
 the start of the body of a [user-defined operator](#operator-statements),
 or a [lateral scope](lateral-subqueries.md/#lateral-scope)
-defined by an [`over` operator](operators/over.md))
+defined by an [`over` operator](operators/over))
 and binds the identifier to the value in the scope in which it appears in addition
 to any contained scopes.
 
@@ -129,7 +129,7 @@ stream (e.g., a [field reference](expressions.md#field-dereference)). Any
 other expression will result in a compile-time error.
 
 Because both constant values and path references evaluate in
-[expression](expressions.md) contexts, a `<param>` may often be used inside of
+[expression](expressions) contexts, a `<param>` may often be used inside of
 a user-defined operator without regard to the argument's origin. For instance,
 with the program `params.spq`
 ```mdtest-input params.spq
@@ -167,7 +167,7 @@ illegal left-hand side of assignment in params.spq at line 2, column 3:
 ```
 
 A constant value must be used to pass a parameter that will be referenced as
-the data source of a [`from` operator](operators/from.md). For example, we
+the data source of a [`from` operator](operators/from). For example, we
 quote the pool name in our program `count-pool.spq`
 ```mdtest-input count-pool.spq
 op CountPool(pool_name): (
@@ -240,7 +240,7 @@ One or more `type` statements may appear at the beginning of a scope
 (i.e., the main scope at the start of a query,
 the start of the body of a [user-defined operator](#operator-statements),
 or a [lateral scope](lateral-subqueries.md/#lateral-scope)
-defined by an [`over` operator](operators/over.md))
+defined by an [`over` operator](operators/over))
 and binds the identifier to the type in the scope in which it appears in addition
 to any contained scopes.
 

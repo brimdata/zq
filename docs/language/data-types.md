@@ -4,10 +4,10 @@ title: Data Types
 ---
 
 The SuperPipe language includes most data types of a typical programming language
-as defined in the [super data model](../formats/zed.md).
+as defined in the [super data model](../formats/zed).
 
 The syntax of individual literal values generally follows
-the [Super JSON syntax](../formats/jsup.md) with the exception that
+the [Super JSON syntax](../formats/jsup) with the exception that
 [type decorators](../formats/jsup.md#22-type-decorators)
 are not included in the language.  Instead, a
 [type cast](expressions.md#casts) may be used in any expression for explicit
@@ -44,11 +44,11 @@ a few examples:
 Complex types may be composed, as in `[({s:string},{x:int64})]` which is
 an array of type `union` of two types of records.
 
-The [`typeof` function](functions/typeof.md) returns a value's type as
+The [`typeof` function](functions/typeof) returns a value's type as
 a value, e.g., `typeof(1)` is `<int64>` and `typeof(<int64>)` is `<type>`.
 
 First-class types are quite powerful because types can
-serve as group-by keys or be used in ["data shaping"](shaping.md) logic.
+serve as group-by keys or be used in ["data shaping"](shaping) logic.
 A common workflow for data introspection is to first perform a search of
 exploratory data and then count the shapes of each type of data as follows:
 ```
@@ -87,7 +87,7 @@ persist into the data model and thus into the serialized input and output.
 
 Named types may be defined in four ways:
 * with a [`type` statement](statements.md#type-statements),
-* with the [`cast` function](functions/cast.md),
+* with the [`cast` function](functions/cast),
 * with a definition inside of another type, or
 * by the input data itself.
 
@@ -183,7 +183,7 @@ from anywhere
 | sort salary
 | head 5
 ```
-and since type comparisons are so useful and common, the [`is` function](functions/is.md)
+and since type comparisons are so useful and common, the [`is` function](functions/is)
 can be used to perform the type match:
 ```
 from anywhere
@@ -253,14 +253,14 @@ For example, suppose a bad value shows up:
 ```
 {kind:"bad", stuff:{foo:1,bar:2}}
 ```
-A [shaper](shaping.md) could catch the bad value (e.g., as a default
-case in a [`switch`](operators/switch.md) topology) and propagate it as
+A [shaper](shaping) could catch the bad value (e.g., as a default
+case in a [`switch`](operators/switch) topology) and propagate it as
 an error using the expression:
 ```
 yield error({message:"unrecognized input",input:this})
 ```
 then such errors could be detected and searched for downstream with the
-[`is_error` function](functions/is_error.md).
+[`is_error` function](functions/is_error).
 For example,
 ```
 is_error(this)
@@ -333,7 +333,7 @@ produces
 error("missing")
 ```
 Sometimes you want missing errors to show up and sometimes you don't.
-The [`quiet` function](functions/quiet.md) transforms missing errors into
+The [`quiet` function](functions/quiet) transforms missing errors into
 "quiet errors".  A quiet error is the value `error("quiet")` and is ignored
 by most operators, in particular `yield`.  For example,
 ```mdtest-command
@@ -345,7 +345,7 @@ produces
 ```
 
 And what if you want a default value instead of a missing error?  The
-[`coalesce` function](functions/coalesce.md) returns the first value that is not
+[`coalesce` function](functions/coalesce) returns the first value that is not
 null, `error("missing")`, or `error("quiet")`.  For example,
 ```mdtest-command
 echo "{x:1} {y:2}" | super -z -c "yield coalesce(x, 0)" -

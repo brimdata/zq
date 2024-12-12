@@ -5,7 +5,7 @@ title: super db
 
 > **TL;DR** `super db` is a sub-command of `super` to manage and query SuperDB data lakes.
 > You can import data from a variety of formats and it will automatically
-> be committed in [super-structured](../formats/_index.md)
+> be committed in [super-structured](../formats/_index)
 > format, providing full fidelity of the original format and the ability
 > to reconstruct the original data without loss of information.
 >
@@ -16,13 +16,13 @@ title: super db
 <p id="status"></p>
 
 :::tip Status
-While [`super`](super.md) and its accompanying [formats](../formats/_index.md)
+While [`super`](super) and its accompanying [formats](../formats/_index)
 are production quality, the SuperDB data lake is still fairly early in development
 and alpha quality.
 That said, SuperDB data lakes can be utilized quite effectively at small scale,
 or at larger scales when scripted automation
 is deployed to manage the lake's data layout via the
-[lake API](../lake/api.md).
+[lake API](../lake/api).
 
 Enhanced scalability with self-tuning configuration is under development.
 :::
@@ -32,7 +32,7 @@ Enhanced scalability with self-tuning configuration is under development.
 A SuperDB data lake is a cloud-native arrangement of data, optimized for search,
 analytics, ETL, data discovery, and data preparation
 at scale based on data represented in accordance
-with the [super data model](../formats/zed.md).
+with the [super data model](../formats/zed).
 
 A lake is organized into a collection of data pools forming a single
 administrative domain.  The current implementation supports
@@ -70,7 +70,7 @@ bite-sized chunks for learning how the system works and how the different
 components come together.
 
 While the CLI-first approach provides these benefits,
-all of the functionality is also exposed through [an API](../lake/api.md) to
+all of the functionality is also exposed through [an API](../lake/api) to
 a lake service.  Many use cases involve an application like
 [SuperDB Desktop](https://zui.brimdata.io/) or a
 programming environment like Python/Pandas interacting
@@ -115,8 +115,8 @@ replication easy to support and deploy.
 
 The cloud objects that comprise a lake, e.g., data objects,
 commit history, transaction journals, partial aggregations, etc.,
-are stored as super-structured data, i.e., either as [row-based Super Binary](../formats/bsup.md)
-or [Super Columnar](../formats/csup.md).
+are stored as super-structured data, i.e., either as [row-based Super Binary](../formats/bsup)
+or [Super Columnar](../formats/csup).
 This makes introspection of the lake structure straightforward as many key
 lake data structures can be queried with metadata queries and presented
 to a client for further processing by downstream tooling.
@@ -294,7 +294,7 @@ optimize scans over such data is impaired.
 
 Because commits are transactional and immutable, a query
 sees its entire data scan as a fixed "snapshot" with respect to the
-commit history.  In fact, the [`from` operator](../language/operators/from.md)
+commit history.  In fact, the [`from` operator](../language/operators/from)
 allows a commit object to be specified with the `@` suffix to a
 pool reference, e.g.,
 ```
@@ -331,7 +331,7 @@ Time travel using timestamps is a forthcoming feature.
 
 ## `super db` Commands
 
-While `super db` is itself a sub-command of [`super`](super.md), it invokes
+While `super db` is itself a sub-command of [`super`](super), it invokes
 a large number of interrelated sub-commands, similar to the
 [`docker`](https://docs.docker.com/engine/reference/commandline/cli/)
 or [`kubectl`](https://kubernetes.io/docs/reference/generated/kubectl/kubectl-commands)
@@ -356,7 +356,7 @@ format.  However, the `-f` option can be used to specify any supported
 super db auth login|logout|method|verify
 ```
 Access to a lake can be secured with [Auth0 authentication](https://auth0.com/).
-A [guide](../integrations/zed-lake-auth.md) is available with example configurations.
+A [guide](../integrations/zed-lake-auth) is available with example configurations.
 Please reach out to us on our [community Slack](https://www.brimdata.io/join-slack/)
 if you have feedback on your experience or need additional help.
 
@@ -468,12 +468,12 @@ a "table" as all super-structured data is _self describing_ and can be queried i
 schema-agnostic fashion.  Data of any _shape_ can be stored in any pool
 and arbitrary data _shapes_ can coexist side by side.
 
-As with [`super`](super.md),
+As with [`super`](super),
 the [input arguments](super.md#usage) can be in
 any [supported format](super.md#input-formats) and
 the input format is auto-detected if `-i` is not provided.  Likewise,
 the inputs may be URLs, in which case, the `load` command streams
-the data from a Web server or [S3](../integrations/amazon-s3.md) and into the lake.
+the data from a Web server or [S3](../integrations/amazon-s3) and into the lake.
 
 When data is loaded, it is broken up into objects of a target size determined
 by the pool's `threshold` parameter (which defaults to 500MiB but can be configured
@@ -538,7 +538,7 @@ The `date` field here is used by the lake system to do [time travel](#time-trave
 through the branch and pool history, allowing you to see the state of
 branches at any time in their commit history.
 
-Arbitrary metadata expressed as any [Super JSON value](../formats/jsup.md)
+Arbitrary metadata expressed as any [Super JSON value](../formats/jsup)
 may be attached to a commit via the `-meta` flag.  This allows an application
 or user to transactionally commit metadata alongside committed data for any
 purpose.  This approach allows external applications to implement arbitrary
@@ -547,7 +547,7 @@ commit history.
 
 Since commit objects are stored as super-structured data, the metadata can easily be
 queried by running the `log -f bsup` to retrieve the log in Super Binary format,
-for example, and using [`super`](super.md) to pull the metadata out
+for example, and using [`super`](super) to pull the metadata out
 as in:
 ```
 super db log -f bsup | super -c 'has(meta) | yield {id,meta}' -
@@ -580,7 +580,7 @@ A commit object includes
 an optional author and message, along with a required timestamp,
 that is stored in the commit journal for reference.  These values may
 be specified as options to the [`load`](#load) command, and are also available in the
-[lake API](../lake/api.md) for automation.
+[lake API](../lake/api) for automation.
 
 :::tip note
 The branchlog meta-query source is not yet implemented.
@@ -658,12 +658,12 @@ according to configured policies and logic.
 super db query [options] <query>
 ```
 The `query` command runs a [SuperSQL](../language/_index) query with data from a lake as input.
-A query typically begins with a [`from` operator](../language/operators/from.md)
+A query typically begins with a [`from` operator](../language/operators/from)
 indicating the pool and branch to use as input.
 
 The pool/branch names are specified with `from` in the query.
 
-As with [`super`](super.md), the default output format is Super JSON for
+As with [`super`](super), the default output format is Super JSON for
 terminals and Super Binary otherwise, though this can be overridden with
 `-f` to specify one of the various supported output formats.
 
@@ -685,7 +685,7 @@ Filters on pool keys are efficiently implemented as the data is laid out
 according to the pool key and seek indexes keyed by the pool key
 are computed for each data object.
 
-When querying data to the [Super Binary](../formats/bsup.md) output format,
+When querying data to the [Super Binary](../formats/bsup) output format,
 output from a pool can be easily piped to other commands like `super`, e.g.,
 ```
 super db query -f bsup 'from logs' | super -f table -c 'count() by field' -
@@ -699,7 +699,7 @@ By default, the `query` command scans pool data in pool-key order though
 the query optimizer may, in general, reorder the scan to optimize searches,
 aggregations, and joins.
 An order hint can be supplied to the `query` command to indicate to
-the optimizer the desired processing order, but in general, [`sort` operators](../language/operators/sort.md)
+the optimizer the desired processing order, but in general, [`sort` operators](../language/operators/sort)
 should be used to guarantee any particular sort order.
 
 Arbitrarily complex queries can be executed over the lake in this fashion
@@ -773,7 +773,7 @@ super db serve [options]
 ```
 The `serve` command implements the [server personality](#command-personalities) to service requests
 from instances of the client personality.
-It listens for [lake API](../lake/api.md) requests on the interface and port
+It listens for [lake API](../lake/api) requests on the interface and port
 specified by the `-l` option, executes the requests, and returns results.
 
 The `-log.level` option controls log verbosity.  Available levels, ordered

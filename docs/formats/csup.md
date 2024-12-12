@@ -78,7 +78,7 @@ where a segment is a seek offset and byte length relative to the
 data section.  Each segment contains a sequence of
 [primitive-type values](zed#1-primitive-types),
 encoded as counted-length byte sequences where the counted-length is
-variable-length encoded as in the [Super Binary specification](bsup.md).
+variable-length encoded as in the [Super Binary specification](bsup).
 Segments may be compressed.
 
 There is no information in the data section for how segments relate
@@ -388,7 +388,7 @@ using the same tag within the union value.
 
 ### Hello, world
 
-Start with this [Super JSON](jsup.md) file `hello.jsup`:
+Start with this [Super JSON](jsup) file `hello.jsup`:
 ```
 {a:"hello",b:"world"}
 {a:"goodnight",b:"gracie"}

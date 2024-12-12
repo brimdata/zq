@@ -10,8 +10,8 @@ load <pool>[@<branch>] [author <author>] [message <message>] [meta <meta>]
 
 :::tip Note
 The `load` operator is exclusively for working with pools in a
-[SuperDB data lake](../../commands/super-db.md) and is not available for use in
-[`super`](../../commands/super.md).
+[SuperDB data lake](../../commands/super-db) and is not available for use in
+[`super`](../../commands/super).
 :::
 
 ### Description

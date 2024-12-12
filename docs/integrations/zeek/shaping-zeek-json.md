@@ -6,7 +6,7 @@ title: Shaping Zeek JSON
 When [reading Zeek JSON format logs](reading-zeek-log-formats.md#zeek-json),
 much of the rich data typing that was originally present inside Zeek is at risk
 of being lost. This detail can be restored using a Zed
-[shaper](../../language/shaping.md), such as the
+[shaper](../../language/shaping), such as the
 [reference shaper described below](#reference-shaper-contents).
 
 ## Zeek Version/Configuration
@@ -158,7 +158,7 @@ along with the shaped and cropped variations.
 
 At these default settings, the shaper is well-suited for an iterative workflow
 with a goal of establishing full coverage of the JSON data with rich Zed
-types. For instance, the [`has_error` function](../../language/functions/has_error.md)
+types. For instance, the [`has_error` function](../../language/functions/has_error)
 can be applied on the shaped output and any error values surfaced will point
 to fields that can be added to the type definitions in the shaper.
 
@@ -172,7 +172,7 @@ type port=uint16;
 type zenum=string;
 type conn_id={orig_h:ip,orig_p:port,resp_h:ip,resp_p:port};
 ```
-The `port` and `zenum` types are described further in the [Zed/Zeek Data Type Compatibility](data-type-compatibility.md)
+The `port` and `zenum` types are described further in the [Zed/Zeek Data Type Compatibility](data-type-compatibility)
 doc. The `conn_id` type will just save us from having to repeat these fields
 individually in the many Zeek record types that contain an embedded `id`
 record.
@@ -234,7 +234,7 @@ yield nest_dotted(this)
 Picking this apart, it transforms each record as it's being read in several
 steps.
 
-1. The [`nest_dotted` function](../../language/functions/nest_dotted.md)
+1. The [`nest_dotted` function](../../language/functions/nest_dotted)
    reverses the Zeek JSON logger's "flattening" of nested records, e.g., how
    it populates a field named `id.orig_h` rather than creating a field `id` with
    sub-field `orig_h` inside it. Restoring the original nesting now gives us
@@ -242,19 +242,19 @@ steps.
    and access the entire 4-tuple of values, but still access the individual
    values using the same dotted syntax like `id.orig_h` when needed.
 
-2. The [`switch` operator](../../language/operators/switch.md) is used to flag
+2. The [`switch` operator](../../language/operators/switch) is used to flag
    any problems encountered when applying the shaper logic, e.g.,
 
    * An incoming Zeek JSON record has a `_path` value for which the shaper
     lacks a type definition.
    * A field in an incoming Zeek JSON record is located in our type
-     definitions but cannot be successfully [cast](../../language/functions/cast.md)
+     definitions but cannot be successfully [cast](../../language/functions/cast)
      to the target type defined in the shaper.
    * An incoming Zeek JSON record has additional field(s) beyond those in
      the target type definition and the [configurable options](#configurable-options)
      are set such that this should be treated as an error.
 
-3. Each [`shape` function](../../language/functions/shape.md) call applies an
+3. Each [`shape` function](../../language/functions/shape) call applies an
    appropriate type definition based on the nature of the incoming Zeek JSON
    record. The logic of `shape` includes:
 
@@ -317,7 +317,7 @@ produces
 
 If working in a directory containing many JSON logs, the
 reference shaper can be applied to all the records they contain and
-output them all in a single [Super Binary](../../formats/bsup.md) file as
+output them all in a single [Super Binary](../../formats/bsup) file as
 follows:
 
 ```

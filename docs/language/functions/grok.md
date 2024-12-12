@@ -57,7 +57,7 @@ issue describing your use case.
   to store `num` as an integer type instead of as a
   string. SuperPipe currently accepts this trailing `:type` syntax but effectively
   ignores it and stores all parsed values as strings. Downstream use of the
-  [`cast` function](cast.md) can be used instead for data type conversion.
+  [`cast` function](cast) can be used instead for data type conversion.
   ([super/4928](https://github.com/brimdata/super/issues/4928))
 
 2. Some Logstash Grok examples use an optional square bracket syntax for
@@ -67,7 +67,7 @@ issue describing your use case.
    ```
    to store a value into `{"nested": {"field": ... }}`. In SuperPipe the more common
    dot-separated field naming convention `nested.field` can be combined
-   with the downstream use of the [`nest_dotted` function](nest_dotted.md) to
+   with the downstream use of the [`nest_dotted` function](nest_dotted) to
    store values in nested fields.
    ([super/4929](https://github.com/brimdata/super/issues/4929))
 

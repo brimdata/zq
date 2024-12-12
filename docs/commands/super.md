@@ -4,9 +4,9 @@ title: super
 ---
 
 > **TL;DR** `super` is a command-line tool that uses [SuperSQL](../language/_index)
-> to query a variety of data formats in files, over HTTP, or in [S3](../integrations/amazon-s3.md)
+> to query a variety of data formats in files, over HTTP, or in [S3](../integrations/amazon-s3)
 > storage. Best performance is achieved when operating on data in binary formats such as
-> [Super Binary](../formats/bsup.md), [Super Columnar](../formats/csup.md),
+> [Super Binary](../formats/bsup), [Super Columnar](../formats/csup),
 > [Parquet](https://github.com/apache/parquet-format), or
 > [Arrow](https://arrow.apache.org/docs/format/Columnar.html#ipc-streaming-format).
 
@@ -26,12 +26,12 @@ a log-search experience despite its SQL foundation.
 
 The `super` command works with data from ephemeral sources like files and URLs.
 If you want to persist your data into a data lake for persistent storage,
-check out the [`super db`](super-db.md) set of commands.
+check out the [`super db`](super-db) set of commands.
 
 By invoking the `-c` option, a query expressed in the [SuperSQL language](../language/_index)
 may be specified and applied to the input stream.
 
-The [super data model](../formats/zed.md) is based on [super-structured data](../formats/_index.md#2-a-super-structured-pattern), meaning that all data
+The [super data model](../formats/zed) is based on [super-structured data](../formats/_index.md#2-a-super-structured-pattern), meaning that all data
 is both strongly _and_ dynamically typed and need not conform to a homogeneous
 schema.  The type structure is self-describing so it's easy to daisy-chain
 queries and inspect data at any point in a complex query or data pipeline.
@@ -104,9 +104,9 @@ simply run `super` with no arguments.
 ## Data Formats
 
 `super` supports a number of [input](#input-formats) and [output](#output-formats) formats, but the super formats
-([Super Binary](../formats/bsup.md),
-[Super Columnar](../formats/csup.md),
-and [Super JSON](../formats/jsup.md)) tend to be the most versatile and
+([Super Binary](../formats/bsup),
+[Super Columnar](../formats/csup),
+and [Super JSON](../formats/jsup)) tend to be the most versatile and
 easy to work with.
 
 `super` typically operates on binary-encoded data and when you want to inspect
@@ -126,12 +126,12 @@ in the order appearing on the command line forming the input stream.
 |  Option   | Auto | Specification                            |
 |-----------|------|------------------------------------------|
 | `arrows`  |  yes | [Arrow IPC Stream Format](https://arrow.apache.org/docs/format/Columnar.html#ipc-streaming-format) |
-| `bsup`    |  yes | [Super Binary](../formats/bsup.md) |
-| `csup`    |  yes | [Super Columnar](../formats/csup.md) |
+| `bsup`    |  yes | [Super Binary](../formats/bsup) |
+| `csup`    |  yes | [Super Columnar](../formats/csup) |
 | `csv`     |  yes | [Comma-Separated Values (RFC 4180)](https://www.rfc-editor.org/rfc/rfc4180.html) |
 | `json`    |  yes | [JSON (RFC 8259)](https://www.rfc-editor.org/rfc/rfc8259.html) |
-| `jsup`    |  yes | [Super JSON](../formats/jsup.md) |
-| `zjson`   |  yes | [Super JSON over JSON](../formats/zjson.md) |
+| `jsup`    |  yes | [Super JSON](../formats/jsup) |
+| `zjson`   |  yes | [Super JSON over JSON](../formats/zjson) |
 | `line`    |  no  | One string value per input line |
 | `parquet` |  yes | [Apache Parquet](https://github.com/apache/parquet-format) |
 | `tsv`     |  yes | [Tab-Separated Values](https://en.wikipedia.org/wiki/Tab-separated_values) |
@@ -177,7 +177,7 @@ would produce this output in the default Super JSON format
 
 #### JSON Auto-detection: Super vs. Plain
 
-Since [Super JSON](../formats/jsup.md) is a superset of plain JSON, `super` must be careful how it distinguishes the two cases when performing auto-inference.
+Since [Super JSON](../formats/jsup) is a superset of plain JSON, `super` must be careful how it distinguishes the two cases when performing auto-inference.
 While you can always clarify your intent
 via `-i jsup` or `-i json`, `super` attempts to "just do the right thing"
 when you run it with Super JSON vs. plain JSON.
@@ -188,8 +188,8 @@ not desirable because (1) the Super JSON parser is not particularly performant a
 JSON any number that appears without a decimal point as an integer type.
 
 :::tip note
-The reason `super` is not particularly performant for Super JSON is that the [Super Binary](../formats/bsup.md) or
-[Super Columnar](../formats/csup.md) formats are semantically equivalent to Super JSON but much more efficient and
+The reason `super` is not particularly performant for Super JSON is that the [Super Binary](../formats/bsup) or
+[Super Columnar](../formats/csup) formats are semantically equivalent to Super JSON but much more efficient and
 the design intent is that these efficient binary formats should be used in
 use cases where performance matters.  Super JSON is typically used only when
 data needs to be human-readable in interactive settings or in automated tests.
@@ -210,12 +210,12 @@ typically omit quotes around field names.
 |  Option   | Specification                            |
 |-----------|------------------------------------------|
 | `arrows`  | [Arrow IPC Stream Format](https://arrow.apache.org/docs/format/Columnar.html#ipc-streaming-format) |
-| `bsup`    | [Super Binary](../formats/bsup.md) |
-| `csup`    | [Super Columnar](../formats/csup.md) |
+| `bsup`    | [Super Binary](../formats/bsup) |
+| `csup`    | [Super Columnar](../formats/csup) |
 | `csv`     | [Comma-Separated Values (RFC 4180)](https://www.rfc-editor.org/rfc/rfc4180.html) |
 | `json`    | [JSON (RFC 8259)](https://www.rfc-editor.org/rfc/rfc8259.html) |
-| `jsup`    | [Super JSON](../formats/jsup.md) |
-| `zjson`   | [Super JSON over JSON](../formats/zjson.md) |
+| `jsup`    | [Super JSON](../formats/jsup) |
+| `zjson`   | [Super JSON over JSON](../formats/zjson) |
 | `lake`    | [SuperDB Data Lake Metadata Output](#superdb-data-lake-metadata-output) |
 | `parquet` | [Apache Parquet](https://github.com/apache/parquet-format) |
 | `table`   | (described [below](#simplified-text-outputs)) |
@@ -355,7 +355,7 @@ parquetio: encountered multiple types (consider 'fuse'): {x:int64} and {s:string
 
 ##### Fusing Schemas
 
-As suggested by the error above, the [`fuse` operator](../language/operators/fuse.md) can merge different record
+As suggested by the error above, the [`fuse` operator](../language/operators/fuse) can merge different record
 types into a blended type, e.g., here we create the file and read it back:
 ```mdtest-command
 echo '{x:1}{s:"hello"}' | super -o out.parquet -f parquet -c fuse -
@@ -448,7 +448,7 @@ word  style
 hello greeting
 ```
 
-If this is undesirable, the [`fuse` operator](../language/operators/fuse.md)
+If this is undesirable, the [`fuse` operator](../language/operators/fuse)
 may prove useful to unify the input stream under a single record type that can
 be described with a single header line. Doing this to our last example, we find
 
@@ -466,7 +466,7 @@ hello -     greeting
 #### SuperDB Data Lake Metadata Output
 
 The `lake` format is used to pretty-print lake metadata, such as in
-[`super db` sub-command](super-db.md) outputs.  Because it's `super db`'s default output format,
+[`super db` sub-command](super-db) outputs.  Because it's `super db`'s default output format,
 it's rare to request it explicitly via `-f`.  However, since it's possible for
 `super db` to [generate output in any supported format](super-db.md#super-db-commands),
 the `lake` format is useful to reverse this.
@@ -515,7 +515,7 @@ For example, this query
 ```mdtest-command
 super -C -c 'has(foo)'
 ```
-is an implied [`where` operator](../language/operators/where.md), which matches values
+is an implied [`where` operator](../language/operators/where), which matches values
 that have a field `foo`, i.e.,
 ```mdtest-output
 where has(foo)
@@ -524,7 +524,7 @@ while this query
 ```mdtest-command
 super -C -c 'a:=x+1'
 ```
-is an implied [`put` operator](../language/operators/put.md), which creates a new field `a`
+is an implied [`put` operator](../language/operators/put), which creates a new field `a`
 with the value `x+1`, i.e.,
 ```mdtest-output
 put a:=x+1
@@ -541,7 +541,7 @@ do not halt execution.  Instead, these error conditions produce
 [first-class errors](../language/data-types.md#first-class-errors)
 in the data output stream interleaved with any valid results.
 Such errors are easily queried with the
-[`is_error` function](../language/functions/is_error.md).
+[`is_error` function](../language/functions/is_error).
 
 This approach provides a robust technique for debugging complex queries,
 where errors can be wrapped in one another providing stack-trace-like debugging
@@ -577,9 +577,9 @@ are illustrated using this pattern
 echo <values> | super -c <query> -
 ```
 which is used throughout the [language documentation](../language/_index)
-and [operator reference](../language/operators/_index.md).
+and [operator reference](../language/operators/_index).
 
-The language documentation and [tutorials directory](../tutorials/_index.md)
+The language documentation and [tutorials directory](../tutorials/_index)
 have many examples, but here are a few more simple `super` use cases.
 
 _Hello, world_
@@ -591,7 +591,7 @@ produces this Super JSON output
 "hello, world"
 ```
 
-_Some values of available [data types](../language/data-types.md)_
+_Some values of available [data types](../language/data-types)_
 ```mdtest-command
 echo '1 1.5 [1,"foo"] |["apple","banana"]|' | super -z -
 ```
@@ -613,7 +613,7 @@ produces
 <[(int64,string)]>
 <|[string]|>
 ```
-_A simple [aggregation](../language/aggregates/_index.md)_
+_A simple [aggregation](../language/aggregates/_index)_
 ```mdtest-command
 echo '{key:"foo",val:1}{key:"bar",val:2}{key:"foo",val:3}' |
   super -z -c 'sum(val) by key | sort key' -
@@ -623,7 +623,7 @@ produces
 {key:"bar",sum:2}
 {key:"foo",sum:4}
 ```
-_Read CSV input and [cast](../language/functions/cast.md) a to an integer from default float_
+_Read CSV input and [cast](../language/functions/cast) a to an integer from default float_
 ```mdtest-command
 printf "a,b\n1,foo\n2,bar\n" | super -z -c 'a:=int64(a)' -
 ```
@@ -669,7 +669,7 @@ measurements among SuperDB,
 We'll use the Parquet format to compare apples to apples
 and also report results for the custom columnar database format of DuckDB,
 the [new beta JSON type](https://clickhouse.com/blog/a-new-powerful-json-data-type-for-clickhouse) of ClickHouse,
-and the [Super Binary](../formats/bsup.md) format used by `super`.
+and the [Super Binary](../formats/bsup) format used by `super`.
 
 The detailed steps shown [below](#appendix-2-running-the-tests) can be reproduced via
 [automated scripts](https://github.com/brimdata/super/blob/main/scripts/super-cmd-perf).
@@ -725,7 +725,7 @@ clickhouse-client --query "
   INSERT INTO gha SELECT * FROM file('gharchive_gz/*.json.gz', JSONAsObject);"
 ```
 To create a super-structed file for the `super` command, there is no need to
-[`fuse`](../language/operators/fuse.md) the data into a single schema (though `super` can still work with the fused
+[`fuse`](../language/operators/fuse) the data into a single schema (though `super` can still work with the fused
 schema in the Parquet file), and we simply ran this command to create a Super Binary
 file:
 ```
@@ -781,7 +781,7 @@ FROM 'gha'
 WHERE v.payload.pull_request.body LIKE '%in case you have any feedback 😊%'
 ```
 SuperSQL supports `LIKE` and could run the plain SQL query, but it also has a
-similar function called [`grep`](../language/functions/grep.md) that can operate over specified fields or
+similar function called [`grep`](../language/functions/grep) that can operate over specified fields or
 default to all the string fields in any value. The SuperSQL query that uses
 `grep` is
 ```sql
