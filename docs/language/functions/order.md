@@ -33,8 +33,8 @@ and [`fill`](./fill) functions simultaneously on a record.
 :::
 
 :::tip Note
-[Record expressions](../expressions.md#record-expressions) can also be used to
-reorder fields without specifying types ([example](../shaping.md#order)).
+[Record expressions](../expressions#record-expressions) can also be used to
+reorder fields without specifying types ([example](../shaping#order)).
 :::
 
 ### Examples

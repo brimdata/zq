@@ -31,7 +31,7 @@ check out the [`super db`](super-db) set of commands.
 By invoking the `-c` option, a query expressed in the [SuperSQL language](../language/_index)
 may be specified and applied to the input stream.
 
-The [super data model](../formats/zed) is based on [super-structured data](../formats/_index.md#2-a-super-structured-pattern), meaning that all data
+The [super data model](../formats/zed) is based on [super-structured data](../formats/_index#2-a-super-structured-pattern), meaning that all data
 is both strongly _and_ dynamically typed and need not conform to a homogeneous
 schema.  The type structure is self-describing so it's easy to daisy-chain
 queries and inspect data at any point in a complex query or data pipeline.
@@ -96,7 +96,7 @@ is equivalent to
 SELECT VALUE 1+1
 ```
 To learn more about shortcuts, refer to the SuperSQL
-[documentation on shortcuts](../language/pipeline-model.md#implied-operators).
+[documentation on shortcuts](../language/pipeline-model#implied-operators).
 
 For built-in command help and a listing of all available options,
 simply run `super` with no arguments.
@@ -404,8 +404,8 @@ input formats. They may be a good fit for use with other text-based shell
 tools, but due to their limitations should be used with care.
 
 In `text` output, minimal formatting is applied, e.g., strings are shown
-without quotes and brackets are dropped from [arrays](../formats/zed.md#22-array)
-and [sets](../formats/zed.md#23-set). [Records](../formats/zed.md#21-record)
+without quotes and brackets are dropped from [arrays](../formats/zed#22-array)
+and [sets](../formats/zed#23-set). [Records](../formats/zed#21-record)
 are printed as tab-separated field values without their corresponding field
 names. For example:
 
@@ -468,10 +468,10 @@ hello -     greeting
 The `lake` format is used to pretty-print lake metadata, such as in
 [`super db` sub-command](super-db) outputs.  Because it's `super db`'s default output format,
 it's rare to request it explicitly via `-f`.  However, since it's possible for
-`super db` to [generate output in any supported format](super-db.md#super-db-commands),
+`super db` to [generate output in any supported format](super-db#super-db-commands),
 the `lake` format is useful to reverse this.
 
-For example, imagine you'd executed a [meta-query](super-db.md#meta-queries) via
+For example, imagine you'd executed a [meta-query](super-db#meta-queries) via
 `super db query -Z "from :pools"` and saved the output in this file `pools.jsup`.
 
 ```mdtest-input pools.jsup
@@ -509,7 +509,7 @@ If you are ever stumped about how the `super` compiler is parsing your query,
 you can always run `super -C` to compile and display your query in canonical form
 without running it.
 This can be especially handy when you are learning the language and
-[its shortcuts](../language/pipeline-model.md#implied-operators).
+[its shortcuts](../language/pipeline-model#implied-operators).
 
 For example, this query
 ```mdtest-command
@@ -538,7 +538,7 @@ as soon as they happen and cause the `super` process to exit.
 On the other hand,
 runtime errors resulting from the query itself
 do not halt execution.  Instead, these error conditions produce
-[first-class errors](../language/data-types.md#first-class-errors)
+[first-class errors](../language/data-types#first-class-errors)
 in the data output stream interleaved with any valid results.
 Such errors are easily queried with the
 [`is_error` function](../language/functions/is_error).
@@ -949,7 +949,7 @@ Dynamic: In scope SELECT tupleElement(arrayJoin(v.payload.pull_request.assignees
 
 SuperSQL's data model does not require these kinds of gymnastics as
 everything does not have to be jammed into a table.  Instead, we can use the
-`UNNEST` pipe operator combined with the [spread operator](../language/expressions.md#array-expressions) applied to the array of
+`UNNEST` pipe operator combined with the [spread operator](../language/expressions#array-expressions) applied to the array of
 string fields to easily produce a stream of string values representing the
 assignees.  Then we simply aggregate the assignee stream:
 ```sql

@@ -4,7 +4,7 @@ heading: Aggregate Functions
 ---
 
 Aggregate functions appear in either [summarization](../operators/summarize)
-or [expression](../expressions.md#aggregate-function-calls) context and produce an aggregate
+or [expression](../expressions#aggregate-function-calls) context and produce an aggregate
 value for a sequence of input values.
 
 - [and](and) - logical AND of input values

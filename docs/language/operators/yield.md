@@ -15,7 +15,7 @@ in left-to-right order.  Each `<expr>` may be any valid
 [expression](../expressions).
 
 The `yield` keyword is optional since it is an
-[implied operator](../pipeline-model.md#implied-operators).
+[implied operator](../pipeline-model#implied-operators).
 
 ### Examples
 

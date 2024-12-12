@@ -12,7 +12,7 @@ map(v: array|set, f: function) -> array|set
 
 The _map_ function applies function `f` to every element in array or set `v` and
 returns an array or set of the results. Function `f` must be a function that takes
-only one argument. `f` may be a [user-defined function](../statements.md#func-statements).
+only one argument. `f` may be a [user-defined function](../statements#func-statements).
 
 ### Examples
 

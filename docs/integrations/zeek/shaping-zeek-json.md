@@ -3,7 +3,7 @@ weight: 3
 title: Shaping Zeek JSON
 ---
 
-When [reading Zeek JSON format logs](reading-zeek-log-formats.md#zeek-json),
+When [reading Zeek JSON format logs](reading-zeek-log-formats#zeek-json),
 much of the rich data typing that was originally present inside Zeek is at risk
 of being lost. This detail can be restored using a Zed
 [shaper](../../language/shaping), such as the
@@ -153,7 +153,7 @@ such a field would be maintained and assigned an inferred type.
 
 * `_error_if_cropped` (default: `true`) - If such a field is cropped, the
 original input record will be
-[wrapped inside a Zed `error` value](../../language/shaping.md#error-handling)
+[wrapped inside a Zed `error` value](../../language/shaping#error-handling)
 along with the shaped and cropped variations.
 
 At these default settings, the shaper is well-suited for an iterative workflow
@@ -183,7 +183,7 @@ The bulk of this Zed shaper consists of detailed per-field data type
 definitions for each record in the default set of JSON logs output by Zeek.
 These type definitions reference the types we defined above, such as `port`
 and `conn_id`. The syntax for defining primitive and complex types follows the
-relevant sections of the [Super JSON Format](../../formats/jsup.md#2-the-super-json-format)
+relevant sections of the [Super JSON Format](../../formats/jsup#2-the-super-json-format)
 specification.
 
 ```
@@ -194,7 +194,7 @@ specification.
 ```
 
 :::tip note
-See [the role of `_path`](reading-zeek-log-formats.md#the-role-of-_path)
+See [the role of `_path`](reading-zeek-log-formats#the-role-of-_path)
 for important details if you're using Zeek's built-in [ASCII logger](https://docs.zeek.org/en/current/scripts/base/frameworks/logging/writers/ascii.zeek.html)
 rather than the [JSON Streaming Logs](https://github.com/corelight/json-streaming-logs) package.
 :::

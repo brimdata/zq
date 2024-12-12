@@ -6,7 +6,7 @@ title: Expressions
 Zed expressions follow the typical patterns in programming languages.
 Expressions are typically used within pipeline operators
 to perform computations on input values and are typically evaluated once per each
-input value [`this`](pipeline-model.md#the-special-value-this).
+input value [`this`](pipeline-model#the-special-value-this).
 
 For example, `yield`, `where`, `cut`, `put`, `sort` and so forth all take
 various expressions as part of their operation.
@@ -107,7 +107,7 @@ where `<id>` is an identifier representing the field name referenced.
 If a field name is not representable as an identifier, then [indexing](#indexing)
 may be used with a quoted string to represent any valid field name.
 Such field names can be accessed using
-[`this`](pipeline-model.md#the-special-value-this) and an array-style reference, e.g.,
+[`this`](pipeline-model#the-special-value-this) and an array-style reference, e.g.,
 `this["field with spaces"]`.
 
 If the dot operator is applied to a value that is not a record
@@ -209,7 +209,7 @@ produces
 ```
 
 Note that if the expression has side effects,
-as with [aggregate function calls](expressions.md#aggregate-function-calls), only the selected expression
+as with [aggregate function calls](expressions#aggregate-function-calls), only the selected expression
 will be evaluated.
 
 For example,
@@ -243,7 +243,7 @@ produces
 Zed includes many [built-in functions](functions/_index), some of which take
 a variable number of arguments.
 
-Zed also allows you to create [user-defined functions](statements.md#func-statements).
+Zed also allows you to create [user-defined functions](statements#func-statements).
 
 ## Aggregate Function Calls
 
@@ -351,7 +351,7 @@ where a `<spec>` has one of three forms:
 ```
 The first form is a customary colon-separated field and value similar to JavaScript,
 where `<field>` may be an identifier or quoted string.
-The second form is an [implied field reference](pipeline-model.md#implied-field-references)
+The second form is an [implied field reference](pipeline-model#implied-field-references)
 `<ref>`, which is shorthand for `<ref>:<ref>`.  The third form is the `...`
 spread operator which expects a record value as the result of `<expr>` and
 inserts all of the fields from the resulting record.
@@ -479,7 +479,7 @@ produces
 
 ### Union Values
 
-A union value can be created with a [cast](expressions.md#casts).  For example, a union of types `int64`
+A union value can be created with a [cast](expressions#casts).  For example, a union of types `int64`
 and `string` is expressed as `(int64,string)` and any value that has a type
 that appears in the union type may be cast to that union type.
 Since 1 is an `int64` and "foo" is a `string`, they both can be
@@ -522,7 +522,7 @@ Casts for primitive types have a function-style syntax of the form
 ```
 <type> ( <expr> )
 ```
-where `<type>` is a [Zed type](data-types.md#first-class-types) and `<expr>` is any Zed expression.
+where `<type>` is a [Zed type](data-types#first-class-types) and `<expr>` is any Zed expression.
 In the case of primitive types, the type-value angle brackets
 may be omitted, e.g., `<string>(1)` is equivalent to `string(1)`.
 If the result of `<expr>` cannot be converted
@@ -553,7 +553,7 @@ produces
 1970-10-07T00:00:00Z
 ```
 
-Casts of complex or [named types](data-types.md#named-types) may be performed using type values
+Casts of complex or [named types](data-types#named-types) may be performed using type values
 either in functional form or with `cast`:
 ```
 <type-value> ( <expr> )

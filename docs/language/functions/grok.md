@@ -164,7 +164,7 @@ echo '"2020-09-16T04:20:42.45+01:00 DEBUG This is a sample debug log message"' |
 }
 ```
 
-As with any [string literal](../expressions.md#literals), the
+As with any [string literal](../expressions#literals), the
 leading backslash in escape sequences in string arguments must be doubled,
 such as changing the `\d` to `\\d` if we repurpose the
 [included pattern](#included-patterns) for `NUMTZ` as a `definitions` argument:

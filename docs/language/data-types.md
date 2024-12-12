@@ -8,16 +8,16 @@ as defined in the [super data model](../formats/zed).
 
 The syntax of individual literal values generally follows
 the [Super JSON syntax](../formats/jsup) with the exception that
-[type decorators](../formats/jsup.md#22-type-decorators)
+[type decorators](../formats/jsup#22-type-decorators)
 are not included in the language.  Instead, a
-[type cast](expressions.md#casts) may be used in any expression for explicit
+[type cast](expressions#casts) may be used in any expression for explicit
 type conversion.
 
 In particular, the syntax of primitive types follows the
-[primitive-value definitions](../formats/jsup.md#23-primitive-values) in Super JSON
-as well as the various [complex value definitions](../formats/jsup.md#24-complex-values)
+[primitive-value definitions](../formats/jsup#23-primitive-values) in Super JSON
+as well as the various [complex value definitions](../formats/jsup#24-complex-values)
 like records, arrays, sets, and so forth.  However, complex values are not limited to
-constant values like Super JSON and can be composed from [literal expressions](expressions.md#literals).
+constant values like Super JSON and can be composed from [literal expressions](expressions#literals).
 
 ## First-class Types
 
@@ -25,7 +25,7 @@ As in the super data model, the SuperPipe language has first-class types:
 any type may be used as a value.
 
 The primitive types are listed in the
-[data model specification](../formats/zed.md#1-primitive-types)
+[data model specification](../formats/zed#1-primitive-types)
 and have the same syntax in SuperPipe.  Complex types also follow
 the Super JSON syntax.  Note that the type of a type value is simply `type`.
 
@@ -86,7 +86,7 @@ As in any modern programming language, types can be named and the type names
 persist into the data model and thus into the serialized input and output.
 
 Named types may be defined in four ways:
-* with a [`type` statement](statements.md#type-statements),
+* with a [`type` statement](statements#type-statements),
 * with the [`cast` function](functions/cast),
 * with a definition inside of another type, or
 * by the input data itself.
@@ -161,7 +161,7 @@ the scope of the Zed data model and language.  That said, Zed provides flexible
 building blocks so systems can define their own schema versioning and schema
 management policies on top of these Zed primitives.
 
-The [super-structured data model](../formats/_index.md#2-a-super-structured-pattern)
+The [super-structured data model](../formats/_index#2-a-super-structured-pattern)
 is a superset of relational tables and
 SuperPipe's type system can easily make this connection.
 As an example, consider this type definition for "employee":
@@ -202,7 +202,7 @@ to work.
 ## First-class Errors
 
 As with types, errors in SuperPipe are first-class: any value can be transformed
-into an error by wrapping it in an [`error` type](../formats/zed.md#27-error).
+into an error by wrapping it in an [`error` type](../formats/zed#27-error).
 
 In general, expressions and functions that result in errors simply return
 a value of type `error` as a result.  This encourages a powerful flow-style

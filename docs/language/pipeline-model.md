@@ -115,7 +115,7 @@ forwarded from the switch to the downstream operator in an undefined order.
 ## The Special Value `this`
 
 In SuperPipe, there are no looping constructs and variables are limited to binding
-values between [lateral scopes](lateral-subqueries.md#lateral-scope).
+values between [lateral scopes](lateral-subqueries#lateral-scope).
 Instead, the input sequence
 to an operator is produced continuously and any output values are derived
 from input values.
@@ -153,7 +153,7 @@ produces
 A common SuperPipe use case is to process sequences of record-oriented data
 (e.g., arising from formats like JSON or Avro) in the form of events
 or structured logs.  In this case, the input values to the operators
-are [records](../formats/zed.md#21-record) and the fields of a record are referenced with the dot operator.
+are [records](../formats/zed#21-record) and the fields of a record are referenced with the dot operator.
 
 For example, if the input above were a sequence of records instead of strings
 and perhaps contained a second field, e.g.,

@@ -36,7 +36,7 @@ doing interesting things on that input, and emitting results, of course, as JSON
 
 `jq` is awesome and powerful, but its syntax and computational model can
 sometimes be daunting and difficult.  We tried to make `zq` really easy and intuitive,
-and it is usually faster, sometimes [much faster](../commands/super.md#performance),
+and it is usually faster, sometimes [much faster](../commands/super#performance),
 than `jq`.
 
 To this end, if you want full JSON compatibility without having to delve into the
@@ -64,7 +64,7 @@ and you get
 ```
 With `zq`, the mysterious `jq` value `.` is instead called
 the almost-as-mysterious value
-[`this`](../language/pipeline-model.md#the-special-value-this) and you say:
+[`this`](../language/pipeline-model#the-special-value-this) and you say:
 ```mdtest-command
 echo '1 2 3' | super -z -c 'this+1' -
 ```
@@ -101,7 +101,7 @@ expression `2` is evaluated for each input value, and the value `2`
 is produced each time, so three copies of `2` are emitted.
 
 In `zq` however, `2` by itself is interpreted as a search and is
-[shorthand for](../language/pipeline-model.md#implied-operators) `search 2` so the command
+[shorthand for](../language/pipeline-model#implied-operators) `search 2` so the command
 ```mdtest-command
 echo '1 2 3' | super -z -c '? 2' -
 ```
@@ -165,7 +165,7 @@ go from ZSON to an efficient binary row format ([Super Binary](../formats/bsup))
 and columnar ([Super Columnar](../formats/csup)) --- and vice versa ---
 with complete fidelity and no loss of information.  In this tour,
 we'll stick to ZSON (though for large data sets,
-[Super Binary is much faster](../commands/super.md#performance)).
+[Super Binary is much faster](../commands/super#performance)).
 
 The first thing you'll notice about ZSON is that you don't need
 quotations around field names.  We can see this by taking some JSON
@@ -248,7 +248,7 @@ Here, `v1` is a 64-bit IEEE floating-point value just like JSON.
 
 Unlike JSON, `v2` is a 64-bit integer.  And there are other integer
 types as with `v3`,
-which utilizes a [ZSON type decorator](../formats/jsup.md#22-type-decorators),
+which utilizes a [ZSON type decorator](../formats/jsup#22-type-decorators),
 in this case,
 to clarify its specific type of integer as unsigned 8 bits.
 a
@@ -276,7 +276,7 @@ As is often the case with semi-structured systems, you deal with
 nested values all the time: in JSON, data is nested with objects and arrays,
 while in Zed, data is nested with "records" and arrays (as well as other complex types).
 
-[Record expressions](../language/expressions.md#record-expressions)
+[Record expressions](../language/expressions#record-expressions)
 are rather flexible with `zq` and look a bit like JavaScript
 or `jq` syntax, e.g.,
 ```mdtest-command
@@ -378,7 +378,7 @@ produces
 ## Union Types
 
 One of the tricks `zq` uses to represent JSON data in its structured type system
-is [union types](../language/expressions.md#union-values).
+is [union types](../language/expressions#union-values).
 Most of the time, you don't need to worry about unions
 but they show up from time to time.  Even when
 they show up, Zed just tries to "do the right thing" so you usually
@@ -410,7 +410,7 @@ preparation, union types are really quite powerful.  They allow records
 with fields of different types or mixed-type arrays to be easily expressed
 while also having a very precise type definition.  This is the essence
 of Zed's new
-[super-structured data model](../formats/_index.md#2-a-super-structured-pattern).
+[super-structured data model](../formats/_index#2-a-super-structured-pattern).
 
 ## First-class Types
 
@@ -955,7 +955,7 @@ DATE                 NUMBER TITLE
 2019-11-12T16:49:07Z PR #6  a few clarifications to the zson spec
 ...
 ```
-Note that we used a [formatted string literal](../language/expressions.md#formatted-string-literals)
+Note that we used a [formatted string literal](../language/expressions#formatted-string-literals)
 to convert the field `number` into a string and format it with surrounding text.
 
 Instead of old PRs, we can get the latest list of PRs using the
@@ -1040,7 +1040,7 @@ which produces an output like this:
 {reviewers:|["henridf","mccanne","mattnibs"]|}
 ...
 ```
-Note that the syntax `=> ( ... )` defines a [lateral scope](../language/lateral-subqueries.md#lateral-scope) where any Zed subquery can
+Note that the syntax `=> ( ... )` defines a [lateral scope](../language/lateral-subqueries#lateral-scope) where any Zed subquery can
 run in isolation over the input values created from the sequence of values
 traversed by the outer `over`.
 
@@ -1049,7 +1049,7 @@ To do this, we need to reference the `user.login` from the top-level scope withi
 lateral scope.  This can be done by
 bringing that value into the scope using a `with` clause appended to the
 `over` expression and yielding a
-[record literal](../language/expressions.md#record-expressions) with the desired value:
+[record literal](../language/expressions#record-expressions) with the desired value:
 ```mdtest-command dir=docs/tutorials
 super -z -c '
   over requested_reviewers with user=user.login => (

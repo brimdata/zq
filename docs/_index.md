@@ -5,7 +5,7 @@ heading: SuperDB
 ---
 
 SuperDB offers a new approach that makes it easier to manipulate and manage
-your data.  With its [super-structured data model](formats/_index.md#2-a-super-structured-pattern),
+your data.  With its [super-structured data model](formats/_index#2-a-super-structured-pattern),
 messy JSON data can easily be given the fully-typed precision of relational tables
 without giving up JSON's uncanny ability to represent eclectic data.
 
@@ -52,7 +52,7 @@ the input data into the desired set of organizing super-structured data types ca
 which are traditionally called _schemas_ in relational systems but are
 much more flexible in SuperDB.
 * A [SuperDB data lake](commands/super-db) is a collection of super-structured data stored
-across one or more [data pools](commands/super-db.md#data-pools) with ACID commit semantics and
+across one or more [data pools](commands/super-db#data-pools) with ACID commit semantics and
 accessed via a [Git](https://git-scm.com/)-like API.
 
 ## Digging Deeper
@@ -92,7 +92,7 @@ or other third-party services to interpret the lake data.
 Once copied, a new service can be instantiated by pointing a `super db serve`
 at the copy of the lake.
 
-Functionality like [data compaction](commands/super-db.md#manage) and retention are all API-driven.
+Functionality like [data compaction](commands/super-db#manage) and retention are all API-driven.
 
 Bite-sized components are unified by the super-structured data, usually in the SUPZ format:
 * All lake meta-data is available via meta-queries.

@@ -22,14 +22,14 @@ from (
 
 The `from` operator identifies one or more data sources and transmits
 their data to its output.  A data source can be
-* the name of a data pool in a SuperDB lake, with optional [commitish](../../commands/super-db.md#commitish);
-* the names of multiple data pools, expressed as a [regular expression](../search-expressions.md#regular-expressions) or [glob](../search-expressions.md#globs) pattern;
+* the name of a data pool in a SuperDB lake, with optional [commitish](../../commands/super-db#commitish);
+* the names of multiple data pools, expressed as a [regular expression](../search-expressions#regular-expressions) or [glob](../search-expressions#globs) pattern;
 * a path to a file;
 * an HTTP, HTTPS, or S3 URI; or
 * the [`pass` operator](pass), to treat the upstream pipeline branch as a source.
 
 :::tip Note
-File paths and URIs may be followed by an optional [format](../../commands/super.md#input-formats) specifier.
+File paths and URIs may be followed by an optional [format](../../commands/super#input-formats) specifier.
 :::
 
 Sourcing data from pools is only possible when querying a lake, such as

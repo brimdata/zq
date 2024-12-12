@@ -8,7 +8,7 @@ and boolean expressions.  In this way, a search is a shorthand for
 a "lean forward" style activity where one is interactively exploring
 data with ad hoc searches.  All shorthand searches have a corresponding
 long form built from the [expression syntax](expressions) in combination with the
-[search term syntax](search-expressions.md#search-terms) described below.
+[search term syntax](search-expressions#search-terms) described below.
 
 ## Search Patterns
 
@@ -277,7 +277,7 @@ the "in" operator, e.g.,
 #### Predicate Search Term
 
 Any Boolean-valued [function](functions/_index) like `is`, `has`,
-`grep`, etc. and any [comparison expression](expressions.md#comparisons)
+`grep`, etc. and any [comparison expression](expressions#comparisons)
 may be used as a search term and mixed into a search expression.
 
 For example,

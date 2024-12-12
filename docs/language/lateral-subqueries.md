@@ -89,7 +89,7 @@ In the field reference form, a single identifier `<field>` refers to a field
 in the parent scope and makes that field's value available in the lateral scope
 via the same name.
 
-Note that any such variable definitions override [implied field references](pipeline-model.md#implied-field-references) of
+Note that any such variable definitions override [implied field references](pipeline-model#implied-field-references) of
 `this`. If a both a field named `x` and a variable named `x` need be
 referenced in the lateral scope, the field reference should be qualified as
 `this.x` while the variable is referenced simply as `x`.

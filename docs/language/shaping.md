@@ -12,7 +12,7 @@ a well-defined set of schemas, which combines the data into a unified
 store like a data warehouse.
 
 In Zed, this cleansing process is called "shaping" the data, and Zed leverages
-its rich, [super-structured](../formats/_index.md#2-a-super-structured-pattern)
+its rich, [super-structured](../formats/_index#2-a-super-structured-pattern)
 type system to perform core aspects of data transformation.
 In a data model with nesting and multiple scalar types (such as Zed or JSON),
 shaping includes converting the type of leaf fields, adding or removing fields
@@ -74,7 +74,7 @@ field path in the specified type, e.g.,
 super -Z -I connection.zed -c 'cast(this, <connection>)' sample.json
 ```
 casts the address fields to type `ip`, the port fields to type `port`
-(which is a [named type](data-types.md#named-types) for type `uint16`) and the address port pairs to
+(which is a [named type](data-types#named-types) for type `uint16`) and the address port pairs to
 type `socket` without modifying the `uid` field or changing the
 order of the `server` and `client` fields:
 ```mdtest-output
@@ -162,7 +162,7 @@ about the `uid` field as it is not in the `connection` type:
 ```
 
 As an alternative to the `order` function,
-[record expressions](expressions.md#record-expressions) can be used to reorder
+[record expressions](expressions#record-expressions) can be used to reorder
 fields without specifying types. For example:
 
 ```mdtest-command
@@ -236,7 +236,7 @@ drops the `uid` field after shaping:
 
 ## Error Handling
 
-A failure during shaping produces an [error value](data-types.md#first-class-errors)
+A failure during shaping produces an [error value](data-types#first-class-errors)
 in the problematic leaf field.  For example, consider this alternate input data
 file `malformed.json`.
 
@@ -288,7 +288,7 @@ Since these error values are nested inside an otherwise healthy record, adding
 [`has_error(this)`](functions/has_error) downstream in our Zed pipeline
 could help find or exclude such records.  If the failure to shape _any_ single
 field is considered severe enough to render the entire input record unhealthy,
-[a conditional expression](expressions.md#conditional)
+[a conditional expression](expressions#conditional)
 could be applied to wrap the input record as an error while including detail
 to debug the problem, e.g.,
 

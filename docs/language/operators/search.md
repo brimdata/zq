@@ -13,7 +13,7 @@ to each input value and dropping each value for which the expression evaluates
 to `false` or to an error.
 
 The `search` keyword is optional since it is an
-[implied operator](../pipeline-model.md#implied-operators).
+[implied operator](../pipeline-model#implied-operators).
 
 When Zed queries are run interactively, it is convenient to be able to omit
 the "search" keyword, but when search filters appear in Zed source files,
@@ -48,7 +48,7 @@ echo '1 2 3' | super -z -c '? 2 or 3' -
 2
 3
 ```
-_A search with [Boolean logic](../search-expressions.md#boolean-logic)_
+_A search with [Boolean logic](../search-expressions#boolean-logic)_
 ```mdtest-command
 echo '1 2 3' | super -z -c 'search this >= 2 AND this <= 2' -
 ```

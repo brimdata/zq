@@ -11,7 +11,7 @@ typeunder(val: any) -> type
 ### Description
 
 The _typeunder_ function returns the type of its argument `val`.  If this type is a
-[named type](../../formats/zed.md#3-named-type), then the referenced type is
+[named type](../../formats/zed#3-named-type), then the referenced type is
 returned instead of the named type.
 
 ### Examples

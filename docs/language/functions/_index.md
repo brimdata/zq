@@ -5,12 +5,12 @@ title: Functions
 Functions appear in [expression](../expressions) context and
 take Zed values as arguments and produce a value as a result. In addition to
 the built-in functions listed below, Zed also allows for the creation of
-[user-defined functions](../statements.md#func-statements).
+[user-defined functions](../statements#func-statements).
 
 A function-style syntax is also available for converting values to each of
-Zed's [primitive types](../../formats/zed.md#1-primitive-types), e.g.,
+Zed's [primitive types](../../formats/zed#1-primitive-types), e.g.,
 `uint8()`, `time()`, etc. For details and examples, read about the
-[`cast` function](cast) and how it is [used in expressions](../expressions.md#casts).
+[`cast` function](cast) and how it is [used in expressions](../expressions#casts).
 
 * [abs](abs) - absolute value of a number
 * [base64](base64) - encode/decode base64 strings

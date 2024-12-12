@@ -5,7 +5,7 @@ heading: ZNG Compression Types
 ---
 
 This document specifies values for the `<format>` byte of a
-[Super Binary compressed value message block](bsup.md#2-the-super-binary-format)
+[Super Binary compressed value message block](bsup#2-the-super-binary-format)
 and the corresponding algorithms for the `<compressed payload>` byte sequence.
 
 As new compression algorithms are specified, they will be documented

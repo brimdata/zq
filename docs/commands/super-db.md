@@ -261,11 +261,11 @@ which is the sort key for all data stored in the lake.  Different data pools
 can have different pool keys but all of the data in a pool must have the same
 pool key.
 
-As pool data is often comprised of [records](../formats/zed.md#21-record) (analogous to JSON objects),
+As pool data is often comprised of [records](../formats/zed#21-record) (analogous to JSON objects),
 the pool key is typically a field of the stored records.
 When pool data is not structured as records/objects (e.g., scalar or arrays or other
 non-record types), then the pool key would typically be configured
-as the [special value `this`](../language/pipeline-model.md#the-special-value-this).
+as the [special value `this`](../language/pipeline-model#the-special-value-this).
 
 Data can be efficiently scanned if a query has a filter operating on the pool
 key.  For example, on a pool with pool key `ts`, the query `ts == 100`
@@ -347,9 +347,9 @@ for that sub-command.
 sub-command and so forth.
 
 By default, commands that display lake metadata (e.g., [`log`](#log) or
-[`ls`](#ls)) use the human-readable [lake metadata output](super.md#superdb-data-lake-metadata-output)
+[`ls`](#ls)) use the human-readable [lake metadata output](super#superdb-data-lake-metadata-output)
 format.  However, the `-f` option can be used to specify any supported
-[output format](super.md#output-formats).
+[output format](super#output-formats).
 
 ### Auth
 ```
@@ -403,7 +403,7 @@ The `-orderby` option indicates the [pool key](#pool-key) that is used to sort
 the data in lake, which may be in ascending or descending order.
 
 If a pool key is not specified, then it defaults to
-the [special value `this`](../language/pipeline-model.md#the-special-value-this).
+the [special value `this`](../language/pipeline-model#the-special-value-this).
 
 A newly created pool is initialized with a branch called `main`.
 
@@ -469,8 +469,8 @@ schema-agnostic fashion.  Data of any _shape_ can be stored in any pool
 and arbitrary data _shapes_ can coexist side by side.
 
 As with [`super`](super),
-the [input arguments](super.md#usage) can be in
-any [supported format](super.md#input-formats) and
+the [input arguments](super#usage) can be in
+any [supported format](super#input-formats) and
 the input format is auto-detected if `-i` is not provided.  Likewise,
 the inputs may be URLs, in which case, the `load` command streams
 the data from a Web server or [S3](../integrations/amazon-s3) and into the lake.
@@ -612,7 +612,7 @@ If the `-monitor` option is specified and the lake is [located](#locating-the-la
 via network connection, `super db manage` will run continuously and perform updates
 as needed.  By default a check is performed once per minute to determine if
 updates are necessary.  The `-interval` option may be used to specify an
-alternate check frequency in [duration format](../formats/jsup.md#23-primitive-values).
+alternate check frequency in [duration format](../formats/jsup#23-primitive-values).
 
 If `-monitor` is not specified, a single maintenance pass is performed on the
 lake.

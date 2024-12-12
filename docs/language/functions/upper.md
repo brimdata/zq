@@ -23,7 +23,7 @@ echo '"Super JSON"' | super -z -c 'yield upper(this)' -
 "SUPER JSON"
 ```
 
-[Slices](../expressions.md#slices) can be used to uppercase a subset of a string as well.
+[Slices](../expressions#slices) can be used to uppercase a subset of a string as well.
 
 ```mdtest-command
 echo '"super JSON"' |

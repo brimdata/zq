@@ -11,7 +11,7 @@ weight: 5
 > providing a unified approach to row, columnar, and human-readable formats. Together these
 > represent a superset of both the dataframe/table model of relational systems and the
 > semi-structured model that is used ubiquitously in development as JSON and by NoSQL
-> data stores.  The Super JSON spec has [a few examples](jsup.md#3-examples).
+> data stores.  The Super JSON spec has [a few examples](jsup#3-examples).
 
 ## 1. Background
 
@@ -123,7 +123,7 @@ then such a collection of records looks precisely like a relational table.
 Here, the record type
 of such a collection corresponds to a well-defined schema consisting
 of field names (i.e, column names) where each field has a specific type.
-[Named types](../language/data-types.md#named-types) are also available, so by simply naming a particular record type
+[Named types](../language/data-types#named-types) are also available, so by simply naming a particular record type
 (i.e., a schema), a relational table can be projected from a pool of data
 with a simple query for that named type.
 
@@ -224,7 +224,7 @@ object is just as performant as a traditional schema-based columnar format like 
 
 ### 2.4 First-class Types
 
-With [first-class types](../language/data-types.md#first-class-types), any type can also be a value, which means that in
+With [first-class types](../language/data-types#first-class-types), any type can also be a value, which means that in
 a properly designed query and analytics system based on the super data model, a type can appear
 anywhere that a value can appear.  In particular, types can be aggregation keys.
 
@@ -256,7 +256,7 @@ In SQL based systems, errors typically
 result in cryptic messages or null values offering little insight as to the
 actual cause of the error.
 
-By comparison, SuperDB includes [first-class errors](../language/data-types.md#first-class-errors).  When combined with the super
+By comparison, SuperDB includes [first-class errors](../language/data-types#first-class-errors).  When combined with the super
 data model, error values may appear anywhere in the output and operators
 can propagate or easily wrap errors so complicated analytics pipelines
 can be debugged by observing the location of errors in the output results.

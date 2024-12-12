@@ -262,10 +262,10 @@ On success, HTTP 204 is returned with no response payload.
 
 Create a commit that reflects the deletion of some data in the branch. The data
 to delete can be specified via a list of object IDs or
-as a filter expression (see [limitations](../commands/super-db.md#delete)).
+as a filter expression (see [limitations](../commands/super-db#delete)).
 
 This simply removes the data from the branch without actually removing the
-underlying data objects thereby allowing [time travel](../commands/super-db.md#time-travel) to work in the face
+underlying data objects thereby allowing [time travel](../commands/super-db#time-travel) to work in the face
 of deletes. Permanent removal of underlying data objects is handled by a
 separate [vacuum](#vacuum-pool) operation.
 
@@ -280,7 +280,7 @@ POST /pool/{pool}/branch/{branch}/delete
 | pool | string | path | **Required.** ID of the pool. |
 | branch | string | path | **Required.** Name of branch. |
 | object_ids | [string] | body | Object IDs to be deleted. |
-| where | string | body | Filter expression (see [limitations](../commands/super-db.md#delete)). |
+| where | string | body | Filter expression (see [limitations](../commands/super-db#delete)). |
 | Content-Type | string | header | [MIME type](#mime-types) of the request payload. |
 | Accept | string | header | Preferred [MIME type](#mime-types) of the response. |
 
@@ -525,7 +525,7 @@ service will expect ZSON as the payload format.
 An exception to this is when [loading data](#load-data) and Content-Type is not
 specified. In this case the service will attempt to introspect the data and may
 determine the type automatically. The
-[input formats](../commands/super.md#input-formats) table describes which
+[input formats](../commands/super#input-formats) table describes which
 formats may be successfully auto-detected.
 
 ### Response Payloads
@@ -534,7 +534,7 @@ To receive successful (2xx) responses in a preferred format, include the MIME
 type of the format in the request's Accept HTTP header. If the Accept header is
 not specified, the service will return ZSON as the default response format. A
 different default response format can be specified by invoking the
-`-defaultfmt` option when running [`super db serve`](../commands/super-db.md#serve).
+`-defaultfmt` option when running [`super db serve`](../commands/super-db#serve).
 
 For non-2xx responses, the content type of the response will be
 `application/json` or `text/plain`.

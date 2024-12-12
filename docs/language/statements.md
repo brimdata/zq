@@ -123,9 +123,9 @@ produces
 ### Arguments
 
 The arguments to a user-defined operator must be either constant values (e.g.,
-a [literal](expressions.md#literals) or reference to a
+a [literal](expressions#literals) or reference to a
 [defined constant](#const-statements)), or a reference to a path in the data
-stream (e.g., a [field reference](expressions.md#field-dereference)). Any
+stream (e.g., a [field reference](expressions#field-dereference)). Any
 other expression will result in a compile-time error.
 
 Because both constant values and path references evaluate in
@@ -226,7 +226,7 @@ Named types may be created with the syntax
 ```
 type <id> = <type>
 ```
-where `<id>` is an identifier and `<type>` is a [type](data-types.md#first-class-types).
+where `<id>` is an identifier and `<type>` is a [type](data-types#first-class-types).
 This creates a new type with the given name in the type system, e.g.,
 ```mdtest-command
 echo 80 | super -z -c 'type port=uint16 cast(this, <port>)' -

@@ -256,7 +256,7 @@ as described recursively herein,
 * a type value is encoded [as above](#21-type-encoding),
 * each primitive that is not a type value
 is encoded as a string conforming to its Super JSON representation, as described in the
-[corresponding section of the Super JSON specification](jsup.md#23-primitive-values).
+[corresponding section of the Super JSON specification](jsup#23-primitive-values).
 
 For example, a record with three fields --- a string, an array of integers,
 and an array of union of string, and float64 --- might have a value that looks like this:
