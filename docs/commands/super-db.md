@@ -657,7 +657,7 @@ according to configured policies and logic.
 ```
 super db query [options] <query>
 ```
-The `query` command runs a [SuperSQL](../language/_index.md) query with data from a lake as input.
+The `query` command runs a [SuperSQL](../language/_index) query with data from a lake as input.
 A query typically begins with a [`from` operator](../language/operators/from.md)
 indicating the pool and branch to use as input.
 

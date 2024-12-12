@@ -12,8 +12,8 @@ shape(val: any, t: type) -> any
 
 The _shape_ function applies the
 [`cast`](cast.md),
-[`fill`](fill.md), and
-[`order`](order.md) functions to its input to provide an
+[`fill`](fill), and
+[`order`](order) functions to its input to provide an
 overall [data shaping](../shaping.md) operation.
 
 Note that `shape` does not perform a [`crop` function](./crop.md) so

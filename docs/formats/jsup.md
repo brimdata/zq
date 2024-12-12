@@ -7,7 +7,7 @@ heading: Super JSON Specification
 ## 1. Introduction
 
 Super JSON is the human-readable, text-based serialization format of
-the [super data model](zed.md).
+the [super data model](zed).
 
 Super JSON builds upon the elegant simplicity of JSON with "type decorators".
 Where the type of a value is not implied by its syntax, a parenthesized

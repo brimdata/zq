@@ -6,7 +6,7 @@ heading: ZJSON Specification
 
 ## 1. Introduction
 
-The [super data model](zed.md)
+The [super data model](zed)
 is based on richly typed records with a deterministic field order,
 as is implemented by the [Super JSON](jsup.md), [Super Binary](bsup.md), and [Super Columnar](csup.md) formats.
 Given the ubiquity of JSON, it is desirable to also be able to serialize

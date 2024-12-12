@@ -3,7 +3,7 @@ weight: 1
 title: super
 ---
 
-> **TL;DR** `super` is a command-line tool that uses [SuperSQL](../language/_index.md)
+> **TL;DR** `super` is a command-line tool that uses [SuperSQL](../language/_index)
 > to query a variety of data formats in files, over HTTP, or in [S3](../integrations/amazon-s3.md)
 > storage. Best performance is achieved when operating on data in binary formats such as
 > [Super Binary](../formats/bsup.md), [Super Columnar](../formats/csup.md),
@@ -18,7 +18,7 @@ super [ options ] [ -c query ] input [ input ... ]
 
 `super` is a command-line tool for processing data in diverse input
 formats, providing data wrangling, search, analytics, and extensive transformations
-using the [SuperSQL](../language/_index.md) dialect of SQL. Any SQL query expression
+using the [SuperSQL](../language/_index) dialect of SQL. Any SQL query expression
 may be extended with [pipe syntax](https://research.google/pubs/sql-has-problems-we-can-fix-them-pipe-syntax-in-sql/)
 to filter, transform, and/or analyze input data.
 Super's SQL pipes dialect is extensive, so much so that it can resemble
@@ -28,7 +28,7 @@ The `super` command works with data from ephemeral sources like files and URLs.
 If you want to persist your data into a data lake for persistent storage,
 check out the [`super db`](super-db.md) set of commands.
 
-By invoking the `-c` option, a query expressed in the [SuperSQL language](../language/_index.md)
+By invoking the `-c` option, a query expressed in the [SuperSQL language](../language/_index)
 may be specified and applied to the input stream.
 
 The [super data model](../formats/zed.md) is based on [super-structured data](../formats/_index.md#2-a-super-structured-pattern), meaning that all data
@@ -571,12 +571,12 @@ error("divide by zero")
 
 ## Examples
 
-As you may have noticed, many examples of the [SuperSQL language](../language/_index.md)
+As you may have noticed, many examples of the [SuperSQL language](../language/_index)
 are illustrated using this pattern
 ```
 echo <values> | super -c <query> -
 ```
-which is used throughout the [language documentation](../language/_index.md)
+which is used throughout the [language documentation](../language/_index)
 and [operator reference](../language/operators/_index.md).
 
 The language documentation and [tutorials directory](../tutorials/_index.md)
@@ -1092,7 +1092,7 @@ WHERE v.payload.pull_request.body LIKE '%in case you have any feedback 😊%'
 Benchmark 1: clickhouse-client --queries-file /mnt/tmpdir/tmp.oymd2K7311
 2
   Time (abs ≡):         0.904 s               [User: 0.038 s, System: 0.030 s]
- 
+
 About to execute
 ================
 clickhouse --queries-file /mnt/tmpdir/tmp.K3EjBntwdo
@@ -1107,7 +1107,7 @@ WHERE payload.pull_request.body LIKE '%in case you have any feedback 😊%'
 Benchmark 1: clickhouse --queries-file /mnt/tmpdir/tmp.K3EjBntwdo
 2
   Time (abs ≡):        70.647 s               [User: 70.320 s, System: 3.447 s]
- 
+
 About to execute
 ================
 datafusion-cli --file /mnt/tmpdir/tmp.zSkYYYeSG6
@@ -1126,11 +1126,11 @@ DataFusion CLI v43.0.0
 +---------+
 | 2       |
 +---------+
-1 row(s) fetched. 
+1 row(s) fetched.
 Elapsed 10.764 seconds.
 
   Time (abs ≡):        10.990 s               [User: 66.344 s, System: 10.974 s]
- 
+
 About to execute
 ================
 duckdb /mnt/gha.db < /mnt/tmpdir/tmp.31z1ThfK6B
@@ -1150,7 +1150,7 @@ Benchmark 1: duckdb /mnt/gha.db < /mnt/tmpdir/tmp.31z1ThfK6B
 │            2 │
 └──────────────┘
   Time (abs ≡):        12.985 s               [User: 78.328 s, System: 9.270 s]
- 
+
 About to execute
 ================
 duckdb < /mnt/tmpdir/tmp.x2HfLY0RBU
@@ -1170,7 +1170,7 @@ Benchmark 1: duckdb < /mnt/tmpdir/tmp.x2HfLY0RBU
 │            2 │
 └──────────────┘
   Time (abs ≡):        13.356 s               [User: 89.551 s, System: 6.785 s]
- 
+
 About to execute
 ================
 super -z -I /mnt/tmpdir/tmp.KmM8c3l1gb
@@ -1208,7 +1208,7 @@ WHERE
 Benchmark 1: clickhouse-client --queries-file /mnt/tmpdir/tmp.tgIZkIc6XA
 3
   Time (abs ≡):        13.244 s               [User: 0.058 s, System: 0.022 s]
- 
+
 About to execute
 ================
 clickhouse --queries-file /mnt/tmpdir/tmp.0ENj1f6lI8
@@ -1227,7 +1227,7 @@ WHERE
 Benchmark 1: clickhouse --queries-file /mnt/tmpdir/tmp.0ENj1f6lI8
 3
   Time (abs ≡):        870.218 s               [User: 950.089 s, System: 18.760 s]
- 
+
 About to execute
 ================
 datafusion-cli --file /mnt/tmpdir/tmp.veTUjcdQto
@@ -1250,11 +1250,11 @@ DataFusion CLI v43.0.0
 +---------+
 | 3       |
 +---------+
-1 row(s) fetched. 
+1 row(s) fetched.
 Elapsed 21.422 seconds.
 
   Time (abs ≡):        21.661 s               [User: 129.457 s, System: 19.646 s]
- 
+
 About to execute
 ================
 duckdb /mnt/gha.db < /mnt/tmpdir/tmp.CcmsLBMCmv
@@ -1278,7 +1278,7 @@ Benchmark 1: duckdb /mnt/gha.db < /mnt/tmpdir/tmp.CcmsLBMCmv
 │            3 │
 └──────────────┘
   Time (abs ≡):        20.043 s               [User: 137.850 s, System: 10.587 s]
- 
+
 About to execute
 ================
 duckdb < /mnt/tmpdir/tmp.BI1AC3TnV2
@@ -1302,7 +1302,7 @@ Benchmark 1: duckdb < /mnt/tmpdir/tmp.BI1AC3TnV2
 │            3 │
 └──────────────┘
   Time (abs ≡):        21.352 s               [User: 144.078 s, System: 9.044 s]
- 
+
 About to execute
 ================
 super -z -I /mnt/tmpdir/tmp.v0WfEuBi8J
@@ -1336,7 +1336,7 @@ WHERE v.actor.login='johnbieren'
 Benchmark 1: clickhouse-client --queries-file /mnt/tmpdir/tmp.CFT0wwiAbD
 879
   Time (abs ≡):         0.080 s               [User: 0.025 s, System: 0.018 s]
- 
+
 About to execute
 ================
 clickhouse --queries-file /mnt/tmpdir/tmp.XFTW0X911r
@@ -1351,7 +1351,7 @@ WHERE actor.login='johnbieren'
 Benchmark 1: clickhouse --queries-file /mnt/tmpdir/tmp.XFTW0X911r
 879
   Time (abs ≡):         0.954 s               [User: 0.809 s, System: 0.164 s]
- 
+
 About to execute
 ================
 datafusion-cli --file /mnt/tmpdir/tmp.QLU5fBDx7L
@@ -1370,11 +1370,11 @@ DataFusion CLI v43.0.0
 +---------+
 | 879     |
 +---------+
-1 row(s) fetched. 
+1 row(s) fetched.
 Elapsed 0.340 seconds.
 
   Time (abs ≡):         0.388 s               [User: 1.601 s, System: 0.417 s]
- 
+
 About to execute
 ================
 duckdb /mnt/gha.db < /mnt/tmpdir/tmp.WVteXNRqfp
@@ -1394,7 +1394,7 @@ Benchmark 1: duckdb /mnt/gha.db < /mnt/tmpdir/tmp.WVteXNRqfp
 │          879 │
 └──────────────┘
   Time (abs ≡):         0.177 s               [User: 1.011 s, System: 0.137 s]
- 
+
 About to execute
 ================
 duckdb < /mnt/tmpdir/tmp.b5T64pDmwq
@@ -1414,7 +1414,7 @@ Benchmark 1: duckdb < /mnt/tmpdir/tmp.b5T64pDmwq
 │          879 │
 └──────────────┘
   Time (abs ≡):         0.416 s               [User: 2.235 s, System: 0.187 s]
- 
+
 About to execute
 ================
 super -z -I /mnt/tmpdir/tmp.s5e3Ueg2zU
@@ -1429,7 +1429,7 @@ WHERE actor.login='johnbieren'
 Benchmark 1: super -z -I /mnt/tmpdir/tmp.s5e3Ueg2zU
 {count:879(uint64)}
   Time (abs ≡):         5.830 s               [User: 17.284 s, System: 1.737 s]
- 
+
 About to execute
 ================
 SUPER_VAM=1 super -z -I /mnt/tmpdir/tmp.2f1t2J9pWR
@@ -1472,7 +1472,7 @@ Benchmark 1: clickhouse-client --queries-file /mnt/tmpdir/tmp.hFAMHegng8
 30	IssueCommentEvent
 35	PullRequestEvent
   Time (abs ≡):         0.132 s               [User: 0.034 s, System: 0.018 s]
- 
+
 About to execute
 ================
 clickhouse --queries-file /mnt/tmpdir/tmp.MiXEgFCu5o
@@ -1495,7 +1495,7 @@ Benchmark 1: clickhouse --queries-file /mnt/tmpdir/tmp.MiXEgFCu5o
 3	ForkEvent
 35	PullRequestEvent
   Time (abs ≡):         0.864 s               [User: 0.747 s, System: 0.180 s]
- 
+
 About to execute
 ================
 datafusion-cli --file /mnt/tmpdir/tmp.uI0r2dLw8f
@@ -1522,11 +1522,11 @@ DataFusion CLI v43.0.0
 | 9       | IssuesEvent                   |
 | 29      | WatchEvent                    |
 +---------+-------------------------------+
-8 row(s) fetched. 
+8 row(s) fetched.
 Elapsed 0.315 seconds.
 
   Time (abs ≡):         0.358 s               [User: 1.385 s, System: 0.404 s]
- 
+
 About to execute
 ================
 duckdb /mnt/gha.db < /mnt/tmpdir/tmp.Nqj23A926J
@@ -1554,7 +1554,7 @@ Benchmark 1: duckdb /mnt/gha.db < /mnt/tmpdir/tmp.Nqj23A926J
 │           35 │ PullRequestEvent              │
 └──────────────┴───────────────────────────────┘
   Time (abs ≡):         0.143 s               [User: 0.722 s, System: 0.162 s]
- 
+
 About to execute
 ================
 duckdb < /mnt/tmpdir/tmp.LepFhAA9Y3
@@ -1582,7 +1582,7 @@ Benchmark 1: duckdb < /mnt/tmpdir/tmp.LepFhAA9Y3
 │           29 │ WatchEvent                    │
 └──────────────┴───────────────────────────────┘
   Time (abs ≡):         0.318 s               [User: 1.547 s, System: 0.159 s]
- 
+
 About to execute
 ================
 super -z -I /mnt/tmpdir/tmp.oWK2c4UwIp
@@ -1605,7 +1605,7 @@ Benchmark 1: super -z -I /mnt/tmpdir/tmp.oWK2c4UwIp
 {type:"PullRequestEvent",count:35(uint64)}
 {type:"PushEvent",count:15(uint64)}
   Time (abs ≡):         5.692 s               [User: 15.531 s, System: 1.644 s]
- 
+
 About to execute
 ================
 SUPER_VAM=1 super -z -I /mnt/tmpdir/tmp.S1AYE55Oyi
@@ -1661,7 +1661,7 @@ tmtmtmtm	356
 AMatutat	260
 danwinship	208
   Time (abs ≡):        72.059 s               [User: 142.588 s, System: 6.638 s]
- 
+
 About to execute
 ================
 datafusion-cli --file /mnt/tmpdir/tmp.bWB9scRPum
@@ -1696,11 +1696,11 @@ DataFusion CLI v43.0.0
 | AMatutat        | 260   |
 | danwinship      | 208   |
 +-----------------+-------+
-5 row(s) fetched. 
+5 row(s) fetched.
 Elapsed 24.234 seconds.
 
   Time (abs ≡):        24.575 s               [User: 163.931 s, System: 24.758 s]
- 
+
 About to execute
 ================
 duckdb /mnt/gha.db < /mnt/tmpdir/tmp.3724dO4AgT
@@ -1734,7 +1734,7 @@ Benchmark 1: duckdb /mnt/gha.db < /mnt/tmpdir/tmp.3724dO4AgT
 │ danwinship      │   208 │
 └─────────────────┴───────┘
   Time (abs ≡):        520.980 s               [User: 4062.107 s, System: 15.406 s]
- 
+
 About to execute
 ================
 duckdb < /mnt/tmpdir/tmp.WcA1AOl9UB
@@ -1768,7 +1768,7 @@ Benchmark 1: duckdb < /mnt/tmpdir/tmp.WcA1AOl9UB
 │ danwinship      │   208 │
 └─────────────────┴───────┘
   Time (abs ≡):        503.567 s               [User: 3747.792 s, System: 10.013 s]
- 
+
 About to execute
 ================
 super -z -I /mnt/tmpdir/tmp.iTtaFeoj74

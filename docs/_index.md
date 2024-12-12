@@ -26,7 +26,7 @@ while for a technical user, SuperDB exposes its technical underpinnings
 in a gradual slope, providing as much detail as desired,
 packaged up in the easy-to-understand
 [Super JSON data format](formats/jsup.md) and
-[SuperPipe language](language/_index.md).
+[SuperPipe language](language/_index).
 
 While `super` and its accompanying data formats are production quality, the project's
 [SuperDB data lake](commands/super-db.md) is a bit earlier in development.
@@ -42,9 +42,9 @@ that underlie the super-structured data formats.
 [sequential (Super Binary, BSUP)](formats/bsup.md), and
 [columnar (Super Columnar, CSUP)](formats/csup.md) formats that all adhere to the
 same abstract super data model.
-* The [SuperPipe language](language/_index.md) is the system's pipeline language for performing
+* The [SuperPipe language](language/_index) is the system's pipeline language for performing
 queries, searches, analytics, transformations, or any of the above combined together.
-* A  [SuperPipe query](language/overview.md) is a script that performs
+* A  [SuperPipe query](language/overview) is a script that performs
 search and/or analytics.
 * A [SuperPipe shaper](language/shaping.md) is a script that performs
 data transformation to _shape_
@@ -57,7 +57,7 @@ accessed via a [Git](https://git-scm.com/)-like API.
 
 ## Digging Deeper
 
-The [SuperPipe language documentation](language/_index.md)
+The [SuperPipe language documentation](language/_index)
 is the best way to learn about `super` in depth.
 All of its examples use `super` commands run on the command line.
 Run `super -h` for a list of command options and online help.

@@ -19,7 +19,7 @@ the types that may appear in Zeek logs.
 Zed tools maintain an internal Zed-typed
 representation of any Zeek data that is read or imported. Therefore, knowing
 the equivalent types will prove useful when performing operations in the
-[Zed language](../../language/_index.md) such as
+[Zed language](../../language/_index) such as
 [type casting](../../language/shaping.md#cast) or looking at the data
 when output as Super JSON.
 

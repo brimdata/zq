@@ -5,10 +5,10 @@ heading: super Tutorial
 ---
 
 This tour provides new users of `super` an overview of the tool and
-the [SuperPipe language](../language/_index.md)
+the [SuperPipe language](../language/_index)
 by walking through a number of examples on the command-line.
 This should get you started without having to read through all the gory details
-of the [SuperPipe language](../language/_index.md) or [`super` command-line usage](../commands/super.md).
+of the [SuperPipe language](../language/_index) or [`super` command-line usage](../commands/super.md).
 
 We'll start with some simple one-liners on the command line where we feed
 some data to `super` with `echo` and specify `-` for `super` input to indicate
@@ -1253,6 +1253,6 @@ of tricks to:
 clean data for analysis by `zq` or even export into other systems or for testing.
 
 If you'd like to learn more, feel free to read through the
-[language docs](../language/_index.md) in depth
+[language docs](../language/_index) in depth
 or see how you can organize [data into a lake](../commands/super-db.md)
 using a git-like commit model.

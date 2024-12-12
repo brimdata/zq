@@ -18,7 +18,7 @@ the pipeline.
 
 The output of a fork consists of multiple branches that must be merged.
 If the downstream operator expects a single input, then the output branches are
-merged with an automatically inserted [combine operator](combine.md).
+merged with an automatically inserted [combine operator](combine).
 
 ### Examples
 

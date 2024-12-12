@@ -5,7 +5,7 @@ heading: The Zed Language
 ---
 
 The language documents:
-* provide an [overview](overview.md) of the Zed language,
+* provide an [overview](overview) of the Zed language,
 * describe Zed's [pipeline model](pipeline-model.md),
 * explain Zed's [data types](data-types.md),
 * show the syntax of [statements](statements.md) that define constants, functions, operators, and named types,

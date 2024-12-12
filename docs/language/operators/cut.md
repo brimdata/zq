@@ -79,7 +79,7 @@ _Invoke a function while cutting to set a default value for a field_
 :::tip
 This can be helpful to transform data into a uniform record type, such as if
 the output will be exported in formats such as `csv` or `parquet` (see also:
-[`fuse`](fuse.md)).
+[`fuse`](fuse)).
 :::
 
 ```mdtest-command

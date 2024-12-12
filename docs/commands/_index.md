@@ -12,6 +12,6 @@ organized into further subcommands like the familiar command patterns
 of `docker` or `kubectl`.
 
 All operations with these commands utilize the [super data model](../formats/_index.md)
-and provide querying via [SuperSQL](../language/_index.md).
+and provide querying via [SuperSQL](../language/_index).
 
 Built-in help for `super` and all sub-commands is always accessible with the `-h` flag.

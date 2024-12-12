@@ -43,9 +43,9 @@ accessed.
 
 In the first four forms, a single source is connected to a single output.
 In the fifth form, multiple sources are accessed in parallel and may be
-[joined](join.md), [combined](combine.md), or [merged](merge.md).
+[joined](join.md), [combined](combine.md), or [merged](merge).
 
-A pipeline can be split with the [`fork` operator](fork.md) as in
+A pipeline can be split with the [`fork` operator](fork) as in
 ```
 from PoolOne |> fork (
   => op1 |> op2 | ...

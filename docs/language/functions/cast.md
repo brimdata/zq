@@ -43,8 +43,8 @@ and the input value is returned when casting to complex types.
 
 :::tip
 Many users seeking to `cast` record values prefer to use the
-[`shape` function](./shape.md) which applies the `cast`, [`fill`](./fill.md),
-and [`order`](./order.md) functions simultaneously.
+[`shape` function](./shape.md) which applies the `cast`, [`fill`](./fill),
+and [`order`](./order) functions simultaneously.
 :::
 
 ### Examples

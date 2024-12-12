@@ -12,7 +12,7 @@ has(val: any [, ... val: any]) -> bool
 
 The _has_ function returns false if any of its arguments are `error("missing")`
 and otherwise returns true.
-`has(e)` is a shortcut for [`!missing(e)`](missing.md).
+`has(e)` is a shortcut for [`!missing(e)`](missing).
 
 This function is most often used to test the existence of certain fields in an
 expected record, e.g., `has(a,b)` is true when `this` is a record and has
