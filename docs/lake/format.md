@@ -31,7 +31,7 @@ to provide a universal data representation for all of these different approaches
 
 Also, while we are not currently focused on building a SQL engine for the Zed lake,
 it is most certainly possible to do so, as a Zed record type
-[is analagous to](../formats/_index#2-a-super-structured-pattern)
+[is analagous to](../formats#2-a-super-structured-pattern)
 a SQL table definition.  SQL tables can essentially be dynamically projected
 via a table virtualization layer built on top of the Zed lake model.
 

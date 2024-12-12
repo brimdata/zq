@@ -161,7 +161,7 @@ the scope of the Zed data model and language.  That said, Zed provides flexible
 building blocks so systems can define their own schema versioning and schema
 management policies on top of these Zed primitives.
 
-The [super-structured data model](../formats/_index#2-a-super-structured-pattern)
+The [super-structured data model](../formats#2-a-super-structured-pattern)
 is a superset of relational tables and
 SuperPipe's type system can easily make this connection.
 As an example, consider this type definition for "employee":

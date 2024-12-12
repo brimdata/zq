@@ -14,7 +14,7 @@ by a number of commands:
 command |> command | command | ...
 ```
 However, in Zed, the entities that transform data are called
-"[operators](operators/_index)" instead of "commands" and unlike Unix pipelines,
+"[operators](operators)" instead of "commands" and unlike Unix pipelines,
 the streams of data in a Zed query
 are typed data sequences that adhere to the
 [Zed data model](../formats/zed).
@@ -119,4 +119,4 @@ The following sections continue describing the Zed language.
 * [Lateral Subqueries](lateral-subqueries)
 * [Shaping and Type Fusion](shaping)
 
-You may also be interested in the detailed reference materials on [operators](operators/_index), [functions](functions/_index), and [aggregate functions](aggregates/_index), as well as the [conventions](conventions) for how they're described.
+You may also be interested in the detailed reference materials on [operators](operators), [functions](functions), and [aggregate functions](aggregates), as well as the [conventions](conventions) for how they're described.

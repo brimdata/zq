@@ -318,7 +318,7 @@ the `zed` command. Some suggested next steps:
 
 1. Dig deeper into SuperDB data lakes by having a look at the [`super db` command](../commands/super-db) documentation.
 2. Get a better idea of ways you can query your data by looking at the
-[Zed language documentation](../language/_index).
+[Zed language documentation](../language).
 
 If you have any questions or run into any snags, join the friendly Zed community
 at the [Brim Data Slack workspace](https://www.brimdata.io/join-slack/).

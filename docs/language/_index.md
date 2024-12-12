@@ -12,5 +12,5 @@ The language documents:
 * describe the syntax of [expressions](expressions) and [search expressions](search-expressions),
 * explain [lateral subqueries](lateral-subqueries),
 * describe [shaping and type fusion](shaping), and
-* enumerate the [operators](operators/_index), [functions](functions/_index),
-and [aggregate functions](aggregates/_index) in reference format.
+* enumerate the [operators](operators), [functions](functions),
+and [aggregate functions](aggregates) in reference format.

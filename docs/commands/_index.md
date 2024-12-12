@@ -11,7 +11,7 @@ into, querying, and orchestrating SuperDB data lakes. These sub-commands are
 organized into further subcommands like the familiar command patterns
 of `docker` or `kubectl`.
 
-All operations with these commands utilize the [super data model](../formats/_index)
-and provide querying via [SuperSQL](../language/_index).
+All operations with these commands utilize the [super data model](../formats)
+and provide querying via [SuperSQL](../language).
 
 Built-in help for `super` and all sub-commands is always accessible with the `-h` flag.

@@ -12,7 +12,7 @@ record for archiving and analytics.
 This guide walks through two simple configurations of Fluentd with a Zed lake
 that can be used as reference for starting your own production configuration.
 As it's a data source important to many in the Zed community, log data from
-[Zeek](./zeek/_index) is used in this guide. The approach shown can be
+[Zeek](./zeek) is used in this guide. The approach shown can be
 easily adapted to any log data source.
 
 ## Software
@@ -305,7 +305,7 @@ Example output:
 
 Notice quotes are no longer present around the values that contain IP addresses
 and times, since they are no longer stored as strings. With the data in this
-shaped form, we could now invoke [Zed language](../language/_index)
+shaped form, we could now invoke [Zed language](../language)
 functionality that leverages the richer data typing such as filtering `ip`
 values by CIDR block, e.g.,
 

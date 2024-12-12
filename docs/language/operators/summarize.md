@@ -14,7 +14,7 @@
 ### Description
 
 In the first four forms, the `summarize` operator consumes all of its input,
-applies an [aggregate function](../aggregates/_index) to each input value
+applies an [aggregate function](../aggregates) to each input value
 optionally filtered by a `where` clause and/or organized with the group-by
 keys specified after the `by` keyword, and at the end of input produces one
 or more aggregations for each unique set of group-by key values.

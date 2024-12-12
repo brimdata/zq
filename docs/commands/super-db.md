@@ -5,7 +5,7 @@ title: super db
 
 > **TL;DR** `super db` is a sub-command of `super` to manage and query SuperDB data lakes.
 > You can import data from a variety of formats and it will automatically
-> be committed in [super-structured](../formats/_index)
+> be committed in [super-structured](../formats)
 > format, providing full fidelity of the original format and the ability
 > to reconstruct the original data without loss of information.
 >
@@ -16,7 +16,7 @@ title: super db
 <p id="status"></p>
 
 :::tip Status
-While [`super`](super) and its accompanying [formats](../formats/_index)
+While [`super`](super) and its accompanying [formats](../formats)
 are production quality, the SuperDB data lake is still fairly early in development
 and alpha quality.
 That said, SuperDB data lakes can be utilized quite effectively at small scale,
@@ -657,7 +657,7 @@ according to configured policies and logic.
 ```
 super db query [options] <query>
 ```
-The `query` command runs a [SuperSQL](../language/_index) query with data from a lake as input.
+The `query` command runs a [SuperSQL](../language) query with data from a lake as input.
 A query typically begins with a [`from` operator](../language/operators/from)
 indicating the pool and branch to use as input.
 

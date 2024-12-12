@@ -5,10 +5,10 @@ heading: super Tutorial
 ---
 
 This tour provides new users of `super` an overview of the tool and
-the [SuperPipe language](../language/_index)
+the [SuperPipe language](../language)
 by walking through a number of examples on the command-line.
 This should get you started without having to read through all the gory details
-of the [SuperPipe language](../language/_index) or [`super` command-line usage](../commands/super).
+of the [SuperPipe language](../language) or [`super` command-line usage](../commands/super).
 
 We'll start with some simple one-liners on the command line where we feed
 some data to `super` with `echo` and specify `-` for `super` input to indicate
@@ -410,7 +410,7 @@ preparation, union types are really quite powerful.  They allow records
 with fields of different types or mixed-type arrays to be easily expressed
 while also having a very precise type definition.  This is the essence
 of Zed's new
-[super-structured data model](../formats/_index#2-a-super-structured-pattern).
+[super-structured data model](../formats#2-a-super-structured-pattern).
 
 ## First-class Types
 
@@ -1253,6 +1253,6 @@ of tricks to:
 clean data for analysis by `zq` or even export into other systems or for testing.
 
 If you'd like to learn more, feel free to read through the
-[language docs](../language/_index) in depth
+[language docs](../language) in depth
 or see how you can organize [data into a lake](../commands/super-db)
 using a git-like commit model.

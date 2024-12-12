@@ -3,7 +3,7 @@ weight: 1
 title: super
 ---
 
-> **TL;DR** `super` is a command-line tool that uses [SuperSQL](../language/_index)
+> **TL;DR** `super` is a command-line tool that uses [SuperSQL](../language)
 > to query a variety of data formats in files, over HTTP, or in [S3](../integrations/amazon-s3)
 > storage. Best performance is achieved when operating on data in binary formats such as
 > [Super Binary](../formats/bsup), [Super Columnar](../formats/csup),
@@ -18,7 +18,7 @@ super [ options ] [ -c query ] input [ input ... ]
 
 `super` is a command-line tool for processing data in diverse input
 formats, providing data wrangling, search, analytics, and extensive transformations
-using the [SuperSQL](../language/_index) dialect of SQL. Any SQL query expression
+using the [SuperSQL](../language) dialect of SQL. Any SQL query expression
 may be extended with [pipe syntax](https://research.google/pubs/sql-has-problems-we-can-fix-them-pipe-syntax-in-sql/)
 to filter, transform, and/or analyze input data.
 Super's SQL pipes dialect is extensive, so much so that it can resemble
@@ -28,10 +28,10 @@ The `super` command works with data from ephemeral sources like files and URLs.
 If you want to persist your data into a data lake for persistent storage,
 check out the [`super db`](super-db) set of commands.
 
-By invoking the `-c` option, a query expressed in the [SuperSQL language](../language/_index)
+By invoking the `-c` option, a query expressed in the [SuperSQL language](../language)
 may be specified and applied to the input stream.
 
-The [super data model](../formats/zed) is based on [super-structured data](../formats/_index#2-a-super-structured-pattern), meaning that all data
+The [super data model](../formats/zed) is based on [super-structured data](../formats#2-a-super-structured-pattern), meaning that all data
 is both strongly _and_ dynamically typed and need not conform to a homogeneous
 schema.  The type structure is self-describing so it's easy to daisy-chain
 queries and inspect data at any point in a complex query or data pipeline.
@@ -571,15 +571,15 @@ error("divide by zero")
 
 ## Examples
 
-As you may have noticed, many examples of the [SuperSQL language](../language/_index)
+As you may have noticed, many examples of the [SuperSQL language](../language)
 are illustrated using this pattern
 ```
 echo <values> | super -c <query> -
 ```
-which is used throughout the [language documentation](../language/_index)
-and [operator reference](../language/operators/_index).
+which is used throughout the [language documentation](../language)
+and [operator reference](../language/operators).
 
-The language documentation and [tutorials directory](../tutorials/_index)
+The language documentation and [tutorials directory](../tutorials)
 have many examples, but here are a few more simple `super` use cases.
 
 _Hello, world_
@@ -613,7 +613,7 @@ produces
 <[(int64,string)]>
 <|[string]|>
 ```
-_A simple [aggregation](../language/aggregates/_index)_
+_A simple [aggregation](../language/aggregates)_
 ```mdtest-command
 echo '{key:"foo",val:1}{key:"bar",val:2}{key:"foo",val:3}' |
   super -z -c 'sum(val) by key | sort key' -

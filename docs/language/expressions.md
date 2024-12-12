@@ -240,14 +240,14 @@ produces
 <int64>
 ```
 
-Zed includes many [built-in functions](functions/_index), some of which take
+Zed includes many [built-in functions](functions), some of which take
 a variable number of arguments.
 
 Zed also allows you to create [user-defined functions](statements#func-statements).
 
 ## Aggregate Function Calls
 
-[Aggregate functions](aggregates/_index) may be called within an expression.
+[Aggregate functions](aggregates) may be called within an expression.
 Unlike the aggregation context provided by a [summarizing group-by](operators/summarize), such calls
 in expression context yield an output value for each input value.
 
