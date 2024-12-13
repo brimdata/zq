@@ -4,11 +4,11 @@ title: Authentication Configuration
 heading: Configuring Authentication for a Zed Lake Service
 ---
 
-A [SuperDB data lake service](../commands/super-db.md#serve) may be configured to require
+A [SuperDB data lake service](../../commands/super-db.md#serve) may be configured to require
 user authentication to be accessed from clients such as the
 [Zui](https://zui.brimdata.io/) application, the
-[`super db`](../commands/super.md) CLI commands, or the
-[SuperDB Python client](../libraries/python.md). This document describes a simple
+[`super db`](../../commands/super.md) CLI commands, or the
+[SuperDB Python client](../../libraries/python.md). This document describes a simple
 [Auth0](https://auth0.com) configuration with accompanying `super db serve` flags
 that can be used as a starting point for creating similar configurations in
 your own environment.
@@ -96,7 +96,7 @@ checkbox to enable the **Device Code** grant type.
 
 ## Zed Lake Service Configuration
 
-1. Login to our Linux VM and [install](../install.md#building-from-source)
+1. Login to our Linux VM and [install](../../install.md#building-from-source)
 the most recent Zed tools from source.
 
    ```
