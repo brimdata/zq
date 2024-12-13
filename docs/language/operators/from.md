@@ -28,9 +28,11 @@ their data to its output.  A data source can be
 * an HTTP, HTTPS, or S3 URI; or
 * the [`pass` operator](pass.md), to treat the upstream pipeline branch as a source.
 
-{{< tip "Note" >}}
+{{% tip "Note" %}}
+
 File paths and URIs may be followed by an optional [format](../../commands/super.md#input-formats) specifier.
-{{< /tip >}}
+
+{{% /tip %}}
 
 Sourcing data from pools is only possible when querying a lake, such as
 via the [`super db` command](../../commands/super-db.md) or

@@ -40,11 +40,13 @@ This installs the `super` binary in your `$GOPATH/bin`.
 
 Once installed, run a [quick test](#quick-tests).
 
-{{< tip "Note" >}}
+{{% tip "Note" %}}
+
 If you don't have Go installed, download and install it from the
 [Go install page](https://golang.org/doc/install). Go 1.23 or later is
 required.
-{{< /tip >}}
+
+{{% /tip %}}
 
 ## Quick Tests
 

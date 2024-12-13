@@ -65,9 +65,11 @@ produces
 
 ## Left Join
 
-{{< tip "Note" >}}
+{{% tip "Note" %}}
+
 In some databases a left join is called a _left outer join_.
-{{< /tip >}}
+
+{{% /tip %}}
 
 By performing a left join that targets the same key fields, now all of our
 fruits will be shown in the results even if no one likes them (e.g., `avocado`).
@@ -102,9 +104,11 @@ produces
 
 ## Right join
 
-{{< tip "Note" >}}
+{{% tip "Note" %}}
+
 In SQL, a right join is called a _right outer join_.
-{{< /tip >}}
+
+{{% /tip %}}
 
 Next we'll change the join type from `left` to `right`. Notice that this causes
 the `note` field from the right-hand input to appear in the joined results.
@@ -132,9 +136,11 @@ produces
 
 ## Anti join
 
-{{< tip "Note" >}}
+{{% tip "Note" %}}
+
 In some databases an anti join is called a _left anti join_.
-{{< /tip >}}
+
+{{% /tip %}}
 
 The join type `anti` allows us to see which fruits are not liked by anyone.
 Note that with anti join only values from the left-hand input appear in the

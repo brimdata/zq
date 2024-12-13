@@ -9,10 +9,12 @@ The inner query may be _any_ pipeline operator sequence (excluding
 [`from` operators](operators/from.md)) and may refer to values from
 the outer sequence.
 
-{{< tip "Note" >}}
+{{% tip "Note" %}}
+
 This pattern rhymes with the SQL pattern of a "lateral
 join", which runs a subquery for each row of the outer query's results.
-{{< /tip >}}
+
+{{% /tip %}}
 
 Lateral subqueries are created using the scoped form of the
 [`over` operator](operators/over.md). They may be nested to arbitrary depth
@@ -125,9 +127,11 @@ parenthesized form:
 ( over <expr> [, <expr>...] [with <var>=<expr> [, ... <var>[=<expr>]] |> <lateral> )
 ```
 
-{{< tip "Note" >}}
+{{% tip "Note" %}}
+
 The parentheses disambiguate a lateral expression from a [lateral pipeline operator](operators/over.md).
-{{< /tip >}}
+
+{{% /tip %}}
 
 This form must always include a [lateral scope](#lateral-scope) as indicated by `<lateral>`.
 

@@ -81,13 +81,15 @@ The default settings when running `zed create` set the
 field and sort the stored data in descending order by that key. This
 configuration is ideal for Zeek log data.
 
-{{< tip "Note" >}}
+{{% tip "Note" %}}
+
 The [Zui](https://zui.brimdata.io/) desktop application automatically starts a
 Zed lake service when it launches. Therefore if you are using Zui you can
 skip the first set of commands shown above. The pool can be created from Zui
 by clicking **+**, selecting **New Pool**, then entering `ts` for the
 [pool key](../commands/super-db.md#pool-key).
-{{< /tip >}}
+
+{{% /tip %}}
 
 ### Fluentd
 
@@ -366,7 +368,8 @@ leverage, you can reduce the lake's storage footprint by periodically running
 storage that contain the granular commits that have already been rolled into
 larger objects by compaction.
 
-{{< tip "Note" >}}
+{{% tip "Note" %}}
+
 As described in issue [super/4934](https://github.com/brimdata/super/issues/4934),
 even after running `zed vacuum`, some files related to commit history are
 currently still left behind below the lake storage path. The issue describes
@@ -374,7 +377,8 @@ manual steps that can be taken to remove these files safely, if desired.
 However, if you find yourself needing to take these steps in your environment,
 please [contact us](#contact-us) as it will allow us to boost the priority
 of addressing the issue.
-{{< /tip >}}
+
+{{% /tip %}}
 
 ## Ideas For Enhancement
 

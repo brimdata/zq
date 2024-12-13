@@ -30,10 +30,12 @@ and then clicking the **Create API** button.
 
 2. Enter any **Name** and URL **Identifier** for the API, then click the
 **Create** button.
-{{< tip "Tip" >}}
+{{% tip "Tip" %}}
+
 Note the value you enter for the **Identifier** as you'll
 need it later for the Zed lake service configuration.
-{{< /tip >}}
+
+{{% /tip %}}
 
    ![api-name-identifier](api-name-identifier.png)
 
@@ -50,11 +52,13 @@ need it later for the Zed lake service configuration.
 
 1. Begin creating a new application by clicking **Applications** in the left
 navigation menu and then clicking the **Create Application** button.
-{{< tip "Note" >}}
+{{% tip "Note" %}}
+
 Neither the "Zed lake (Test Application)" that was created for us
 automatically when we created our API nor the Default App that came with the
 trial are used in this configuration.
-{{< /tip >}}
+
+{{% /tip %}}
 
    ![create-application](create-application.png)
 

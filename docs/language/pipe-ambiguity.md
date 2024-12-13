@@ -85,7 +85,9 @@ So when you want to run SuperSQL on old SQL queries that use top-level
 bitwise-OR expressions --- arguably a pretty obscure corner case --- just disable
 SuperSQL shortcuts and everything will work.
 
-{{< tip "Note" >}}
+{{% tip "Note" %}}
+
 Note that a config option to disable shortcuts is not yet implemented, but will be
 available in the future.
-{{< /tip >}}
+
+{{% /tip %}}

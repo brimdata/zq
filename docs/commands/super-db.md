@@ -15,7 +15,8 @@ title: super db
 
 <p id="status"></p>
 
-{{< tip "Status" >}}
+{{% tip "Status" %}}
+
 While [`super`](super.md) and its accompanying [formats](../formats/_index.md)
 are production quality, the SuperDB data lake is still fairly early in development
 and alpha quality.
@@ -25,7 +26,8 @@ is deployed to manage the lake's data layout via the
 [lake API](../lake/api.md).
 
 Enhanced scalability with self-tuning configuration is under development.
-{{< /tip >}}
+
+{{% /tip %}}
 
 ## The Lake Model
 
@@ -153,7 +155,8 @@ running any `super db` lake command all pointing at the same storage endpoint
 and the lake's data footprint will always remain consistent as the endpoints
 all adhere to the consistency semantics of the lake.
 
-{{< tip "Caveat" >}}
+{{% tip "Caveat" %}}
+
 Data consistency is not fully implemented yet for
 the S3 endpoint so only single-node access to S3 is available right now,
 though support for multi-node access is forthcoming.
@@ -164,7 +167,8 @@ access to a local file system has been thoroughly tested and should be
 deemed reliable, i.e., you can run a direct-access instance of `super db` alongside
 a server instance of `super db` on the same file system and data consistency will
 be maintained.
-{{< /tip >}}
+
+{{% /tip %}}
 
 ### Locating the Lake
 
@@ -206,11 +210,13 @@ Each commit object is assigned a global ID.
 Similar to Git, commit objects are arranged into a tree and
 represent the entire commit history of the lake.
 
-{{< tip "Note" >}}
+{{% tip "Note" %}}
+
 Technically speaking, Git can merge from multiple parents and thus
 Git commits form a directed acyclic graph instead of a tree;
 SuperDB does not currently support multiple parents in the commit object history.
-{{< /tip >}}
+
+{{% /tip %}}
 
 A branch is simply a named pointer to a commit object in the lake
 and like a pool, a branch name can be any valid UTF-8 string.
@@ -272,10 +278,12 @@ key.  For example, on a pool with pool key `ts`, the query `ts == 100`
 will be optimized to scan only the data objects where the value `100` could be
 present.
 
-{{< tip "Note" >}}
+{{% tip "Note" %}}
+
 The pool key will also serve as the primary key for the forthcoming
 CRUD semantics.
-{{< /tip >}}
+
+{{% /tip %}}
 
 A pool also has a configured sort order, either ascending or descending
 and data is organized in the pool in accordance with this order.
@@ -325,9 +333,11 @@ using that pool's "branches log" in a similar fashion, then its corresponding
 commit object can be used to construct the data of that branch at that
 past point in time.
 
-{{< tip "Note" >}}
+{{% tip "Note" %}}
+
 Time travel using timestamps is a forthcoming feature.
-{{< /tip >}}
+
+{{% /tip %}}
 
 ## `super db` Commands
 
@@ -407,11 +417,13 @@ the [special value `this`](../language/pipeline-model.md#the-special-value-this)
 
 A newly created pool is initialized with a branch called `main`.
 
-{{< tip "Note" >}}
+{{% tip "Note" %}}
+
 Lakes can be used without thinking about branches.  When referencing a pool without
 a branch, the tooling presumes the "main" branch as the default, and everything
 can be done on main without having to think about branching.
-{{< /tip >}}
+
+{{% /tip %}}
 
 ### Delete
 ```
@@ -582,9 +594,11 @@ that is stored in the commit journal for reference.  These values may
 be specified as options to the [`load`](#load) command, and are also available in the
 [lake API](../lake/api.md) for automation.
 
-{{< tip "Note" >}}
+{{% tip "Note" %}}
+
 The branchlog meta-query source is not yet implemented.
-{{< /tip >}}
+
+{{% /tip %}}
 
 ### Ls
 ```
