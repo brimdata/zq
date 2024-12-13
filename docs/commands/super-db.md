@@ -356,7 +356,7 @@ format.  However, the `-f` option can be used to specify any supported
 super db auth login|logout|method|verify
 ```
 Access to a lake can be secured with [Auth0 authentication](https://auth0.com/).
-A [guide](../integrations/zed-lake-auth.md) is available with example configurations.
+A [guide](../integrations/zed-lake-auth/index.md) is available with example configurations.
 Please reach out to us on our [community Slack](https://www.brimdata.io/join-slack/)
 if you have feedback on your experience or need additional help.
 

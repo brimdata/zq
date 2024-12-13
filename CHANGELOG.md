@@ -28,7 +28,7 @@
 ## v1.16.0
 * Improve ZNG scanning performance (#5101, #5103)
 * Improve the error message shown when `zq` is invoked with a single argument that's not a valid query and doesn't contain a source (#5119)
-* Update [Zeek integration docs](docs/integrations/zeek/_index.md), including [reference shaper](docs/integrations/zeek/shaping-zeek-json.md) changes for [Zeek v6.2.0](https://github.com/zeek/zeek/releases/tag/v6.2.0) data (#5106)
+* Update [Zeek integration docs](docs/integrations/zeek/index.md), including [reference shaper](docs/integrations/zeek/shaping-zeek-json.md) changes for [Zeek v6.2.0](https://github.com/zeek/zeek/releases/tag/v6.2.0) data (#5106)
 * [String literals](docs/language/expressions.md#formatted-string-literals) now use the "f-string" format `f"{ <expr> }"` instead of the previous `${ <expr> }` (#5123)
 * Prototype SQL support has been dropped from the Zed language (full SQL support is expected at a later date) (#5109)
 * Empty objects and arrays in JSON output are now consistently printed on a single line (#5127)
@@ -150,7 +150,7 @@
 
 ## v1.7.0
 * Add [`regexp_replace()`](docs/language/functions/regexp_replace.md) function for replacing regular expression matches in a string (#4435, #4449)
-* Add [documentation](docs/integrations/zed-lake-auth.md) showing how to configure Auth0 for authenticated access to a Zed lake service (#4439)
+* Add [documentation](docs/integrations/zed-lake-auth/index.md) showing how to configure Auth0 for authenticated access to a Zed lake service (#4439)
 * Fix an issue where elements of map could not be accessed if the key was of a union type (#4447)
 * Allow [`head`](docs/language/operators/head.md) operator to accept an expression (#4451)
 * Allow [`tail`](docs/language/operators/tail.md) operator to accept an expression (#4464)
@@ -454,7 +454,7 @@ questions.
 * Fix an issue where `len()` of a `null` array was evaluating to something greater than zero (#2761)
 * Fix an issue where `sort` with no fields was ignoring alias types and nested fields when picking a sort field (#2762)
 * Fix an issue where unexpected `cut: no record found` warnings were returned by `zed lake query` but not when the same data was queried via `zq` (#2764)
-* Move and extend the [Zeek interoperability docs](docs/integrations/zeek/_index.md) (#2770, #2782, #2830)
+* Move and extend the [Zeek interoperability docs](docs/integrations/zeek/index.md) (#2770, #2782, #2830)
 * Create endpoints in the Zed lake service API that correspond to underlying Zed lake operations, and expose them via `zapi` commands (#2741, #2774, #2786, #2775, #2794, #2795, #2796, #2920, #2925, #2928)
 * Fix an issue where `zq` would surface a syntax error when reading ZSON it had sent as output (#2792)
 * Add an `/events` endpoint to the API, which can be used by clients such as the Brim app to be notified of pool updates (#2791)
@@ -628,7 +628,7 @@ questions.
 
 ## v0.23.0
 * zql: Add `week` as a unit for [time grouping with `every`](docs/language/functions/every.md) (#1374)
-* zq: Fix an issue where a `null` value in a [JSON type definition](docs/integrations/zeek/_index.md) caused a failure without an error message (#1377)
+* zq: Fix an issue where a `null` value in a [JSON type definition](docs/integrations/zeek/index.md) caused a failure without an error message (#1377)
 * zq: Add [`zst` format](docs/formats/csup.md) to `-i` and `-f` command-line help (#1384)
 * zq: ZNG spec and `zq` updates to introduce the beta ZNG storage format (#1375, #1415, #1394, #1457, #1512, #1523, #1529), also addressing the following:
    * New data type `bytes` for storing sequences of bytes encoded as base64 (#1315)
@@ -644,11 +644,11 @@ questions.
 * zqd: Check and convert alpha ZNG filestores to beta ZNG (#1574, #1576)
 * zq: Fix an issue where spill-to-disk file names could collide (#1391)
 * zq: Allow the [`fuse` operator](docs/language/operators/fuse.md) to spill-to-disk to avoid memory limitations (#1355, #1402)
-* zq: No longer require `_path` as a first column in a [JSON type definition](docs/integrations/zeek/_index.md) (#1370)
+* zq: No longer require `_path` as a first column in a [JSON type definition](docs/integrations/zeek/index.md) (#1370)
 * zql: Improve ZQL docs for [aggregate functions](docs/language/operators/summarize.md) and grouping (#1385)
 * zql: Point links for developer docs at [pkg.go.dev](https://pkg.go.dev/) instead of [godoc.org](https://godoc.org/) (#1401)
 * zq: Add support for timestamps with signed timezone offsets (#1389)
-* zq: Add a [JSON type definition](docs/integrations/zeek/_index.md) for alert events in [Suricata EVE logs](https://suricata.readthedocs.io/en/suricata-5.0.2/output/eve/eve-json-output.html) (#1400)
+* zq: Add a [JSON type definition](docs/integrations/zeek/index.md) for alert events in [Suricata EVE logs](https://suricata.readthedocs.io/en/suricata-5.0.2/output/eve/eve-json-output.html) (#1400)
 * zq: Update the [ZNG over JSON (ZJSON)](docs/formats/zjson.md) spec and implementation (#1299)
 * zar: Use buffered streaming for archive import (#1397)
 * zq: Add an `ast` command that prints parsed ZQL as its underlying JSON object (#1416)
