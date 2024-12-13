@@ -49,7 +49,7 @@ applicable to handling certain types.
 | [`vector`](https://docs.zeek.org/en/current/script-reference/types.html#type-vector)     | [`array`](../../formats/zed.md#22-array              | |
 | [`record`](https://docs.zeek.org/en/current/script-reference/types.html#type-record)     | [`record`](../../formats/zed.md#21-record            | See [`record` details](#record) |
 
-:::tip Note
+{{< tip "Note" >}}
 The [Zeek data types](https://docs.zeek.org/en/current/script-reference/types.html)
 page describes the types in the context of the
 [Zeek scripting language](https://docs.zeek.org/en/master/scripting/index.html).
@@ -57,7 +57,7 @@ The Zeek types available in scripting are a superset of the data types that
 may appear in Zeek log files. The encodings of the types also differ in some
 ways between the two contexts. However, we link to this reference because
 there is no authoritative specification of the Zeek TSV log format.
-:::
+{{< /tip >}}
 
 ## Example
 

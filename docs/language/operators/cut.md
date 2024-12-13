@@ -76,11 +76,11 @@ echo '1 {a:1,b:2,c:3}' | super -z -c 'cut a,b' -
 ```
 _Invoke a function while cutting to set a default value for a field_
 
-:::tip
+{{< tip "Tip" >}}
 This can be helpful to transform data into a uniform record type, such as if
 the output will be exported in formats such as `csv` or `parquet` (see also:
 [`fuse`](fuse.md)).
-:::
+{{< /tip >}}
 
 ```mdtest-command
 echo '{a:1,b:null}{a:1,b:2}' | super -z -c 'cut a,b:=coalesce(b, 0)' -

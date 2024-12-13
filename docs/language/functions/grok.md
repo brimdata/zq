@@ -42,12 +42,12 @@ been published by Elastic and others that provide helpful guidance on becoming
 proficient in Grok. To help you adapt what you learn from these resources to
 the use of the `grok` function, review the tips below.
 
-:::tip Note
+{{< tip "Note" >}}
 As these represent areas of possible future SuperPipe enhancement, links to open
 issues are provided. If you find a functional gap significantly impacts your
 ability to use the `grok` function, please add a comment to the relevant
 issue describing your use case.
-:::
+{{< /tip >}}
 
 1. Logstash's Grok offers an optional data type conversion syntax,
    e.g.,
@@ -111,7 +111,7 @@ issue describing your use case.
    avoid compatibility issues, we recommend building configurations starting
    from the RE2-based [included patterns](#included-patterns).
 
-:::tip Note
+{{< tip "Note" >}}
 If you absolutely require features of Logstash's Grok that are not currently
 present in SuperPipe, you can create a Logstash-based preprocessing
 pipeline that uses its
@@ -121,7 +121,7 @@ and send its output as JSON to SuperPipe. Issue
 getting started. If you pursue this approach, please add a comment to the
 issue describing your use case or come talk to us on
 [community Slack](https://www.brimdata.io/join-slack/).
-:::
+{{< /tip >}}
 
 ### Debugging
 

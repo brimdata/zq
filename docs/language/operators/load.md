@@ -8,11 +8,11 @@
 load <pool>[@<branch>] [author <author>] [message <message>] [meta <meta>]
 ```
 
-:::tip Note
+{{< tip "Note" >}}
 The `load` operator is exclusively for working with pools in a
 [SuperDB data lake](../../commands/super-db.md) and is not available for use in
 [`super`](../../commands/super.md).
-:::
+{{< /tip >}}
 
 ### Description
 

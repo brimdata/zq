@@ -43,12 +43,12 @@ To this end, if you want full JSON compatibility without having to delve into th
 details of Zed, just use the `-j` option with `zq` and this will tell `zq` to
 expect JSON values as input and produce JSON values as output, much like `jq`.
 
-:::tip
+{{< tip "Tip" >}}
 If your downstream JSON tooling expects only a single JSON value, we can use
 `-j` along with [`collect()`](../language/aggregates/collect.md) to aggregate
 multiple input values into an array. A `collect()` example is shown
 [later in this tutorial](#running-analytics).
-:::
+{{< /tip >}}
 
 ## `this` vs `.`
 

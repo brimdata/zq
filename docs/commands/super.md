@@ -187,13 +187,13 @@ not desirable because (1) the Super JSON parser is not particularly performant a
 (2) all JSON numbers are floating point but the Super JSON parser will parse as
 JSON any number that appears without a decimal point as an integer type.
 
-:::tip note
+{{< tip "Note" >}}
 The reason `super` is not particularly performant for Super JSON is that the [Super Binary](../formats/bsup.md) or
 [Super Columnar](../formats/csup.md) formats are semantically equivalent to Super JSON but much more efficient and
 the design intent is that these efficient binary formats should be used in
 use cases where performance matters.  Super JSON is typically used only when
 data needs to be human-readable in interactive settings or in automated tests.
-:::
+{{< /tip >}}
 
 To this end, `super` uses a heuristic to select between Super JSON and plain JSON when the
 `-i` option is not specified. Specifically, plain JSON is selected when the first values

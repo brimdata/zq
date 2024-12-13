@@ -65,9 +65,9 @@ _ . : / % # @ ~
 A glob must begin with one of these characters or `*` then may be
 followed by any of these characters, `*`, or digits `0` through `9`.
 
-:::tip note
+{{< tip "Note" >}}
 These rules do not allow for a leading digit.
-:::
+{{< /tip >}}
 
 For example, a prefix match is easily accomplished via `prefix*`, e.g.,
 ```mdtest-command
@@ -125,13 +125,13 @@ is a Boolean comparison between the product `a*b` and `c`.
 The search patterns described above can be combined with other "search terms"
 using Boolean logic to form search expressions.
 
-:::tip note
+{{< tip "Note" >}}
 When processing [Super Binary](../formats/bsup.md) data, the SuperDB runtime performs a multi-threaded
 Boyer-Moore scan over decompressed data buffers before parsing any data.
 This allows large buffers of data to be efficiently discarded and skipped when
 searching for rarely occurring values.  For a [SuperDB data lake](../lake/format.md),
 a planned feature will use [Super Columnar](../formats/csup.md) files to further accelerate searches.
-:::
+{{< /tip >}}
 
 ### Search Terms
 
@@ -228,12 +228,12 @@ is equivalent to
 where grep("foo", this)
 ```
 
-:::tip note
+{{< tip "Note" >}}
 This equivalency between keyword search terms and grep semantics
 will change in the near future when we add support for full-text search.
 In this case, grep will still support substring match but keyword search
 will match segmented words from string fields.
-:::
+{{< /tip >}}
 
 #### Non-String Literal Search Term
 
