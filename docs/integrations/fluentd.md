@@ -89,7 +89,6 @@ by clicking **+**, selecting **New Pool**, then entering `ts` for the
 [pool key](../commands/super-db.md#pool-key).
 {{< /tip >}}
 
-
 ### Fluentd
 
 Multiple approaches are available for
