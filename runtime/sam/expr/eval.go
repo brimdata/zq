@@ -319,6 +319,8 @@ func (c *Compare) Eval(ectx Context, this super.Value) super.Value {
 		return c.result(bytes.Compare(super.DecodeBytes(lhs.Bytes()), super.DecodeBytes(rhs.Bytes())))
 	case lid == super.IDString:
 		return c.result(cmp.Compare(super.DecodeString(lhs.Bytes()), super.DecodeString(rhs.Bytes())))
+	case lid == super.IDIP:
+		return c.result(super.DecodeIP(lhs.Bytes()).Compare(super.DecodeIP(rhs.Bytes())))
 	default:
 		if bytes.Equal(lhs.Bytes(), rhs.Bytes()) {
 			return c.result(0)

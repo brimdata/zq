@@ -45,7 +45,10 @@ func (c *Compare) eval(vecs ...vector.Any) vector.Any {
 	if kind != vector.KindOf(rhs) {
 		panic("vector kind mismatch after coerce")
 	}
-	if kind == vector.KindType {
+	switch kind {
+	case vector.KindIP:
+		return c.compareIPs(lhs, rhs, nulls)
+	case vector.KindType:
 		return c.compareTypeVals(lhs, rhs)
 	}
 	lform, ok := vector.FormOf(lhs)
@@ -62,6 +65,42 @@ func (c *Compare) eval(vecs ...vector.Any) vector.Any {
 	}
 	out := f(lhs, rhs)
 	return vector.CopyAndSetNulls(out, nulls)
+}
+
+func (c *Compare) compareIPs(lhs, rhs vector.Any, nulls *vector.Bool) vector.Any {
+	out := vector.NewBoolEmpty(lhs.Len(), nulls)
+	for i := range lhs.Len() {
+		l, null := vector.IPValue(lhs, i)
+		if null {
+			continue
+		}
+		r, null := vector.IPValue(rhs, i)
+		if null {
+			continue
+		}
+		if isCompareOpSatisfied(c.opCode, l.Compare(r)) {
+			out.Set(i)
+		}
+	}
+	return out
+}
+
+func isCompareOpSatisfied(opCode, i int) bool {
+	switch opCode {
+	case vector.CompLT:
+		return i < 0
+	case vector.CompLE:
+		return i <= 0
+	case vector.CompGT:
+		return i > 0
+	case vector.CompGE:
+		return i >= 0
+	case vector.CompEQ:
+		return i == 0
+	case vector.CompNE:
+		return i != 0
+	}
+	panic(opCode)
 }
 
 func (c *Compare) compareTypeVals(lhs, rhs vector.Any) vector.Any {

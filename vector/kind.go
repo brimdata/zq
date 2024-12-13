@@ -16,8 +16,9 @@ const (
 	KindFloat   = 3
 	KindString  = 4
 	KindBytes   = 5
-	KindType    = 6
-	KindError   = 7
+	KindIP      = 6
+	KindType    = 7
+	KindError   = 8
 )
 
 const (
@@ -43,6 +44,8 @@ func KindOf(v Any) Kind {
 		return KindString
 	case *Error:
 		return KindError
+	case *IP:
+		return KindIP
 	case *TypeValue:
 		return KindType
 	case *Dict:
@@ -87,6 +90,8 @@ func KindOfType(typ super.Type) Kind {
 		return KindString
 	case *super.TypeOfBytes:
 		return KindBytes
+	case *super.TypeOfIP:
+		return KindIP
 	case *super.TypeOfType:
 		return KindType
 	}
