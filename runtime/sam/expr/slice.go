@@ -62,6 +62,9 @@ func (s *Slice) Eval(ectx Context, this super.Value) super.Value {
 		}
 		to = length
 	}
+	if from > to || to > length || from < 0 {
+		return s.zctx.NewErrorf("slice out of bounds")
+	}
 	bytes := elem.Bytes()
 	switch super.TypeUnder(elem.Type()).(type) {
 	case *super.TypeOfBytes:
@@ -97,12 +100,6 @@ func sliceIndex(ectx Context, this super.Value, slot Evaluator, length int) (int
 	index := int(v)
 	if index < 0 {
 		index += length
-	}
-	if index < 0 {
-		return 0, nil
-	}
-	if index > length {
-		return length, nil
 	}
 	return index, nil
 }

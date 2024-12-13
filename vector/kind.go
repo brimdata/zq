@@ -19,6 +19,8 @@ const (
 	KindIP      = 6
 	KindType    = 7
 	KindError   = 8
+	KindArray   = 9
+	KindSet     = 10
 )
 
 const (
@@ -32,6 +34,8 @@ const (
 
 func KindOf(v Any) Kind {
 	switch v := v.(type) {
+	case *Array:
+		return KindArray
 	case *Int:
 		return KindInt
 	case *Uint:
@@ -48,6 +52,8 @@ func KindOf(v Any) Kind {
 		return KindIP
 	case *TypeValue:
 		return KindType
+	case *Set:
+		return KindSet
 	case *Dict:
 		return KindOf(v.Any)
 	case *View:
