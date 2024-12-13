@@ -15,12 +15,17 @@ must be a numeric type.
 
 ### Examples
 
-{{< super-playground "yield abs(this)" >}}
+Absolute value of a various numbers:
+```mdtest-command
+echo '1 -1 0 -1.0 -1(int8) 1(uint8) "foo"' | super -z -c 'yield abs(this)' -
+```
+
+```mdtest-output
 1
--1
+1
 0
--1.0
--1(int8)
+1.
+1(int8)
 1(uint8)
-"foo"
-{{</ super-playground >}}
+error({message:"abs: not a number",on:"foo"})
+```
