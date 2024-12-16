@@ -84,7 +84,7 @@ func (b *Builder) compileVamFork(fork *dag.Fork, parents []vector.Puller) ([]vec
 	for _, seq := range fork.Paths {
 		var parent vector.Puller
 		if f != nil && !isEntry(seq) {
-			parent = f.AddExit()
+			parent = f.AddBranch()
 		}
 		exit, err := b.compileVamSeq(seq, []vector.Puller{parent})
 		if err != nil {
