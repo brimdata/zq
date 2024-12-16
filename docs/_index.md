@@ -1,7 +1,8 @@
 ---
 weight: 1
-title: Docs
+title: Introduction
 heading: SuperDB
+breadcrumb: Docs
 ---
 
 SuperDB offers a new approach that makes it easier to manipulate and manage
