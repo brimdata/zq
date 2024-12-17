@@ -25,7 +25,7 @@ func newRouter(ctx context.Context, f forwarder, parent vector.Puller) *router {
 	return &router{ctx: ctx, forwarder: f, parent: parent}
 }
 
-func (r *router) addRoute() vector.Puller {
+func (r *router) addRoute() *route {
 	route := &route{r, make(chan result), make(chan struct{}), false}
 	r.routes = append(r.routes, route)
 	return route

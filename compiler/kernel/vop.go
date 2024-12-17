@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/brimdata/super"
 	"github.com/brimdata/super/compiler/dag"
 	"github.com/brimdata/super/compiler/optimizer"
 	"github.com/brimdata/super/pkg/field"
@@ -39,10 +40,10 @@ func (b *Builder) compileVam(o dag.Op, parents []vector.Puller) ([]vector.Puller
 	case *dag.Scope:
 		//return b.compileVecScope(o, parents)
 	case *dag.Switch:
-		//if o.Expr != nil {
-		//	return b.compileVamExprSwitch(o, parents)
-		//}
-		//return b.compileVecSwitch(o, parents)
+		if o.Expr != nil {
+			return b.compileVamExprSwitch(o, parents)
+		}
+		return b.compileVamSwitch(o, parents)
 	default:
 		var parent vector.Puller
 		if len(parents) == 1 {
@@ -112,6 +113,59 @@ func (b *Builder) compileVamScatter(scatter *dag.Scatter, parents []vector.Pulle
 		ops = append(ops, op...)
 	}
 	return ops, nil
+}
+
+func (b *Builder) compileVamExprSwitch(swtch *dag.Switch, parents []vector.Puller) ([]vector.Puller, error) {
+	parent := parents[0]
+	if len(parents) > 1 {
+		parent = vamop.NewCombine(b.rctx, parents)
+	}
+	e, err := b.compileVamExpr(swtch.Expr)
+	if err != nil {
+		return nil, err
+	}
+	s := vamop.NewExprSwitch(b.rctx, parent, e)
+	var exits []vector.Puller
+	for _, c := range swtch.Cases {
+		var val *super.Value
+		if c.Expr != nil {
+			val2, err := b.evalAtCompileTime(c.Expr)
+			if err != nil {
+				return nil, err
+			}
+			if val2.IsError() {
+				return nil, errors.New("switch case is not a constant expression")
+			}
+			val = &val2
+		}
+		parents, err := b.compileVamSeq(c.Path, []vector.Puller{s.AddCase(val)})
+		if err != nil {
+			return nil, err
+		}
+		exits = append(exits, parents...)
+	}
+	return exits, nil
+}
+
+func (b *Builder) compileVamSwitch(swtch *dag.Switch, parents []vector.Puller) ([]vector.Puller, error) {
+	parent := parents[0]
+	if len(parents) > 1 {
+		parent = vamop.NewCombine(b.rctx, parents)
+	}
+	s := vamop.NewSwitch(b.rctx, parent)
+	var exits []vector.Puller
+	for _, c := range swtch.Cases {
+		e, err := b.compileVamExpr(c.Expr)
+		if err != nil {
+			return nil, fmt.Errorf("compiling switch case filter: %w", err)
+		}
+		exit, err := b.compileVamSeq(c.Path, []vector.Puller{s.AddCase(e)})
+		if err != nil {
+			return nil, err
+		}
+		exits = append(exits, exit...)
+	}
+	return exits, nil
 }
 
 func (b *Builder) compileVamLeaf(o dag.Op, parent vector.Puller) (vector.Puller, error) {
