@@ -36,6 +36,7 @@ func (s *ExprSwitch) AddCase(val *super.Value) vector.Puller {
 }
 
 func (s *ExprSwitch) forward(vec vector.Any) bool {
+	clear(s.caseIndexes)
 	exprVec := s.expr.Eval(vec)
 	for i := range exprVec.Len() {
 		s.builder.Truncate()
