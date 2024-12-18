@@ -28,6 +28,8 @@ func New(zctx *super.Context, name string, narg int) (expr.Function, field.Path,
 	case "every":
 		path = field.Path{"ts"}
 		f = &Bucket{zctx: zctx, name: name}
+	case "error":
+		f = &Error{zctx}
 	case "fields":
 		f = NewFields(zctx)
 	case "grep":
