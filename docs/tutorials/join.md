@@ -1,6 +1,7 @@
 ---
 weight: 3
-title: Join Overview
+title: Join
+heading: Join Overview
 ---
 
 This is a brief primer on the SuperPipe [`join` operator](../language/operators/join.md).
