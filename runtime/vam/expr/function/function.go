@@ -16,6 +16,8 @@ func New(zctx *super.Context, name string, narg int) (expr.Function, field.Path,
 	var path field.Path
 	var f expr.Function
 	switch name {
+	case "abs":
+		f = &Abs{zctx}
 	case "base64":
 		f = &Base64{zctx}
 	case "bucket":

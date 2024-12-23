@@ -14,7 +14,7 @@ type Abs struct {
 }
 
 func (a *Abs) Call(_ super.Allocator, args []super.Value) super.Value {
-	val := args[0]
+	val := args[0].Under()
 	switch id := val.Type().ID(); {
 	case super.IsUnsigned(id):
 		return val
