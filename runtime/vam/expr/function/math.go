@@ -96,3 +96,39 @@ func (c *Ceil) ceil(vec vector.Any) vector.Any {
 		panic(vec)
 	}
 }
+
+// https://github.com/brimdata/super/blob/main/docs/language/functions.md#floor
+type Floor struct {
+	zctx *super.Context
+}
+
+func (f *Floor) Call(args ...vector.Any) vector.Any {
+	vec := vector.Under(args[0])
+	switch id := vec.Type().ID(); {
+	case super.IsFloat(id):
+		return f.floor(vec)
+	case super.IsNumber(id):
+		return vec
+	}
+	return vector.NewWrappedError(f.zctx, "floor: not a number", vec)
+}
+
+func (f *Floor) floor(vec vector.Any) vector.Any {
+	switch vec := vec.(type) {
+	case *vector.Const:
+		val := super.NewFloat(vec.Type(), math.Floor(vec.Value().Float()))
+		return vector.NewConst(val, vec.Len(), vec.Nulls)
+	case *vector.View:
+		return vector.NewView(f.floor(vec.Any), vec.Index)
+	case *vector.Dict:
+		return vector.NewDict(f.floor(vec.Any), vec.Index, vec.Counts, vec.Nulls)
+	case *vector.Float:
+		var floats []float64
+		for _, v := range vec.Values {
+			floats = append(floats, math.Floor(v))
+		}
+		return vector.NewFloat(vec.Type(), floats, vec.Nulls)
+	default:
+		panic(vec)
+	}
+}

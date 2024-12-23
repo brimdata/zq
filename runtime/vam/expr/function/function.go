@@ -36,6 +36,8 @@ func New(zctx *super.Context, name string, narg int) (expr.Function, field.Path,
 		f = &Error{zctx}
 	case "fields":
 		f = NewFields(zctx)
+	case "floor":
+		f = &Floor{zctx}
 	case "grep":
 		argmax = 2
 		f = &Grep{zctx: zctx}
