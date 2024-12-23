@@ -24,6 +24,8 @@ func New(zctx *super.Context, name string, narg int) (expr.Function, field.Path,
 		argmin = 2
 		argmax = 2
 		f = &Bucket{zctx: zctx, name: name}
+	case "ceil":
+		f = &Ceil{zctx}
 	case "coalesce":
 		argmax = -1
 		f = &Coalesce{}
