@@ -17,4 +17,3 @@ output: |
   error({message:"log: illegal argument",on:-1})
   null(float64)
   error("missing")
-
