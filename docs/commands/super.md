@@ -1077,6 +1077,21 @@ on an AWS [`m6idn.2xlarge`](https://aws.amazon.com/ec2/instance-types/m6i/) inst
 ```
 About to execute
 ================
+clickhouse-client --queries-file /mnt/tmpdir/tmp.NlvDgOOmnG
+
+With query
+==========
+SELECT count()
+FROM 'gha'
+WHERE v.payload.pull_request.body LIKE '%in case you have any feedback 😊%'
+
++ hyperfine --show-output --warmup 1 --runs 1 --time-unit second 'clickhouse-client --queries-file /mnt/tmpdir/tmp.NlvDgOOmnG'
+Benchmark 1: clickhouse-client --queries-file /mnt/tmpdir/tmp.NlvDgOOmnG
+2
+  Time (abs ≡):         0.870 s               [User: 0.045 s, System: 0.023 s]
+
+About to execute
+================
 clickhouse --queries-file /mnt/tmpdir/tmp.0bwhkb0l9n
 
 With query
@@ -1186,6 +1201,25 @@ Benchmark 1: SUPER_VAM=1 super -z -I /mnt/tmpdir/tmp.AYZIh6yi2s
 ### Search+ Test
 
 ```
+About to execute
+================
+clickhouse-client --queries-file /mnt/tmpdir/tmp.PFNN1fKojv
+
+With query
+==========
+SELECT count()
+FROM 'gha'
+WHERE
+   v.id LIKE '%in case you have any feedback 😊%'
+   OR v.type LIKE '%in case you have any feedback 😊%'
+   ...
+   OR v.payload.member.type LIKE '%in case you have any feedback 😊%'
+
++ hyperfine --show-output --warmup 1 --runs 1 --time-unit second 'clickhouse-client --queries-file /mnt/tmpdir/tmp.PFNN1fKojv'
+Benchmark 1: clickhouse-client --queries-file /mnt/tmpdir/tmp.PFNN1fKojv
+3
+  Time (abs ≡):        12.773 s               [User: 0.061 s, System: 0.025 s]
+
 About to execute
 ================
 clickhouse --queries-file /mnt/tmpdir/tmp.PTRkZ4ZIXX
