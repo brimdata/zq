@@ -52,7 +52,7 @@ if command -v dmidecode && [ "$(sudo dmidecode --string system-uuid | cut -c1-3)
 
   # Install SuperDB
   if ! command -v super > /dev/null 2>&1; then
-    git clone -b super-cmd-perf-dec2024 https://github.com/brimdata/super.git
+    git clone https://github.com/brimdata/super.git
     cd super
     make install
   fi
