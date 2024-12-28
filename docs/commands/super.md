@@ -733,10 +733,9 @@ file:
 ```
 super gharchive_gz/*.json.gz > gha.bsup
 ```
-This code path in `super` is not multi-threaded so not particularly performant but,
-on our test machine, this runs more than 2x faster than the `duckdb` method of
-creating a schema-fused table and just a bit faster than `clickhouse` could
-load the data to its beta JSON type.
+This code path in `super` is not multi-threaded so not particularly performant,
+but on our test machine it runs a bit faster than both the `duckdb` method of
+creating a schema-fused table or loading the data to the `clickhouse` beta JSON type.
 
 Here are the resulting file sizes:
 ```
