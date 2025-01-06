@@ -24,11 +24,15 @@ func (u *Union) Type() super.Type {
 }
 
 func (u *Union) Serialize(b *zcode.Builder, slot uint32) {
-	b.BeginContainer()
-	tag := u.Typ.TagOf(u.TypeOf(slot))
-	b.Append(super.EncodeInt(int64(tag)))
-	u.Dynamic.Serialize(b, slot)
-	b.EndContainer()
+	if u.Nulls.Value(slot) {
+		b.Append(nil)
+	} else {
+		b.BeginContainer()
+		tag := u.Typ.TagOf(u.TypeOf(slot))
+		b.Append(super.EncodeInt(int64(tag)))
+		u.Dynamic.Serialize(b, slot)
+		b.EndContainer()
+	}
 }
 
 func (u *Union) AppendKey(b []byte, slot uint32) []byte {

@@ -124,5 +124,25 @@ func projectUnion(zctx *super.Context, paths Path, s *union) vector.Any {
 		vals = append(vals, val)
 		types = append(types, val.Type())
 	}
-	return vector.NewUnion(zctx.LookupTypeUnion(types), s.tags, vals, s.nulls.flat)
+	utyp := zctx.LookupTypeUnion(types)
+	tags := s.tags
+	nulls := s.nulls.flat
+	// If there are nulls add a null vector and rebuild tags.
+	if nulls != nil {
+		var newtags []uint32
+		n := uint32(len(vals))
+		var nullcount uint32
+		for i := range nulls.Len() {
+			if nulls.Value(i) {
+				newtags = append(newtags, n)
+				nullcount++
+			} else {
+				newtags = append(newtags, tags[0])
+				tags = tags[1:]
+			}
+		}
+		tags = newtags
+		vals = append(vals, vector.NewConst(super.NewValue(utyp, nil), nullcount, nil))
+	}
+	return vector.NewUnion(utyp, tags, vals, nulls)
 }
