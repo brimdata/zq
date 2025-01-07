@@ -4,6 +4,7 @@ import (
 	"io"
 
 	"github.com/brimdata/super"
+	"github.com/brimdata/super/zcode"
 )
 
 type Int64Encoder struct {
@@ -18,18 +19,17 @@ func (p *Int64Encoder) Write(v int64) {
 	p.PrimitiveEncoder.Write(super.EncodeInt(v))
 }
 
-type Int64Decoder struct {
-	PrimitiveBuilder
-}
-
-func NewInt64Decoder(loc Segment, r io.ReaderAt) *Int64Decoder {
-	return &Int64Decoder{*NewPrimitiveBuilder(&Primitive{Typ: super.TypeInt64, Location: loc}, r)}
-}
-
-func (p *Int64Decoder) Next() (int64, error) {
-	zv, err := p.ReadBytes()
-	if err != nil {
-		return 0, err
+func ReadUint32s(loc Segment, r io.ReaderAt) ([]uint32, error) {
+	buf := make([]byte, loc.MemLength)
+	if err := loc.Read(r, buf); err != nil {
+		if err == io.EOF {
+			return nil, nil
+		}
+		return nil, err
 	}
-	return super.DecodeInt(zv), err
+	var vals []uint32
+	for it := zcode.Iter(buf); !it.Done(); {
+		vals = append(vals, uint32(super.DecodeInt(it.Next())))
+	}
+	return vals, nil
 }

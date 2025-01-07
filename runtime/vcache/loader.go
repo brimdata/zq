@@ -441,7 +441,7 @@ func (l *loader) loadUint32(g *errgroup.Group, mu *sync.Mutex, slice *[]uint32, 
 		if *slice != nil {
 			return nil
 		}
-		v, err := vng.ReadUint32Vector(loc, l.r)
+		v, err := vng.ReadUint32s(loc, l.r)
 		if err != nil {
 			return err
 		}
@@ -463,7 +463,7 @@ func (l *loader) loadOffsets(g *errgroup.Group, mu *sync.Mutex, slice *[]uint32,
 		if *slice != nil {
 			return nil
 		}
-		v, err := vng.ReadUint32Vector(loc, l.r)
+		v, err := vng.ReadUint32s(loc, l.r)
 		if err != nil {
 			return err
 		}

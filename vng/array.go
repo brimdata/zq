@@ -58,39 +58,6 @@ func (a *ArrayEncoder) Metadata(off uint64) (uint64, Metadata) {
 	}
 }
 
-type ArrayBuilder struct {
-	Elems   Builder
-	Lengths *Int64Decoder
-}
-
-var _ Builder = (*ArrayBuilder)(nil)
-
-func NewArrayBuilder(array *Array, r io.ReaderAt) (*ArrayBuilder, error) {
-	elems, err := NewBuilder(array.Values, r)
-	if err != nil {
-		return nil, err
-	}
-	return &ArrayBuilder{
-		Elems:   elems,
-		Lengths: NewInt64Decoder(array.Lengths, r),
-	}, nil
-}
-
-func (a *ArrayBuilder) Build(b *zcode.Builder) error {
-	len, err := a.Lengths.Next()
-	if err != nil {
-		return err
-	}
-	b.BeginContainer()
-	for k := 0; k < int(len); k++ {
-		if err := a.Elems.Build(b); err != nil {
-			return err
-		}
-	}
-	b.EndContainer()
-	return nil
-}
-
 type SetEncoder struct {
 	ArrayEncoder
 }
