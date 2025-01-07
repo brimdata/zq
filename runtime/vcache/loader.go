@@ -286,6 +286,14 @@ func (l *loader) loadVals(typ super.Type, s *primitive, nulls *vector.Bool) (vec
 		}
 		offs[length] = off
 		return vector.NewTypeValue(offs, bytes, nulls), nil
+	case *super.TypeEnum:
+		values := make([]uint64, length)
+		for slot := range length {
+			if !nulls.Value(slot) {
+				values[slot] = super.DecodeUint(it.Next())
+			}
+		}
+		return vector.NewEnum(typ, values, nulls), nil
 	case *super.TypeOfNull:
 		return vector.NewConst(super.Null, s.length(), nil), nil
 	}

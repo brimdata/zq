@@ -46,6 +46,8 @@ func NewEncoder(typ super.Type) Encoder {
 		return NewNullsEncoder(NewMapEncoder(typ))
 	case *super.TypeUnion:
 		return NewNullsEncoder(NewUnionEncoder(typ))
+	case *super.TypeEnum:
+		return NewNullsEncoder(NewPrimitiveEncoder(typ, false))
 	default:
 		if !super.IsPrimitiveType(typ) {
 			panic(fmt.Sprintf("unsupported type in VNG file: %T", typ))
