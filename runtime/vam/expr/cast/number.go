@@ -84,23 +84,21 @@ func checkAndCastNumbers[E numeric, T numeric](s []E, min, max E, index []uint32
 	var errs []uint32
 	var out []T
 	if index != nil {
-		out = make([]T, len(index))
 		for i, idx := range index {
 			v := s[idx]
 			if v < min || v > max {
 				errs = append(errs, uint32(i))
 				continue
 			}
-			out[i] = T(v)
+			out = append(out, T(v))
 		}
 	} else {
-		out = make([]T, len(s))
 		for i, v := range s {
 			if v < min || v > max {
 				errs = append(errs, uint32(i))
 				continue
 			}
-			out[i] = T(v)
+			out = append(out, T(v))
 		}
 	}
 	return out, errs
