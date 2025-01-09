@@ -11,28 +11,27 @@ import (
 type MapEncoder struct {
 	keys    Encoder
 	values  Encoder
-	lengths *Int64Encoder
+	lengths Uint32Encoder
 	count   uint32
 }
 
 func NewMapEncoder(typ *super.TypeMap) *MapEncoder {
 	return &MapEncoder{
-		keys:    NewEncoder(typ.KeyType),
-		values:  NewEncoder(typ.ValType),
-		lengths: NewInt64Encoder(),
+		keys:   NewEncoder(typ.KeyType),
+		values: NewEncoder(typ.ValType),
 	}
 }
 
 func (m *MapEncoder) Write(body zcode.Bytes) {
 	m.count++
-	var len int
+	var len uint32
 	it := body.Iter()
 	for !it.Done() {
 		m.keys.Write(it.Next())
 		m.values.Write(it.Next())
 		len++
 	}
-	m.lengths.Write(int64(len))
+	m.lengths.Write(len)
 }
 
 func (m *MapEncoder) Emit(w io.Writer) error {
@@ -46,11 +45,11 @@ func (m *MapEncoder) Emit(w io.Writer) error {
 }
 
 func (m *MapEncoder) Metadata(off uint64) (uint64, Metadata) {
-	off, lens := m.lengths.Metadata(off)
+	off, lens := m.lengths.Segment(off)
 	off, keys := m.keys.Metadata(off)
 	off, vals := m.values.Metadata(off)
 	return off, &Map{
-		Lengths: lens.(*Primitive).Location,
+		Lengths: lens,
 		Keys:    keys,
 		Values:  vals,
 		Length:  m.count,

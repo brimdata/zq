@@ -9,9 +9,9 @@ import (
 )
 
 type DynamicEncoder struct {
-	tags   *Int64Encoder
+	tags   Uint32Encoder
 	values []Encoder
-	which  map[super.Type]int
+	which  map[super.Type]uint32
 	len    uint32
 }
 
@@ -19,8 +19,7 @@ var _ zio.Writer = (*DynamicEncoder)(nil)
 
 func NewDynamicEncoder() *DynamicEncoder {
 	return &DynamicEncoder{
-		tags:  NewInt64Encoder(),
-		which: make(map[super.Type]int),
+		which: make(map[super.Type]uint32),
 	}
 }
 
@@ -32,11 +31,11 @@ func (d *DynamicEncoder) Write(val super.Value) error {
 	typ := val.Type()
 	tag, ok := d.which[typ]
 	if !ok {
-		tag = len(d.values)
+		tag = uint32(len(d.values))
 		d.values = append(d.values, NewEncoder(typ))
 		d.which[typ] = tag
 	}
-	d.tags.Write(int64(tag))
+	d.tags.Write(tag)
 	d.len++
 	d.values[tag].Write(val.Bytes())
 	return nil
@@ -58,14 +57,14 @@ func (d *DynamicEncoder) Encode() (Metadata, uint64, error) {
 		return meta, off, nil
 	}
 	values := make([]Metadata, 0, len(d.values))
-	off, tags := d.tags.Metadata(0)
+	off, tags := d.tags.Segment(0)
 	for _, val := range d.values {
 		var meta Metadata
 		off, meta = val.Metadata(off)
 		values = append(values, meta)
 	}
 	return &Dynamic{
-		Tags:   tags.(*Primitive).Location,
+		Tags:   tags,
 		Values: values,
 		Length: d.len,
 	}, off, nil

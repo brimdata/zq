@@ -12,8 +12,8 @@ import (
 // the first, which may be zero when the first value is non-null.
 type NullsEncoder struct {
 	values Encoder
-	runs   Int64Encoder
-	run    int64
+	runs   Uint32Encoder
+	run    uint32
 	null   bool
 	count  uint32
 }
@@ -21,7 +21,6 @@ type NullsEncoder struct {
 func NewNullsEncoder(values Encoder) *NullsEncoder {
 	return &NullsEncoder{
 		values: values,
-		runs:   *NewInt64Encoder(),
 	}
 }
 
@@ -70,9 +69,9 @@ func (n *NullsEncoder) Metadata(off uint64) (uint64, Metadata) {
 	if n.count == 0 {
 		return off, values
 	}
-	off, runs := n.runs.Metadata(off)
+	off, runs := n.runs.Segment(off)
 	return off, &Nulls{
-		Runs:   runs.(*Primitive).Location,
+		Runs:   runs,
 		Values: values,
 		Count:  n.count,
 	}

@@ -11,7 +11,7 @@ import (
 type ArrayEncoder struct {
 	typ     super.Type
 	values  Encoder
-	lengths *Int64Encoder
+	lengths Uint32Encoder
 	count   uint32
 }
 
@@ -19,16 +19,15 @@ var _ Encoder = (*ArrayEncoder)(nil)
 
 func NewArrayEncoder(typ *super.TypeArray) *ArrayEncoder {
 	return &ArrayEncoder{
-		typ:     typ.Type,
-		values:  NewEncoder(typ.Type),
-		lengths: NewInt64Encoder(),
+		typ:    typ.Type,
+		values: NewEncoder(typ.Type),
 	}
 }
 
 func (a *ArrayEncoder) Write(body zcode.Bytes) {
 	a.count++
 	it := body.Iter()
-	var len int64
+	var len uint32
 	for !it.Done() {
 		a.values.Write(it.Next())
 		len++
@@ -49,11 +48,11 @@ func (a *ArrayEncoder) Emit(w io.Writer) error {
 }
 
 func (a *ArrayEncoder) Metadata(off uint64) (uint64, Metadata) {
-	off, lens := a.lengths.Metadata(off)
+	off, lens := a.lengths.Segment(off)
 	off, vals := a.values.Metadata(off)
 	return off, &Array{
 		Length:  a.count,
-		Lengths: lens.(*Primitive).Location, //XXX
+		Lengths: lens,
 		Values:  vals,
 	}
 }
@@ -65,9 +64,8 @@ type SetEncoder struct {
 func NewSetEncoder(typ *super.TypeSet) *SetEncoder {
 	return &SetEncoder{
 		ArrayEncoder{
-			typ:     typ.Type,
-			values:  NewEncoder(typ.Type),
-			lengths: NewInt64Encoder(),
+			typ:    typ.Type,
+			values: NewEncoder(typ.Type),
 		},
 	}
 }
