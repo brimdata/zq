@@ -156,8 +156,8 @@ func stringToInt(vec *vector.String, typ super.Type, index []uint32) (vector.Any
 			if nulls == nil {
 				nulls = vector.NewBoolEmpty(n, nil)
 			}
+			nulls.Set(uint32(len(ints)))
 			ints = append(ints, 0)
-			nulls.Set(i)
 			continue
 		}
 		v, err := strconv.ParseInt(byteconv.UnsafeString(vec.Bytes[vec.Offsets[idx]:vec.Offsets[idx+1]]), 10, bits)
@@ -166,6 +166,9 @@ func stringToInt(vec *vector.String, typ super.Type, index []uint32) (vector.Any
 			continue
 		}
 		ints = append(ints, v)
+	}
+	if nulls != nil {
+		nulls.SetLen(uint32(len(ints)))
 	}
 	return vector.NewInt(typ, ints, nulls), errs
 }
@@ -183,8 +186,8 @@ func stringToDuration(vec *vector.String, index []uint32) (vector.Any, []uint32)
 			if nulls == nil {
 				nulls = vector.NewBoolEmpty(vec.Len(), nil)
 			}
+			nulls.Set(uint32(len(durs)))
 			durs = append(durs, 0)
-			nulls.Set(i)
 			continue
 		}
 		b := vec.Bytes[vec.Offsets[idx]:vec.Offsets[idx+1]]
@@ -198,6 +201,9 @@ func stringToDuration(vec *vector.String, index []uint32) (vector.Any, []uint32)
 			d = nano.Duration(f)
 		}
 		durs = append(durs, int64(d))
+	}
+	if nulls != nil {
+		nulls.SetLen(uint32(len(durs)))
 	}
 	return vector.NewInt(super.TypeDuration, durs, nulls), errs
 }
@@ -215,8 +221,8 @@ func stringToTime(vec *vector.String, index []uint32) (vector.Any, []uint32) {
 			if nulls == nil {
 				nulls = vector.NewBoolEmpty(vec.Len(), nil)
 			}
+			nulls.Set(uint32(len(ts)))
 			ts = append(ts, 0)
-			nulls.Set(i)
 			continue
 		}
 		b := vec.Bytes[vec.Offsets[idx]:vec.Offsets[idx+1]]
@@ -230,6 +236,9 @@ func stringToTime(vec *vector.String, index []uint32) (vector.Any, []uint32) {
 		} else {
 			ts = append(ts, gotime.UnixNano())
 		}
+	}
+	if nulls != nil {
+		nulls.SetLen(uint32(len(ts)))
 	}
 	return vector.NewInt(super.TypeTime, ts, nulls), errs
 }
@@ -248,8 +257,8 @@ func stringToUint(vec *vector.String, typ super.Type, index []uint32) (vector.An
 			if nulls == nil {
 				nulls = vector.NewBoolEmpty(vec.Len(), nil)
 			}
+			nulls.Set(uint32(len(ints)))
 			ints = append(ints, 0)
-			nulls.Set(i)
 			continue
 		}
 		v, err := strconv.ParseUint(byteconv.UnsafeString(vec.Bytes[vec.Offsets[idx]:vec.Offsets[idx+1]]), 10, bits)
@@ -258,6 +267,9 @@ func stringToUint(vec *vector.String, typ super.Type, index []uint32) (vector.An
 			continue
 		}
 		ints = append(ints, v)
+	}
+	if nulls != nil {
+		nulls.SetLen(uint32(len(ints)))
 	}
 	return vector.NewUint(typ, ints, nulls), errs
 }
@@ -275,8 +287,8 @@ func stringToFloat(vec *vector.String, typ super.Type, index []uint32) (vector.A
 			if nulls == nil {
 				nulls = vector.NewBoolEmpty(vec.Len(), nil)
 			}
+			nulls.Set(uint32(len(floats)))
 			floats = append(floats, 0)
-			nulls.Set(i)
 			continue
 		}
 		v, err := byteconv.ParseFloat64(vec.Bytes[vec.Offsets[idx]:vec.Offsets[idx+1]])
@@ -285,6 +297,9 @@ func stringToFloat(vec *vector.String, typ super.Type, index []uint32) (vector.A
 			continue
 		}
 		floats = append(floats, v)
+	}
+	if nulls != nil {
+		nulls.SetLen(uint32(len(floats)))
 	}
 	return vector.NewFloat(typ, floats, nulls), errs
 }
