@@ -38,6 +38,12 @@ func project(zctx *super.Context, paths Path, s shadow) vector.Any {
 			return vector.NewMissing(zctx, s.length())
 		}
 		return s.vec
+	case *dict:
+		if len(paths) > 0 {
+			return vector.NewMissing(zctx, s.length())
+		}
+		vals := project(zctx, paths, s.vals)
+		return vector.NewDict(vals, s.index, s.counts, s.nulls.flat)
 	case *error_:
 		v := project(zctx, paths, s.vals)
 		typ := zctx.LookupTypeError(v.Type())

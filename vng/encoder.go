@@ -47,13 +47,17 @@ func NewEncoder(typ super.Type) Encoder {
 	case *super.TypeUnion:
 		return NewNullsEncoder(NewUnionEncoder(typ))
 	case *super.TypeEnum:
-		return NewNullsEncoder(NewPrimitiveEncoder(typ, false))
+		return NewNullsEncoder(NewPrimitiveEncoder(typ))
 	default:
 		if !super.IsPrimitiveType(typ) {
 			panic(fmt.Sprintf("unsupported type in VNG file: %T", typ))
 		}
-		return NewNullsEncoder(NewPrimitiveEncoder(typ, true))
+		return NewNullsEncoder(NewDictEncoder(typ, NewPrimitiveEncoder(typ)))
 	}
+}
+
+type resetter interface {
+	reset()
 }
 
 type NamedEncoder struct {

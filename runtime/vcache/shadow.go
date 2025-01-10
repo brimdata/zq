@@ -99,6 +99,16 @@ type const_ struct {
 	nulls nulls
 }
 
+type dict struct {
+	mu sync.Mutex
+	count
+	vng    *vng.Dict
+	nulls  nulls
+	vals   shadow
+	counts []uint32
+	index  []byte
+}
+
 type error_ struct {
 	vals  shadow
 	nulls nulls
@@ -206,6 +216,13 @@ func newShadow(m vng.Metadata, n *vng.Nulls, nullsCnt uint32) shadow {
 		return &const_{
 			count: count{m.Len(), nullsCnt},
 			val:   m.Value,
+			nulls: nulls{meta: n},
+		}
+	case *vng.Dict:
+		return &dict{
+			vals:  newShadow(m.Values, nil, 0),
+			count: count{m.Len(), nullsCnt},
+			vng:   m,
 			nulls: nulls{meta: n},
 		}
 	default:
